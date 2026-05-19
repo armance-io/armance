@@ -95,15 +95,14 @@ class MainScreen(Screen[int]):
         Binding("tab", "cycle_focus", "Cycle focus", show=False),
         Binding("ctrl+k", "clear_chat", "Clear", show=True),
         Binding("ctrl+s", "save_state", "Save session", show=True, priority=True),
-        Binding("ctrl+c", "request_quit", "Quit (×2)", show=True, priority=True),
+        Binding("ctrl+c", "clear_input", "Clear input", show=False, priority=True),
+        Binding("ctrl+q", "request_quit", "Quit", show=True, priority=True),
         Binding("escape", "cancel", "Cancel", show=False),
         Binding("question_mark", "show_keybindings", "Keys?", show=False),
-        Binding("ctrl+left", "sidebar_shrink", "Sidebar ◀", show=False),
-        Binding("ctrl+right", "sidebar_grow", "Sidebar ▶", show=False),
+        Binding("alt+left", "sidebar_shrink", "Sidebar ◀", show=False, priority=True),
+        Binding("alt+right", "sidebar_grow", "Sidebar ▶", show=False, priority=True),
     ]
 
-    # Double-Ctrl+C quit
-    _QUIT_DOUBLE_TAP_WINDOW = 2.0  # seconds
     _SIDEBAR_WIDTHS = (24, 30, 36, 44, 54)
     _sidebar_width_idx: int = 1  # default → 30 ≈ current 34 rounded to nearest step
 
@@ -122,7 +121,7 @@ class MainScreen(Screen[int]):
         self.state = session.state
         self.ledger = ledger
         self._loop_ctx: Any = None  # built lazily on first input
-        self._last_quit_press: float = 0.0  # timestamp of last Ctrl+C
+        self._quit_in_progress: bool = False  # guard against Ctrl+Q stacking
         self._active_workers: dict[str, int] = {}  # agent_name → count of running workers
 
     def compose(self) -> ComposeResult:
@@ -377,28 +376,21 @@ class MainScreen(Screen[int]):
         self._sidebar_width_idx = min(len(self._SIDEBAR_WIDTHS) - 1, self._sidebar_width_idx + 1)
         self._apply_sidebar_width()
 
-    def action_request_quit(self) -> None:
-        """Ctrl+C: if input has text → clear it (no quit). Otherwise double-tap
-        within 2s triggers the save-or-discard quit prompt."""
-        import time
+    def action_clear_input(self) -> None:
+        """Ctrl+C: clear the input area. No quit (use Ctrl+Q to quit)."""
         from armance.client.tui.widgets.input import ChatInput
-        # If the input area has content, clear it and reset quit timer.
         try:
-            chat_input = self.query_one(ChatInput)
-            if chat_input.text.strip():
-                chat_input.clear()
-                self._last_quit_press = 0.0
-                return
+            self.query_one(ChatInput).clear()
         except Exception:
             pass
-        now = time.monotonic()
-        if now - self._last_quit_press <= self._QUIT_DOUBLE_TAP_WINDOW:
-            self._last_quit_press = 0.0
-            self.run_worker(self._quit_with_save_prompt(), exclusive=False)
+
+    def action_request_quit(self) -> None:
+        """Ctrl+Q: save-or-discard prompt then exit. Guarded against re-entry
+        so repeated presses do not stack popups."""
+        if self._quit_in_progress:
             return
-        self._last_quit_press = now
-        from armance.nls import t as _t
-        self.notify(_t("quit.ctrl_c_again"), severity="warning", timeout=2)
+        self._quit_in_progress = True
+        self.run_worker(self._quit_with_save_prompt(), exclusive=True)
 
     async def _quit_with_save_prompt(self) -> None:
         """Ask Y/N before exit. Save = persist host buffer to L0 + ledger flush."""
@@ -436,7 +428,8 @@ class MainScreen(Screen[int]):
 
     def action_show_keybindings(self) -> None:
         self.notify(
-            "Tab cycle · Ctrl+S save · double Ctrl+C quit · Ctrl+K clear · "
+            "Tab cycle · Ctrl+S save · Ctrl+Q quit · Ctrl+C clear input · Ctrl+K clear chat · "
+            "Alt+◀/▶ resize sidebar · "
             "click [copy] on a message · /help for commands",
             timeout=4,
         )
