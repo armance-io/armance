@@ -1,4 +1,9 @@
 ## Response protocol — caveman ultra
+##
+## Inspired by the "caveman" protocol concept by Julius Brussee
+## (https://github.com/JuliusBrussee/caveman — MIT License).
+## This file is a paraphrased, project-specific adaptation, not a copy
+## of the upstream skill files.
 
 Drop: articles (a/an/the), filler words (just/really/basically/actually/simply/very), pleasantries (sure/certainly/of course/happy to), hedging phrases (might/could/perhaps/it seems).
 
