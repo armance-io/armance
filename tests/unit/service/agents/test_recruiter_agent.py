@@ -543,3 +543,67 @@ agents:
         assert names == ["Serge"], f"Expected ['Serge'] but got {names}"
         assert (agents_dir / "Serge.md").exists()
         assert not (agents_dir / "Kai.md").exists()
+
+
+class TestStaffRoleRedirect:
+    """When Malik 'recruits' a staff role (host/recruiter/operator/vp),
+    the recruit must rewrite the existing system-*.md model field instead
+    of creating a new user agent."""
+
+    def _seed_staff(self, agents_dir, stem: str) -> None:
+        """Create a minimal system-*.md frontmatter so the redirect path
+        has something to update."""
+        frontmatter = (
+            "---\n"
+            f"name: {stem}\n"
+            "domain: meta\n"
+            "role: meta\n"
+            "persona: null\n"
+            "provider: openrouter\n"
+            "model: old/model:free\n"
+            "reasoning: null\n"
+            "status: active\n"
+            "provider_family: null\n"
+            "created_at: null\n"
+            "updated_at: null\n"
+            "version: 1\n"
+            "parent_version: null\n"
+            "lead_for: []\n"
+            "description: ''\n"
+            "created_by: null\n"
+            "last_health: null\n"
+            "last_health_at: null\n"
+            "---\n"
+            "body\n"
+        )
+        (agents_dir / f"{stem}.md").write_text(frontmatter, encoding="utf-8")
+
+    @pytest.mark.parametrize("role,system_stem", [
+        ("host", "system-context"),
+        ("recruiter", "system-hr"),
+        ("operator", "system-orchestrator"),
+        ("vice-president", "system-judge"),
+        ("vp", "system-judge"),
+    ])
+    def test_staff_role_redirects_to_system_file(
+        self, hr_service, temp_armance_root, role, system_stem,
+    ):
+        agents_dir = temp_armance_root / "agents"
+        self._seed_staff(agents_dir, system_stem)
+
+        yaml_text = f"""
+agents:
+  - name: Astrid
+    role: {role}
+    persona: alt
+    provider: openrouter
+    model: new/model:free
+    description: "x"
+"""
+        created, names = hr_service.recruit_agents(yaml_text, role, agents_dir)
+        # No new user agent file created
+        assert names == []
+        assert not (agents_dir / "Astrid.md").exists()
+        # system-*.md model field updated in place
+        updated = Agent.load(agents_dir / f"{system_stem}.md")
+        assert updated.model == "new/model:free"

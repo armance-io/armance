@@ -791,12 +791,52 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
                 except Exception:
                     continue
 
+        # Roles owned by permanent staff. Recruiting one of these is meaningless;
+        # the user wants to swap the model on the existing system-*.md file.
+        # "vp" is a common LLM shorthand for vice-president.
+        _STAFF_ROLE_TO_FILE = {
+            "host":            "system-context",
+            "recruiter":       "system-hr",
+            "operator":        "system-orchestrator",
+            "vice-president":  "system-judge",
+            "vp":              "system-judge",
+            "criticalist":     "system-challenger",
+        }
+
         created: list[Agent] = []
         created_names: list[str] = []
         skipped_collisions: list[str] = []
+        staff_updates: list[str] = []
 
         for agent in new_agents:
             new_role = (agent.role or agent.domain or "").strip().lower()
+
+            # Staff-role redirect: update the system-*.md model field, do not
+            # create a new user agent. Serge (criticalist) already had a same-name
+            # carve-out above; this generalises the rule to all four other slots.
+            if new_role in _STAFF_ROLE_TO_FILE and agent.name not in {"Serge"}:
+                system_stem = _STAFF_ROLE_TO_FILE[new_role]
+                system_path = agents_dir / f"{system_stem}.md"
+                if system_path.exists():
+                    try:
+                        existing_staff = Agent.load(system_path)
+                        existing_staff.provider = agent.provider or existing_staff.provider
+                        existing_staff.model = agent.model or existing_staff.model
+                        if agent.reasoning is not None:
+                            existing_staff.reasoning = agent.reasoning
+                        existing_staff.save(system_path)
+                        staff_updates.append(f"{system_stem}({agent.model})")
+                        logger.info(
+                            "recruit: staff model swap %s → model=%s (role=%s, requested name %r ignored)",
+                            system_stem, agent.model, new_role, agent.name,
+                        )
+                    except Exception:
+                        logger.exception("staff model swap failed for %s", system_stem)
+                    continue
+                # If the system file is missing, fall through and let the normal
+                # path create a user agent (defensive — should not happen in
+                # practice since ensure_armance_tree installs all five).
+
             prior_role = existing.get(agent.name)
             if prior_role is not None and prior_role != new_role:
                 logger.warning(
@@ -830,6 +870,11 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
             logger.warning(
                 "recruit: %d agent(s) skipped due to name×role collision: %s",
                 len(skipped_collisions), skipped_collisions,
+            )
+        if staff_updates:
+            logger.info(
+                "recruit: %d staff model swap(s) applied: %s",
+                len(staff_updates), staff_updates,
             )
         return created, created_names
 
