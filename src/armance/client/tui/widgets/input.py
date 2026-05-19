@@ -16,6 +16,7 @@ class ChatInput(TextArea):
     BINDINGS = [
         Binding("enter", "submit", "Submit", priority=True),
         Binding("ctrl+j", "newline", "New line", priority=True),
+        Binding("ctrl+backspace", "delete_word_left", "Delete word", priority=True),
     ]
 
     def action_submit(self) -> None:
@@ -43,7 +44,7 @@ class InputBar(Widget):
         layout: horizontal;
         background: $panel;
         height: auto;
-        max-height: 4;
+        max-height: 8;
         min-height: 3;
     }
 
@@ -60,7 +61,7 @@ class InputBar(Widget):
         width: 1fr;
         height: auto;
         min-height: 1;
-        max-height: 4;
+        max-height: 8;
         background: $panel;
         color: $foreground;
         border: none;
