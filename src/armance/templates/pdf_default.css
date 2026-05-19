@@ -1,0 +1,61 @@
+/* Default CSS styling for PDF generation */
+
+body {
+  font-family: Arial, sans-serif;
+  font-size: 12pt;
+  line-height: 1.5;
+  color: #333;
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  font-size: 24pt;
+  font-weight: bold;
+  margin-top: 24pt;
+  margin-bottom: 12pt;
+  color: #2c3e50;
+  page-break-after: avoid;
+}
+
+h2 {
+  font-size: 18pt;
+  font-weight: bold;
+  margin-top: 20pt;
+  margin-bottom: 8pt;
+  color: #34495e;
+  page-break-after: avoid;
+}
+
+p {
+  margin-top: 0;
+  margin-bottom: 8pt;
+  text-align: justify;
+}
+
+ul {
+  margin-top: 0;
+  margin-bottom: 8pt;
+  padding-left: 24pt;
+}
+
+li {
+  margin-top: 4pt;
+  margin-bottom: 4pt;
+}
+
+/* Table of Contents styling */
+#toc {
+  font-size: 11pt;
+}
+
+#toc h2 {
+  font-size: 16pt;
+  margin-top: 16pt;
+}
+
+/* Prevent widows/orphans */
+p, li {
+  widows: 2;
+  orphans: 2;
+}

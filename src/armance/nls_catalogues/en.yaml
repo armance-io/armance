@@ -1,0 +1,354 @@
+# Armance NLS catalogue — English (master).
+# HARD CONSTRAINT: any user-facing string MUST live here, not in code.
+# Reference from Python: t("ingest.success", indexed=2, skipped=1)
+
+# ---------------------------------------------------------------------------
+# Generic system message envelopes
+# ---------------------------------------------------------------------------
+system:
+  ok: "*(System: ✅ {body})*"
+  info: "*(System: ℹ️ {body})*"
+  warn: "*(System: ⚠️ {body})*"
+  error: "*(System: ❌ {body})*"
+
+# ---------------------------------------------------------------------------
+# Document / library lifecycle
+# ---------------------------------------------------------------------------
+ingest:
+  no_docs: "No documents found in `.armance/docs/` — drop your files there and retry."
+  part_indexed: "{n} new document(s) added to the library"
+  part_chunks: "{n} slip(s) total"
+  part_skipped: "{n} document(s) already in the library (content unchanged)"
+  part_deleted: "{n} removed from the library"
+  per_doc_line: "  • `{name}` → {chunks} slip(s)"
+  success_suffix: "All documents are searchable by the team."
+  failed: "ingest failed — {error}"
+  embed_init_failed: "Embedding client could not be initialized — check `embedding_provider`, `embedding_model` and your API key in `.armance/config.yaml` / `.env`. Documents are present on disk but the RAG library cannot be updated."
+  nothing_to_do: "Everything is already up to date in the library. No changes detected."
+
+load:
+  not_found: "`{filename}` not found in `.armance/docs/`."
+  binary_format: "`{filename}` is a binary format ({suffix}); raw load only supports .md/.txt. The file is still retainable via RAG."
+  queued: "*(System: 📖 `{filename}` loaded into context. Ask your next question and I will answer with its content in mind.)*"
+  queued_tui: "*(System: 📖 `{filename}` queued for loading. Ask your next question to Armance and he will answer with its content in mind.)*"
+  usage: "usage: /load <filename>"
+
+forget:
+  not_in_library: "`{filename}` was not in the library — nothing to forget."
+  success: "`{filename}` forgotten — {chunks} chunks removed from the library. The team can no longer search it. Past conversation turns may still reference it; restart the session for a clean slate."
+  failed: "forget failed — {error}"
+  usage: "usage: /forget <filename>"
+
+rag_status:
+  failed: "rag-status failed — {error}"
+
+scan:
+  title: "## Scan of `.armance/docs/`"
+  all_clean: "All documents on disk are retained and up to date. No orphans."
+  unread_header: "### Not yet retained (drop into library?)"
+  stale_header: "### Modified since last retention (needs refresh)"
+  orphans_header: "### Orphans (in library but file removed)"
+  orphan_line: "- `{name}` — use `/forget {name}` to clean up"
+
+# ---------------------------------------------------------------------------
+# RAG status report (markdown rendering)
+# ---------------------------------------------------------------------------
+rag_report:
+  title: "## RAG library"
+  embedding_with_provider: "**Embedding**: `{provider}` / `{model}`"
+  embedding_no_provider: "**Embedding**: {model}"
+  embedding_none: "_(none — lexical search only)_"
+  stats: "**Chunks**: {chunks} | **Size**: {size_kb} KB | **Tokens (est.)**: ~{tokens}"
+  no_docs_line: "_No documents in `.armance/docs/`._"
+  no_docs_hint: "> Drop PDF, MD, DOCX or TXT files into `.armance/docs/` and ask Armance to retain them."
+  files_header: "### Files in `.armance/docs/`"
+  status_stale: "🔄 modified (needs re-retain)"
+  status_retained: "✅ retained ({chunks} chunks, ~{tokens} tokens)"
+  status_manifest_only: "⚠️ in manifest but missing from DB (ingestion error?)"
+  status_not_retained: "⏳ not retained"
+  doc_line: "- **{name}** ({size_kb} KB) — {status}"
+  orphans_header: "### Orphans (in library but file removed from `.armance/docs/`)"
+  orphan_line: "- **{name}** — {chunks} chunks to clean up"
+  orphans_hint: "> These docs are still searchable but their source files are gone. Ask Armance to forget them."
+
+# ---------------------------------------------------------------------------
+# Docs section injected into agent system prompts
+# ---------------------------------------------------------------------------
+docs_section:
+  title: "## Documents in `.armance/docs/` (library state)"
+  empty_title: "## Documents in `.armance/docs/`"
+  empty_body: "_No documents yet._ Tell the user they can drop PDF / DOCX / MD / TXT files into `.armance/docs/` and pick which to **index** (library, searchable by slip) and/or **load** (every agent reads the full text)."
+  status_retained: "✅ indexed in library (searchable by slip)"
+  status_unread: "⏳ not yet indexed (offer to index and/or load)"
+  file_line: "- `{name}` — {status}"
+  orphans_header: "### Orphans (still in library, file removed from `.armance/docs/`)"
+  orphan_line: "- `{name}` — propose to drop via `[EXECUTE:/library-unindex:{name}]`"
+  changes_header: "### Changes since last session"
+  change_added: "- ➕ new: `{name}` — announce it and ask whether to **index** (library), **load** (read by every agent), or ignore"
+  change_removed: "- ➖ gone: `{name}` — ask the user whether to drop it from the library"
+  rules: |2
+
+    ## Document handling rules (CRITICAL)
+    - Vocabulary for the user: **'library'** (never 'database' / 'RAG' / 'embeddings'), **'index'** (place a doc into the library as **slips/chunks**), **'load' / 'read'** (take the whole text into the team's working memory).
+    - Distinction to explain plainly when multiple docs are pending:
+      - **Index** a doc = its slips go onto the library index; we can retrieve passages by search, but no agent has read it.
+      - **Load (read)** a doc = take it in; every agent has it in mind for this session. `--persist` keeps it across sessions.
+    - If several documents are pending, **list them one by one** and ask: index? load? skip? Do not bulk-process silently.
+    - To **index** docs: emit `[EXECUTE:/library-index]` on its own line, after user confirmation.
+    - To **load** a doc: emit `[EXECUTE:/library-load:<filename>]` on its own line.
+    - To **unload** a doc: emit `[EXECUTE:/library-unload:<filename>]`.
+    - To **drop** from the library: emit `[EXECUTE:/library-unindex:<filename>]`.
+    - On the **first message** of a session: if any `⏳`, `➕ new` or `➖ gone` items appear above, announce them and ask what to do BEFORE asking about the project.
+
+# ---------------------------------------------------------------------------
+# TUI — greeting, sidebar, chat
+# ---------------------------------------------------------------------------
+agent_handoff:
+  hint: "💡 Tip: type `@{target}` to hand off to {target} and continue with them."
+
+quit:
+  ctrl_c_again: "Press Ctrl+C again to quit"
+  save_prompt: "Save the session context before quitting?"
+  saved: "Context saved."
+
+mona:
+  deliverable_saved: "📄 Synthesis saved to `{path}` (you can index it in the library)."
+  run_queued: "📥 Run `{workflow}/{run_id}` queued for the next question."
+
+greeting:
+  welcome: "Welcome to Armance · session [bold]{session_id}[/]"
+  hint: |-
+    Type a project description, ask a question, or use a slash command.
+    Try [bold]/help[/] · [bold]/save[/] · [italic]"@Malik recruit"[/]
+    To switch agent: [bold]/switch <name>[/] or just write [italic]"I want to talk to Tom"[/].
+
+sidebar:
+  staff: "Staff"
+  roles_agents: "Roles & Agents"
+  workflows: "Workflows"
+  tasks: "Tasks"
+  library: "📚 Library"
+  no_agents: "no agents yet"
+  no_workflows: "no workflows"
+  idle: "idle"
+  library_inactive: "inactive"
+  library_inactive_line: "[grey50]✗ inactive — no embedding model[/]"
+  library_active_line: "[green]✓ active[/] [grey50]{provider}/{model}[/]\n  {docs} doc(s) · {chunks} slip(s)"
+
+chat:
+  copy_nothing: "nothing to copy"
+  copy_ok: "copied message #{idx} ({chars} chars)"
+  copy_failed: "copy failed: {error}"
+
+prompts:
+  provider: "Provider:"
+  model: "Model:"
+  reasoning_effort: "Reasoning effort:"
+  workflow_prompt: "Workflow prompt:"
+  cost_estimate: "[cost estimate] ~${total} USD over {steps} step invocation(s)"
+  confirm_run: "Continue? (~${total} USD)"
+
+help_cmd:
+  switch:      "/switch <agent>                  change active agent"
+  model:       "/model                            pick provider + model"
+  effort:      "/effort                           pick reasoning effort"
+  save:        "/save                             freeze project context (L0)"
+  report:      "/report                           write a report from last response"
+  judge:       "/judge @file …                    run the chameleon judge"
+  export:      "/export <target|all>              emit downstream agent docs"
+  workflow:    "/workflow run|design <name>       run or design a workflow"
+  task:        "/task <domain> <prompt>           single-agent task"
+  deliverable: "/deliverable <fmt> [from=...]     generate PPTX/DOCX/PDF/MD"
+  role:        "/role list|show [<name>]          manage roles and agents"
+  library:     "/library status|index|unindex|load|unload  library (slips) and team-wide reading state"
+  help:        "/help                             show this help"
+  quit:        "/quit                             exit armance"
+
+# ---------------------------------------------------------------------------
+# Thinking indicator (spinner)
+# ---------------------------------------------------------------------------
+thinking:
+  default: "Thinking…"
+  indexing: "Indexing documents into the library…"
+  loading: "Loading document…"
+
+# ---------------------------------------------------------------------------
+# /library commands (library + read state)
+# ---------------------------------------------------------------------------
+library_status:
+  active: "## Library status\n**Library ACTIVE** ({provider} / {model}) — {docs} indexed doc(s), {chunks} slip(s) total. You may freely offer option A (index) and C (both).\n"
+  inactive: "## Library status\n**Library INACTIVE** — no embedding model configured. Do NOT offer option A (index) or C (both). Only B (load into session memory) and D (do nothing) are valid. If the user asks why or how to enable the library, explain using the ## Armance concepts section below.\n"
+
+library:
+  unknown_sub: "unknown subcommand: /{sub}. Available: status, scan, index, unindex, load, unload."
+  unindex_usage: "usage: /library unindex <filename>"
+  load_usage: "usage: /library load <filename> [--persist]"
+  unload_usage: "usage: /library unload <filename>"
+  load_ok_session: "📖 `{filename}` loaded for this session. Every agent will have it in mind while the session is active. (Pass `--persist` to keep it loaded across restarts.)"
+  load_ok_persist: "📖 `{filename}` loaded persistently (will reload at every session start)."
+  unload_ok: "`{filename}` unloaded. Agents no longer carry its full text (it remains searchable in the library if indexed)."
+  unload_not_loaded: "`{filename}` was not loaded."
+  read_header: "### Loaded documents (read by every agent)"
+  read_line: "- 📖 `{name}`"
+
+# ---------------------------------------------------------------------------
+# TUI dispatcher errors
+# ---------------------------------------------------------------------------
+dispatch:
+  usage_command: "usage: /<command> [args]"
+  unknown_command: "unknown command: /{cmd}"
+  handler_error: "error in /{cmd}: {error}"
+
+# ---------------------------------------------------------------------------
+# Natural-language agent switching
+# ---------------------------------------------------------------------------
+nl_switch:
+  switched_meta: "OK — switched to {label}."
+  switched_agent: "OK — switched to {label}. Go ahead."
+  switched_by_role: "OK — switched to {label}."
+  multiple_for_role: "Multiple {target} agents: {names}\nReply with `/switch <name>` or `discuss with <name>` to pick one."
+
+# ---------------------------------------------------------------------------
+# /switch
+# ---------------------------------------------------------------------------
+switch:
+  usage: "usage: /switch <agent>"
+  switched_meta: "switched to {name}"
+  switched_agent: "switched to agent: {name}"
+  load_error: "error loading agent {name}: {error}"
+  multiple_matches: "multiple matches for '{name}': {options}. Use /switch <full-name>."
+  not_found: "error: no agent matching '{name}' (try /role list to see available agents)"
+
+# ---------------------------------------------------------------------------
+# /model, /effort, /task
+# ---------------------------------------------------------------------------
+common:
+  cancelled: "cancelled"
+  error: "error: {error}"
+  no_agents_loaded: "error: no agents loaded"
+
+system_msg:
+  dismissed: "*(System: dismissed {n} agent(s): {names})*"
+  dismiss_empty: "*(System: no user agents found to dismiss)*"
+  recruited: "*(System: successfully recruited {n} agents)*"
+  recruit_failed: "*(System: failed to recruit agents: {error})*"
+  forwarded: "— forwarded to {target} —"
+  health_warning: "⚠️ Unreachable models detected during probe: {agents}. Ask @Malik to propose another model for these agents."
+  workflow_health_block: "🛑 Workflow not launched: unreachable agent(s) — {agents}. Ask @Malik to swap their model, or authorise execution without them."
+
+model:
+  set: "model set: {provider}/{model}"
+
+effort:
+  set: "effort set: {choice}"
+
+task:
+  usage: "usage: /task <domain> <prompt>"
+  no_agent_for_domain: "no agent found for domain: {domain}"
+
+# ---------------------------------------------------------------------------
+# /report, /judge, /export
+# ---------------------------------------------------------------------------
+report:
+  no_output: "no output to save"
+  saved: "report saved: {path}"
+
+judge:
+  usage: "usage: /judge @file ..."
+  no_files_matched: "no files matched: {pattern}"
+  no_paths: "no report paths resolved"
+
+export:
+  usage: "usage: /export <target|all>"
+  exported_list: "exported: {paths}"
+  exported_one: "exported: {path}"
+
+# ---------------------------------------------------------------------------
+# /workflow
+# ---------------------------------------------------------------------------
+workflow:
+  run_started: "▶️ Run started → outputs land in `{path}/`"
+  run_finished: "✅ Run finished. All outputs are in `{path}/`. Ask Mona for a synthesis, or compare against a previous run."
+  run_preview: "✅ Run finished → `{path}/`\n\n**Preview:** {preview}…\n\n{mona_offer}"
+  run_mona_offer: "Want Mona to give you a synthesis and debrief? Just say the word."
+  list_usage: "usage: /workflow list <name>"
+  list_header: "Runs of **{workflow}** ({n}):"
+  list_empty: "No runs for `{workflow}`."
+  compare_usage: "usage: /workflow compare <name> <run1> <run2>"
+  compare_not_found: "Could not load runs `{run1}` and/or `{run2}` for `{workflow}`."
+  compare_queued: "📥 Runs `{run1}` and `{run2}` loaded. Mona is now active — ask him your comparison question."
+  design_blocked_no_team: "🛑 No team has been recruited yet. A workflow without specialists cannot execute any step. Ask `@Malik` to assemble a team for your project, then come back."
+  run_blocked_no_team: "🛑 No specialists recruited — cannot execute this workflow. Ask `@Malik` to recruit the team first."
+  aborted_no_agents: "🛑 Workflow aborted: too many steps with no available agent (domain `{domain}` at step `{step_id}`). Check the team composition with `@Malik`."
+  warn_critique_single_family: "⚠️ Adversarial pressure is limited: judge, executors and challenger share the same family ({family}). The workflow will run, but epistemic diversity is low. Configure a second provider family in `.armance/config.yaml` for better results."
+  warn_judge_single_family: "⚠️ Mona shares the same provider family ({family}) as the executors — possible blind spot. Consider a cross-family judge."
+  not_found: "workflow not found: {name} (tried .armance/workflows/ and workflows/)"
+  no_agent_for_step: "[no agent for domain {domain} in step {step_id}]"
+  step_error: "[error in {step_id}: {error}]"
+  aborted: "[workflow aborted]"
+  usage_root: "usage: /workflow run|design <name>"
+  deprecated_design: "deprecated: use '/workflow design <name>' (Kim dialogue) instead"
+  design_missing_yaml: "⚠️ No YAML block found in the proposal. Kim must attach a ```yaml ... ``` block with `name`, `steps`."
+  design_invalid_yaml: "⚠️ Invalid YAML: {error}"
+  design_invalid_workflow: "⚠️ Invalid workflow: {error}"
+  design_created: "Workflow **{name}** created ✓  ({gem} {label})\nFile: `.armance/workflows/{filename}`\n"
+  usage_run: "usage: /workflow run <name> [--enrich <session_id>] [--yes]"
+  usage_design: "usage: /workflow design <name>"
+  unknown_sub: "unknown workflow sub-command: {sub}"
+
+# ---------------------------------------------------------------------------
+# Meta agents missing
+# ---------------------------------------------------------------------------
+meta_agent:
+  kim_missing: "error: system-orchestrator agent not found"
+  malik_missing: "error: Malik (HR) agent definition missing"
+  armance_missing: "error: context agent not found"
+
+# ---------------------------------------------------------------------------
+# /deliverable
+# ---------------------------------------------------------------------------
+deliverable:
+  usage: "usage: /deliverable <pptx|docx|pdf|md> [from=latest_judge|step_id] [output_name]"
+  unsupported_format: "unsupported format: {fmt}. Choose from: pptx, docx, pdf, md"
+  no_content: "no content to render (source={source})"
+  parse_error: "error parsing report: {error}"
+  no_renderer: "no renderer for format: {fmt}"
+  error: "deliverable error: {error}"
+  created: "deliverable created: {path}"
+
+# ---------------------------------------------------------------------------
+# /save
+# ---------------------------------------------------------------------------
+save:
+  too_brief: "error: context is too brief to save (minimum 30 non-greeting characters required to frame a project context)"
+  saved: "context saved as L0_v{version}"
+  error: "error saving context: {error}"
+
+# ---------------------------------------------------------------------------
+# /role
+# ---------------------------------------------------------------------------
+role:
+  usage: "usage: /role list|show [<name>]"
+  add_hint: "To recruit, say '@Malik, recruit for <your project>'. Malik will take care of it."
+  unknown_action: "unknown role action: {action}"
+  list_empty: "no roles defined yet."
+  show_usage: "usage: /role show <name>"
+  not_found: "role '{name}' not found"
+
+# ---------------------------------------------------------------------------
+# /agent
+# ---------------------------------------------------------------------------
+agent_cmd:
+  usage: "usage: /agent edit|replace|promote|demote|archive|list"
+  error: "Error: {error}"
+  unknown_action: "unknown agent action: {sub}"
+
+# ---------------------------------------------------------------------------
+# /feedback-loop, /iterate-from
+# ---------------------------------------------------------------------------
+feedback:
+  usage_with_pending: "Usage: `/feedback-loop <run-id>` or reply `oui`/`non` to the current proposal."
+  usage: "Usage: `/feedback-loop <run-id>`"
+
+iterate:
+  usage: "Usage: `/iterate-from <run-id> [<workflow-name>]`"

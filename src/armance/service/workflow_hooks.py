@@ -1,0 +1,149 @@
+"""Workflow safety-net hooks: cross-family validation + Serge consensus
+auto-invoke. Called by core.execute_workflow via pre_run_hook /
+post_run_hook callbacks.
+
+Hooks are pure async functions — no engine state, no globals. The caller
+passes the workflow + accumulated step results + a small notify(event)
+callback (defaults to a no-op).
+"""
+from __future__ import annotations
+
+import logging
+import re
+from typing import Any, Awaitable, Callable, Protocol
+
+logger = logging.getLogger(__name__)
+
+NotifyFn = Callable[[str, dict[str, Any]], Awaitable[None]]
+
+
+class _StepLike(Protocol):
+    id: str
+    kind: str
+
+
+async def _noop_notify(kind: str, payload: dict[str, Any]) -> None:
+    return None
+
+
+async def validate_cross_family(
+    workflow: Any,
+    config: Any,
+    notify: NotifyFn = _noop_notify,
+) -> str | None:
+    """Pre-run advisory check. NEVER aborts.
+
+    Emits soft warnings via the notify callback when the configured providers
+    cannot guarantee adversarial diversity (single-family critique, single-
+    family judge). Returns None always — the workflow is the user's choice.
+    Callers should NOT treat the return value as a fail signal.
+    """
+    if config is None:
+        return None
+
+    from armance.nls import t as _t
+
+    step_kinds = {s.kind for s in workflow.steps}
+    provider_names = [p.name for p in getattr(config, "providers", []) or []]
+    single_family = len(provider_names) <= 1
+
+    if "critique" in step_kinds and single_family:
+        family = provider_names[0] if provider_names else "unknown"
+        await notify("cross_family_warning", {
+            "message": _t("workflow.warn_critique_single_family", family=family),
+        })
+
+    if "judge" in step_kinds and single_family:
+        family = provider_names[0] if provider_names else "unknown"
+        await notify("cross_family_warning", {
+            "message": _t("workflow.warn_judge_single_family", family=family),
+        })
+    return None
+
+
+async def check_consensus_and_maybe_invoke_serge(
+    workflow: Any,
+    step_results: dict[str, Any],
+    *,
+    critique_runner: Callable[[_StepLike, str], Awaitable[str]],
+    notify: NotifyFn = _noop_notify,
+) -> tuple[str, str] | None:
+    """If 3+ judge steps all show empty Divergence, synthesise their outputs
+    and call critique_runner once to get Serge's pushback.
+
+    Returns (auto_step_id, critique_output) on invocation, else None.
+
+    The caller is in charge of storing the auto-step result in its own
+    StepResult container — keeps this hook engine-agnostic.
+    """
+    judge_steps = [s for s in workflow.steps if s.kind == "judge"]
+    if len(judge_steps) < 3:
+        return None
+
+    empty_count = sum(
+        1 for s in judge_steps
+        if s.id in step_results
+        and detect_empty_divergence(_output_of(step_results[s.id]))
+    )
+    if empty_count < 3:
+        return None
+
+    await notify("serge_auto_invoked", {
+        "reason": f"{empty_count} judge steps with empty Divergence",
+        "mode": "consensus_heuristic",
+    })
+    logger.info(
+        "Consensus heuristic: %d judge steps with empty Divergence — invoking Serge",
+        empty_count,
+    )
+
+    payload = "\n\n---\n\n".join(
+        _output_of(step_results[s.id])
+        for s in judge_steps
+        if s.id in step_results and _output_of(step_results[s.id])
+    )
+
+    class _AutoStep:
+        id = "auto_serge_critique"
+        kind = "critique"
+        role = "meta"
+        domain = "meta"
+
+    auto = _AutoStep()
+    try:
+        output = await critique_runner(auto, payload)
+    except Exception:
+        logger.exception("auto Serge critique failed")
+        return None
+    return (auto.id, output)
+
+
+def _output_of(result_obj: Any) -> str:
+    """StepResult shape differs between callers — pull the text robustly."""
+    return getattr(result_obj, "output", "") or ""
+
+
+_TRIVIAL_DIVERGENCE = re.compile(r"^(none identified|none|no divergence|—|-\s*$)\.?$", re.IGNORECASE)
+
+
+def detect_empty_divergence(synthesis_text: str) -> bool:
+    """True if the Divergence section in a judge synthesis is empty or trivial.
+
+    A section is empty when it has no body, or only contains markers like
+    'None identified', 'Aucune', '-', '—'.
+    """
+    sections = re.split(r"^(?=##)", synthesis_text, flags=re.MULTILINE)
+    div_body: str | None = None
+    for section in sections:
+        if re.match(r"##\s*Divergence\b", section, re.IGNORECASE):
+            div_body = section.split("\n", 1)[1] if "\n" in section else ""
+            break
+    if div_body is None:
+        return True
+    body = div_body.strip()
+    if not body:
+        return True
+    lines = [ln.strip() for ln in body.splitlines() if ln.strip()]
+    if not lines:
+        return True
+    return all(_TRIVIAL_DIVERGENCE.match(ln) for ln in lines)

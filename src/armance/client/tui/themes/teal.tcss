@@ -1,0 +1,163 @@
+/* Armance TUI Theme - Teal Palette */
+
+/* Root variables */
+:root {
+    --primary: #0d9488;
+    --primary-dark: #0f766e;
+    --primary-light: #2dd4bf;
+    --secondary: #06b6d4;
+    --accent: #f59e0b;
+    --background: #0f172a;
+    --surface: #1e293b;
+    --surface-light: #334155;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --border: #334155;
+    --focus: #3b82f6;
+}
+
+/* App background */
+App {
+    background: $background;
+}
+
+/* Header */
+Header {
+    background: $surface;
+    color: $text;
+    border: solid $border;
+}
+
+/* Footer */
+Footer {
+    background: $surface;
+    color: $text-muted;
+    border: solid $border;
+}
+
+/* Sidebar */
+Sidebar {
+    background: $surface;
+    border: solid $border;
+    width: 30%;
+}
+
+/* Chat view */
+ChatView {
+    background: $background;
+    border: solid $border;
+}
+
+/* Input bar */
+InputBar {
+    background: $surface;
+    border: solid $border;
+    color: $text;
+}
+
+/* Agent panel */
+AgentPanel {
+    background: $surface;
+    border: solid $border;
+}
+
+/* Agent status */
+AgentStatus {
+    color: $text;
+}
+
+AgentStatus[id="working"] {
+    color: $warning;
+}
+
+AgentStatus[id="done"] {
+    color: $success;
+}
+
+AgentStatus[id="error"] {
+    color: $error;
+}
+
+/* Buttons */
+Button {
+    background: $primary;
+    color: $text;
+    border: solid $border;
+}
+
+Button:hover {
+    background: $primary-light;
+}
+
+Button:focus {
+    border: solid $focus;
+}
+
+/* Labels */
+Label {
+    color: $text;
+}
+
+/* DataTable */
+DataTable {
+    background: $surface;
+    border: solid $border;
+    color: $text;
+}
+
+DataTable > .datatable-header {
+    background: $surface-light;
+    color: $text;
+}
+
+DataTable > .datatable-row {
+    background: $surface;
+}
+
+DataTable > .datatable-row:hover {
+    background: $surface-light;
+}
+
+DataTable > .datatable-row--highlight {
+    background: $primary;
+}
+
+/* LoadingIndicator */
+LoadingIndicator {
+    color: $primary;
+}
+
+/* ProgressBar */
+ProgressBar {
+    bar-color: $primary;
+    bar-back-color: $surface-light;
+}
+
+/* RichLog */
+RichLog {
+    background: $surface;
+    border: solid $border;
+    color: $text;
+}
+
+/* Markdown */
+Markdown {
+    background: $background;
+    color: $text;
+}
+
+/* Modal */
+Modal {
+    background: $surface;
+    border: solid $border;
+}
+
+/* Tooltip */
+Tooltip {
+    background: $surface;
+    color: $text;
+    border: solid $border;
+}
