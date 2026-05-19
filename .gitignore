@@ -12,6 +12,8 @@ dist/
 .env
 .env.*
 !.env.example
+.venv/
+venv_sandbox/
 
 # OS
 .DS_Store

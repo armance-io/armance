@@ -8,7 +8,8 @@ from __future__ import annotations
 _OVERLAYS: dict[str, str] = {
     "en": (
         "## Output language\n"
-        "Reply in English. Match the user's register and tone."
+        "Reply in English, regardless of the user's language. "
+        "Match the user's register and tone."
     ),
     "fr": (
         "## Langue de réponse\n"
