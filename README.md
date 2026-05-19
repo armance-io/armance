@@ -9,8 +9,9 @@ Not a copilot. Not an autonomous agent. A small firm of LLM experts that **debat
 [![CI](https://github.com/armance-io/armance/actions/workflows/ci.yml/badge.svg)](https://github.com/armance-io/armance/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![DCO](https://img.shields.io/badge/DCO-required-orange.svg)](CONTRIBUTING.md#developer-certificate-of-origin-dco)
 
-[Install](#install) · [Quickstart](#quickstart) · [How it works](#how-it-works) · [Roadmap](roadmap/04_roadmap.md) · [Web (planned)](WEB_NEXT.md)
+[Install](#install) · [Quickstart](#quickstart) · [How it works](#how-it-works) · [Contributing](CONTRIBUTING.md) · [Roadmap](roadmap/04_roadmap.md) · [Web (planned)](WEB_NEXT.md)
 
 </div>
 
