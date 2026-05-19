@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+from typing import Any
 
 import questionary
 
@@ -99,174 +100,102 @@ def _ask_embedding(
     """Interactive embedding model picker — typeahead autocomplete, fully dynamic.
 
     Returns (embedding_provider, embedding_model). Returns ("", "") if user skips.
+    All user-facing strings come from `nls.init.rag.*`, keyed by `language`.
     """
-    fr = language == "fr"
+    from armance.nls import t
 
-    def _t(en_text: str, fr_text: str) -> str:
-        return fr_text if fr else en_text
+    def _tr(key: str, **kw: Any) -> str:
+        return t(f"init.rag.{key}", lang=language, **kw)
 
     print()
     print("─" * 60)
-    print("  📚  " + _t("Document memory (RAG)", "Mémoire documentaire (RAG)"))
+    print("  📚  " + _tr("title"))
     print()
-    print(
-        _t(
-            "  Armance can index your documents (.armance/docs/) for semantic search.\n"
-            "\n"
-            "  How it works:\n"
-            "  An embedding model turns each passage into a numeric fingerprint.\n"
-            "  When you ask a question, Armance finds the most relevant passages.\n"
-            "\n"
-            "  → With embedding : precise semantic search across your docs.\n"
-            "  → Without         : documents listed but not searched.\n"
-            "                      (enable later via config.yaml)",
-            "  Armance peut indexer vos documents (.armance/docs/) pour les retrouver\n"
-            "  intelligemment quand vous posez une question.\n"
-            "\n"
-            "  Comment ça fonctionne :\n"
-            "  Un modèle d'« embedding » transforme chaque passage de vos documents\n"
-            "  en une empreinte numérique. Quand vous posez une question, Armance\n"
-            "  compare les empreintes pour retrouver les passages les plus pertinents.\n"
-            "\n"
-            "  → Avec embedding : recherche sémantique précise dans vos docs.\n"
-            "  → Sans embedding  : les documents sont listés mais non recherchés.\n"
-            "                      (vous pourrez activer cela plus tard dans config.yaml)",
-        )
-    )
+    print(_tr("intro"))
     print()
 
-    print(
-        "  " + _t("Querying APIs for available embedding models…", "Interrogation des APIs pour lister les modèles disponibles…"),
-        end="", flush=True,
-    )
+    print("  " + _tr("querying"), end="", flush=True)
     models = _fetch_embedding_models(selected_providers, providers)
     real_models = [(lbl, p, mid) for lbl, p, mid in models if mid != "__ask__"]
     has_custom = any(mid == "__ask__" for _, _, mid in models)
     count = len(real_models)
-    if count:
-        print(f" {count} " + _t("model(s) found", "modèle(s) trouvé(s)"))
-    else:
-        print(" " + _t("none found", "aucun modèle trouvé"))
+    print(" " + (_tr("found", count=count) if count else _tr("none_found")))
     print()
 
-    # Build display completions (only real enumerable models)
-    choice_meta: dict[str, tuple[str, str]] = {}  # display_label → (provider, model_id)
-    skip_label = _t("none", "aucun")
+    choice_meta: dict[str, tuple[str, str]] = {}
+    skip_label = _tr("skip_label")
     completions: list[str] = [skip_label]
-
     for label, prov, model_id in real_models:
         free_tag = "  🆓" if "🆓" in label else ""
         display = f"{model_id}  [{prov}]{free_tag}"
         completions.append(display)
         choice_meta[display] = (prov, model_id)
 
-    # custom-openai: add a sentinel entry so it appears in the autocomplete list
-    _CUSTOM_SENTINEL = _t("[custom-openai]  type manually →", "[custom-openai]  saisir manuellement →")
+    custom_sentinel = _tr("custom_sentinel")
     if has_custom:
-        completions.append(_CUSTOM_SENTINEL)
+        completions.append(custom_sentinel)
 
-    # If only custom-openai (nothing enumerable), go straight to manual entry
+    # custom-openai-only path
     if not real_models and has_custom:
-        print(
-            _t(
-                "  custom-openai doesn't expose a model list — type the model id below.\n"
-                "  Leave blank to disable RAG.\n",
-                "  custom-openai n'expose pas de liste de modèles — saisissez l'identifiant ci-dessous.\n"
-                "  Laissez vide pour désactiver le RAG.\n",
-            )
-        )
-        model_id_manual = (
-            questionary.text(
-                _t("Embedding model id (leave blank to disable RAG):", "Identifiant du modèle d'embedding (vide = désactiver le RAG) :")
-            ).ask()
-            or ""
-        ).strip()
+        print(_tr("custom_only_hint"))
+        model_id_manual = (questionary.text(_tr("prompt_manual_id")).ask() or "").strip()
         if not model_id_manual:
-            print("  " + _t("RAG disabled. Edit .armance/config.yaml to enable later.", "RAG désactivé. Modifiable via .armance/config.yaml.") + "\n")
+            print("  " + _tr("disabled_edit_yaml") + "\n")
             return ("", "")
-        print(f"\n  ✅  Embedding : [custom-openai]  {model_id_manual}\n")
+        print("\n  ✅  " + _tr("confirmed", provider="custom-openai", model=model_id_manual) + "\n")
         return ("custom-openai", model_id_manual)
 
+    # no enumerable models at all
     if not real_models and not has_custom:
-        # No models at all
-        print(
-            _t(
-                "  ⚠️  No embedding model found on your providers (check your API keys).\n"
-                "     You can still type one manually below, or press Enter to skip RAG.\n",
-                "  ⚠️  Aucun modèle d'embedding trouvé sur vos providers (vérifiez vos clés API).\n"
-                "     Vous pouvez quand même en saisir un manuellement ci-dessous,\n"
-                "     ou appuyer sur Entrée pour désactiver le RAG.\n",
-            )
-        )
-        available_prov = next(
-            (p for p in selected_providers if p not in ("claude-code",)),
-            selected_providers[0] if selected_providers else "openrouter",
-        )
+        print(_tr("no_models_hint"))
         non_claude = [p for p in selected_providers if p != "claude-code"]
+        available_prov = non_claude[0] if non_claude else (
+            selected_providers[0] if selected_providers else "openrouter"
+        )
         if len(non_claude) > 1:
             available_prov = questionary.select(
-                _t("Provider for this embedding model:", "Provider pour ce modèle d'embedding :"),
+                _tr("prompt_provider"),
                 choices=non_claude,
                 use_indicator=True,
             ).ask() or available_prov
-        model_id_manual = (
-            questionary.text(
-                _t("Embedding model id (leave blank to disable RAG):", "Identifiant du modèle d'embedding (vide = désactiver le RAG) :")
-            ).ask()
-            or ""
-        ).strip()
+        model_id_manual = (questionary.text(_tr("prompt_manual_id")).ask() or "").strip()
         if not model_id_manual:
-            print("  " + _t("RAG disabled.", "RAG désactivé. Modifiable via .armance/config.yaml.") + "\n")
+            print("  " + _tr("disabled_edit_yaml") + "\n")
             return ("", "")
-        print(f"\n  ✅  Embedding : [{available_prov}]  {model_id_manual}\n")
+        print("\n  ✅  " + _tr("confirmed", provider=available_prov, model=model_id_manual) + "\n")
         return (available_prov, model_id_manual)
 
-    # Autocomplete picker
-    print("  💡  " + _t(
-        "Type to filter (e.g. 'bge', 'openai'). Type 'none' or leave blank to skip RAG.",
-        "Tapez pour filtrer (ex: 'bge', 'openai'). Tapez 'aucun' ou laissez vide pour désactiver le RAG.",
-    ))
+    # autocomplete picker
+    print("  💡  " + _tr("filter_hint"))
     print()
-
     chosen = questionary.autocomplete(
-        _t("Embedding model (typeahead):", "Modèle d'embedding (typeahead) :"),
+        _tr("prompt_autocomplete"),
         choices=completions,
         match_middle=True,
     ).ask()
-
     chosen = (chosen or "").strip()
 
     if not chosen or chosen == skip_label:
-        print(
-            "\n  " + _t(
-                "RAG disabled. Edit embedding_provider / embedding_model in .armance/config.yaml to enable later.",
-                "RAG désactivé. Ajustez embedding_provider / embedding_model dans .armance/config.yaml pour l'activer plus tard.",
-            ) + "\n"
-        )
+        print("\n  " + _tr("disabled_edit_keys") + "\n")
         return ("", "")
 
-    # User picked the custom-openai sentinel or typed an unknown value with custom available
-    if chosen == _CUSTOM_SENTINEL or (has_custom and chosen not in choice_meta):
-        actual = chosen if chosen != _CUSTOM_SENTINEL else ""
+    if chosen == custom_sentinel or (has_custom and chosen not in choice_meta):
+        prefill = chosen if chosen != custom_sentinel else ""
         model_id_manual = (
-            questionary.text(
-                _t("Embedding model id for custom-openai:", "Identifiant du modèle d'embedding (custom-openai) :"),
-                default=actual if actual else "",
-            ).ask()
-            or ""
+            questionary.text(_tr("prompt_manual_id_custom"), default=prefill).ask() or ""
         ).strip()
         if not model_id_manual:
-            print("  " + _t("RAG disabled.", "RAG désactivé.") + "\n")
+            print("  " + _tr("disabled_short") + "\n")
             return ("", "")
-        print(f"\n  ✅  Embedding : [custom-openai]  {model_id_manual}\n")
+        print("\n  ✅  " + _tr("confirmed", provider="custom-openai", model=model_id_manual) + "\n")
         return ("custom-openai", model_id_manual)
 
     if chosen not in choice_meta:
-        print("  ⚠️  " + _t(f"Model '{chosen}' not recognised. RAG disabled.", f"Modèle '{chosen}' non reconnu. RAG désactivé.") + "\n")
+        print("  ⚠️  " + _tr("unrecognised", name=chosen) + "\n")
         return ("", "")
 
     prov, model = choice_meta[chosen]
-    print(f"\n  ✅  Embedding : [{prov}]  {model}\n")
+    print("\n  ✅  " + _tr("confirmed", provider=prov, model=model) + "\n")
     return (prov, model)
 
 
@@ -375,6 +304,21 @@ def cmd_init(
             language=language or "en",
         )
 
+    # Ask language FIRST so subsequent prompts (and the RAG wizard) can be
+    # localised. The active NLS language is also flipped via set_language so
+    # any t() call inside the wizard picks it up automatically.
+    lang_default = _detect_default_language()
+    lang_label = questionary.select(
+        "Interface language (agents will reply in this language)",
+        choices=[label for label, _ in LANGUAGE_CHOICES],
+        default=lang_default,
+        use_indicator=True,
+        use_arrow_keys=True,
+    ).ask() or lang_default
+    language = next((code for label, code in LANGUAGE_CHOICES if label == lang_label), "en")
+    from armance.nls import set_language as _set_lang
+    _set_lang(language)
+
     selected = questionary.checkbox(
         "Select providers to enable (use SPACE bar to toggle, ENTER to confirm)",
         choices=list(ALL_PROVIDERS),
@@ -392,8 +336,9 @@ def cmd_init(
         ssl_verify: bool = True
         if name == "custom-openai":
             base_url = questionary.text(f"Base URL for {name}").ask() or None
+            from armance.nls import t as _t_nls
             ssl_verify = not questionary.confirm(
-                "Skip SSL certificate verification? (needed for self-signed / corporate MITM certs)",
+                _t_nls("init.ssl_skip_prompt", lang=language),
                 default=False,
             ).ask()
         if name == "openrouter":
@@ -427,16 +372,6 @@ def cmd_init(
         use_indicator=True,
         use_arrow_keys=True,
     ).ask() or "free-first"
-
-    lang_default = _detect_default_language()
-    lang_label = questionary.select(
-        "Interface language (agents will reply in this language)",
-        choices=[label for label, _ in LANGUAGE_CHOICES],
-        default=lang_default,
-        use_indicator=True,
-        use_arrow_keys=True,
-    ).ask() or lang_default
-    language = next((code for label, code in LANGUAGE_CHOICES if label == lang_label), "en")
 
     embedding_provider, embedding_model = _ask_embedding(selected, providers, language=language)
 

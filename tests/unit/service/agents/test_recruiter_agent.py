@@ -527,9 +527,22 @@ agents:
         assert (agents_dir / "Theo.md").exists()
         assert Agent.load(agents_dir / "Theo.md").model == "google/gemma-4-26b-a4b-it:free"
 
-    def test_criticalist_always_named_serge(self, hr_service, temp_armance_root):
-        """Whatever name Malik emits for role=criticalist, code forces it to Serge."""
+    def test_criticalist_recruit_redirects_to_system_challenger(
+        self, hr_service, temp_armance_root,
+    ):
+        """role=criticalist must update system-challenger.md (model swap),
+        never create a user agent named Serge/Kai/whatever."""
         agents_dir = temp_armance_root / "agents"
+        # Seed system-challenger.md (minimal frontmatter) so redirect has target.
+        (agents_dir / "system-challenger.md").write_text(
+            "---\nname: system-challenger\ndomain: meta\nrole: meta\n"
+            "persona: null\nprovider: openrouter\nmodel: old/m:free\n"
+            "reasoning: null\nstatus: active\nprovider_family: null\n"
+            "created_at: null\nupdated_at: null\nversion: 1\nparent_version: null\n"
+            "lead_for: []\ndescription: ''\ncreated_by: null\n"
+            "last_health: null\nlast_health_at: null\n---\nbody\n",
+            encoding="utf-8",
+        )
         yaml_kai = """
 agents:
   - name: Kai
@@ -540,9 +553,11 @@ agents:
     description: "adversarial red-teamer"
 """
         created, names = hr_service.recruit_agents(yaml_kai, "criticalist", agents_dir)
-        assert names == ["Serge"], f"Expected ['Serge'] but got {names}"
-        assert (agents_dir / "Serge.md").exists()
+        assert names == []
+        assert not (agents_dir / "Serge.md").exists()
         assert not (agents_dir / "Kai.md").exists()
+        updated = Agent.load(agents_dir / "system-challenger.md")
+        assert updated.model == "openai/gpt-4o-mini:free"
 
 
 class TestStaffRoleRedirect:
@@ -579,21 +594,11 @@ class TestStaffRoleRedirect:
         (agents_dir / f"{stem}.md").write_text(frontmatter, encoding="utf-8")
 
     @pytest.mark.parametrize("role,system_stem", [
-        # English
-        ("host", "system-context"),
-        ("recruiter", "system-hr"),
-        ("operator", "system-orchestrator"),
+        ("host",           "system-context"),
+        ("recruiter",      "system-hr"),
+        ("operator",       "system-orchestrator"),
         ("vice-president", "system-judge"),
-        ("vp", "system-judge"),
-        # French (Malik runs under the voice overlay in fr mode)
-        ("hote", "system-context"),
-        ("hôte", "system-context"),
-        ("recruteur", "system-hr"),
-        ("operateur", "system-orchestrator"),
-        ("opérateur", "system-orchestrator"),
-        ("vice-presidente", "system-judge"),
-        ("vice-présidente", "system-judge"),
-        ("critique", "system-challenger"),
+        ("criticalist",    "system-challenger"),
     ])
     def test_staff_role_redirects_to_system_file(
         self, hr_service, temp_armance_root, role, system_stem,

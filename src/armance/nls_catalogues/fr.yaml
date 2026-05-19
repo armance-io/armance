@@ -324,3 +324,45 @@ feedback:
 
 iterate:
   usage: "Usage : `/iterate-from <run-id> [<nom-workflow>]`"
+
+# ---------------------------------------------------------------------------
+# Assistant `armance init` — sélection du modèle d'embedding (RAG)
+# ---------------------------------------------------------------------------
+init:
+  rag:
+    title: "Mémoire documentaire (RAG)"
+    intro: |2
+        Armance peut indexer vos documents (.armance/docs/) pour les retrouver
+        intelligemment quand vous posez une question.
+
+        Comment ça fonctionne :
+        Un modèle d'« embedding » transforme chaque passage de vos documents
+        en une empreinte numérique. Quand vous posez une question, Armance
+        compare les empreintes pour retrouver les passages les plus pertinents.
+
+        → Avec embedding : recherche sémantique précise dans vos docs.
+        → Sans embedding  : les documents sont listés mais non recherchés.
+                            (vous pourrez activer cela plus tard dans config.yaml)
+    querying: "Interrogation des APIs pour lister les modèles disponibles…"
+    found: "{count} modèle(s) trouvé(s)"
+    none_found: "aucun modèle trouvé"
+    skip_label: "aucun"
+    custom_sentinel: "[custom-openai]  saisir manuellement →"
+    custom_only_hint: |2
+        custom-openai n'expose pas de liste de modèles — saisissez l'identifiant ci-dessous.
+        Laissez vide pour désactiver le RAG.
+    no_models_hint: |2
+        ⚠️  Aucun modèle d'embedding trouvé sur vos providers (vérifiez vos clés API).
+           Vous pouvez quand même en saisir un manuellement ci-dessous,
+           ou appuyer sur Entrée pour désactiver le RAG.
+    prompt_provider: "Provider pour ce modèle d'embedding :"
+    prompt_manual_id: "Identifiant du modèle d'embedding (vide = désactiver le RAG) :"
+    prompt_manual_id_custom: "Identifiant du modèle d'embedding (custom-openai) :"
+    prompt_autocomplete: "Modèle d'embedding (typeahead) :"
+    filter_hint: "Tapez pour filtrer (ex: 'bge', 'openai'). Tapez 'aucun' ou laissez vide pour désactiver le RAG."
+    disabled_short: "RAG désactivé."
+    disabled_edit_yaml: "RAG désactivé. Modifiable via .armance/config.yaml."
+    disabled_edit_keys: "RAG désactivé. Ajustez embedding_provider / embedding_model dans .armance/config.yaml pour l'activer plus tard."
+    unrecognised: "Modèle '{name}' non reconnu. RAG désactivé."
+    confirmed: "Embedding : [{provider}]  {model}"
+  ssl_skip_prompt: "Ignorer la vérification du certificat SSL ? (utile pour les certificats auto-signés / proxys MITM d'entreprise)"
