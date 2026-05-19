@@ -53,7 +53,7 @@ class ClaudeCodeClient(LLMClient):
             raise ImportError(_INSTALL_HINT) from exc
 
         system_prompt = "\n\n".join(
-            m["content"] for m in messages if m.get("role") == "system"
+            _content_to_str(m.get("content", "")) for m in messages if m.get("role") == "system"
         ) or None
         prompt = _serialize_user_prompt(messages)
 
@@ -121,7 +121,7 @@ class ClaudeCodeClient(LLMClient):
             raise ImportError(_INSTALL_HINT) from exc
 
         system_prompt = "\n\n".join(
-            m["content"] for m in messages if m.get("role") == "system"
+            _content_to_str(m.get("content", "")) for m in messages if m.get("role") == "system"
         ) or None
         prompt = _serialize_user_prompt(messages)
 
@@ -171,11 +171,34 @@ class ClaudeCodeClient(LLMClient):
         )
 
 
-def _serialize_user_prompt(messages: list[dict[str, str]]) -> str:
+def _content_to_str(content: Any) -> str:
+    """Coerce a message `content` field to a plain string.
+
+    Anthropic-style multipart content arrives as `list[{"type": "text", "text": ...}]`.
+    Plain providers send a `str`. Anything else falls back to `str(content)`.
+    """
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        out: list[str] = []
+        for block in content:
+            if isinstance(block, str):
+                out.append(block)
+            elif isinstance(block, dict):
+                text = block.get("text") or block.get("content") or ""
+                if isinstance(text, str):
+                    out.append(text)
+                else:
+                    out.append(str(text))
+        return "".join(out)
+    return str(content) if content is not None else ""
+
+
+def _serialize_user_prompt(messages: list[dict[str, Any]]) -> str:
     parts: list[str] = []
     for msg in messages:
         role = msg.get("role")
-        content = msg.get("content", "")
+        content = _content_to_str(msg.get("content", ""))
         if role in (None, "system"):
             continue
         if role == "user":
