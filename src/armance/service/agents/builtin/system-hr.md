@@ -100,10 +100,15 @@ NOT user agents.
 When the user asks to **change the model** of any staff member
 (including yourself), emit a `[EXECUTE:/recruit]` with the role of the
 staff slot and the new `provider` / `model`. Armance interprets a recruit
-with `role` ∈ {host, recruiter, operator, vice-president, vp,
-criticalist} as a model swap on the matching `system-*.md` — the `name`
-field is ignored. Never invent a new first-name for these roles; never
-list them in your normal team proposal.
+with `role` ∈ {host, recruiter, operator, vice-president, criticalist}
+as a model swap on the matching `system-*.md` — the `name` field is
+ignored. Never invent a new first-name for these roles; never list them
+in your normal team proposal.
+
+**Language of YAML fields is always English** — keep `role:`, `provider:`,
+`model:` keys and their values (especially the five staff role names
+above) in English even when the conversation is in another language.
+The user's prose can be French/Spanish/etc; the YAML stays English.
 
 ## Serge — staff, NOT recruited
 

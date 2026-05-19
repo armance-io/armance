@@ -664,26 +664,27 @@ agents:
                     except Exception:
                         pass
 
-            # Criticalist is always "Serge" — enforced in code, not just prompt.
-            if entry.get("role") == "criticalist":
-                used.discard("Serge")  # ensure Serge is never blocked by the used-set
-                entry["name"] = "Serge"
-            else:
-                looks_real = (
-                    isinstance(supplied, str)
-                    and supplied
-                    and "_" not in supplied
-                    and " " not in supplied
-                    and supplied[0].isupper()
-                    and (supplied not in used or is_update)
-                )
-                if looks_real:
-                    try:
-                        entry["name"] = self._validate_ascii_name(supplied)
-                    except ValueError:
-                        looks_real = False
-                if not looks_real:
-                    entry["name"] = self._generate_agent_name(persona, i, used)
+            # Staff roles (host, recruiter, operator, vice-president,
+            # criticalist) are not creatable as user agents — `recruit_agents`
+            # redirects them to update the matching system-*.md instead. We
+            # still need a valid name to pass schema validation here, so just
+            # accept whatever Malik supplied (or generate one); the redirect
+            # discards it.
+            looks_real = (
+                isinstance(supplied, str)
+                and supplied
+                and "_" not in supplied
+                and " " not in supplied
+                and supplied[0].isupper()
+                and (supplied not in used or is_update)
+            )
+            if looks_real:
+                try:
+                    entry["name"] = self._validate_ascii_name(supplied)
+                except ValueError:
+                    looks_real = False
+            if not looks_real:
+                entry["name"] = self._generate_agent_name(persona, i, used)
             used.add(entry["name"])
 
             # Inject mandatory Pydantic fields if the LLM omitted them
@@ -793,25 +794,14 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
 
         # Roles owned by permanent staff. Recruiting one of these is meaningless;
         # the user wants to swap the model on the existing system-*.md file.
-        # "vp" is a common LLM shorthand for vice-president.
+        # Keys are English canonical; Malik's prompt forces English in YAML
+        # regardless of the user's interface language.
         _STAFF_ROLE_TO_FILE = {
-            # English
             "host":            "system-context",
             "recruiter":       "system-hr",
             "operator":        "system-orchestrator",
             "vice-president":  "system-judge",
-            "vp":              "system-judge",
             "criticalist":     "system-challenger",
-            # French (Malik runs under the user's language overlay)
-            "hote":            "system-context",
-            "hôte":            "system-context",
-            "recruteur":       "system-hr",
-            "operateur":       "system-orchestrator",
-            "opérateur":       "system-orchestrator",
-            "vice-presidente": "system-judge",
-            "vice-présidente": "system-judge",
-            "vice-president-e": "system-judge",
-            "critique":        "system-challenger",
         }
 
         created: list[Agent] = []
@@ -823,9 +813,10 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
             new_role = (agent.role or agent.domain or "").strip().lower()
 
             # Staff-role redirect: update the system-*.md model field, do not
-            # create a new user agent. Serge (criticalist) already had a same-name
-            # carve-out above; this generalises the rule to all four other slots.
-            if new_role in _STAFF_ROLE_TO_FILE and agent.name not in {"Serge"}:
+            # create a new user agent (covers all five staff slots including
+            # criticalist; the legacy same-name = update path is now redundant
+            # for staff but still applies to user agents).
+            if new_role in _STAFF_ROLE_TO_FILE:
                 system_stem = _STAFF_ROLE_TO_FILE[new_role]
                 system_path = agents_dir / f"{system_stem}.md"
                 if system_path.exists():

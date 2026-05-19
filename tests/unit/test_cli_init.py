@@ -26,13 +26,13 @@ def test_cmd_init_writes_config_env_and_tree(
 ) -> None:
     answers = iter(
         [
+            "English",                                                  # language picker (first)
             ["openrouter"],                                             # checkbox providers
             "sk-test",                                                  # password api_key
             "",                                                         # base_url default kept
             "openrouter",                                               # default provider
             "model-a",                                                  # default model
             "free-first",                                               # budget effort
-            "English",                                                  # language picker
             # embedding autocomplete: compact label format
             "openai/text-embedding-test  [openrouter]  🆓",
         ]
@@ -67,11 +67,8 @@ def test_cmd_init_writes_config_env_and_tree(
 def test_cmd_init_aborts_when_no_provider(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(
-        cli.questionary,
-        "checkbox",
-        lambda *a, **k: StubPrompt([]),
-    )
+    monkeypatch.setattr(cli.questionary, "select", lambda *a, **k: StubPrompt("English"))
+    monkeypatch.setattr(cli.questionary, "checkbox", lambda *a, **k: StubPrompt([]))
     rc = cli.cmd_init(tmp_path)
     assert rc == 1
     assert not (tmp_path / ".armance" / "config.yaml").exists()
@@ -82,14 +79,14 @@ def test_cmd_init_gemini_writes_key(
 ) -> None:
     answers = iter(
         [
+            "English",                           # language picker (first)
             ["gemini"],                          # checkbox providers
             "sk-gemini-key",                     # password api_key
             "",                                  # base_url default kept
             "gemini",                            # default provider
             "gemini-1.5-pro",                    # default model
             "low",                               # budget effort
-            "English",                           # language picker
-            "aucun",                             # skip embedding (autocomplete skip_label)
+            "none",                              # skip embedding (autocomplete skip_label, EN)
         ]
     )
 

@@ -352,3 +352,42 @@ feedback:
 
 iterate:
   usage: "Usage: `/iterate-from <run-id> [<workflow-name>]`"
+
+# ---------------------------------------------------------------------------
+# `armance init` wizard — RAG / embedding picker
+# ---------------------------------------------------------------------------
+init:
+  rag:
+    title: "Document memory (RAG)"
+    intro: |2
+        Armance can index your documents (.armance/docs/) for semantic search.
+
+        How it works:
+        An embedding model turns each passage into a numeric fingerprint.
+        When you ask a question, Armance finds the most relevant passages.
+
+        → With embedding : precise semantic search across your docs.
+        → Without         : documents listed but not searched.
+                            (enable later via config.yaml)
+    querying: "Querying APIs for available embedding models…"
+    found: "{count} model(s) found"
+    none_found: "none found"
+    skip_label: "none"
+    custom_sentinel: "[custom-openai]  type manually →"
+    custom_only_hint: |2
+        custom-openai doesn't expose a model list — type the model id below.
+        Leave blank to disable RAG.
+    no_models_hint: |2
+        ⚠️  No embedding model found on your providers (check your API keys).
+           You can still type one manually below, or press Enter to skip RAG.
+    prompt_provider: "Provider for this embedding model:"
+    prompt_manual_id: "Embedding model id (leave blank to disable RAG):"
+    prompt_manual_id_custom: "Embedding model id for custom-openai:"
+    prompt_autocomplete: "Embedding model (typeahead):"
+    filter_hint: "Type to filter (e.g. 'bge', 'openai'). Type 'none' or leave blank to skip RAG."
+    disabled_short: "RAG disabled."
+    disabled_edit_yaml: "RAG disabled. Edit .armance/config.yaml to enable later."
+    disabled_edit_keys: "RAG disabled. Edit embedding_provider / embedding_model in .armance/config.yaml to enable later."
+    unrecognised: "Model '{name}' not recognised. RAG disabled."
+    confirmed: "Embedding : [{provider}]  {model}"
+  ssl_skip_prompt: "Skip SSL certificate verification? (needed for self-signed / corporate MITM certs)"
