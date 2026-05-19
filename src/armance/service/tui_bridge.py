@@ -52,6 +52,12 @@ META_AGENTS: list[tuple[str, str, str]] = [
     ("system-challenger",   "Serge",   "criticalist"),
 ]
 
+# First-names reserved for permanent staff — user agents cannot use these.
+# Includes "cato" as legacy alias for Serge.
+RESERVED_STAFF_NAMES: frozenset[str] = frozenset(
+    {first_name.lower() for _, first_name, _ in META_AGENTS} | {"cato"}
+)
+
 
 def resolve_meta_agent(name: str) -> str | None:
     """Map a first-name (Armance/Malik/Kim/Mona/Serge) to canonical agent id."""
@@ -110,7 +116,7 @@ def load_user_agents(armance_root: Path) -> list[Agent]:
     # Sort by creation time so Malik's recruitment order is preserved in sidebar.
     paths = sorted(agents_dir.glob("*.md"), key=lambda p: p.stat().st_mtime)
     for path in paths:
-        if path.stem.startswith("system-"):
+        if path.stem.startswith("system-") or path.stem.lower() in RESERVED_STAFF_NAMES:
             continue
         try:
             out.append(Agent.load(path))

@@ -379,15 +379,17 @@ class Sidebar(Widget):
             section = self.query_one("#section-roles", SidebarSection)
         except Exception:
             return
-        # Filter out meta roles (system-* agents grouped under "meta" role)
+        # Filter out meta roles and reserved staff names
+        from armance.service.tui_bridge import RESERVED_STAFF_NAMES
         meta_roles = {"meta", "system", "staff"}
         lines: list[str] = []
         for role in self._roles.keys():
             if role.lower() in meta_roles:
                 continue
-            # Skip role if all members are system-* (defensive)
+            # Skip system-* agents and reserved permanent-staff names
             members = [it for it in self._roles[role]
-                       if not str(it.get("name", "")).startswith("system-")]
+                       if not str(it.get("name", "")).startswith("system-")
+                       and str(it.get("name", "")).lower() not in RESERVED_STAFF_NAMES]
             if not members:
                 continue
             lines.append(f"[bold]{role}[/]")
