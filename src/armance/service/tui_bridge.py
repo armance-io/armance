@@ -53,9 +53,8 @@ META_AGENTS: list[tuple[str, str, str]] = [
 ]
 
 # First-names reserved for permanent staff — user agents cannot use these.
-# Includes "cato" as legacy alias for Serge.
 RESERVED_STAFF_NAMES: frozenset[str] = frozenset(
-    {first_name.lower() for _, first_name, _ in META_AGENTS} | {"cato"}
+    first_name.lower() for _, first_name, _ in META_AGENTS
 )
 
 

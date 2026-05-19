@@ -309,6 +309,22 @@ def _handle_dismiss_all(reply: str, ctx: LoopContext) -> str:
                 deleted.append(p.stem)
             except Exception:
                 logger.exception("dismiss-all: failed to delete %s", p)
+    # Drop the same agents from the registry so the sidebar / loader stay in sync.
+    # Anything not present in agents_dir is also pruned (catches rogue staff-
+    # named registry entries from older versions of the recruit path).
+    try:
+        from armance.storage import paths
+        registry = paths.ensure_agents_registry(ctx.armance_root)
+        live_stems = {p.stem for p in agents_dir.glob("*.md")} if agents_dir.exists() else set()
+        before = len(registry.get("agents", []))
+        registry["agents"] = [
+            a for a in registry.get("agents", [])
+            if a.get("name") in live_stems or str(a.get("name", "")).startswith("system-")
+        ]
+        if len(registry["agents"]) != before:
+            paths.write_agents_registry(ctx.armance_root, registry)
+    except Exception:
+        logger.exception("dismiss-all: registry prune failed")
     ctx.agents = [a for a in ctx.agents if a.name.startswith("system-")]
     if deleted:
         reply += "\n\n" + t("system_msg.dismissed", n=len(deleted), names=", ".join(deleted))

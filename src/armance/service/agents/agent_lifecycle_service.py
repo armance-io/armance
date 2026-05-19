@@ -348,9 +348,9 @@ class AgentLifecycleService:
             "engineer": ["maya", "leo", "zara", "finn", "ira"],
             "strategist": ["aria", "kai", "lena", "rex", "tova"],
             "judge": ["mona", "sol", "nadia", "ian", "reva"],
-            "challenger": ["cato", "lea", "darius", "uma", "fen"],
+            "challenger": ["serge", "lea", "darius", "uma", "fen"],
             "orchestrator": ["kim", "rex", "ami", "jay", "nova"],
-            "hr": ["armance", "malik", "kim", "mona", "cato"],
+            "hr": ["armance", "malik", "kim", "mona", "serge"],
         }
         names = first_names.get(role.lower(), ["nova", "rex", "ami", "jay", "ira", "lea", "uma"])
         # Pick a name that doesn't collide with existing agents

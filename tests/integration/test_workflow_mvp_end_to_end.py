@@ -7,7 +7,7 @@ LLM mocked. Guards three things at once:
   2. Kim's workflow YAML is accepted whether she writes `role:` or
      `domain:`, and even if she puts an agent name in `role:`.
   3. The workflow runner resolves steps to agents by role match, both
-     for user-recruited agents and for staff (`mona` / `cato`).
+     for user-recruited agents and for staff (`mona` / `serge`).
 
 No network call. No filesystem assumption beyond `tmp_path`.
 """
@@ -174,7 +174,7 @@ def test_legacy_yaml_with_domain_key_still_loads(
 async def test_workflow_run_resolves_steps_to_agents(
     armance_root: Path, cfg: Config,
 ) -> None:
-    """A workflow whose steps reference roster roles (and `mona`/`cato`)
+    """A workflow whose steps reference roster roles (and `mona`/`serge`)
     runs without a single 'no agent for role' error."""
     # Recruit Theodore (historian) on disk so ctx.agents picks him up.
     theodore_path = armance_root / "agents" / "Theodore.md"
@@ -185,7 +185,7 @@ async def test_workflow_run_resolves_steps_to_agents(
     )
     theodore.save(theodore_path)
 
-    # Write a minimal workflow YAML — historian + mona + cato.
+    # Write a minimal workflow YAML — historian + mona + serge.
     wf_path = armance_root / ".armance" / "workflows" / "mvp.yaml"
     wf_path.write_text(
         "name: mvp\n"
@@ -197,7 +197,7 @@ async def test_workflow_run_resolves_steps_to_agents(
         "    depends_on: []\n"
         "  - id: critique\n"
         "    kind: critique\n"
-        "    role: cato\n"
+        "    role: serge\n"
         "    depends_on: [research]\n"
         "  - id: judge\n"
         "    kind: judge\n"

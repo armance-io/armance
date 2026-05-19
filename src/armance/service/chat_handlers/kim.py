@@ -163,12 +163,12 @@ def _build_system_context(ctx: LoopContext) -> str:
             "VALID step `role:` values for workflow YAML (use one of these — "
             "never an agent's first name): "
             + ", ".join(f"`{d}`" for d in distinct_roles)
-            + ", `mona`, `cato`."
+            + ", `mona`, `serge`."
         )
         lines.append("")
     lines.append(
         "Staff (judge / critique only — NEVER list as team members): "
-        "mona (judge / final synthesis), cato (critique)."
+        "mona (judge / final synthesis), serge (critique)."
     )
     lines.append("")
     if wf_names:
@@ -196,7 +196,7 @@ def _build_system_context(ctx: LoopContext) -> str:
         "  NEVER skip Step 2. NEVER emit the tag without a preceding explicit confirmation.\n"
         "  The YAML must contain `name` (kebab-case), `strategy`, and `steps`. "
         "Each step has `id`, `kind`, `role`, `depends_on`. "
-        "CRITICAL: step `role` is one of the roster values listed above (or `mona`/`cato`) "
+        "CRITICAL: step `role` is one of the roster values listed above (or `mona`/`serge`) "
         "— NEVER an agent's first name like `theodore`."
     )
     return "\n".join(lines)

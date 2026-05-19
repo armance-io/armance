@@ -55,7 +55,7 @@ _KIND_ALIASES: dict[str, str] = {
 }
 
 # Staff domains the runner resolves to meta-agents (no roster entry needed).
-_STAFF_DOMAINS = {"mona", "cato"}
+_STAFF_DOMAINS = {"mona", "serge"}
 
 _YAML_FENCE_RE = re.compile(r"```(?:yaml)?\s*\n(.*?)\n```", flags=re.DOTALL)
 
@@ -264,7 +264,7 @@ class DesignWorkflowSkill(Skill):
                 if value not in allowed_roles:
                     return False, (
                         f"step `{sid}` role `{value}` ne correspond à aucun "
-                        f"rôle du roster ni à `mona`/`cato`. "
+                        f"rôle du roster ni à `mona`/`serge`. "
                         f"Disponibles : {sorted(allowed_roles)}"
                     )
                 step["role"] = value

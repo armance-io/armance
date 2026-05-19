@@ -795,12 +795,23 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
         # the user wants to swap the model on the existing system-*.md file.
         # "vp" is a common LLM shorthand for vice-president.
         _STAFF_ROLE_TO_FILE = {
+            # English
             "host":            "system-context",
             "recruiter":       "system-hr",
             "operator":        "system-orchestrator",
             "vice-president":  "system-judge",
             "vp":              "system-judge",
             "criticalist":     "system-challenger",
+            # French (Malik runs under the user's language overlay)
+            "hote":            "system-context",
+            "hôte":            "system-context",
+            "recruteur":       "system-hr",
+            "operateur":       "system-orchestrator",
+            "opérateur":       "system-orchestrator",
+            "vice-presidente": "system-judge",
+            "vice-présidente": "system-judge",
+            "vice-president-e": "system-judge",
+            "critique":        "system-challenger",
         }
 
         created: list[Agent] = []

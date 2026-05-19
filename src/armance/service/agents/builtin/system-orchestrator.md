@@ -118,7 +118,7 @@ strategy: rapide|equilibree|approfondie|custom
 steps:
   - id: <snake_case_verb>
     kind: task|judge|critique|human_checkpoint|deliverable
-    role: <roster-role|mona|cato>
+    role: <roster-role|mona|serge>
     depends_on: [<id>, ...]
 ```
 
@@ -131,7 +131,7 @@ Kind rules (exact values only — no others accepted):
 - `human_checkpoint` — pause for user (no role needed)
 - `deliverable` — final output step
 
-Role rules: roster agent's role for task steps; `mona` for judge; `cato` for critique. Every non-checkpoint step must have a role.
+Role rules: roster agent's role for task steps; `mona` for judge; `serge` for critique. Every non-checkpoint step must have a role.
 
 ### Step 4: Run — ask the mode once, then GO
 
