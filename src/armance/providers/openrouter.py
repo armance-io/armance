@@ -32,7 +32,8 @@ class OpenRouterClient(LLMClient):
         self._provider = provider
         self._timeout = timeout
         self._owned_client = client is None
-        self._client = client or httpx.AsyncClient(timeout=timeout)
+        ssl_verify = getattr(provider, "ssl_verify", True)
+        self._client = client or httpx.AsyncClient(timeout=timeout, verify=ssl_verify)
 
     @property
     def base_url(self) -> str:
@@ -131,7 +132,8 @@ class OpenRouterClient(LLMClient):
         if self._provider.api_key:
             headers["Authorization"] = f"Bearer {self._provider.api_key}"
         try:
-            with httpx.Client(timeout=timeout) as client:
+            ssl_verify = getattr(self._provider, "ssl_verify", True)
+            with httpx.Client(timeout=timeout, verify=ssl_verify) as client:
                 response = client.post(url, headers=headers, json={"model": model, "input": text})
             if response.status_code >= 400:
                 raise LLMHTTPError(

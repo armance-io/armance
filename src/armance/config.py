@@ -30,6 +30,7 @@ class ProviderConfig(BaseModel):
     name: ProviderName
     api_key: str | None = None
     base_url: str | None = None
+    ssl_verify: bool = True  # set False to skip TLS cert check (corporate MITM proxies)
 
 
 class Config(BaseModel):
