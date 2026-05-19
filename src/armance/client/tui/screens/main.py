@@ -57,7 +57,7 @@ class MainScreen(Screen[int]):
     }
 
     Sidebar {
-        width: 34;
+        width: 30;
         height: 1fr;
         background: $panel;
         border-left: vkey $primary;
@@ -95,13 +95,17 @@ class MainScreen(Screen[int]):
         Binding("tab", "cycle_focus", "Cycle focus", show=False),
         Binding("ctrl+k", "clear_chat", "Clear", show=True),
         Binding("ctrl+s", "save_state", "Save session", show=True, priority=True),
-        Binding("ctrl+c", "request_quit", "Quit (×2)", show=True),
+        Binding("ctrl+c", "request_quit", "Quit (×2)", show=True, priority=True),
         Binding("escape", "cancel", "Cancel", show=False),
         Binding("question_mark", "show_keybindings", "Keys?", show=False),
+        Binding("ctrl+left", "sidebar_shrink", "Sidebar ◀", show=False),
+        Binding("ctrl+right", "sidebar_grow", "Sidebar ▶", show=False),
     ]
 
     # Double-Ctrl+C quit
     _QUIT_DOUBLE_TAP_WINDOW = 2.0  # seconds
+    _SIDEBAR_WIDTHS = (24, 30, 36, 44, 54)
+    _sidebar_width_idx: int = 1  # default → 30 ≈ current 34 rounded to nearest step
 
     def __init__(
         self,
@@ -156,6 +160,7 @@ class MainScreen(Screen[int]):
         self._refresh_sidebar()
         self._refresh_meta_models()
         self.set_interval(1.0, self._refresh_sidebar)
+        self.set_interval(5.0, self._refresh_meta_models)
         self.set_interval(2.0, self._refresh_token_display)
 
         # Greeting
@@ -236,7 +241,7 @@ class MainScreen(Screen[int]):
             from armance.core.models.agent import Agent
             agents_dir = self.armance_root / "agents"
             meta_map: dict[str, str] = {}
-            for canonical in ("system-context", "system-hr", "system-orchestrator", "system-judge"):
+            for canonical in ("system-context", "system-hr", "system-orchestrator", "system-judge", "system-challenger"):
                 p = agents_dir / f"{canonical}.md"
                 if p.exists():
                     try:
@@ -356,11 +361,36 @@ class MainScreen(Screen[int]):
     def action_quit(self) -> None:
         self.app.exit(0)
 
+    def _apply_sidebar_width(self) -> None:
+        width = self._SIDEBAR_WIDTHS[self._sidebar_width_idx]
+        try:
+            sidebar = self.query_one(Sidebar)
+            sidebar.styles.width = width
+        except Exception:
+            pass
+
+    def action_sidebar_shrink(self) -> None:
+        self._sidebar_width_idx = max(0, self._sidebar_width_idx - 1)
+        self._apply_sidebar_width()
+
+    def action_sidebar_grow(self) -> None:
+        self._sidebar_width_idx = min(len(self._SIDEBAR_WIDTHS) - 1, self._sidebar_width_idx + 1)
+        self._apply_sidebar_width()
+
     def action_request_quit(self) -> None:
-        """Double-Ctrl+C → save-or-discard prompt. First press warns; second
-        within 2s pops a Y/N modal that saves the host buffer (no LLM call)
-        before exiting, or discards. If the buffer is empty, quits silently."""
+        """Ctrl+C: if input has text → clear it (no quit). Otherwise double-tap
+        within 2s triggers the save-or-discard quit prompt."""
         import time
+        from armance.client.tui.widgets.input import ChatInput
+        # If the input area has content, clear it and reset quit timer.
+        try:
+            chat_input = self.query_one(ChatInput)
+            if chat_input.text.strip():
+                chat_input.clear()
+                self._last_quit_press = 0.0
+                return
+        except Exception:
+            pass
         now = time.monotonic()
         if now - self._last_quit_press <= self._QUIT_DOUBLE_TAP_WINDOW:
             self._last_quit_press = 0.0

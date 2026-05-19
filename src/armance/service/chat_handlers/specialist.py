@@ -42,6 +42,9 @@ async def cmd_chat(text: str, ctx: LoopContext) -> str:
     if agent_name in ("judge", "system-judge"):
         from armance.service.mona_ops import cmd_mona_chat
         return await cmd_mona_chat(text, ctx)
+    if agent_name in ("challenger", "system-challenger"):
+        from armance.service.serge_ops import cmd_serge_chat
+        return await cmd_serge_chat(text, ctx)
 
     try:
         from armance.core.models.task import Task
