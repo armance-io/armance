@@ -71,3 +71,52 @@ def test_dismiss_all_skips_underscore_prefixed_files(tmp_path) -> None:
     assert not (agents_dir / "alex.md").exists()
     assert "alex" in reply
     assert "_armance_concepts" not in reply
+
+
+def test_dismiss_all_prunes_registry_entries(tmp_path) -> None:
+    """Registry entries for dismissed agents must be removed too.
+    Also prunes orphan staff-named entries (e.g. legacy Astrid · host)
+    that have no corresponding .md file."""
+    import json
+
+    from armance.service.loop_context import LoopContext
+
+    agents_dir = tmp_path / "agents"
+    agents_dir.mkdir()
+    (agents_dir / "system-hr.md").write_text("system")
+    (agents_dir / "alex.md").write_text("user agent")
+    # Pre-existing registry with: alex (live), zoe (orphan, no .md),
+    # Astrid (rogue staff-named orphan), system-hr (must survive).
+    registry = {
+        "agents": [
+            {"name": "alex", "role": "historian", "status": "active", "version": 1,
+             "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-01-01T00:00:00Z",
+             "lead_for": []},
+            {"name": "zoe", "role": "communicant", "status": "active", "version": 1,
+             "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-01-01T00:00:00Z",
+             "lead_for": []},
+            {"name": "Astrid", "role": "hote", "status": "active", "version": 1,
+             "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-01-01T00:00:00Z",
+             "lead_for": []},
+        ]
+    }
+    (agents_dir / "registry.json").write_text(json.dumps(registry))
+
+    class _FakeSession:
+        def __init__(self):
+            self.metadata = {}
+
+        def save(self):
+            pass
+
+    ctx = LoopContext.__new__(LoopContext)
+    ctx.armance_root = tmp_path
+    ctx.agents = []
+    ctx.session = _FakeSession()
+
+    _handle_dismiss_all("[EXECUTE:/dismiss-all]", ctx)
+
+    final = json.loads((agents_dir / "registry.json").read_text())
+    names = {a["name"] for a in final["agents"]}
+    # alex deleted via .md unlink, zoe & Astrid pruned as orphans
+    assert names == set()

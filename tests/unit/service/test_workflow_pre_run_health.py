@@ -56,9 +56,9 @@ def test_ignores_agents_not_used_by_workflow() -> None:
 
 
 def test_staff_domains_excluded_from_health_check() -> None:
-    """`mona` / `cato` are staff — resolved at runtime, not from the
+    """`mona` / `serge` are staff — resolved at runtime, not from the
     roster — so the pre-run health check skips them."""
-    wf = _FakeWf(["mona", "cato"])
+    wf = _FakeWf(["mona", "serge"])
     ctx = _FakeCtx([])
     assert _collect_unhealthy_agents(wf, ctx) == []
 

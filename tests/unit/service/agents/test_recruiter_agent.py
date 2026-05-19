@@ -579,11 +579,21 @@ class TestStaffRoleRedirect:
         (agents_dir / f"{stem}.md").write_text(frontmatter, encoding="utf-8")
 
     @pytest.mark.parametrize("role,system_stem", [
+        # English
         ("host", "system-context"),
         ("recruiter", "system-hr"),
         ("operator", "system-orchestrator"),
         ("vice-president", "system-judge"),
         ("vp", "system-judge"),
+        # French (Malik runs under the voice overlay in fr mode)
+        ("hote", "system-context"),
+        ("hôte", "system-context"),
+        ("recruteur", "system-hr"),
+        ("operateur", "system-orchestrator"),
+        ("opérateur", "system-orchestrator"),
+        ("vice-presidente", "system-judge"),
+        ("vice-présidente", "system-judge"),
+        ("critique", "system-challenger"),
     ])
     def test_staff_role_redirects_to_system_file(
         self, hr_service, temp_armance_root, role, system_stem,

@@ -202,14 +202,12 @@ async def _cmd_effort(args: list[str], ctx: LoopContext) -> str:
 
 _STAFF_AGENT_MAP = {
     "mona": "system-judge",
-    "cato": "system-challenger",       # legacy alias (Cato → Serge)
-    "serge": "system-challenger",      # canonical name
+    "serge": "system-challenger",
     "criticalist": "system-challenger",
 }
 
 _STAFF_CANONICAL_NAME = {
     "mona": "Mona",
-    "cato": "Serge",
     "serge": "Serge",
     "criticalist": "Serge",
 }
@@ -218,7 +216,7 @@ _STAFF_CANONICAL_NAME = {
 def _resolve_step_agent(domain: str, ctx: "LoopContext") -> Any:
     """Resolve a step's domain to a concrete Agent.
 
-    - `mona` / `serge` / `cato` / `criticalist` → prefer user-recruited
+    - `mona` / `serge` / `serge` / `criticalist` → prefer user-recruited
       agent (Mona.md / Serge.md in .armance/agents/); fall back to the
       builtin template if absent.
     - Anything else → match against the user roster (ctx.agents) by domain.
@@ -296,7 +294,7 @@ def _collect_unhealthy_agents(wf, ctx) -> list[str]:
     required_roles = {
         (getattr(s, "role", None) or getattr(s, "domain", None) or "").lower().strip()
         for s in wf.steps
-    } - {"", "mona", "cato"}
+    } - {"", "mona", "serge"}
     if not required_roles:
         return []
     bad: list[str] = []

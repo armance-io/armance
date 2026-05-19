@@ -116,7 +116,7 @@ def test_mona_serge_domains_accepted_without_roster_entry(tmp_path) -> None:
         "    depends_on: []\n"
         "  - id: critique\n"
         "    kind: critique\n"
-        "    role: cato\n"
+        "    role: serge\n"
         "    depends_on: [propose]\n"
         "  - id: judge\n"
         "    kind: judge\n"
