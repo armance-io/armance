@@ -16,7 +16,11 @@ class ChatInput(TextArea):
     BINDINGS = [
         Binding("enter", "submit", "Submit", priority=True),
         Binding("ctrl+j", "newline", "New line", priority=True),
+        # Terminals vary on Ctrl+Backspace: some send "ctrl+backspace", others
+        # "ctrl+h" or "ctrl+w" (readline convention). Bind all three.
         Binding("ctrl+backspace", "delete_word_left", "Delete word", priority=True),
+        Binding("ctrl+h", "delete_word_left", "Delete word", show=False, priority=True),
+        Binding("ctrl+w", "delete_word_left", "Delete word", show=False, priority=True),
     ]
 
     def action_submit(self) -> None:
