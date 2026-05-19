@@ -1,0 +1,127 @@
+# Armance — Project Instructions for AI Agents
+
+Armance = multi-agent strategic brain. **Brain, not maker** — read
+[`roadmap/01_vision.md`](roadmap/01_vision.md) first.
+
+Standalone Python CLI. Markdown is the source of truth. No DB for primary
+state (sqlite-vec only for RAG retrieval). Four providers: `openrouter`,
+`claude-code`, `gemini`, `custom-openai`.
+
+## Where things live
+
+| Topic | File |
+|---|---|
+| User-facing intro | [`README.md`](README.md) |
+| Engineering onboarding (senior devs) | [`ONBOARDING.md`](ONBOARDING.md) |
+| V2 web layer build guide | [`WEB_NEXT.md`](WEB_NEXT.md) |
+| Manual test scenarios (V1 convergence) | [`SCENARIOS.md`](SCENARIOS.md) |
+| Rules for fixing agents | [`BUG_FIXING_GUIDE.md`](BUG_FIXING_GUIDE.md) |
+| Vision & invariants | [`roadmap/01_vision.md`](roadmap/01_vision.md) |
+| Architecture & module map | [`roadmap/02_architecture.md`](roadmap/02_architecture.md) |
+| Latest assessment | [`roadmap/03_assessment_2026-05-15.md`](roadmap/03_assessment_2026-05-15.md) |
+| Macro roadmap (P1 / P2 / P3) | [`roadmap/04_roadmap.md`](roadmap/04_roadmap.md) |
+| Project history | [`roadmap/00_journey.md`](roadmap/00_journey.md) |
+
+## Code conventions
+
+- Python ≥ 3.11. `from __future__ import annotations` at the top of every
+  module.
+- Type hints everywhere. `asyncio` for parallelism. No blocking I/O on the
+  hot path.
+- `logging` module. No `print` debug.
+- Files ≤ ~300 lines. `service/handlers.py` (~1250 LOC) is the remaining
+  exception; the chat handlers (Armance/Malik/Kim) are coupled and live
+  there until the engine unification lands. Library/save/role groups have
+  already been moved to `service/library_ops.py`, `service/save_ops.py`,
+  `service/role_ops.py`.
+- `uv` for deps. Conventional commits.
+- Tests: `pytest` + `pytest-asyncio` + `respx` (httpx) + `monkeypatch`
+  (claude-agent-sdk). No real network.
+
+## Layering — non-negotiable
+
+```
+client  →  transport  →  service  →  core
+```
+
+Lower layers never import from upper layers. Lint: `grep -rn
+"from armance.client" src/armance/{core,service}` must return empty.
+
+## Provider matrix
+
+| Provider | API key env var | Reasoning support | Notes |
+|---|---|---|---|
+| `openrouter` | `OPENROUTER_API_KEY` | yes (`reasoning` field) | many free `:free` models |
+| `claude-code` | `claude-agent-sdk` auth | no | extra: `pip install 'armance[claude]'` |
+| `gemini` | `GEMINI_API_KEY` | no | |
+| `custom-openai` | `CUSTOM_OPENAI_API_KEY` + `CUSTOM_OPENAI_BASE_URL` | model-dependent | OpenAI-compatible |
+
+## Side effects
+
+Armance agents trigger side effects via **`[EXECUTE:/<command>]`** tags
+appearing in their LLM reply. Tags are scrubbed against a **per-role
+allow-list** (`service/agent_sandbox.py`) before interception — Armance
+cannot recruit, Kim cannot save L0, specialists have no tools.
+
+Current tags:
+- Armance: `/save`, `/library-index`, `/library-load:<file>`,
+  `/library-unload:<file>`, `/library-unindex:<file>`, `/library-status`
+- Malik: `/recruit`, `/dismiss-all[:<name>]`, `/library-status`
+- Kim: `/workflow-design`, `/workflow-run:<name>`, `/library-status`
+- Mona: `/save-deliverable:<basename>`, `/load-run:<wf>:<run_id>`, `/library-status`
+- Specialist: `/load-run:<wf>:<run_id>` (compare past positions only)
+
+Legacy aliases (`/ingest-docs`, `/load:X`, `/forget:X`, `/rag-status`)
+still resolve through the dispatcher. Never add an implicit code path;
+the tag must be present.
+
+## Caveman protocols
+
+`scripts/protocols/{ultra,lite,full}.txt` prepend a compression directive
+to the system prompt. Worker agents get `ultra`; user-facing agents get
+`lite` or `none`. The caller selects.
+
+## Multilingual interface
+
+`config.language` ∈ {`en`, `fr`, `es`, `de`, `zh`, `ja`}. A short *voice
+overlay* (see `src/armance/service/agents/_voice_overlay.py`) is appended
+to every system prompt so all agents reply in the chosen language. Set at
+`armance init`; auto-detected from `$LANG` by default.
+
+## Tests & QA
+
+```bash
+uv run pytest tests/                 # offline
+uv run python scripts/qa_live.py     # live OpenRouter free-model journey
+```
+
+`qa_live.py` exercises A → R / L / M sections: greeting → context → recruit
+→ dismiss → re-recruit → Kim chat → design dialogue → run → RAG
+round-trip → language switch → workflow tailoring differentiation.
+
+## TUI commands
+
+`/help` `/quit` `/switch <agent>` `/model` `/effort` `/save`
+`/workflow design|run|list|compare <name> [<run1> <run2>]`
+`/task <domain> <prompt>` `/report` `/judge @file …`
+`/deliverable pdf|docx|pptx|md` `/export claude|opencode|cline|roo|all`
+`/agent` `/role`
+`/library status|scan|index|unindex|load|unload`
+`/feedback-loop <run-id>` `/iterate-from <run-id>`.
+
+Every slash command has at least one NL alias. NL first; slash for power
+users. The `/library` command is the single entry point for both the
+searchable library (indexed slips / *feuillets* in FR) and the read set
+(full-text docs loaded into every agent's context).
+
+## When in doubt
+
+1. Read [`ONBOARDING.md`](ONBOARDING.md) — single-file ramp covering the
+   turn flow, library state, multi-provider matrix, and "where to look
+   first" table.
+2. Read [`roadmap/02_architecture.md`](roadmap/02_architecture.md) — module
+   map.
+3. Read [`roadmap/03_assessment_2026-05-15.md`](roadmap/03_assessment_2026-05-15.md)
+   — current state, known gaps.
+4. Open an item in [`roadmap/04_roadmap.md`](roadmap/04_roadmap.md) before
+   inventing one.

@@ -1,0 +1,62 @@
+[importlinter]
+root_package = armance
+include_external_packages = True
+
+[importlinter:contract:layers]
+name = Layered Architecture
+type = layers
+layers =
+    armance.client
+    armance.transport
+    armance.service
+    armance.core
+ignore_imports =
+    armance.core.models -> armance.transport.dto
+    armance.service.armance_service -> armance.transport.dto
+    armance.service.notifier -> armance.transport.dto
+    armance.service.workflow_engine -> armance.transport.dto
+
+[importlinter:contract:service-limits]
+name = Service layer limits
+type = forbidden
+source_modules = armance.service
+forbidden_modules =
+    armance.transport
+    armance.client
+ignore_imports =
+    armance.service.armance_service -> armance.transport.dto
+    armance.service.notifier -> armance.transport.dto
+    armance.service.workflow_engine -> armance.transport.dto
+
+[importlinter:contract:core-is-pure]
+name = Core is pure
+type = forbidden
+source_modules = armance.core
+forbidden_modules =
+    armance.service
+    armance.transport
+    armance.client
+    armance.providers
+    armance.storage
+ignore_imports =
+    armance.core.models -> armance.transport.dto
+
+[importlinter:contract:providers-limits]
+name = Providers limits
+type = forbidden
+source_modules = armance.providers
+forbidden_modules =
+    armance.service
+    armance.transport
+    armance.client
+    armance.storage
+
+[importlinter:contract:storage-limits]
+name = Storage limits
+type = forbidden
+source_modules = armance.storage
+forbidden_modules =
+    armance.service
+    armance.transport
+    armance.client
+    armance.providers

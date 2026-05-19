@@ -1,0 +1,198 @@
+"""claude-code provider via claude-agent-sdk.
+
+The SDK's `query(prompt, options)` returns an async iterator of Message
+objects. We collect AssistantMessage text blocks and read token totals
+from the terminal ResultMessage when available, falling back to
+tiktoken estimation for either tokens_in or tokens_out when telemetry
+is missing.
+"""
+from __future__ import annotations
+
+import logging
+from typing import Any
+
+from armance.config import ProviderConfig
+from armance.core.protocols.llm import FinishReason, LLMClient, LLMResponse
+
+logger = logging.getLogger(__name__)
+
+_INSTALL_HINT = (
+    "claude-agent-sdk not installed.\n"
+    "  Install: pip install 'armance[claude]'  (or: uv pip install 'armance[claude]')\n"
+    "  Docs: see 'Optional extras' section in README.md"
+)
+
+
+class ClaudeCodeClient(LLMClient):
+    def __init__(self, provider: ProviderConfig) -> None:
+        self._provider = provider
+
+    async def embed(
+        self,
+        text: str,
+        model: str,
+    ) -> list[float]:
+        """Anthropic does not provide an embeddings endpoint."""
+        raise NotImplementedError("Anthropic/Claude does not support embeddings.")
+
+    async def complete(
+        self,
+        messages: list[dict[str, str]],
+        model: str,
+        **params: Any,
+    ) -> LLMResponse:
+        try:
+            from claude_agent_sdk import (
+                AssistantMessage,
+                ClaudeAgentOptions,
+                ResultMessage,
+                TextBlock,
+                query,
+            )
+        except ImportError as exc:
+            raise ImportError(_INSTALL_HINT) from exc
+
+        system_prompt = "\n\n".join(
+            m["content"] for m in messages if m.get("role") == "system"
+        ) or None
+        prompt = _serialize_user_prompt(messages)
+
+        options = ClaudeAgentOptions(
+            model=model,
+            system_prompt=system_prompt,
+            **{k: v for k, v in params.items() if v is not None},
+        )
+
+        text_parts: list[str] = []
+        tokens_in = 0
+        tokens_out = 0
+        cost: float | None = None
+        finish_reason: FinishReason = "stop"
+
+        async for message in query(prompt=prompt, options=options):
+            if isinstance(message, AssistantMessage):
+                for block in message.content:
+                    if isinstance(block, TextBlock):
+                        text_parts.append(block.text)
+            elif isinstance(message, ResultMessage):
+                usage = getattr(message, "usage", None) or {}
+                tokens_in = int(usage.get("input_tokens", 0) or 0)
+                tokens_out = int(usage.get("output_tokens", 0) or 0)
+                cost = getattr(message, "total_cost_usd", None)
+                if getattr(message, "is_error", False):
+                    finish_reason = "error"
+                stop_reason = getattr(message, "stop_reason", None)
+                if stop_reason == "max_tokens":
+                    finish_reason = "length"
+
+        text = "".join(text_parts)
+        if tokens_in == 0:
+            tokens_in = _estimate_tokens(prompt) + (
+                _estimate_tokens(system_prompt) if system_prompt else 0
+            )
+        if tokens_out == 0:
+            tokens_out = _estimate_tokens(text)
+
+        return LLMResponse(
+            text=text,
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
+            finish_reason=finish_reason,
+            cost_usd=cost,
+        )
+
+    async def stream_complete(
+        self,
+        messages: list[dict[str, str]],
+        model: str,
+        on_token: Any,
+        **params: Any,
+    ) -> LLMResponse:
+        """Claude Agent SDK already streams — yield text as it arrives."""
+        try:
+            from claude_agent_sdk import (
+                AssistantMessage,
+                ClaudeAgentOptions,
+                ResultMessage,
+                TextBlock,
+                query,
+            )
+        except ImportError as exc:
+            raise ImportError(_INSTALL_HINT) from exc
+
+        system_prompt = "\n\n".join(
+            m["content"] for m in messages if m.get("role") == "system"
+        ) or None
+        prompt = _serialize_user_prompt(messages)
+
+        options = ClaudeAgentOptions(
+            model=model,
+            system_prompt=system_prompt,
+            **{k: v for k, v in params.items() if v is not None},
+        )
+
+        text_parts: list[str] = []
+        tokens_in = 0
+        tokens_out = 0
+        cost: float | None = None
+        finish_reason: FinishReason = "stop"
+
+        async for message in query(prompt=prompt, options=options):
+            if isinstance(message, AssistantMessage):
+                for block in message.content:
+                    if isinstance(block, TextBlock):
+                        text_parts.append(block.text)
+                        on_token(block.text)
+            elif isinstance(message, ResultMessage):
+                usage = getattr(message, "usage", None) or {}
+                tokens_in = int(usage.get("input_tokens", 0) or 0)
+                tokens_out = int(usage.get("output_tokens", 0) or 0)
+                cost = getattr(message, "total_cost_usd", None)
+                if getattr(message, "is_error", False):
+                    finish_reason = "error"
+                stop_reason = getattr(message, "stop_reason", None)
+                if stop_reason == "max_tokens":
+                    finish_reason = "length"
+
+        text = "".join(text_parts)
+        if tokens_in == 0:
+            tokens_in = _estimate_tokens(prompt) + (
+                _estimate_tokens(system_prompt) if system_prompt else 0
+            )
+        if tokens_out == 0:
+            tokens_out = _estimate_tokens(text)
+
+        return LLMResponse(
+            text=text,
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
+            finish_reason=finish_reason,
+            cost_usd=cost,
+        )
+
+
+def _serialize_user_prompt(messages: list[dict[str, str]]) -> str:
+    parts: list[str] = []
+    for msg in messages:
+        role = msg.get("role")
+        content = msg.get("content", "")
+        if role in (None, "system"):
+            continue
+        if role == "user":
+            parts.append(content)
+        else:
+            parts.append(f"[{role}] {content}")
+    return "\n\n".join(parts)
+
+
+def _estimate_tokens(text: str) -> int:
+    if not text:
+        return 0
+    try:
+        import tiktoken
+
+        enc = tiktoken.get_encoding("cl100k_base")
+        return len(enc.encode(text))
+    except Exception:  # pragma: no cover - tiktoken always available per pyproject
+        logger.warning("tiktoken unavailable; using rough char/4 estimate")
+        return max(1, len(text) // 4)

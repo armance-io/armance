@@ -1,0 +1,52 @@
+/* Armance TUI — global theme overrides
+ *
+ * Uses Textual built-in variables only ($background, $surface, $panel,
+ * $primary, $accent, $foreground, $warning, $success, $error).
+ * Custom palette applied via Theme registered in app.py.
+ */
+
+Screen {
+    background: $background;
+    color: $foreground;
+}
+
+Header {
+    background: $panel;
+    color: $foreground;
+    height: 1;
+}
+
+HeaderIcon {
+    visibility: hidden;
+}
+
+HeaderTitle {
+    color: $foreground;
+    text-style: bold;
+}
+
+Footer {
+    background: $panel;
+    color: $foreground-muted;
+    height: 1;
+}
+
+FooterKey {
+    background: $panel;
+}
+
+FooterKey > .footer-key--key {
+    color: $accent;
+    text-style: bold;
+}
+
+FooterKey > .footer-key--description {
+    color: $foreground-muted;
+}
+
+Toast {
+    background: $panel;
+    color: $foreground;
+    border: round $primary;
+    padding: 0 1;
+}
