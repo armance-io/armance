@@ -84,21 +84,29 @@ class ClaudeCodeClient(LLMClient):
         cost: float | None = None
         finish_reason: FinishReason = "stop"
 
-        async for message in query(prompt=prompt, options=options):
-            if isinstance(message, AssistantMessage):
-                for block in message.content:
-                    if isinstance(block, TextBlock):
-                        text_parts.append(block.text)
-            elif isinstance(message, ResultMessage):
-                usage = getattr(message, "usage", None) or {}
-                tokens_in = int(usage.get("input_tokens", 0) or 0)
-                tokens_out = int(usage.get("output_tokens", 0) or 0)
-                cost = getattr(message, "total_cost_usd", None)
-                if getattr(message, "is_error", False):
-                    finish_reason = "error"
-                stop_reason = getattr(message, "stop_reason", None)
-                if stop_reason == "max_tokens":
-                    finish_reason = "length"
+        try:
+            async for message in query(prompt=prompt, options=options):
+                if isinstance(message, AssistantMessage):
+                    for block in message.content:
+                        if isinstance(block, TextBlock):
+                            text_parts.append(block.text)
+                elif isinstance(message, ResultMessage):
+                    usage = getattr(message, "usage", None) or {}
+                    tokens_in = int(usage.get("input_tokens", 0) or 0)
+                    tokens_out = int(usage.get("output_tokens", 0) or 0)
+                    cost = getattr(message, "total_cost_usd", None)
+                    if getattr(message, "is_error", False):
+                        finish_reason = "error"
+                    stop_reason = getattr(message, "stop_reason", None)
+                    if stop_reason == "max_tokens":
+                        finish_reason = "length"
+        except TypeError as exc:
+            if "sequence item 0: expected str instance, dict found" in str(exc):
+                raise RuntimeError(
+                    "Claude SDK crash : l'outil CLI 'claude-code' a renvoyé une erreur (ex: pb d'authentification ou quota) "
+                    "qui fait planter le SDK officiel. Lancez 'claude login' ou vérifiez votre compte Anthropic."
+                ) from exc
+            raise
 
         text = "".join(text_parts)
         if tokens_in == 0:
@@ -167,22 +175,30 @@ class ClaudeCodeClient(LLMClient):
         cost: float | None = None
         finish_reason: FinishReason = "stop"
 
-        async for message in query(prompt=prompt, options=options):
-            if isinstance(message, AssistantMessage):
-                for block in message.content:
-                    if isinstance(block, TextBlock):
-                        text_parts.append(block.text)
-                        on_token(block.text)
-            elif isinstance(message, ResultMessage):
-                usage = getattr(message, "usage", None) or {}
-                tokens_in = int(usage.get("input_tokens", 0) or 0)
-                tokens_out = int(usage.get("output_tokens", 0) or 0)
-                cost = getattr(message, "total_cost_usd", None)
-                if getattr(message, "is_error", False):
-                    finish_reason = "error"
-                stop_reason = getattr(message, "stop_reason", None)
-                if stop_reason == "max_tokens":
-                    finish_reason = "length"
+        try:
+            async for message in query(prompt=prompt, options=options):
+                if isinstance(message, AssistantMessage):
+                    for block in message.content:
+                        if isinstance(block, TextBlock):
+                            text_parts.append(block.text)
+                            on_token(block.text)
+                elif isinstance(message, ResultMessage):
+                    usage = getattr(message, "usage", None) or {}
+                    tokens_in = int(usage.get("input_tokens", 0) or 0)
+                    tokens_out = int(usage.get("output_tokens", 0) or 0)
+                    cost = getattr(message, "total_cost_usd", None)
+                    if getattr(message, "is_error", False):
+                        finish_reason = "error"
+                    stop_reason = getattr(message, "stop_reason", None)
+                    if stop_reason == "max_tokens":
+                        finish_reason = "length"
+        except TypeError as exc:
+            if "sequence item 0: expected str instance, dict found" in str(exc):
+                raise RuntimeError(
+                    "Claude SDK crash : l'outil CLI 'claude-code' a renvoyé une erreur (ex: pb d'authentification ou quota) "
+                    "qui fait planter le SDK officiel. Lancez 'claude login' ou vérifiez votre compte Anthropic."
+                ) from exc
+            raise
 
         text = "".join(text_parts)
         if tokens_in == 0:
