@@ -137,6 +137,10 @@ class RecruiterAgentService:
         self.agent = agent
         self.armance_root = armance_root
         self.config = config
+        self.last_new_names: list[str] = []
+        self.last_updated_names: list[str] = []
+        self.last_skipped_collisions: list[str] = []
+        self.last_staff_updates: list[str] = []
 
     async def propose_jobs(self, brief: str) -> List[JobProposal]:
         """Given a project brief, propose relevant jobs (specialized roles)."""
@@ -808,6 +812,8 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
         created_names: list[str] = []
         skipped_collisions: list[str] = []
         staff_updates: list[str] = []
+        new_names: list[str] = []
+        updated_names: list[str] = []
 
         for agent in new_agents:
             new_role = (agent.role or agent.domain or "").strip().lower()
@@ -840,14 +846,18 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
                 # practice since ensure_armance_tree installs all five).
 
             prior_role = existing.get(agent.name)
-            if prior_role is not None and prior_role != new_role:
-                logger.warning(
-                    "recruit: name collision for %r — existing role %r != new role %r. "
-                    "Skipping write to protect the existing agent.",
-                    agent.name, prior_role, new_role,
-                )
-                skipped_collisions.append(agent.name)
-                continue
+            if prior_role is not None:
+                norm_prior = _normalise_domain(prior_role)
+                norm_new = _normalise_domain(new_role)
+                is_same_role = (norm_prior == norm_new) or (norm_prior.split("-")[0] == norm_new.split("-")[0])
+                if not is_same_role:
+                    logger.warning(
+                        "recruit: name collision for %r — existing role %r != new role %r. "
+                        "Skipping write to protect the existing agent.",
+                        agent.name, prior_role, new_role,
+                    )
+                    skipped_collisions.append(agent.name)
+                    continue
 
             # Write agent file via Agent.save (atomic). Same name + same role
             # means the user asked Malik to update model/persona — overwrite.
@@ -865,8 +875,17 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
             )
             created.append(agent)
             created_names.append(agent.name)
+            if prior_role is None:
+                new_names.append(agent.name)
+            else:
+                updated_names.append(agent.name)
 
             self._create_agent_in_registry(agent)
+
+        self.last_new_names = new_names
+        self.last_updated_names = updated_names
+        self.last_skipped_collisions = skipped_collisions
+        self.last_staff_updates = staff_updates
 
         if skipped_collisions:
             logger.warning(

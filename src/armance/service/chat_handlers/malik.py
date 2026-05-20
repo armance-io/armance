@@ -396,7 +396,22 @@ async def _handle_recruit(reply: str, ctx: LoopContext, hr) -> str:
             except Exception:
                 logger.exception("persona-writer pass failed")
 
-        reply += "\n\n" + t("system_msg.recruited", n=len(created_names))
+        # Feedback on recruitment telemetry
+        new_names = getattr(hr, "last_new_names", [])
+        if new_names:
+            reply += "\n\n" + t("system_msg.recruited", n=len(new_names))
+
+        updated_names = getattr(hr, "last_updated_names", [])
+        if updated_names:
+            reply += "\n\n" + t("system_msg.updated", n=len(updated_names), names=", ".join(updated_names))
+
+        staff_updates = getattr(hr, "last_staff_updates", [])
+        if staff_updates:
+            reply += "\n\n" + t("system_msg.staff_updated", n=len(staff_updates), details=", ".join(staff_updates))
+
+        skipped_collisions = getattr(hr, "last_skipped_collisions", [])
+        if skipped_collisions:
+            reply += "\n\n" + t("system_msg.skipped_collision", n=len(skipped_collisions), names=", ".join(skipped_collisions))
 
         # Third pass: health-check each recruited agent. Persist the result
         # on disk and surface failures so the user can pick another model
