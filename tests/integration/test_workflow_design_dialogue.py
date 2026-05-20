@@ -146,3 +146,31 @@ def test_existing_workflow_is_archived(tmp_path) -> None:
     ))
     archived = list((workflows_dir / ".archive").glob("dossier-historique_v1_*.yaml"))
     assert archived
+
+
+def test_bare_yaml_with_orphan_closing_fence_parses(tmp_path) -> None:
+    r"""Weak LLMs sometimes emit `yaml\n...\n```\n` — bare body with no
+    opening fence but a trailing one. Falls back to bare-YAML extraction
+    and strips stray fence lines, otherwise the parser errored with
+    'racine non-objet' / ScannerError."""
+    skill = DesignWorkflowSkill(armance_root=tmp_path, config=None, agents=_ROSTER)
+    kim_reply = (
+        "yaml\n"
+        "name: dossier-historique\n"
+        "strategy: approfondie\n"
+        "steps:\n"
+        "  - id: propose\n"
+        "    kind: task\n"
+        "    role: historian\n"
+        "    depends_on: []\n"
+        "  - id: judge\n"
+        "    kind: judge\n"
+        "    role: mona\n"
+        "    depends_on: [propose]\n"
+        "```\n"
+    )
+    reply = skill.run(args=kim_reply)
+    assert "racine non-objet" not in reply
+    assert "yaml invalide" not in reply.lower() and "invalid yaml" not in reply.lower()
+    yaml_files = list((tmp_path / ".armance" / "workflows").glob("*.yaml"))
+    assert yaml_files, f"workflow not saved; reply={reply!r}"

@@ -42,6 +42,20 @@ class ClaudeCodeClient(LLMClient):
         **params: Any,
     ) -> LLMResponse:
         try:
+            import os
+            from pathlib import Path
+            home_path = Path.home()
+            local_path = home_path / ".local"
+            try:
+                local_path.mkdir(parents=True, exist_ok=True)
+                dummy = local_path / ".armance_write_test"
+                dummy.write_text("ok", encoding="utf-8")
+                dummy.unlink(missing_ok=True)
+            except OSError:
+                workspace_home = Path.cwd() / "tmp" / "home"
+                workspace_home.mkdir(parents=True, exist_ok=True)
+                os.environ["HOME"] = str(workspace_home)
+
             from claude_agent_sdk import (
                 AssistantMessage,
                 ClaudeAgentOptions,
@@ -57,10 +71,11 @@ class ClaudeCodeClient(LLMClient):
         ) or None
         prompt = _serialize_user_prompt(messages)
 
-        options = ClaudeAgentOptions(
+        options = _build_claude_options(
+            ClaudeAgentOptions=ClaudeAgentOptions,
             model=model,
             system_prompt=system_prompt,
-            **{k: v for k, v in params.items() if v is not None},
+            params=dict(params),
         )
 
         text_parts: list[str] = []
@@ -110,6 +125,20 @@ class ClaudeCodeClient(LLMClient):
     ) -> LLMResponse:
         """Claude Agent SDK already streams — yield text as it arrives."""
         try:
+            import os
+            from pathlib import Path
+            home_path = Path.home()
+            local_path = home_path / ".local"
+            try:
+                local_path.mkdir(parents=True, exist_ok=True)
+                dummy = local_path / ".armance_write_test"
+                dummy.write_text("ok", encoding="utf-8")
+                dummy.unlink(missing_ok=True)
+            except OSError:
+                workspace_home = Path.cwd() / "tmp" / "home"
+                workspace_home.mkdir(parents=True, exist_ok=True)
+                os.environ["HOME"] = str(workspace_home)
+
             from claude_agent_sdk import (
                 AssistantMessage,
                 ClaudeAgentOptions,
@@ -125,10 +154,11 @@ class ClaudeCodeClient(LLMClient):
         ) or None
         prompt = _serialize_user_prompt(messages)
 
-        options = ClaudeAgentOptions(
+        options = _build_claude_options(
+            ClaudeAgentOptions=ClaudeAgentOptions,
             model=model,
             system_prompt=system_prompt,
-            **{k: v for k, v in params.items() if v is not None},
+            params=dict(params),
         )
 
         text_parts: list[str] = []
@@ -169,6 +199,56 @@ class ClaudeCodeClient(LLMClient):
             finish_reason=finish_reason,
             cost_usd=cost,
         )
+
+
+def _build_claude_options(
+    ClaudeAgentOptions: Any,
+    model: str,
+    system_prompt: str | None,
+    params: dict[str, Any],
+) -> Any:
+    # 1. Map generic tools parameter to allowed_tools
+    allowed_tools = list(params.pop("allowed_tools", None) or [])
+    tools = params.pop("tools", None)
+    if tools:
+        for tool in tools:
+            if isinstance(tool, dict) and tool.get("name") == "web_search":
+                if "WebSearch" not in allowed_tools:
+                    allowed_tools.append("WebSearch")
+            elif isinstance(tool, str) and tool.lower() == "web_search":
+                if "WebSearch" not in allowed_tools:
+                    allowed_tools.append("WebSearch")
+    if allowed_tools:
+        params["allowed_tools"] = allowed_tools
+
+    # 2. Inspect signature to avoid TypeError on unsupported kwargs
+    import inspect
+    try:
+        sig = inspect.signature(ClaudeAgentOptions)
+        has_var_keyword = any(
+            p.kind == inspect.Parameter.VAR_KEYWORD
+            for p in sig.parameters.values()
+        )
+        if has_var_keyword:
+            allowed_keys = None
+        else:
+            allowed_keys = set(sig.parameters.keys())
+    except Exception:
+        allowed_keys = {
+            "model", "system_prompt", "allowed_tools", "disallowed_tools",
+            "permission_mode", "max_turns", "cwd", "max_thinking_tokens",
+        }
+
+    options_kwargs = {
+        "model": model,
+        "system_prompt": system_prompt,
+    }
+    for k, v in params.items():
+        if v is not None:
+            if allowed_keys is None or k in allowed_keys:
+                options_kwargs[k] = v
+
+    return ClaudeAgentOptions(**options_kwargs)
 
 
 def _content_to_str(content: Any) -> str:
