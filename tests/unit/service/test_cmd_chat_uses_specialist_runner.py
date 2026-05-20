@@ -119,3 +119,46 @@ async def test_specialist_dm_injects_l1_in_system_prompt(
     assert "Garance" in sys_content, (
         f"L1 body (Garance...) not in system prompt. Got:\n{sys_content[:300]}"
     )
+
+
+@pytest.mark.asyncio
+async def test_specialist_dm_caveman_explicit(
+    tmp_armance: Path, cfg: Config, aisha: Agent
+) -> None:
+    """DM with specialist must not use caveman unless explicitly requested."""
+    from armance.service.handlers import _cmd_chat
+
+    # Test default: no caveman requested
+    ctx = _make_ctx(tmp_armance, cfg, "Aisha", [aisha])
+    captured_default: list[dict] = []
+
+    async def fake_call_default(*args, **kwargs):
+        messages_arg = args[2] if len(args) > 2 else kwargs.get("messages", [])
+        captured_default.extend(messages_arg)
+        return MagicMock(text="Response", finish_reason="stop")
+
+    with patch("armance.service.agents.specialist_runner.get_client", return_value=MagicMock()), \
+         patch("armance.service.agents.specialist_runner.call_with_ledger",
+               new_callable=AsyncMock, side_effect=fake_call_default):
+        await _cmd_chat("Teintures ?", ctx)
+
+    sys_content_default = captured_default[0]["content"]
+    assert "Response protocol — caveman" not in sys_content_default
+
+    # Test explicit caveman request
+    ctx = _make_ctx(tmp_armance, cfg, "Aisha", [aisha])
+    captured_caveman: list[dict] = []
+
+    async def fake_call_caveman(*args, **kwargs):
+        messages_arg = args[2] if len(args) > 2 else kwargs.get("messages", [])
+        captured_caveman.extend(messages_arg)
+        return MagicMock(text="Response", finish_reason="stop")
+
+    with patch("armance.service.agents.specialist_runner.get_client", return_value=MagicMock()), \
+         patch("armance.service.agents.specialist_runner.call_with_ledger",
+               new_callable=AsyncMock, side_effect=fake_call_caveman):
+        await _cmd_chat("Teintures ? Parle en mode caveman ultra.", ctx)
+
+    sys_content_caveman = captured_caveman[0]["content"]
+    assert "Response protocol — caveman ultra" in sys_content_caveman
+
