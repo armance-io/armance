@@ -80,3 +80,18 @@ def test_load_rejects_missing_frontmatter(tmp_path: Path) -> None:
     p.write_text("no frontmatter here", encoding="utf-8")
     with pytest.raises(ValueError):
         Agent.load(p)
+
+
+def test_effective_prompt_falls_back_to_agent_level(tmp_path: Path) -> None:
+    proto = tmp_path / "ultra.txt"
+    proto.write_text("ULTRA", encoding="utf-8")
+
+    a = Agent(
+        name="a", domain="m", persona="balanced",
+        provider="openrouter", model="x", system_prompt="BODY",
+        caveman_level="ultra",
+    )
+    out = a.effective_system_prompt(protocol_path=proto)
+    assert out.startswith("ULTRA")
+    assert "BODY" in out
+

@@ -44,6 +44,7 @@ class Agent(BaseModel):
     model: str
     reasoning: str | None = None
     system_prompt: str = ""
+    caveman_level: CavemanLevel = "none"
     # Lifecycle fields (per 20_agent_lifecycle.md)
     status: AgentStatus = "active"
     provider_family: str | None = None  # e.g. "anthropic", "openai", "google"
@@ -137,12 +138,13 @@ class Agent(BaseModel):
     def effective_system_prompt(
         self,
         *,
-        caveman_level: CavemanLevel = "ultra",
+        caveman_level: CavemanLevel | None = None,
         repo_root: Path | None = None,
         protocol_path: Path | None = None,
     ) -> str:
+        level = caveman_level if caveman_level is not None else self.caveman_level
         protocol_text = _load_protocol(
-            level=caveman_level, repo_root=repo_root, protocol_path=protocol_path
+            level=level, repo_root=repo_root, protocol_path=protocol_path
         )
         return f"{protocol_text}\n\n{self.system_prompt}".strip()
 
