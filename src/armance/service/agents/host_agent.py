@@ -1019,13 +1019,6 @@ Preserve all factual content. Skip conversational filler. Output ONLY raw Markdo
 
         sections = [base_prompt]
 
-        # Voice overlay (language)
-        try:
-            from armance.service.agents._voice_overlay import voice_overlay
-            sections.append(voice_overlay(getattr(self.config, "language", "en")))
-        except Exception:
-            pass
-
         # Inject library availability banner FIRST (Armance uses it to gate
         # the A/B/C/D doc menu — without a library, A and C disappear).
         try:
@@ -1078,5 +1071,12 @@ Preserve all factual content. Skip conversational filler. Output ONLY raw Markdo
                 "If asked to design or run a workflow, refuse and tell the user "
                 "`@Malik, peux-tu recruter une équipe ?` then STOP."
             )
+
+        # Voice overlay LAST — weak models follow the final instruction best.
+        try:
+            from armance.service.agents._voice_overlay import voice_overlay
+            sections.append(voice_overlay(getattr(self.config, "language", "en")))
+        except Exception:
+            pass
 
         return "\n\n".join(sections)
