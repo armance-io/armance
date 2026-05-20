@@ -99,11 +99,6 @@ class SpecialistRunner:
             logger.debug("read-doc inject skipped", exc_info=True)
 
         system_prompt = agent.effective_system_prompt(caveman_level=caveman_level)
-        try:
-            from armance.service.agents._voice_overlay import voice_overlay
-            system_prompt = f"{system_prompt}\n\n{voice_overlay(getattr(self.config, 'language', 'en'))}"
-        except Exception:
-            pass
 
         # Sandbox reminder for non-meta specialists: no tools available.
         # The defense layer strips any [EXECUTE:/...] tag anyway, but
@@ -122,6 +117,13 @@ class SpecialistRunner:
             system_prompt = f"{system_prompt}\n\n{system_addon}"
         if context:
             system_prompt = f"{system_prompt}\n\n--- Context ---\n{context}"
+
+        # Voice overlay LAST — weak models follow the final instruction best.
+        try:
+            from armance.service.agents._voice_overlay import voice_overlay
+            system_prompt = f"{system_prompt}\n\n{voice_overlay(getattr(self.config, 'language', 'en'))}"
+        except Exception:
+            pass
 
         messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
         if history:
