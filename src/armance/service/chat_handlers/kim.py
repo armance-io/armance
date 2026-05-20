@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import re
+from pathlib import Path
 from typing import Any
 
 from armance.nls import t
@@ -135,7 +136,11 @@ def _filter_history(ctx: LoopContext) -> list[dict[str, str]]:
 
 
 def _build_system_context(ctx: LoopContext) -> str:
+    # Workflows may live under <armance_root>/workflows or
+    # <armance_root>/.armance/workflows depending on how the skill was invoked.
     wf_dir = ctx.armance_root / ".armance" / "workflows"
+    if not wf_dir.exists():
+        wf_dir = ctx.armance_root / "workflows"
     wf_names = [p.stem for p in wf_dir.glob("*.yaml")] if wf_dir.exists() else []
 
     roster_lines: list[str] = []
@@ -249,12 +254,24 @@ def _user_wants_to_run(user_text: str) -> bool:
 
 
 def _latest_workflow_name(ctx: LoopContext) -> str | None:
-    """Return the most-recently-modified workflow file's stem."""
-    wf_dir = ctx.armance_root / ".armance" / "workflows"
-    if not wf_dir.exists():
+    """Return the most-recently-modified workflow file's stem.
+
+    Workflows can live under either `<armance_root>/workflows/` (canonical
+    when armance_root IS the `.armance` dir) or
+    `<armance_root>/.armance/workflows/` (when armance_root is the project
+    root — the legacy convention used by the design skill). Scan both.
+    """
+    candidates: list[Path] = []
+    for wf_dir in (
+        ctx.armance_root / "workflows",
+        ctx.armance_root / ".armance" / "workflows",
+    ):
+        if wf_dir.exists():
+            candidates.extend(wf_dir.glob("*.yaml"))
+    if not candidates:
         return None
-    yamls = sorted(wf_dir.glob("*.yaml"), key=lambda p: p.stat().st_mtime, reverse=True)
-    return yamls[0].stem if yamls else None
+    candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    return candidates[0].stem
 
 
 # Structural detector: any `<tool_call>` markup or malformed [EXECUTE:...]
