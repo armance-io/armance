@@ -102,6 +102,10 @@ async def cmd_orchestrator_chat(
         logger.exception("Kim LLM failed")
         reply = t("common.error", error=str(exc))
 
+    # Weak LLMs sometimes emit `<tool_call>execute:workflow-run:NAME[:MODE]`
+    # instead of the canonical `[EXECUTE:/workflow-run:NAME[:MODE]]`. Normalise
+    # before the intercept so the runner actually fires.
+    reply = _normalise_tool_call_run(reply)
     # Run intent takes precedence over design — if the user just said "lance"
     # and a workflow already exists, force the run tag and skip re-design.
     reply = _inject_run_tag_if_user_says_launch(reply, text, ctx)
@@ -253,33 +257,64 @@ def _latest_workflow_name(ctx: LoopContext) -> str | None:
     return yamls[0].stem if yamls else None
 
 
-_FAKE_LAUNCH_RE = re.compile(
-    r"\b(?:workflow\s+\S+\s+(?:lanc[ée]|démarr[ée]|started|launched|running)|"
-    r"🔄\s+workflow|🔹\s+\S+.*→\s*(?:démarré|started|en cours)|"
-    r"workflow\s+basculé|en\s+attente\s+des?\s+\d|en\s+attente\s+de\s*:|"
-    r"avancement\s*:|étapes?\s+actives?)",
+# Structural detector: any `<tool_call>` markup or malformed [EXECUTE:...]
+# variant referring to workflow-run. Language-agnostic — covers the most
+# common ways a weak LLM mangles the canonical tag.
+_MALFORMED_RUN_TAG_RE = re.compile(
+    r"(?:"
+    # <tool_call>execute:workflow-run:NAME[:MODE]   (with _ / - / space)
+    r"<tool_call>\s*execute[:_\- ]+workflow[_\- ]*run[:_\- ]+(?P<n1>[\w\-]+)(?:[:_\- ]+(?P<m1>\w+))?|"
+    # [EXECUTE:workflow-run:...]   (missing leading slash)
+    r"\[\s*EXECUTE\s*:\s*workflow[_\- ]*run\s*:\s*(?P<n2>[\w\-]+)(?:\s*:\s*(?P<m2>\w+))?\s*\]|"
+    # /workflow-run:NAME   (just a slash-command echo)
+    r"`?/workflow[_\- ]*run\s*:\s*(?P<n3>[\w\-]+)(?:\s*:\s*(?P<m3>\w+))?`?"
+    r")",
     re.IGNORECASE,
 )
+
+
+def _normalise_tool_call_run(reply: str) -> str:
+    """Rewrite any malformed run-tag variant into the canonical
+    `[EXECUTE:/workflow-run:NAME[:MODE]]` so `_intercept_run` actually fires.
+
+    Structural — no language-specific keywords."""
+    # If a canonical tag is already present, leave the reply alone.
+    if "[EXECUTE:/workflow-run:" in reply:
+        return reply
+    m = _MALFORMED_RUN_TAG_RE.search(reply)
+    if not m:
+        return reply
+    name = m.group("n1") or m.group("n2") or m.group("n3")
+    mode = m.group("m1") or m.group("m2") or m.group("m3")
+    if not name:
+        return reply
+    canonical = f"[EXECUTE:/workflow-run:{name}{(':' + mode) if mode else ''}]"
+    # Replace the matched span with the canonical tag.
+    return reply[: m.start()] + canonical + reply[m.end():]
 
 
 def _inject_run_tag_if_user_says_launch(
     reply: str, user_text: str, ctx: LoopContext,
 ) -> str:
-    """Safety net: user clearly asked to LAUNCH/RUN but Kim just re-emitted
-    the workflow YAML instead. Replace the reply with a run tag pointing at
-    the most recent workflow on disk.
+    """Safety net: user asked to LAUNCH/RUN but Kim re-emitted the workflow
+    YAML or just narrated progress. Force the canonical run tag pointing at
+    the most recent workflow on disk so the runner actually fires.
 
-    Also covers a *hallucinated-launch* case: Kim narrates "Workflow X
-    lancé / 🔄 / étapes démarrées" without emitting the EXECUTE tag.
-    Without this net the user thinks the run is in progress while
-    nothing has been scheduled.
+    Triggers when EITHER:
+      - the user's message contains a launch intent (`lance`, `run`, …), or
+      - the reply mentions a known workflow filename on disk yet emits no
+        `[EXECUTE:/workflow-run:...]` tag (structural — no keyword list).
     """
     if _DESIGN_TAG in reply or "[EXECUTE:/workflow-run:" in reply:
         return reply
-    fake_launch = bool(_FAKE_LAUNCH_RE.search(reply))
-    if not (_user_wants_to_run(user_text) or fake_launch):
-        return reply
+    intent = _user_wants_to_run(user_text)
     wf_name = _latest_workflow_name(ctx)
+    # Structural fake-launch hint: reply references an existing workflow file
+    # by name without scheduling it. Far less brittle than scanning for
+    # emoji + verb pairs in N languages.
+    references_wf = bool(wf_name and wf_name in reply)
+    if not (intent or references_wf):
+        return reply
     if not wf_name:
         return reply
     logger.warning(

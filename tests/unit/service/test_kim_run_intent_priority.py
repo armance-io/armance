@@ -105,3 +105,32 @@ def test_no_fake_launch_inject_on_neutral_status_reply(tmp_path: Path) -> None:
     reply = "Tu veux que je sauvegarde le workflow ?"
     out = _inject_run_tag_if_user_says_launch(reply, "ok", ctx)
     assert "[EXECUTE:/workflow-run:" not in out
+
+
+def test_normalise_tool_call_run_rewrites_to_canonical(tmp_path: Path) -> None:
+    """Weak LLM emits `<tool_call>execute:workflow-run:NAME:MODE` instead of
+    the canonical `[EXECUTE:/workflow-run:NAME:MODE]`. Normaliser rewrites
+    so the intercept fires the real runner."""
+    from armance.service.chat_handlers.kim import _normalise_tool_call_run
+    raw = (
+        "Quelque chose…\n"
+        "<tool_call>execute:workflow-run:dossier-historique:autonome\n"
+    )
+    out = _normalise_tool_call_run(raw)
+    assert "[EXECUTE:/workflow-run:dossier-historique:autonome]" in out
+    assert "<tool_call>" not in out
+
+
+def test_normalise_handles_missing_slash_variant() -> None:
+    """`[EXECUTE:workflow-run:X]` (no leading slash) also normalised."""
+    from armance.service.chat_handlers.kim import _normalise_tool_call_run
+    out = _normalise_tool_call_run("[EXECUTE:workflow-run:foo]")
+    assert "[EXECUTE:/workflow-run:foo]" in out
+
+
+def test_normalise_preserves_canonical_tag() -> None:
+    """No-op when the canonical tag is already present."""
+    from armance.service.chat_handlers.kim import _normalise_tool_call_run
+    canonical = "[EXECUTE:/workflow-run:foo:autonomous]"
+    out = _normalise_tool_call_run(canonical + "\nfoo")
+    assert out.count("[EXECUTE:/workflow-run:foo") == 1
