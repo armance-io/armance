@@ -233,6 +233,8 @@ def log_failure(
     attempt: int,
     max_retries: int,
 ) -> None:
+    import traceback
+    tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
     log_exchange_details(
         "failure",
         agent_name,
@@ -240,6 +242,7 @@ def log_failure(
         {
             "error_type": type(exc).__name__,
             "error_message": str(exc),
+            "traceback": tb,
             "attempt": attempt,
             "max_retries": max_retries,
         },
