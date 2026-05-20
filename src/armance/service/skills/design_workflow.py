@@ -119,17 +119,27 @@ class DesignWorkflowSkill(Skill):
         raw = args or ""
         yaml_text = self._extract_yaml(raw)
         if not yaml_text:
+            logger.warning(
+                "design: no YAML extracted. raw=%r", raw[:500],
+            )
             self.state = "finished"
             return t("workflow.design_missing_yaml")
 
         try:
             data = yaml.safe_load(yaml_text)
         except yaml.YAMLError as exc:
+            logger.warning(
+                "design: YAML parse error %s. yaml_text=%r", exc, yaml_text[:500],
+            )
             self.state = "finished"
             return t("workflow.design_invalid_yaml", error=str(exc))
 
         ok, err = self._validate(data)
         if not ok:
+            logger.warning(
+                "design: validation failed (%s). yaml_text=%r data_type=%s data=%r",
+                err, yaml_text[:500], type(data).__name__, data,
+            )
             self.state = "finished"
             return t("workflow.design_invalid_workflow", error=err)
 
@@ -186,7 +196,12 @@ class DesignWorkflowSkill(Skill):
 
     def _extract_yaml(self, raw: str) -> str:
         """Pull out the first ```yaml ... ``` (or generic ``` ... ```) block
-        from Kim's reply. Falls back to bare-YAML detection when no fence."""
+        from Kim's reply. Falls back to bare-YAML detection when no fence.
+
+        Defensive trim: strips stray fence markers (``` and bare 'yaml' lines)
+        that weak LLMs sprinkle around the body. Without this, a single
+        orphan ``` at the end causes `yaml.safe_load` to ScannerError.
+        """
         m = _YAML_FENCE_RE.search(raw)
         if m:
             return m.group(1).strip()
@@ -194,7 +209,14 @@ class DesignWorkflowSkill(Skill):
         # Avoids passing leading prose to yaml.safe_load (→ "racine non-objet").
         if "name:" in raw and "steps:" in raw:
             idx = raw.find("name:")
-            return raw[idx:].strip()
+            tail = raw[idx:]
+            # Drop any stray fence lines (orphan ``` or bare "yaml") that
+            # would break the parser.
+            cleaned_lines = [
+                line for line in tail.splitlines()
+                if line.strip() not in ("```", "```yaml", "yaml")
+            ]
+            return "\n".join(cleaned_lines).strip()
         return ""
 
     def _validate(self, data: Any) -> tuple[bool, str]:
