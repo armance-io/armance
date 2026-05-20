@@ -82,3 +82,26 @@ def test_no_inject_when_design_tag_present(tmp_path: Path) -> None:
     reply = "[EXECUTE:/workflow-design]\n```yaml\nname:x\n```"
     out = _inject_run_tag_if_user_says_launch(reply, "lance", ctx)
     assert "[EXECUTE:/workflow-run:" not in out
+
+
+def test_inject_run_tag_when_kim_narrates_fake_launch(tmp_path: Path) -> None:
+    """Kim hallucinates '🔄 Workflow lancé / 🔹 démarré / en attente de…'
+    without emitting the EXECUTE tag. Without the safety net, the user
+    thinks the run is in progress but nothing was scheduled."""
+    ctx = _make_ctx(tmp_path)
+    reply = (
+        "🔄 Workflow **dossier-historique** lancé — mode interactif.\n"
+        "  🔹 `recherche_aicha` (historien) → démarré\n"
+        "  🔹 `synthèse_mona` (judge) → en attente\n"
+    )
+    # User did NOT say a run keyword — fake-launch detector must trigger anyway.
+    out = _inject_run_tag_if_user_says_launch(reply, "oui", ctx)
+    assert "[EXECUTE:/workflow-run:dossier-historique]" in out
+
+
+def test_no_fake_launch_inject_on_neutral_status_reply(tmp_path: Path) -> None:
+    """A neutral status / question reply must not trigger the fake-launch net."""
+    ctx = _make_ctx(tmp_path)
+    reply = "Tu veux que je sauvegarde le workflow ?"
+    out = _inject_run_tag_if_user_says_launch(reply, "ok", ctx)
+    assert "[EXECUTE:/workflow-run:" not in out
