@@ -99,12 +99,11 @@ class MainScreen(Screen[int]):
         Binding("ctrl+q", "request_quit", "Quit", show=True, priority=True),
         Binding("escape", "cancel", "Cancel", show=False),
         Binding("question_mark", "show_keybindings", "Keys?", show=False),
-        Binding("alt+left", "sidebar_shrink", "Sidebar ◀", show=False, priority=True),
-        Binding("alt+right", "sidebar_grow", "Sidebar ▶", show=False, priority=True),
+        Binding("alt+shift+left", "sidebar_grow", "Sidebar ◀", show=False, priority=True),
+        Binding("alt+shift+right", "sidebar_shrink", "Sidebar ▶", show=False, priority=True),
     ]
 
-    _SIDEBAR_WIDTHS = (24, 30, 36, 44, 54)
-    _sidebar_width_idx: int = 1  # default → 30 ≈ current 34 rounded to nearest step
+    _sidebar_width: int = 30
 
     def __init__(
         self,
@@ -361,19 +360,18 @@ class MainScreen(Screen[int]):
         self.app.exit(0)
 
     def _apply_sidebar_width(self) -> None:
-        width = self._SIDEBAR_WIDTHS[self._sidebar_width_idx]
         try:
             sidebar = self.query_one(Sidebar)
-            sidebar.styles.width = width
+            sidebar.styles.width = self._sidebar_width
         except Exception:
             pass
 
     def action_sidebar_shrink(self) -> None:
-        self._sidebar_width_idx = max(0, self._sidebar_width_idx - 1)
+        self._sidebar_width = max(10, self._sidebar_width - 5)
         self._apply_sidebar_width()
 
     def action_sidebar_grow(self) -> None:
-        self._sidebar_width_idx = min(len(self._SIDEBAR_WIDTHS) - 1, self._sidebar_width_idx + 1)
+        self._sidebar_width = min(100, self._sidebar_width + 5)
         self._apply_sidebar_width()
 
     def action_clear_input(self) -> None:
