@@ -199,6 +199,20 @@ def _build_system_context(ctx: LoopContext) -> str:
         "CRITICAL: step `role` is one of the roster values listed above (or `mona`/`serge`) "
         "— NEVER an agent's first name like `theodore`."
     )
+    lines.append(
+        "WORKFLOW RUN PROTOCOL — strict:\n"
+        "  To launch a workflow you MUST emit exactly `[EXECUTE:/workflow-run:<name>]` "
+        "(optionally `[EXECUTE:/workflow-run:<name>:autonomous]` or `:interactive`).\n"
+        "  Python intercepts the tag and actually starts the run.\n"
+        "  ❌ Do NOT narrate fake progress: never write '🔄 Workflow lancé', "
+        "'étape démarrée', '🔹 démarré', 'en attente de…', 'avancement…' or "
+        "anything that pretends the workflow is in progress UNLESS the tag is "
+        "in the same reply.\n"
+        "  ❌ Do NOT invent specialist questions like 'Aicha a besoin de toi: …' "
+        "— specialists only speak through the workflow runner, not through you.\n"
+        "  If the user asks for status, point them at `.armance/exports/<wf>/run-*/` "
+        "or say plainly that no run is active."
+    )
     return "\n".join(lines)
 
 
@@ -239,15 +253,31 @@ def _latest_workflow_name(ctx: LoopContext) -> str | None:
     return yamls[0].stem if yamls else None
 
 
+_FAKE_LAUNCH_RE = re.compile(
+    r"\b(?:workflow\s+\S+\s+(?:lanc[ée]|démarr[ée]|started|launched|running)|"
+    r"🔄\s+workflow|🔹\s+\S+.*→\s*(?:démarré|started|en cours)|"
+    r"workflow\s+basculé|en\s+attente\s+des?\s+\d|en\s+attente\s+de\s*:|"
+    r"avancement\s*:|étapes?\s+actives?)",
+    re.IGNORECASE,
+)
+
+
 def _inject_run_tag_if_user_says_launch(
     reply: str, user_text: str, ctx: LoopContext,
 ) -> str:
     """Safety net: user clearly asked to LAUNCH/RUN but Kim just re-emitted
     the workflow YAML instead. Replace the reply with a run tag pointing at
-    the most recent workflow on disk."""
+    the most recent workflow on disk.
+
+    Also covers a *hallucinated-launch* case: Kim narrates "Workflow X
+    lancé / 🔄 / étapes démarrées" without emitting the EXECUTE tag.
+    Without this net the user thinks the run is in progress while
+    nothing has been scheduled.
+    """
     if _DESIGN_TAG in reply or "[EXECUTE:/workflow-run:" in reply:
         return reply
-    if not _user_wants_to_run(user_text):
+    fake_launch = bool(_FAKE_LAUNCH_RE.search(reply))
+    if not (_user_wants_to_run(user_text) or fake_launch):
         return reply
     wf_name = _latest_workflow_name(ctx)
     if not wf_name:
