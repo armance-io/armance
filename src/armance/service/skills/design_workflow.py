@@ -202,6 +202,14 @@ class DesignWorkflowSkill(Skill):
         that weak LLMs sprinkle around the body. Without this, a single
         orphan ``` at the end causes `yaml.safe_load` to ScannerError.
         """
+        # Prefer the first fence whose body contains both `name:` and
+        # `steps:`. Weak LLMs sometimes wrap the [EXECUTE:/...] tag itself
+        # in a fence and put the real YAML in a *second* fence — picking
+        # the first fence blindly would capture only the tag.
+        for m in _YAML_FENCE_RE.finditer(raw):
+            body = m.group(1)
+            if "name:" in body and "steps:" in body:
+                return body.strip()
         m = _YAML_FENCE_RE.search(raw)
         if m:
             return m.group(1).strip()
