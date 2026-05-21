@@ -153,3 +153,16 @@ async def test_synthesise_no_claims_adds_warning_banner(
 
     # When no claims exist, agent must still succeed (not raise)
     assert isinstance(result, Synthesis)
+
+
+@pytest.mark.asyncio
+async def test_compile_assumptions(tmp_armance: Path, cfg: Config) -> None:
+    agent = JudgeAgent(tmp_armance, cfg)
+    mock_report = "Executive Summary\n---\nDetailed Register"
+    with patch("armance.service.agents.judge_agent.get_client", return_value=MagicMock()), \
+         patch("armance.service.agents.judge_agent.call_with_ledger",
+               new_callable=AsyncMock,
+               return_value=MagicMock(text=mock_report)):
+        result = await agent.compile_assumptions("all steps text")
+    assert result == mock_report
+

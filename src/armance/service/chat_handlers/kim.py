@@ -103,16 +103,9 @@ async def cmd_orchestrator_chat(
         logger.exception("Kim LLM failed")
         reply = t("common.error", error=str(exc))
 
-    # Weak LLMs sometimes emit `<tool_call>execute:workflow-run:NAME[:MODE]`
-    # instead of the canonical `[EXECUTE:/workflow-run:NAME[:MODE]]`. Normalise
-    # before the intercept so the runner actually fires.
     reply = _normalise_tool_call_run(reply)
-    # Run intent takes precedence over design — if the user just said "lance"
-    # and a workflow already exists, force the run tag and skip re-design.
-    reply = _inject_run_tag_if_user_says_launch(reply, text, ctx)
-    if not _user_wants_to_run(text):
-        reply = _inject_design_tag_if_yaml_only(reply, text)
-        reply = _intercept_design(reply, ctx, DesignWorkflowSkill)
+    reply = _inject_design_tag_if_yaml_only(reply, text)
+    reply = _intercept_design(reply, ctx, DesignWorkflowSkill)
     reply = await _intercept_run(reply, ctx, workflow_runner, text)
     reply = intercept_library_status(reply, ctx)
 
@@ -238,19 +231,7 @@ _USER_SAVE_INTENTS = (
     "oui", "yes", "go", "vas-y", "ok",
 )
 
-# RUN intent has priority over SAVE intent. When the user says "lance" /
-# "run" / "execute" and a workflow already exists, we DO NOT redesign —
-# we emit the run tag. Catches LLMs that re-emit the YAML on every turn.
-_USER_RUN_INTENTS = (
-    "lance", "lancer", "run", "execute", "exécute", "execute",
-    "launch", "demarre", "démarre", "fais tourner", "fais-le tourner",
-    "go!", "bordel", "fuck",
-)
 
-
-def _user_wants_to_run(user_text: str) -> bool:
-    low = (user_text or "").lower().strip()
-    return any(intent in low for intent in _USER_RUN_INTENTS)
 
 
 def _latest_workflow_name(ctx: LoopContext) -> str | None:
@@ -310,49 +291,7 @@ def _normalise_tool_call_run(reply: str) -> str:
     return reply[: m.start()] + canonical + reply[m.end():]
 
 
-def _inject_run_tag_if_user_says_launch(
-    reply: str, user_text: str, ctx: LoopContext,
-) -> str:
-    """Safety net: user asked to LAUNCH/RUN but Kim re-emitted the workflow
-    YAML or just narrated progress. Force the canonical run tag pointing at
-    the most recent workflow on disk so the runner actually fires.
 
-    Triggers when EITHER:
-      - the user's message contains a launch intent (`lance`, `run`, …), or
-      - the reply mentions a known workflow filename on disk yet emits no
-        `[EXECUTE:/workflow-run:...]` tag (structural — no keyword list).
-    """
-    if _DESIGN_TAG in reply or "[EXECUTE:/workflow-run:" in reply:
-        return reply
-    intent = _user_wants_to_run(user_text)
-    wf_name = _latest_workflow_name(ctx)
-    # Structural fake-launch hint: reply references an existing workflow file
-    # by name without scheduling it. Far less brittle than scanning for
-    # emoji + verb pairs in N languages.
-    references_wf = bool(wf_name and wf_name in reply)
-    if not (intent or references_wf):
-        return reply
-    if not wf_name:
-        return reply
-    logger.warning(
-        "Kim ignored user 'run' intent; injecting workflow-run tag for %s",
-        wf_name,
-    )
-    # Drop EVERYTHING that looks like the workflow YAML body so the user
-    # doesn't see raw YAML alongside the run tag. We treat the reply as
-    # "everything before the first `name:` line" + run tag.
-    bare = _BARE_WF_RE.search(reply)
-    if bare:
-        cleaned = reply[: bare.start()].rstrip()
-    else:
-        cleaned = _WF_YAML_FENCE_RE.sub("", reply).strip()
-    # Strip stray fence markers / orphan "yaml" lines left behind.
-    cleaned = re.sub(r"^```.*$", "", cleaned, flags=re.MULTILINE)
-    cleaned = re.sub(r"^yaml\s*$", "", cleaned, flags=re.MULTILINE)
-    cleaned = cleaned.strip()
-    if not cleaned:
-        cleaned = f"Lancement du workflow `{wf_name}`."
-    return cleaned + f"\n\n[EXECUTE:/workflow-run:{wf_name}]"
 
 
 def _inject_design_tag_if_yaml_only(reply: str, user_text: str) -> str:

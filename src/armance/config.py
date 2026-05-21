@@ -37,9 +37,6 @@ class Config(BaseModel):
     providers: list[ProviderConfig] = Field(default_factory=list)
     default_provider: str = "openrouter"
     default_model: str = ""
-    judge_provider: str = "openrouter"
-    judge_model: str = ""
-    judge_reasoning: str | None = None
     chunk_max_tokens: int = DEFAULT_CHUNK_MAX_TOKENS
     caveman_protocol_path: str = DEFAULT_CAVEMAN_PROTOCOL
     budget_cap_usd: float | None = None
@@ -94,10 +91,6 @@ def load_config(repo_root: Path) -> Config:
             provider.api_key = env[api_key_var]
         if env.get(base_url_var):
             provider.base_url = env[base_url_var]
-
-    if env.get("ARMANCE_JUDGE_REASONING"):
-        cfg.judge_reasoning = env["ARMANCE_JUDGE_REASONING"]
-
     return cfg
 
 

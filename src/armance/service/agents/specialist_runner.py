@@ -121,6 +121,15 @@ class SpecialistRunner:
                 "mention `@Kim`. If new project context is needed, suggest the user "
                 "ask `@Armance` to save it. Never emit `<tool_call>` markup."
             )
+            system_prompt += (
+                "\n\n## STRICT NON-HALLUCINATION & ANTI-HYPOTHESIS POLICY\n"
+                "Do NOT speculate, guess, or invent missing information or facts. If you lack "
+                "data, files, or critical elements required to answer a question or make a decision, "
+                "you MUST explicitly flag this in your deliverable output by stating:\n"
+                "- `QUESTION: <the specific question or information needed>`\n"
+                "- `HYPOTHESIS: <the explicitly stated hypothesis you are making to proceed, and why>`\n"
+                "Be extremely transparent. Do not invent context or make silent assumptions."
+            )
 
         if system_addon:
             system_prompt = f"{system_prompt}\n\n{system_addon}"
