@@ -3,6 +3,11 @@
 Specialist agents already enrich via ContextService.enrich_for_agent.
 Meta-agents call inject_rag_section() to get a formatted prompt section
 they can append to their system prompt.
+
+Async by design: callers all live inside the TUI / FastAPI event loop,
+so RagService.query is awaited directly. Previous versions used
+asyncio.run() inside a worker thread, which would crash under FastAPI
+(`asyncio.run() cannot be called from a running event loop`).
 """
 from __future__ import annotations
 
@@ -13,7 +18,7 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-def inject_rag_section(
+async def inject_rag_section(
     armance_root: Path,
     query: str,
     *,
@@ -35,8 +40,6 @@ def inject_rag_section(
 
     try:
         from armance.storage.rag_index import RagService, Chunk
-        import asyncio
-        import threading
     except Exception:
         logger.warning("RAG module unavailable", exc_info=True)
         return ""
@@ -74,21 +77,7 @@ def inject_rag_section(
             embedding_model=embedding_model,
             embedding_dim=embedding_dim,
         )
-        chunks: list[Chunk] = []
-        err_ref: list[Exception] = []
-
-        def _run() -> None:
-            try:
-                chunks.extend(asyncio.run(store.query(query, top_k=k)))
-            except Exception as exc:
-                err_ref.append(exc)
-
-        t = threading.Thread(target=_run)
-        t.start()
-        t.join()
-        if err_ref:
-            logger.warning("RAG query failed: %s", err_ref[0], exc_info=err_ref[0])
-            return ""
+        chunks: list[Chunk] = await store.query(query, top_k=k)
         logger.info("RAG retrieved %d chunk(s) for query=%r", len(chunks), query[:60])
     except Exception:
         logger.exception("RAG retrieval failed")
