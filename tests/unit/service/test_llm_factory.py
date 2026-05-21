@@ -15,8 +15,6 @@ def _config(*providers: ProviderConfig) -> Config:
         providers=list(providers),
         default_provider=providers[0].name if providers else "openrouter",
         default_model="m",
-        judge_provider=providers[0].name if providers else "openrouter",
-        judge_model="j",
     )
 
 

@@ -269,6 +269,7 @@ async def _mona_proxy_checkpoint(
     prompt = (
         f"You are Mona answering a human-checkpoint question as the VP, "
         f"on behalf of the absent CEO. Decide pragmatically.\n\n"
+        f"CRITICAL: If the decision/question concerns an extremely important, critical, or high-risk element that you do not know or cannot decide without guessing/inventing, do NOT attempt to guess. Instead, you MUST delegate it to the user by starting your response exactly with `[ASK_USER] <Reason why you cannot decide and the question for the user>`.\n\n"
         f"## Project brief\n{ctx.state.project_brief or '(none)'}\n\n"
         f"## Checkpoint question (step id: {getattr(step, 'id', '?')})\n"
         f"{getattr(step, 'prompt', '(none)')}\n\n"
@@ -490,7 +491,22 @@ async def _cmd_workflow_run(
         # mona meta-agent to answer the checkpoint based on the project
         # brief + upstream outputs, no TTY prompt to the user.
         if run_mode == "autonomous":
-            return await _mona_proxy_checkpoint(step, prior_outputs, ctx)
+            proxy_res = await _mona_proxy_checkpoint(step, prior_outputs, ctx)
+            if proxy_res.startswith("[ASK_USER]"):
+                reason_and_q = proxy_res[len("[ASK_USER]"):].strip()
+                if ctx.checkpoint_handler is None:
+                    raise RuntimeError("No checkpoint handler configured to prompt user.")
+                checkpoint = Checkpoint(
+                    id=getattr(step, "id", "?"),
+                    prompt=f"{reason_and_q}\n\n(Original question: {getattr(step, 'prompt', '')})",
+                )
+                response: CheckpointResponse = await ctx.checkpoint_handler.prompt(checkpoint)
+                if response.is_abort:
+                    _set_status(ctx, step.id, "canceled")
+                    ctx.append(f"[abort] workflow aborted at checkpoint '{step.id}'")
+                    return t("workflow.aborted")
+                return response.content
+            return proxy_res
 
         if ctx.checkpoint_handler is None:
             raise RuntimeError("No checkpoint handler configured to prompt user.")
@@ -547,6 +563,16 @@ async def _cmd_workflow_run(
         for sid, r in results.items():
             if sid.startswith("auto_") and not artefact.step_path(sid).exists():
                 write_step_output(artefact, sid, r.output)
+
+        # Assumptions register — Mona reviews step outputs, extracts
+        # hypotheses/questions, writes assumptions.md next to synthesis.md.
+        from armance.service.assumptions_ops import (
+            compile_and_persist,
+            split_exec_summary,
+        )
+
+        assumptions_content = await compile_and_persist(artefact, results, ctx)
+
         _finalise_run(artefact, status="completed")
         run_path = str(artefact.run_dir.relative_to(ctx.armance_root))
         # Last non-empty step output → 150-char preview
@@ -557,7 +583,11 @@ async def _cmd_workflow_run(
                 break
         preview = last_output[:150].replace("\n", " ")
         mona_offer = t("workflow.run_mona_offer")
-        return t("workflow.run_preview", path=run_path, preview=preview, mona_offer=mona_offer)
+        final_msg = t("workflow.run_preview", path=run_path, preview=preview, mona_offer=mona_offer)
+        exec_summary = split_exec_summary(assumptions_content)
+        if exec_summary:
+            final_msg += t("workflow.assumptions_header") + exec_summary
+        return final_msg
     except RuntimeError as exc:
         _finalise_run(artefact, status="canceled")
         return str(exc)

@@ -185,3 +185,42 @@ class JudgeAgent:
             reasoning="medium",
             system_prompt="You are Mona, the synthesis judge.",
         )
+
+    async def compile_assumptions(self, all_steps_text: str) -> str:
+        """Analyze specialist deliverables, extract hypotheses/questions/assumptions,
+        and synthesize them into a structured report.
+        """
+        system_prompt = (
+            "You are Mona, the synthesis judge. You are reviewing the active brainstorming run.\n"
+            "Your task is to analyze all the specialist outputs and deliverables from this run, "
+            "identify all unstated assumptions, explicitly stated hypotheses (`HYPOTHESIS:`), "
+            "and unresolved questions (`QUESTION:`).\n\n"
+            "You must compile them into a structured Markdown document with two parts separated by a horizontal rule `---`:\n"
+            "1. **Executive Summary** — A concise summary of the key critical uncertainties and assumptions made during this run.\n"
+            "2. **Detailed Register** — An exhaustive table or list mapping each assumption, hypothesis, or question back to the specialist who raised it.\n\n"
+            "Be direct, crisp, and strategic. Do not invent any new facts, simply synthesize what the specialists produced."
+        )
+
+        # Voice overlay so Mona's report follows the user's configured language.
+        try:
+            from armance.service.agents._voice_overlay import voice_overlay
+            system_prompt = f"{system_prompt}\n\n{voice_overlay(getattr(self.config, 'language', 'en'))}"
+        except Exception:
+            pass
+
+        mona = self._load_mona()
+        client = get_client(mona.provider, self.config)
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Here is the text of all steps executed in this run:\n\n{all_steps_text}"},
+        ]
+
+        extras: dict[str, Any] = {}
+        if mona.reasoning:
+            extras["reasoning"] = {"effort": mona.reasoning}
+
+        response = await call_with_ledger(
+            client, mona.name, messages, mona.model, **extras
+        )
+        return response.text

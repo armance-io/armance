@@ -274,6 +274,7 @@ workflow:
   run_finished: "✅ Run finished. All outputs are in `{path}/`. Ask Mona for a synthesis, or compare against a previous run."
   run_preview: "✅ Run finished → `{path}/`\n\n**Preview:** {preview}…\n\n{mona_offer}"
   run_mona_offer: "Want Mona to give you a synthesis and debrief? Just say the word."
+  assumptions_header: "\n\n### 🔍 Mona's Executive Summary (Assumptions & Critical Uncertainties)\n\n"
   list_usage: "usage: /workflow list <name>"
   list_header: "Runs of **{workflow}** ({n}):"
   list_empty: "No runs for `{workflow}`."
