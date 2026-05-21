@@ -486,6 +486,14 @@ async def _cmd_workflow_run(
     # Build checkpoint handler for human_checkpoint steps
     from armance.service.checkpoint import Checkpoint, CheckpointResponse
 
+    _abort_state: dict[str, Any] = {"was_canceled": False, "step_id": None}
+
+    def _mark_aborted(step_id: str) -> None:
+        _abort_state["was_canceled"] = True
+        _abort_state["step_id"] = step_id
+        _run_aborted["flag"] = True
+        _run_aborted["reason"] = f"user aborted at checkpoint `{step_id}`"
+
     async def checkpoint_handler(step, prior_outputs: dict[str, str]) -> str:
         # In autonomous mode, Mona speaks on behalf of the CEO. We ask the
         # mona meta-agent to answer the checkpoint based on the project
@@ -503,6 +511,7 @@ async def _cmd_workflow_run(
                 response: CheckpointResponse = await ctx.checkpoint_handler.prompt(checkpoint)
                 if response.is_abort:
                     _set_status(ctx, step.id, "canceled")
+                    _mark_aborted(step.id)
                     ctx.append(f"[abort] workflow aborted at checkpoint '{step.id}'")
                     return t("workflow.aborted")
                 return response.content
@@ -518,6 +527,7 @@ async def _cmd_workflow_run(
         response: CheckpointResponse = await ctx.checkpoint_handler.prompt(checkpoint)
         if response.is_abort:
             _set_status(ctx, step.id, "canceled")
+            _mark_aborted(step.id)
             ctx.append(f"[abort] workflow aborted at checkpoint '{step.id}'")
             return t("workflow.aborted")
         return response.content
@@ -573,7 +583,14 @@ async def _cmd_workflow_run(
 
         assumptions_content = await compile_and_persist(artefact, results, ctx)
 
-        _finalise_run(artefact, status="completed")
+        final_status = "canceled" if _abort_state["was_canceled"] else "completed"
+        _finalise_run(artefact, status=final_status)
+        if _abort_state["was_canceled"]:
+            return t(
+                "workflow.run_aborted",
+                step_id=_abort_state["step_id"],
+                path=str(artefact.run_dir.relative_to(ctx.armance_root)),
+            )
         run_path = str(artefact.run_dir.relative_to(ctx.armance_root))
         # Last non-empty step output → 150-char preview
         last_output = ""
