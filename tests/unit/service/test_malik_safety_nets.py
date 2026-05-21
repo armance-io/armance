@@ -1,6 +1,8 @@
 """Malik chat safety nets — verify the YAML-without-tag and dismiss filters."""
 from __future__ import annotations
 
+import pytest
+
 from armance.service.chat_handlers.malik import (
     _handle_dismiss_all,
     _inject_recruit_tag_if_yaml_only,
@@ -120,3 +122,35 @@ def test_dismiss_all_prunes_registry_entries(tmp_path) -> None:
     names = {a["name"] for a in final["agents"]}
     # alex deleted via .md unlink, zoe & Astrid pruned as orphans
     assert names == set()
+
+
+@pytest.mark.asyncio
+async def test_build_models_context_seeds_default_model_when_provider_undiscoverable(
+    monkeypatch,
+) -> None:
+    """`custom-openai` cannot enumerate models; `_build_models_context` must
+    surface `cfg.default_model` so Malik has at least one canonical id to
+    propose instead of telling the user to add new providers."""
+    from armance.service.chat_handlers.malik import _build_models_context
+
+    class _Prov:
+        def __init__(self, name): self.name = name
+
+    class _Cfg:
+        providers = [_Prov("custom-openai")]
+        default_provider = "custom-openai"
+        default_model = "Qwen/Qwen2.5-7B-Instruct"
+        budget_effort = "free-first"
+
+    class _Ctx:
+        cfg = _Cfg()
+
+    async def _fake_discover_all(cfg):
+        return {"custom-openai": []}
+
+    monkeypatch.setattr(
+        "armance.providers.discovery.discover_all", _fake_discover_all,
+    )
+    out = await _build_models_context(_Ctx())
+    assert "Qwen/Qwen2.5-7B-Instruct" in out
+    assert "no models discovered" not in out

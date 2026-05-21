@@ -119,6 +119,39 @@ async def _build_models_context(ctx: LoopContext) -> str:
     if not catalogues:
         return ""
 
+    # Some providers can't enumerate models (notably `custom-openai`, which
+    # points at a user-supplied OpenAI-compatible endpoint with no canonical
+    # /v1/models contract). If discovery returned an empty list but the user
+    # set a default model at `armance init`, surface that one so Malik has
+    # something concrete to propose instead of asking for new providers.
+    default_model_id = (getattr(ctx.cfg, "default_model", "") or "").strip()
+    default_provider = (getattr(ctx.cfg, "default_provider", "") or "").strip()
+    if default_model_id:
+        try:
+            from armance.providers.base import ModelSpec
+        except Exception:
+            ModelSpec = None  # type: ignore[assignment]
+        for prov in configured:
+            if catalogues.get(prov):
+                continue
+            # Only seed a fallback if this provider is the user's declared
+            # default (otherwise we'd advertise the same id under every
+            # un-discoverable provider, which is misleading).
+            if default_provider and prov != default_provider:
+                continue
+            if ModelSpec is None:
+                continue
+            # Mark as effectively_free so `filter_for_budget` never strips
+            # it under a free-first budget — the user picked it on purpose.
+            catalogues[prov] = [
+                ModelSpec(
+                    id=default_model_id,
+                    provider=prov,
+                    tier="low",
+                    effectively_free=True,
+                ),
+            ]
+
     only = ", ".join(f"`{p}`" for p in configured)
     lines: list[str] = [
         "",
