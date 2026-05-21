@@ -99,8 +99,10 @@ templates/            WeasyPrint stylesheet
 
 | File | LOC | Why it's big | Plan |
 |---|---|---|---|
-| `service/handlers.py` | ~1700 | Slash-command dispatcher + Malik/Kim chat orchestration | Split queued (P1.2 in roadmap) — keep new handlers small for now |
-| `service/workflow_engine.py` | ~1100 | DAG executor: events, Serge auto-invoke, consensus checks | Stable; don't bloat |
+| `service/agents/host_agent.py` | ~1080 | Armance dialogue + intent detection + state | Extract intent/state helpers when you touch it |
+| `service/agents/recruiter_agent.py` | ~930 | Malik recruitment + persona validation | Split queued |
+| `cli.py` | ~880 | Entry points (init/run/index/doctor/workflow) | Split into `cli/*.py` per command — queued |
+| `service/handlers.py` | ~750 | Slash-command dispatcher + workflow run orchestration | Library/save/role/task/mona ops already extracted; chat shells next |
 | `service/agents/host_agent.py` | ~990 | Armance dialogue + intent detection + state | Extract intent/state helpers when you touch it |
 
 Other modules respect the ~300-line target.
@@ -372,7 +374,7 @@ bash scripts/check_invariants.sh         # layer + legacy hygiene
 | Wrong vocabulary in UI | `nls_catalogues/{en,fr}.yaml` |
 | Provider auth failure | `providers/<name>.py` + `cli.py` doctor command |
 | Cost estimate off | `service/cost.py` + `providers/model_discovery.py` |
-| Workflow execution stuck | `core/models/workflow.py` (simple) or `service/workflow_engine.py` (rich) |
+| Workflow execution stuck | `core/models/workflow.py::execute_workflow` (single engine) + `service/workflow_hooks.py` (cross-family + Serge consensus hooks) |
 
 ---
 
@@ -381,8 +383,9 @@ bash scripts/check_invariants.sh         # layer + legacy hygiene
 See [`roadmap/04_roadmap.md`](roadmap/04_roadmap.md). The current priorities:
 
 - **P1.1** Unify the two workflow engines.
-- **P1.2** Split `service/handlers.py` (~1700 LOC) into one file per command
-  group.
+- **P1.2** Split `service/handlers.py` (~750 LOC) — library/save/role/task/mona
+  ops already extracted; the workflow-run orchestrator and chat-shell
+  dispatch remain.
 - **P2** Web client (FastAPI + WebSocket bridge to the same service layer).
 - **P3** Plugin system for custom agent skills.
 

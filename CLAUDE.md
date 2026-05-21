@@ -29,11 +29,12 @@ state (sqlite-vec only for RAG retrieval). Four providers: `openrouter`,
 - Type hints everywhere. `asyncio` for parallelism. No blocking I/O on the
   hot path.
 - `logging` module. No `print` debug.
-- Files ≤ ~300 lines. `service/handlers.py` (~1250 LOC) is the remaining
-  exception; the chat handlers (Armance/Malik/Kim) are coupled and live
-  there until the engine unification lands. Library/save/role groups have
-  already been moved to `service/library_ops.py`, `service/save_ops.py`,
-  `service/role_ops.py`.
+- Files ≤ ~300 lines. Open exceptions (split queued — P1.6+):
+  `service/agents/host_agent.py` (~1080), `service/agents/recruiter_agent.py`
+  (~930), `cli.py` (~880), `core/models/context.py` (~760),
+  `service/handlers.py` (~750), `client/tui/screens/main.py` (~660),
+  `core/models/workflow.py` (~620). New code stays small; refactor
+  before adding to any of these.
 - `uv` for deps. Conventional commits.
 - Tests: `pytest` + `pytest-asyncio` + `respx` (httpx) + `monkeypatch`
   (claude-agent-sdk). No real network.

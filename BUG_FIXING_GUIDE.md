@@ -108,7 +108,7 @@ bash scripts/check_invariants.sh
 ```
 
 All three must pass:
-- pytest: **889 passed** (8 skipped is normal).
+- pytest: **838+ passed** (8 skipped is normal).
 - ruff: `All checks passed!`
 - invariants: `ALL CHECKS PASSED (31 ok)`
 
@@ -215,7 +215,7 @@ That last option is the right one more often than agents think.
 A bug is fixed when:
 
 - The reported symptom no longer reproduces.
-- All tests pass (`pytest tests/ -q` → 889).
+- All tests pass (`pytest tests/ -q` → 838+).
 - Ruff is clean.
 - Invariants pass (31/31).
 - You wrote zero new hard-coded user-facing strings.

@@ -11,7 +11,7 @@
 │             wire format only; protocol-agnostic              │
 ├──────────────────────────────────────────────────────────────┤
 │ service     orchestration, agents, workflows, RAG plumbing   │
-│             stateful, async, exposes a ArmanceService API     │
+│             stateful, async. Public entry: dispatch_input    │
 ├──────────────────────────────────────────────────────────────┤
 │ core        pure models + protocols (LLM client, storage)    │
 │             no I/O                                           │
