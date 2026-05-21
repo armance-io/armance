@@ -323,7 +323,7 @@ class HostAgentService:
             # Standard path: top-k RAG injection keyed on the last user turn.
             try:
                 from armance.service.agents._rag_inject import inject_rag_section
-                rag_section = inject_rag_section(
+                rag_section = await inject_rag_section(
                     self.armance_root, last_user, k=3, config=self.config
                 )
                 if rag_section:

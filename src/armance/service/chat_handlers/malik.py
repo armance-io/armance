@@ -46,7 +46,7 @@ async def cmd_hr_chat(text: str, ctx: LoopContext) -> str:
 
     try:
         models_context = await _build_models_context(ctx)
-        models_context = _maybe_append_rag(ctx, text, models_context)
+        models_context = await _maybe_append_rag(ctx, text, models_context)
 
         task = Task(
             prompt=text, domain="meta", mode="light", requested_agent=agent_name,
@@ -237,10 +237,10 @@ async def _build_models_context(ctx: LoopContext) -> str:
     return "\n".join(lines)
 
 
-def _maybe_append_rag(ctx: LoopContext, text: str, base: str) -> str:
+async def _maybe_append_rag(ctx: LoopContext, text: str, base: str) -> str:
     try:
         from armance.service.agents._rag_inject import inject_rag_section
-        rag_section = inject_rag_section(ctx.armance_root, text, k=3)
+        rag_section = await inject_rag_section(ctx.armance_root, text, k=3, config=ctx.cfg)
         if rag_section:
             return (base + "\n\n" + rag_section).strip()
     except Exception:
