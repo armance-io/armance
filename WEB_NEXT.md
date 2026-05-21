@@ -4,23 +4,67 @@
 > port without rewriting any service-layer code. Self-contained — read
 > top to bottom, no jumping required.
 >
-> Prereqs: V1 is green (`pytest tests/ -q` → 889/0; ruff clean;
+> Prereqs: V1 is green (`pytest tests/ -q` → 838+ pass; ruff clean;
 > `scripts/check_invariants.sh` → 31/31). `git log --oneline` shows the
-> recent P1.3–P1.7 commits.
+> P1.5 service-consolidation commits (drop ArmanceService stub, unify
+> Event type on `core.models.event`, async RAG, checkpoint abort
+> propagation).
 
 ---
 
 ## 0. TL;DR
 
-The service layer is already frontend-agnostic. You build:
+The service layer is already frontend-agnostic. The public entry point
+is **`armance.service.tui_bridge.dispatch_input(text, ctx) -> (reply,
+agent_name)`** — stateless, multi-session-ready, reentrant. There is no
+service facade class; you call `dispatch_input` directly.
 
-1. A **FastAPI app** that owns Sessions and a per-session **EventBus**.
+You build:
+
+1. A **FastAPI app** that holds a `LoopContext` per browser tab and
+   serves the same `.armance/` folder the TUI uses.
 2. A `WebCheckpointHandler` that bridges Armance's `CheckpointHandler`
-   protocol to an HTTP/SSE round-trip — that's the *only* glue.
-3. A small **Next.js front-end** consuming REST + SSE.
+   Protocol to an HTTP/SSE round-trip — that's the *only* glue.
+3. A **Next.js front-end** (editorial CSS, EB Garamond, manifesto-grade
+   visual quality — see `armance.io/index.html` for reference).
 
 You do **not** rewrite handlers, do **not** rewrite agents, do **not**
 touch the service layer.
+
+## 0.5. Session model V2 — local-first, single-user
+
+One running web process serves **one user, one browser tab, one
+project**. Sessions live exactly where the TUI puts them:
+`.armance/sessions/<sid>/{state.json, ledger.json, conversation.md}`.
+The web layer is a TUI swap, not a hosting platform.
+
+- The FastAPI process holds the `LoopContext` (agents, ledger, session
+  state) for its lifetime. On crash, it reloads from disk on next launch.
+- File-level concurrency is already handled by
+  `armance.storage.filesystem.lockfile` — no extra locking needed.
+- Closing the browser tab does NOT delete the session. Next `armance
+  web` resumes it, same as `armance run`.
+- Multi-tab on the same session is **not supported in V2** — open a
+  second tab, you get a "session in use" page. (Webhook → "go to other
+  tab" link.) Out of scope; harden in V3.
+
+## 0.6. Session model V3 — SaaS horizon (later, not now)
+
+A SaaS deployment (`app.armance.io`) adds three things, all *above*
+`dispatch_input`, none of which require service-layer changes:
+
+- **Auth** — JWT or session cookie; `user_id` extracted at the edge.
+- **Project isolation** — each `(user_id, project_id)` resolves to a
+  distinct `armance_root` on the server's disk (or object store).
+  `LoopContext` is already parameterised on `armance_root` — no
+  refactor.
+- **Multi-tenant router** — middleware that maps the request to the
+  right `LoopContext` (cached in memory, evicted on idle, rehydrated
+  from disk on demand).
+
+Collaborative multi-user editing on the same project (two humans
+chatting with Mona at once) is a **separate problem** — V3+. Don't let
+it shape V2.
 
 ---
 
@@ -30,8 +74,9 @@ touch the service layer.
 |---|---|
 | Slash command dispatch | `armance.service.tui_bridge.dispatch_input(text, ctx) -> (reply, agent_name)` |
 | Frontend-agnostic prompting | `armance.service.checkpoint.CheckpointHandler` (Protocol) |
-| Event types ready for SSE | `armance.transport.dto.Event`, `armance.transport.events` |
-| Per-session bus | `armance.service.events.LocalEventBus` |
+| Canonical Event type | `armance.core.models.event.Event` (Pydantic) |
+| Per-session bus | `armance.service.events.LocalEventBus` — writes JSONL to `sessions/<sid>/events.log`, exposes an `asyncio.Queue[Event]` for SSE |
+| Read-only response DTOs | `armance.transport.dto` (AgentInfo, RoleInfo, ContextInfo, WorkflowInfo, SessionState) |
 | Session state on disk | `.armance/sessions/<id>/` (state.json, ledger.json, conversation.md) |
 | LLM client registry | `armance.core.protocols.llm.get_client` |
 | Library + read state | `armance.storage.library_state`, `storage.ingestion.sync_docs` |
