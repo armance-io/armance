@@ -486,6 +486,75 @@ check_layer_cleanliness() {
 }
 
 # ========================================================================
+# INVARIANT 7 — No asyncio.run() in service/ or core/ (FastAPI event-loop
+# killer). Allowed in cli.py and scripts/ — those run before any loop.
+# ========================================================================
+
+check_invariant_7() {
+    header "Invariant 7 — No asyncio.run in service/core"
+
+    local tmpfile
+    tmpfile=$(mktemp)
+    # Match `asyncio.run(...)` only where the line looks like a real call:
+    # an identifier or `await` cannot precede `asyncio.run`, and the line
+    # itself isn't a comment / docstring line.
+    grep -rn -E '^\s*[^#"]*\basyncio\.run\(' \
+        --include="*.py" \
+        src/armance/service src/armance/core 2>/dev/null \
+        | grep -vE ':\s*#' \
+        | grep -vE 'asyncio\.run\(\) (cannot|inside)' \
+        > "$tmpfile" || true
+
+    if [ -s "$tmpfile" ]; then
+        fail "asyncio.run() found in service/ or core/ — would crash under FastAPI"
+        note "callers live inside a running event loop; use await on the coroutine instead"
+        show_hits "$tmpfile"
+    else
+        ok "no asyncio.run() in service/core"
+    fi
+    rm -f "$tmpfile"
+}
+
+# ========================================================================
+# INVARIANT 8 — Dead facade stubs (ArmanceService, transport/local) stay
+# removed. dispatch_input is the public service-layer entry.
+# ========================================================================
+
+check_invariant_8() {
+    header "Invariant 8 — No revival of the dropped facade stubs"
+
+    local tmpfile
+    tmpfile=$(mktemp)
+    # Exclude the architecture guard test itself — it contains these
+    # strings INSIDE a `forbidden = (...)` tuple, by design.
+    grep -rn -E '(from armance\.service\.armance_service|from armance\.transport\.local|import armance\.service\.armance_service|import armance\.transport\.local)' \
+        --include="*.py" \
+        "${GREP_EXCLUDE_ARGS[@]}" \
+        --exclude="test_no_dead_facade.py" \
+        $SCAN_GLOB 2>/dev/null > "$tmpfile" || true
+
+    if [ -s "$tmpfile" ]; then
+        fail "imports of removed ArmanceService / LocalTransport stubs"
+        note "use armance.service.tui_bridge.dispatch_input instead"
+        show_hits "$tmpfile"
+    else
+        ok "no imports of the dropped facade stubs"
+    fi
+
+    if [ -f "src/armance/service/armance_service.py" ]; then
+        fail "src/armance/service/armance_service.py reappeared"
+    else
+        ok "src/armance/service/armance_service.py absent"
+    fi
+    if [ -f "src/armance/transport/local.py" ]; then
+        fail "src/armance/transport/local.py reappeared"
+    else
+        ok "src/armance/transport/local.py absent"
+    fi
+    rm -f "$tmpfile"
+}
+
+# ========================================================================
 # Run all checks
 # ========================================================================
 
@@ -499,6 +568,8 @@ check_invariant_3
 check_invariant_4
 check_invariant_5
 check_invariant_6
+check_invariant_7
+check_invariant_8
 check_legacy_hygiene
 check_legacy_paths
 check_skill_wiring
