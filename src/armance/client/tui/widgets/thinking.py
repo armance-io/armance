@@ -56,7 +56,7 @@ class ThinkingIndicator(Widget):
     def _format_line(self) -> str:
         # Do not name this _render — that name is reserved by textual.widget.Widget
         # and overriding it with a str-returning method crashes Visual.to_strips.
-        return f"  [yellow]{_SPINNER_FRAMES[self._spinner_idx]}[/] {self._label()}"
+        return f"  [#d9b06b]{_SPINNER_FRAMES[self._spinner_idx]}[/] {self._label()}"
 
     def compose(self) -> ComposeResult:
         yield Static(self._format_line(), id="thinking-text")
