@@ -15,20 +15,23 @@ from textual.widgets import RichLog
 logger = logging.getLogger(__name__)
 
 
-# role -> rich_color
+# role -> rich_color (warm editorial palette — never saturated, never bluish).
+# The user prefix carries the rare mauve accent (a precious wink, not a base
+# colour). Agent / system / error stay in the warm-ink family.
 _ROLE_COLORS: dict[str, str] = {
-    "user":   "bright_blue",
-    "agent":  "orange1",
-    "system": "grey50",
-    "error":  "red1",
+    "user":   "#8f7e9d",
+    "agent":  "#c5aa72",
+    "system": "#7d7a75",
+    "error":  "#c86459",
 }
 
-# Fixed colors for meta staff — must match sidebar._META_COLORS exactly.
+# Fixed colors for meta staff — muted shades of the warm family, no flash.
+# Must match sidebar._META_COLORS exactly.
 _META_AGENT_COLORS: dict[str, str] = {
-    "armance":  "deep_pink2",
-    "malik":   "medium_purple1",
-    "kim":   "cyan",
-    "mona":   "yellow",
+    "armance":  "#bc9392",   # rose poussière
+    "malik":    "#b29267",   # ocre
+    "kim":      "#94ac98",   # sauge
+    "mona":     "#c5aa72",   # ambre passé
 }
 
 # Default labels per role (used when no custom label given)
@@ -107,10 +110,21 @@ class ChatView(Widget):
             if first in _META_AGENT_COLORS:
                 color = _META_AGENT_COLORS[first]
             else:
-                colors = ["cyan", "magenta", "green", "dodger_blue1", "dark_orange", "deep_pink2", "medium_purple1", "turquoise2"]
+                # Specialist palette — warm desaturated tints in the same
+                # family as the staff. No flashy hue lands on a name.
+                colors = [
+                    "#bc9392",  # rose poussière
+                    "#b29267",  # ocre
+                    "#94ac98",  # sauge claire
+                    "#c5aa72",  # ambre passé
+                    "#ba7f6a",  # terre cuite
+                    "#a7a085",  # lin
+                    "#9aa0a5",  # ardoise tiède
+                    "#c0a18b",  # sable
+                ]
                 hash_val = sum(ord(c) for c in label)
                 color = colors[hash_val % len(colors)]
-            
+
         text_label = label if label is not None else _DEFAULT_LABELS.get(role, role)
         # Track raw markdown for copy support
         self._messages.append((role, text_label, content))
