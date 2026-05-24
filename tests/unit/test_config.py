@@ -25,8 +25,6 @@ def test_ensure_armance_tree_overrides(tmp_path: Path) -> None:
         providers=[ProviderConfig(name="gemini", api_key="abc", base_url="https://gemini.com")],
         default_provider="gemini",
         default_model="gemini-2.0-flash",
-        judge_provider="gemini",
-        judge_model="gemini-2.0-pro",
     )
     
     # 1. Run tree initialization with config
@@ -67,8 +65,6 @@ def test_save_strips_api_keys(tmp_path: Path) -> None:
         providers=[ProviderConfig(name="openrouter", api_key="secret", base_url="https://x")],
         default_provider="openrouter",
         default_model="m",
-        judge_provider="openrouter",
-        judge_model="j",
     )
     yaml_path = save_config(tmp_path, cfg)
     raw = yaml_path.read_text(encoding="utf-8")
@@ -94,8 +90,6 @@ def test_round_trip_with_env_override(tmp_path: Path, monkeypatch) -> None:
         providers=[ProviderConfig(name="openrouter", base_url="https://x")],
         default_provider="openrouter",
         default_model="m",
-        judge_provider="openrouter",
-        judge_model="j",
     )
     save_config(tmp_path, cfg)
     write_env(tmp_path, [ProviderConfig(name="openrouter", api_key="from-env-file")])
@@ -108,11 +102,3 @@ def test_round_trip_with_env_override(tmp_path: Path, monkeypatch) -> None:
     loaded2 = load_config(tmp_path)
     assert loaded2.providers[0].api_key == "from-os-env"
 
-
-def test_load_judge_reasoning_from_env(tmp_path: Path, monkeypatch) -> None:
-    cfg = Config(default_provider="openrouter", default_model="m",
-                 judge_provider="openrouter", judge_model="j")
-    save_config(tmp_path, cfg)
-    monkeypatch.setenv("ARMANCE_JUDGE_REASONING", "high")
-    loaded = load_config(tmp_path)
-    assert loaded.judge_reasoning == "high"

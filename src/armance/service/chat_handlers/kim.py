@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import re
+from pathlib import Path
 from typing import Any
 
 from armance.nls import t
@@ -102,12 +103,9 @@ async def cmd_orchestrator_chat(
         logger.exception("Kim LLM failed")
         reply = t("common.error", error=str(exc))
 
-    # Run intent takes precedence over design — if the user just said "lance"
-    # and a workflow already exists, force the run tag and skip re-design.
-    reply = _inject_run_tag_if_user_says_launch(reply, text, ctx)
-    if not _user_wants_to_run(text):
-        reply = _inject_design_tag_if_yaml_only(reply, text)
-        reply = _intercept_design(reply, ctx, DesignWorkflowSkill)
+    reply = _normalise_tool_call_run(reply)
+    reply = _inject_design_tag_if_yaml_only(reply, text)
+    reply = _intercept_design(reply, ctx, DesignWorkflowSkill)
     reply = await _intercept_run(reply, ctx, workflow_runner, text)
     reply = intercept_library_status(reply, ctx)
 
@@ -131,7 +129,11 @@ def _filter_history(ctx: LoopContext) -> list[dict[str, str]]:
 
 
 def _build_system_context(ctx: LoopContext) -> str:
+    # Workflows may live under <armance_root>/workflows or
+    # <armance_root>/.armance/workflows depending on how the skill was invoked.
     wf_dir = ctx.armance_root / ".armance" / "workflows"
+    if not wf_dir.exists():
+        wf_dir = ctx.armance_root / "workflows"
     wf_names = [p.stem for p in wf_dir.glob("*.yaml")] if wf_dir.exists() else []
 
     roster_lines: list[str] = []
@@ -163,12 +165,12 @@ def _build_system_context(ctx: LoopContext) -> str:
             "VALID step `role:` values for workflow YAML (use one of these — "
             "never an agent's first name): "
             + ", ".join(f"`{d}`" for d in distinct_roles)
-            + ", `mona`, `cato`."
+            + ", `mona`, `serge`."
         )
         lines.append("")
     lines.append(
         "Staff (judge / critique only — NEVER list as team members): "
-        "mona (judge / final synthesis), cato (critique)."
+        "mona (judge / final synthesis), serge (critique)."
     )
     lines.append("")
     if wf_names:
@@ -196,8 +198,22 @@ def _build_system_context(ctx: LoopContext) -> str:
         "  NEVER skip Step 2. NEVER emit the tag without a preceding explicit confirmation.\n"
         "  The YAML must contain `name` (kebab-case), `strategy`, and `steps`. "
         "Each step has `id`, `kind`, `role`, `depends_on`. "
-        "CRITICAL: step `role` is one of the roster values listed above (or `mona`/`cato`) "
+        "CRITICAL: step `role` is one of the roster values listed above (or `mona`/`serge`) "
         "— NEVER an agent's first name like `theodore`."
+    )
+    lines.append(
+        "WORKFLOW RUN PROTOCOL — strict:\n"
+        "  To launch a workflow you MUST emit exactly `[EXECUTE:/workflow-run:<name>]` "
+        "(optionally `[EXECUTE:/workflow-run:<name>:autonomous]` or `:interactive`).\n"
+        "  Python intercepts the tag and actually starts the run.\n"
+        "  ❌ Do NOT narrate fake progress: never write '🔄 Workflow lancé', "
+        "'étape démarrée', '🔹 démarré', 'en attente de…', 'avancement…' or "
+        "anything that pretends the workflow is in progress UNLESS the tag is "
+        "in the same reply.\n"
+        "  ❌ Do NOT invent specialist questions like 'Aicha a besoin de toi: …' "
+        "— specialists only speak through the workflow runner, not through you.\n"
+        "  If the user asks for status, point them at `.armance/exports/<wf>/run-*/` "
+        "or say plainly that no run is active."
     )
     return "\n".join(lines)
 
@@ -215,62 +231,67 @@ _USER_SAVE_INTENTS = (
     "oui", "yes", "go", "vas-y", "ok",
 )
 
-# RUN intent has priority over SAVE intent. When the user says "lance" /
-# "run" / "execute" and a workflow already exists, we DO NOT redesign —
-# we emit the run tag. Catches LLMs that re-emit the YAML on every turn.
-_USER_RUN_INTENTS = (
-    "lance", "lancer", "run", "execute", "exécute", "execute",
-    "launch", "demarre", "démarre", "fais tourner", "fais-le tourner",
-    "go!", "bordel", "fuck",
-)
 
-
-def _user_wants_to_run(user_text: str) -> bool:
-    low = (user_text or "").lower().strip()
-    return any(intent in low for intent in _USER_RUN_INTENTS)
 
 
 def _latest_workflow_name(ctx: LoopContext) -> str | None:
-    """Return the most-recently-modified workflow file's stem."""
-    wf_dir = ctx.armance_root / ".armance" / "workflows"
-    if not wf_dir.exists():
+    """Return the most-recently-modified workflow file's stem.
+
+    Workflows can live under either `<armance_root>/workflows/` (canonical
+    when armance_root IS the `.armance` dir) or
+    `<armance_root>/.armance/workflows/` (when armance_root is the project
+    root — the legacy convention used by the design skill). Scan both.
+    """
+    candidates: list[Path] = []
+    for wf_dir in (
+        ctx.armance_root / "workflows",
+        ctx.armance_root / ".armance" / "workflows",
+    ):
+        if wf_dir.exists():
+            candidates.extend(wf_dir.glob("*.yaml"))
+    if not candidates:
         return None
-    yamls = sorted(wf_dir.glob("*.yaml"), key=lambda p: p.stat().st_mtime, reverse=True)
-    return yamls[0].stem if yamls else None
+    candidates.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    return candidates[0].stem
 
 
-def _inject_run_tag_if_user_says_launch(
-    reply: str, user_text: str, ctx: LoopContext,
-) -> str:
-    """Safety net: user clearly asked to LAUNCH/RUN but Kim just re-emitted
-    the workflow YAML instead. Replace the reply with a run tag pointing at
-    the most recent workflow on disk."""
-    if _DESIGN_TAG in reply or "[EXECUTE:/workflow-run:" in reply:
+# Structural detector: any `<tool_call>` markup or malformed [EXECUTE:...]
+# variant referring to workflow-run. Language-agnostic — covers the most
+# common ways a weak LLM mangles the canonical tag.
+_MALFORMED_RUN_TAG_RE = re.compile(
+    r"(?:"
+    # <tool_call>execute:workflow-run:NAME[:MODE]   (with _ / - / space)
+    r"<tool_call>\s*execute[:_\- ]+workflow[_\- ]*run[:_\- ]+(?P<n1>[\w\-]+)(?:[:_\- ]+(?P<m1>\w+))?|"
+    # [EXECUTE:workflow-run:...]   (missing leading slash)
+    r"\[\s*EXECUTE\s*:\s*workflow[_\- ]*run\s*:\s*(?P<n2>[\w\-]+)(?:\s*:\s*(?P<m2>\w+))?\s*\]|"
+    # /workflow-run:NAME   (just a slash-command echo)
+    r"`?/workflow[_\- ]*run\s*:\s*(?P<n3>[\w\-]+)(?:\s*:\s*(?P<m3>\w+))?`?"
+    r")",
+    re.IGNORECASE,
+)
+
+
+def _normalise_tool_call_run(reply: str) -> str:
+    """Rewrite any malformed run-tag variant into the canonical
+    `[EXECUTE:/workflow-run:NAME[:MODE]]` so `_intercept_run` actually fires.
+
+    Structural — no language-specific keywords."""
+    # If a canonical tag is already present, leave the reply alone.
+    if "[EXECUTE:/workflow-run:" in reply:
         return reply
-    if not _user_wants_to_run(user_text):
+    m = _MALFORMED_RUN_TAG_RE.search(reply)
+    if not m:
         return reply
-    wf_name = _latest_workflow_name(ctx)
-    if not wf_name:
+    name = m.group("n1") or m.group("n2") or m.group("n3")
+    mode = m.group("m1") or m.group("m2") or m.group("m3")
+    if not name:
         return reply
-    logger.warning(
-        "Kim ignored user 'run' intent; injecting workflow-run tag for %s",
-        wf_name,
-    )
-    # Drop EVERYTHING that looks like the workflow YAML body so the user
-    # doesn't see raw YAML alongside the run tag. We treat the reply as
-    # "everything before the first `name:` line" + run tag.
-    bare = _BARE_WF_RE.search(reply)
-    if bare:
-        cleaned = reply[: bare.start()].rstrip()
-    else:
-        cleaned = _WF_YAML_FENCE_RE.sub("", reply).strip()
-    # Strip stray fence markers / orphan "yaml" lines left behind.
-    cleaned = re.sub(r"^```.*$", "", cleaned, flags=re.MULTILINE)
-    cleaned = re.sub(r"^yaml\s*$", "", cleaned, flags=re.MULTILINE)
-    cleaned = cleaned.strip()
-    if not cleaned:
-        cleaned = f"Lancement du workflow `{wf_name}`."
-    return cleaned + f"\n\n[EXECUTE:/workflow-run:{wf_name}]"
+    canonical = f"[EXECUTE:/workflow-run:{name}{(':' + mode) if mode else ''}]"
+    # Replace the matched span with the canonical tag.
+    return reply[: m.start()] + canonical + reply[m.end():]
+
+
+
 
 
 def _inject_design_tag_if_yaml_only(reply: str, user_text: str) -> str:

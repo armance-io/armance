@@ -4,6 +4,11 @@
 > fixing a bug reported by the user during V1 convergence testing.
 > You may be smart, you may be small. Either way, **respect the rules
 > below or your patch will be rejected.**
+>
+> **Before grepping** — the bug you were handed may already be tracked.
+> Check [`ISSUES.md`](ISSUES.md) first. Every known bug or limitation
+> has its own file under `issues/bugs/` with symptom, cause and a fix
+> sketch you can build from.
 
 This file is the contract. Read it before touching code. If you don't
 understand a rule, do not "fix it your way" — flag it back to the user.
@@ -108,7 +113,7 @@ bash scripts/check_invariants.sh
 ```
 
 All three must pass:
-- pytest: **889 passed** (8 skipped is normal).
+- pytest: **838+ passed** (8 skipped is normal).
 - ruff: `All checks passed!`
 - invariants: `ALL CHECKS PASSED (31 ok)`
 
@@ -215,7 +220,7 @@ That last option is the right one more often than agents think.
 A bug is fixed when:
 
 - The reported symptom no longer reproduces.
-- All tests pass (`pytest tests/ -q` → 889).
+- All tests pass (`pytest tests/ -q` → 838+).
 - Ruff is clean.
 - Invariants pass (31/31).
 - You wrote zero new hard-coded user-facing strings.

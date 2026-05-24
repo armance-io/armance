@@ -13,12 +13,13 @@ state (sqlite-vec only for RAG retrieval). Four providers: `openrouter`,
 |---|---|
 | User-facing intro | [`README.md`](README.md) |
 | Engineering onboarding (senior devs) | [`ONBOARDING.md`](ONBOARDING.md) |
-| V2 web layer build guide | [`WEB_NEXT.md`](WEB_NEXT.md) |
+| V2 web layer build guide | [`issues/features/web-layer.md`](issues/features/web-layer.md) |
+| Issues + user stories index | [`ISSUES.md`](ISSUES.md) |
 | Manual test scenarios (V1 convergence) | [`SCENARIOS.md`](SCENARIOS.md) |
 | Rules for fixing agents | [`BUG_FIXING_GUIDE.md`](BUG_FIXING_GUIDE.md) |
 | Vision & invariants | [`roadmap/01_vision.md`](roadmap/01_vision.md) |
 | Architecture & module map | [`roadmap/02_architecture.md`](roadmap/02_architecture.md) |
-| Latest assessment | [`roadmap/03_assessment_2026-05-15.md`](roadmap/03_assessment_2026-05-15.md) |
+| Latest assessment | [`roadmap/03_assessment_2026-05-19.md`](roadmap/03_assessment_2026-05-19.md) |
 | Macro roadmap (P1 / P2 / P3) | [`roadmap/04_roadmap.md`](roadmap/04_roadmap.md) |
 | Project history | [`roadmap/00_journey.md`](roadmap/00_journey.md) |
 
@@ -29,11 +30,12 @@ state (sqlite-vec only for RAG retrieval). Four providers: `openrouter`,
 - Type hints everywhere. `asyncio` for parallelism. No blocking I/O on the
   hot path.
 - `logging` module. No `print` debug.
-- Files ≤ ~300 lines. `service/handlers.py` (~1250 LOC) is the remaining
-  exception; the chat handlers (Armance/Malik/Kim) are coupled and live
-  there until the engine unification lands. Library/save/role groups have
-  already been moved to `service/library_ops.py`, `service/save_ops.py`,
-  `service/role_ops.py`.
+- Files ≤ ~300 lines. Open exceptions (split queued — P1.6+):
+  `service/agents/host_agent.py` (~1080), `service/agents/recruiter_agent.py`
+  (~930), `cli.py` (~880), `core/models/context.py` (~760),
+  `service/handlers.py` (~750), `client/tui/screens/main.py` (~660),
+  `core/models/workflow.py` (~620). New code stays small; refactor
+  before adding to any of these.
 - `uv` for deps. Conventional commits.
 - Tests: `pytest` + `pytest-asyncio` + `respx` (httpx) + `monkeypatch`
   (claude-agent-sdk). No real network.
@@ -121,7 +123,7 @@ searchable library (indexed slips / *feuillets* in FR) and the read set
    first" table.
 2. Read [`roadmap/02_architecture.md`](roadmap/02_architecture.md) — module
    map.
-3. Read [`roadmap/03_assessment_2026-05-15.md`](roadmap/03_assessment_2026-05-15.md)
+3. Read [`roadmap/03_assessment_2026-05-19.md`](roadmap/03_assessment_2026-05-19.md)
    — current state, known gaps.
 4. Open an item in [`roadmap/04_roadmap.md`](roadmap/04_roadmap.md) before
    inventing one.

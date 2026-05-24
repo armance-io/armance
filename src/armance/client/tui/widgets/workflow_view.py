@@ -95,7 +95,7 @@ def format_claim_density(
 # ---------------------------------------------------------------------------
 
 _MONA_PATTERNS = re.compile(r"\bmona\b|\bsynthèse\b|\bsynthesis\b", re.IGNORECASE)
-_SERGE_PATTERNS = re.compile(r"\bcato\b|\bchallenger\b|\bcritique\b", re.IGNORECASE)
+_SERGE_PATTERNS = re.compile(r"\bserge\b|\bchallenger\b|\bcritique\b", re.IGNORECASE)
 
 
 def classify_agent_kind(label: str) -> str:

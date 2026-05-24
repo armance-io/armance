@@ -27,9 +27,9 @@ logger = logging.getLogger(__name__)
 _PERSONA_PROMPT_TEMPLATE = """\
 You write a system prompt for a specialist agent who will join a brainstorming
 team. The prompt must let the agent INCARNATE a distinct personality, not
-recite generic helpfulness. Target 150-300 words, plain Markdown, second
-person ("Tu es / You are"). Do not use bullet lists unless one short list
-serves the persona.
+recite generic helpfulness. Target 150-300 words, plain Markdown.
+{lang_instruction}
+Do not use bullet lists unless one short list serves the persona.
 
 Mandatory ingredients (weave them into prose, do NOT label them):
   - Voice: how this character speaks (register, rhythm, recurring tics).
@@ -45,7 +45,7 @@ contributor with skin in the game, not a generic LLM. Avoid clichés
 Mona, Serge, or other meta-agents — the agent only knows their own role.
 
 End with a single line:
-> Tu réponds toujours dans la langue de l'utilisateur.
+{ending_line}
 
 ---
 
@@ -74,7 +74,29 @@ async def write_persona_for(
     Returns the generated prompt (or empty string on failure). The agent
     file is updated in-place; the YAML frontmatter is preserved.
     """
+    lang = getattr(cfg, "language", "en") or "en"
+    if lang == "fr":
+        lang_instruction = "The entire system prompt must be written in French. Use the second person ('Tu es')."
+        ending_line = "> Tu réponds toujours dans la langue de l'utilisateur."
+    elif lang == "es":
+        lang_instruction = "The entire system prompt must be written in Spanish. Use the second person ('Eres / Tú eres')."
+        ending_line = "> Siempre respondes en el idioma del usuario."
+    elif lang == "de":
+        lang_instruction = "The entire system prompt must be written in German. Use the second person ('Du bist')."
+        ending_line = "> Antworte immer in der Sprache des Benutzers."
+    elif lang == "zh":
+        lang_instruction = "The entire system prompt must be written in Chinese. Use the second person ('你是')."
+        ending_line = "> 始终使用用户的语言回答。"
+    elif lang == "ja":
+        lang_instruction = "The entire system prompt must be written in Japanese. Use the second person ('あなたは')."
+        ending_line = "> 常にユーザーの言語で答えてください。"
+    else:
+        lang_instruction = "The entire system prompt must be written in English. Use the second person ('You are')."
+        ending_line = "> Always reply in the user's language."
+
     prompt = _PERSONA_PROMPT_TEMPLATE.format(
+        lang_instruction=lang_instruction,
+        ending_line=ending_line,
         name=agent.name,
         domain=agent.role or agent.domain or "specialist",
         persona=agent.persona or "balanced",

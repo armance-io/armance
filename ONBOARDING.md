@@ -3,6 +3,11 @@
 > Audience: senior engineers joining the codebase. **Read this once**, then keep
 > [`roadmap/02_architecture.md`](roadmap/02_architecture.md) and
 > [`CLAUDE.md`](CLAUDE.md) bookmarked for day-to-day reference.
+>
+> **Looking for something to work on?** Every open user story and known
+> bug is indexed in [`ISSUES.md`](ISSUES.md). Each entry has its own
+> self-contained file under `issues/features/` or `issues/bugs/` with
+> symptom, cause, fix sketch and acceptance criteria.
 
 ---
 
@@ -99,8 +104,10 @@ templates/            WeasyPrint stylesheet
 
 | File | LOC | Why it's big | Plan |
 |---|---|---|---|
-| `service/handlers.py` | ~1700 | Slash-command dispatcher + Malik/Kim chat orchestration | Split queued (P1.2 in roadmap) — keep new handlers small for now |
-| `service/workflow_engine.py` | ~1100 | DAG executor: events, Serge auto-invoke, consensus checks | Stable; don't bloat |
+| `service/agents/host_agent.py` | ~1080 | Armance dialogue + intent detection + state | Extract intent/state helpers when you touch it |
+| `service/agents/recruiter_agent.py` | ~930 | Malik recruitment + persona validation | Split queued |
+| `cli.py` | ~880 | Entry points (init/run/index/doctor/workflow) | Split into `cli/*.py` per command — queued |
+| `service/handlers.py` | ~750 | Slash-command dispatcher + workflow run orchestration | Library/save/role/task/mona ops already extracted; chat shells next |
 | `service/agents/host_agent.py` | ~990 | Armance dialogue + intent detection + state | Extract intent/state helpers when you touch it |
 
 Other modules respect the ~300-line target.
@@ -372,18 +379,27 @@ bash scripts/check_invariants.sh         # layer + legacy hygiene
 | Wrong vocabulary in UI | `nls_catalogues/{en,fr}.yaml` |
 | Provider auth failure | `providers/<name>.py` + `cli.py` doctor command |
 | Cost estimate off | `service/cost.py` + `providers/model_discovery.py` |
-| Workflow execution stuck | `core/models/workflow.py` (simple) or `service/workflow_engine.py` (rich) |
+| Workflow execution stuck | `core/models/workflow.py::execute_workflow` (single engine) + `service/workflow_hooks.py` (cross-family + Serge consensus hooks) |
 
 ---
 
 ## 13. Macro roadmap
 
-See [`roadmap/04_roadmap.md`](roadmap/04_roadmap.md). The current priorities:
+See [`roadmap/04_roadmap.md`](roadmap/04_roadmap.md) for the phase-level
+plan. See [`ISSUES.md`](ISSUES.md) for the per-issue breakdown — each
+roadmap phase that has a detailed spec links there.
+
+Current priorities (high level):
 
 - **P1.1** Unify the two workflow engines.
-- **P1.2** Split `service/handlers.py` (~1700 LOC) into one file per command
-  group.
-- **P2** Web client (FastAPI + WebSocket bridge to the same service layer).
+- **P1.2** Split `service/handlers.py` (~750 LOC) — library/save/role/task/mona
+  ops already extracted; the workflow-run orchestrator and chat-shell
+  dispatch remain.
+- **P2** Web client (FastAPI + Next.js bridge to the same service layer)
+  — start at [`issues/features/web-layer-stories.md`](issues/features/web-layer-stories.md)
+  for the overview, then pick one of the six epic files (A spine, B viewer,
+  C deliberation, D pipeline, E onboarding, F finish) — each carries its
+  own TDD task list and acceptance criteria.
 - **P3** Plugin system for custom agent skills.
 
 The architecture has already been validated to handle a web layer without

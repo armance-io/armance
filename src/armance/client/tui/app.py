@@ -17,28 +17,39 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Armance theme — professional, monochromatic blue with single accent
+# Armance theme — warm editorial palette
+#
+# Paper-ivory and warm-ink, transposed to a dark terminal: deep brown-ink
+# background, cream foreground, rust accent, sage for active states.
+# Never saturated, never bluish. Matches armance.io's published palette
+# (oklch tokens converted to sRGB).
 # ---------------------------------------------------------------------------
 
 ARMANCE_THEME = Theme(
     name="armance",
-    primary="#58A6FF",          # blue accent (links, focus)
-    secondary="#7EE787",        # subtle green (success states)
-    accent="#F0B040",           # warm amber (highlights, /commands)
-    foreground="#E6EDF3",       # primary text
-    background="#0D1117",       # deep dark base
-    surface="#161B22",          # input fields, hovered rows
-    panel="#1A1F26",            # sidebar, headers, footers
-    success="#7EE787",
-    warning="#F0B040",
-    error="#FF7B72",
-    boost="#FFFFFF12",
+    # Rust — warm primary accent (links, focus, scrollbar hover)
+    primary="#e98667",
+    # Sage — sober green for active / success states
+    secondary="#5a8567",
+    # Amber-of-passed-ink — for /commands and key highlights
+    accent="#c5aa72",
+    # Cream foreground, never pure white
+    foreground="#eeebe4",
+    # Deep warm ink — never a pure black, never bluish
+    background="#15110d",
+    # Panel cards (input fields, hovered rows)
+    surface="#1e1a16",
+    # Sidebar / header / footer body
+    panel="#1e1a16",
+    success="#5a8567",
+    warning="#d9b06b",
+    error="#c86459",
+    boost="#eeebe408",
     dark=True,
     variables={
-        # Custom variants (optional, used by some themed widgets)
-        "footer-key-foreground": "#58A6FF",
-        "scrollbar": "#2A3038",
-        "scrollbar-hover": "#58A6FF",
+        "footer-key-foreground": "#c5aa72",
+        "scrollbar": "#322d27",
+        "scrollbar-hover": "#e98667",
     },
 )
 

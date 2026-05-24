@@ -42,6 +42,9 @@ async def cmd_chat(text: str, ctx: LoopContext) -> str:
     if agent_name in ("judge", "system-judge"):
         from armance.service.mona_ops import cmd_mona_chat
         return await cmd_mona_chat(text, ctx)
+    if agent_name in ("challenger", "system-challenger"):
+        from armance.service.serge_ops import cmd_serge_chat
+        return await cmd_serge_chat(text, ctx)
 
     try:
         from armance.core.models.task import Task
@@ -56,6 +59,19 @@ async def cmd_chat(text: str, ctx: LoopContext) -> str:
         ]
         ctx.session.conversation.append("user", text, agent=agent_name)
 
+        user_text_lower = text.lower()
+        if "caveman" in user_text_lower:
+            if "full" in user_text_lower:
+                chat_caveman = "full"
+            elif "ultra" in user_text_lower:
+                chat_caveman = "ultra"
+            elif "none" in user_text_lower:
+                chat_caveman = "none"
+            else:
+                chat_caveman = "ultra"
+        else:
+            chat_caveman = "none"
+
         if agent_obj is not None:
             view = f"dm:{agent_name}"
             runner = SpecialistRunner(
@@ -63,7 +79,10 @@ async def cmd_chat(text: str, ctx: LoopContext) -> str:
                 ctx.cfg,
                 reports_root=ctx.armance_root / "reports",
             )
-            report = await runner.run(agent_obj, task, history=history, view=view)
+            report = await runner.run(
+                agent_obj, task, history=history, view=view,
+                caveman_level=chat_caveman,
+            )
             reply = scrub_reply(report.content, agent_role="specialist")
             reply = intercept_load_run_tag(reply, ctx)
         else:
@@ -78,6 +97,7 @@ async def cmd_chat(text: str, ctx: LoopContext) -> str:
                     ctx.cfg,
                     reports_root=ctx.armance_root / "reports",
                     history=history,
+                    caveman_level=chat_caveman,
                 )
                 reply = fb.content
         set_status(ctx, agent_name, "completed")

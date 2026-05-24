@@ -95,6 +95,60 @@ def truncate_repeated_garbage(text: str, max_repeats: int = 3) -> str:
     return text[:cut].rstrip() + "\n\n*(output truncated: repeated-block loop detected)*"
 
 
+_ACK_TOKENS = (
+    "parfait",
+    "exact",
+    "exact.",
+    "exactement",
+    "got it",
+    "clair",
+    "cadrage clair",
+    "bien noté",
+    "entendu",
+    "bien.",
+    "compris",
+    "voilà",
+    "voila",
+    "tout à fait",
+    "tout a fait",
+    "c'est ça",
+    "c'est cela",
+    "bonne question",
+    "tension émergente",
+    "tension clé",
+    "stratégie compense",
+)
+
+
+def truncate_simulated_turns(text: str, max_acks: int = 1) -> str:
+    """Cut reply when the model starts simulating user turns.
+
+    Symptom: a single reply contains 2+ short paragraphs each opening with an
+    acknowledgement token (``Parfait.`` / ``Exact.`` / ``Clair.`` / ``Voilà.``).
+    Small models on long transcripts continue the Q/A pattern and write the
+    user's lines themselves. We allow one legitimate opener (``Bien.``,
+    ``Parfait.``) and cut at the second — the runaway second turn is dropped.
+    """
+    paragraphs = text.split("\n\n")
+    ack_indices: list[int] = []
+    for i, p in enumerate(paragraphs):
+        head = p.strip().lower()
+        if not head:
+            continue
+        first_line = head.splitlines()[0] if head else ""
+        if any(first_line.startswith(tok) for tok in _ACK_TOKENS):
+            ack_indices.append(i)
+    if len(ack_indices) <= max_acks:
+        return text
+    cut_at = ack_indices[max_acks]
+    cut_text = "\n\n".join(paragraphs[:cut_at]).rstrip()
+    logger.warning(
+        "truncated LLM reply: %d acknowledgements detected (model simulating user turns)",
+        len(ack_indices),
+    )
+    return cut_text + "\n\n*(output truncated: model began simulating a multi-turn dialogue)*"
+
+
 def strip_unauthorised_execute_tags(reply: str, *, agent_role: str) -> str:
     """Drop any [EXECUTE:/...] not in the role's allow-list. Logs every strip."""
     allow = _ROLE_TAG_ALLOWLIST.get(agent_role, set())
@@ -131,5 +185,6 @@ def scrub_reply(reply: str, *, agent_role: str) -> str:
     reply = normalise_hallucinated_tool_calls(reply, allow=allow)
     reply = strip_hallucinated_tool_calls(reply)
     reply = truncate_repeated_garbage(reply)
+    reply = truncate_simulated_turns(reply)
     reply = strip_unauthorised_execute_tags(reply, agent_role=agent_role)
     return reply

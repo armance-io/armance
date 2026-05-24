@@ -32,35 +32,41 @@ _STATE_ICONS: dict[str, str] = {
 }
 
 _STATE_COLORS: dict[str, str] = {
-    "idle":    "grey50",
-    "working": "yellow",
-    "waiting": "cyan",
-    "input-required": "cyan",
-    "completed":    "green",
-    "error":   "red",
+    "idle":           "#7d7a75",  # faint warm grey
+    "working":        "#d9b06b",  # warm amber
+    "waiting":        "#94ac98",  # sage
+    "input-required": "#e98667",  # rust — calls attention without screaming
+    "completed":      "#5a8567",  # moss
+    "error":          "#c86459",  # passed brick
 }
 
 _META_COLORS = {
-    "host":           "deep_pink2",     # Armance — must match chat._META_AGENT_COLORS["armance"]
-    "recruiter":      "medium_purple1", # Malik  — must match chat._META_AGENT_COLORS["malik"]
-    "operator":       "cyan",           # Kim  — must match chat._META_AGENT_COLORS["kim"]
-    "vice-president": "yellow",         # Mona  — must match chat._META_AGENT_COLORS["mona"]
+    "host":           "#bc9392",  # Armance — rose poussière, matches chat
+    "recruiter":      "#b29267",  # Malik   — ocre
+    "operator":       "#94ac98",  # Kim     — sauge
+    "vice-president": "#c5aa72",  # Mona    — ambre passé
 }
 
 
 def get_agent_color(name: str, role_val: str | None = None) -> str:
     label = f"{name} · {role_val}" if role_val else name
-    colors = ["cyan", "magenta", "green", "dodger_blue1", "dark_orange", "deep_pink2", "medium_purple1", "turquoise2"]
+    # Warm desaturated tints — same family as the staff. Mirrors chat.py
+    # specialist palette so a recruited agent keeps a single colour across
+    # the sidebar and the transcript.
+    colors = [
+        "#bc9392", "#b29267", "#94ac98", "#c5aa72",
+        "#ba7f6a", "#a7a085", "#9aa0a5", "#c0a18b",
+    ]
     hash_val = sum(ord(c) for c in label)
     return colors[hash_val % len(colors)]
 
 
-# Cost tier → pastille glyph + color (green=free, yellow=low/mid, red=high)
+# Cost tier → pastille glyph + color (moss=free, amber=low/mid, brick=high)
 _COST_PASTILLE: dict[str, str] = {
-    "free":   "[green]●[/]",
-    "low":    "[yellow]●[/]",
-    "medium": "[yellow]●[/]",
-    "high":   "[red]●[/]",
+    "free":   "[#5a8567]●[/]",
+    "low":    "[#d9b06b]●[/]",
+    "medium": "[#d9b06b]●[/]",
+    "high":   "[#c86459]●[/]",
 }
 
 # Rough heuristics: model id substrings → tier (no network call)
@@ -95,12 +101,12 @@ _MODEL_TIER_PATTERNS: list[tuple[str, str]] = [
 def model_cost_pastille(model: str | None) -> str:
     """Return a Rich-markup colored dot representing estimated model cost tier."""
     if not model:
-        return "[grey50]●[/]"
+        return "[#7d7a75]●[/]"
     m = model.lower()
     for pattern, tier in _MODEL_TIER_PATTERNS:
         if pattern in m:
             return _COST_PASTILLE[tier]
-    return "[grey50]●[/]"  # unknown → neutral
+    return "[#7d7a75]●[/]"  # unknown → neutral
 
 
 
@@ -355,13 +361,13 @@ class Sidebar(Widget):
             is_active = (self._active_meta == canonical) or (self._active_meta == first_name)
             state = self._meta_states.get(canonical, "idle")
             label = f"{first_name:<10}"
-            title_text = f"[grey50]{title}[/]"
+            title_text = f"[#7d7a75]{title}[/]"
             # Glyph by state
-            color = _META_COLORS.get(title, "magenta")
+            color = _META_COLORS.get(title, "#c5aa72")
             if state == "working":
-                glyph = f"[yellow]{_SPINNER_FRAMES[self._spinner_idx]}[/]"
+                glyph = f"[#d9b06b]{_SPINNER_FRAMES[self._spinner_idx]}[/]"
             elif state in ("waiting", "input-required"):
-                glyph = "[cyan]?[/]"
+                glyph = "[#e98667]?[/]"
             elif is_active:
                 glyph = f"[{color}]●[/]"
             else:
@@ -379,15 +385,17 @@ class Sidebar(Widget):
             section = self.query_one("#section-roles", SidebarSection)
         except Exception:
             return
-        # Filter out meta roles (system-* agents grouped under "meta" role)
+        # Filter out meta roles and reserved staff names
+        from armance.service.tui_bridge import RESERVED_STAFF_NAMES
         meta_roles = {"meta", "system", "staff"}
         lines: list[str] = []
         for role in self._roles.keys():
             if role.lower() in meta_roles:
                 continue
-            # Skip role if all members are system-* (defensive)
+            # Skip system-* agents and reserved permanent-staff names
             members = [it for it in self._roles[role]
-                       if not str(it.get("name", "")).startswith("system-")]
+                       if not str(it.get("name", "")).startswith("system-")
+                       and str(it.get("name", "")).lower() not in RESERVED_STAFF_NAMES]
             if not members:
                 continue
             lines.append(f"[bold]{role}[/]")
@@ -401,16 +409,16 @@ class Sidebar(Widget):
                 agent_color = get_agent_color(name, role)
                 if state == "working":
                     icon = _SPINNER_FRAMES[self._spinner_idx]
-                    color = "yellow"
+                    color = "#d9b06b"
                 elif state in ("waiting", "input-required"):
                     icon = "?"
-                    color = "cyan"
+                    color = "#e98667"
                 elif state == "completed":
                     icon = "✓"
-                    color = "green"
+                    color = "#5a8567"
                 elif state == "error":
                     icon = "✕"
-                    color = "red"
+                    color = "#c86459"
                 elif active:
                     icon = "●"
                     color = agent_color
@@ -423,7 +431,7 @@ class Sidebar(Widget):
 
                 # Truncate persona to keep row compact
                 persona_disp = persona[:12]
-                tag = f" [grey50]· {persona_disp}[/]" if persona_disp else ""
+                tag = f" [#7d7a75]· {persona_disp}[/]" if persona_disp else ""
                 if active:
                     line = f"  [{color}]{icon}[/] [reverse bold]{name}[/]{tag} {cost_dot}"
                 else:
@@ -439,7 +447,7 @@ class Sidebar(Widget):
         section = self.query_one("#section-workflows", SidebarSection)
         lines = []
         for w in workflows:
-            marker = "[yellow]▶[/] " if w.get("working") else "  "
+            marker = "[#d9b06b]▶[/] " if w.get("working") else "  "
             lines.append(f"{marker}{w.get('name', '?')}")
         section.set_items(lines)
 
@@ -468,18 +476,18 @@ class Sidebar(Widget):
         lines = []
         for t in tasks:
             if t.state == "working":
-                icon = f"[yellow]{_SPINNER_FRAMES[self._spinner_idx]}[/]"
+                icon = f"[#d9b06b]{_SPINNER_FRAMES[self._spinner_idx]}[/]"
             elif t.state == "completed":
-                icon = "[green]✓[/]"
+                icon = "[#5a8567]✓[/]"
             elif t.state == "failed":
-                icon = "[red]✕[/]"
+                icon = "[#c86459]✕[/]"
             elif t.state == "input-required":
-                icon = "[cyan]?[/]"
+                icon = "[#e98667]?[/]"
             else:
-                icon = "[grey50]·[/]"
+                icon = "[#7d7a75]·[/]"
 
             prompt_snip = t.prompt[:15] + ("..." if len(t.prompt) > 15 else "")
-            lines.append(f"{icon} {prompt_snip} [grey50]{t.state}[/]")
+            lines.append(f"{icon} {prompt_snip} [#7d7a75]{t.state}[/]")
         section.set_items(lines)
 
     # ------------------------------------------------------------------

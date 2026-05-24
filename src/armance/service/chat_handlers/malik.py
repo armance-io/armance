@@ -46,7 +46,7 @@ async def cmd_hr_chat(text: str, ctx: LoopContext) -> str:
 
     try:
         models_context = await _build_models_context(ctx)
-        models_context = _maybe_append_rag(ctx, text, models_context)
+        models_context = await _maybe_append_rag(ctx, text, models_context)
 
         task = Task(
             prompt=text, domain="meta", mode="light", requested_agent=agent_name,
@@ -118,6 +118,39 @@ async def _build_models_context(ctx: LoopContext) -> str:
     catalogues = await discover_all(ctx.cfg)
     if not catalogues:
         return ""
+
+    # Some providers can't enumerate models (notably `custom-openai`, which
+    # points at a user-supplied OpenAI-compatible endpoint with no canonical
+    # /v1/models contract). If discovery returned an empty list but the user
+    # set a default model at `armance init`, surface that one so Malik has
+    # something concrete to propose instead of asking for new providers.
+    default_model_id = (getattr(ctx.cfg, "default_model", "") or "").strip()
+    default_provider = (getattr(ctx.cfg, "default_provider", "") or "").strip()
+    if default_model_id:
+        try:
+            from armance.providers.base import ModelSpec
+        except Exception:
+            ModelSpec = None  # type: ignore[assignment]
+        for prov in configured:
+            if catalogues.get(prov):
+                continue
+            # Only seed a fallback if this provider is the user's declared
+            # default (otherwise we'd advertise the same id under every
+            # un-discoverable provider, which is misleading).
+            if default_provider and prov != default_provider:
+                continue
+            if ModelSpec is None:
+                continue
+            # Mark as effectively_free so `filter_for_budget` never strips
+            # it under a free-first budget — the user picked it on purpose.
+            catalogues[prov] = [
+                ModelSpec(
+                    id=default_model_id,
+                    provider=prov,
+                    tier="low",
+                    effectively_free=True,
+                ),
+            ]
 
     only = ", ".join(f"`{p}`" for p in configured)
     lines: list[str] = [
@@ -204,10 +237,10 @@ async def _build_models_context(ctx: LoopContext) -> str:
     return "\n".join(lines)
 
 
-def _maybe_append_rag(ctx: LoopContext, text: str, base: str) -> str:
+async def _maybe_append_rag(ctx: LoopContext, text: str, base: str) -> str:
     try:
         from armance.service.agents._rag_inject import inject_rag_section
-        rag_section = inject_rag_section(ctx.armance_root, text, k=3)
+        rag_section = await inject_rag_section(ctx.armance_root, text, k=3, config=ctx.cfg)
         if rag_section:
             return (base + "\n\n" + rag_section).strip()
     except Exception:
@@ -309,6 +342,22 @@ def _handle_dismiss_all(reply: str, ctx: LoopContext) -> str:
                 deleted.append(p.stem)
             except Exception:
                 logger.exception("dismiss-all: failed to delete %s", p)
+    # Drop the same agents from the registry so the sidebar / loader stay in sync.
+    # Anything not present in agents_dir is also pruned (catches rogue staff-
+    # named registry entries from older versions of the recruit path).
+    try:
+        from armance.storage import paths
+        registry = paths.ensure_agents_registry(ctx.armance_root)
+        live_stems = {p.stem for p in agents_dir.glob("*.md")} if agents_dir.exists() else set()
+        before = len(registry.get("agents", []))
+        registry["agents"] = [
+            a for a in registry.get("agents", [])
+            if a.get("name") in live_stems or str(a.get("name", "")).startswith("system-")
+        ]
+        if len(registry["agents"]) != before:
+            paths.write_agents_registry(ctx.armance_root, registry)
+    except Exception:
+        logger.exception("dismiss-all: registry prune failed")
     ctx.agents = [a for a in ctx.agents if a.name.startswith("system-")]
     if deleted:
         reply += "\n\n" + t("system_msg.dismissed", n=len(deleted), names=", ".join(deleted))
@@ -380,7 +429,22 @@ async def _handle_recruit(reply: str, ctx: LoopContext, hr) -> str:
             except Exception:
                 logger.exception("persona-writer pass failed")
 
-        reply += "\n\n" + t("system_msg.recruited", n=len(created_names))
+        # Feedback on recruitment telemetry
+        new_names = getattr(hr, "last_new_names", [])
+        if new_names:
+            reply += "\n\n" + t("system_msg.recruited", n=len(new_names))
+
+        updated_names = getattr(hr, "last_updated_names", [])
+        if updated_names:
+            reply += "\n\n" + t("system_msg.updated", n=len(updated_names), names=", ".join(updated_names))
+
+        staff_updates = getattr(hr, "last_staff_updates", [])
+        if staff_updates:
+            reply += "\n\n" + t("system_msg.staff_updated", n=len(staff_updates), details=", ".join(staff_updates))
+
+        skipped_collisions = getattr(hr, "last_skipped_collisions", [])
+        if skipped_collisions:
+            reply += "\n\n" + t("system_msg.skipped_collision", n=len(skipped_collisions), names=", ".join(skipped_collisions))
 
         # Third pass: health-check each recruited agent. Persist the result
         # on disk and surface failures so the user can pick another model

@@ -137,6 +137,10 @@ class RecruiterAgentService:
         self.agent = agent
         self.armance_root = armance_root
         self.config = config
+        self.last_new_names: list[str] = []
+        self.last_updated_names: list[str] = []
+        self.last_skipped_collisions: list[str] = []
+        self.last_staff_updates: list[str] = []
 
     async def propose_jobs(self, brief: str) -> List[JobProposal]:
         """Given a project brief, propose relevant jobs (specialized roles)."""
@@ -664,26 +668,27 @@ agents:
                     except Exception:
                         pass
 
-            # Criticalist is always "Serge" — enforced in code, not just prompt.
-            if entry.get("role") == "criticalist":
-                used.discard("Serge")  # ensure Serge is never blocked by the used-set
-                entry["name"] = "Serge"
-            else:
-                looks_real = (
-                    isinstance(supplied, str)
-                    and supplied
-                    and "_" not in supplied
-                    and " " not in supplied
-                    and supplied[0].isupper()
-                    and (supplied not in used or is_update)
-                )
-                if looks_real:
-                    try:
-                        entry["name"] = self._validate_ascii_name(supplied)
-                    except ValueError:
-                        looks_real = False
-                if not looks_real:
-                    entry["name"] = self._generate_agent_name(persona, i, used)
+            # Staff roles (host, recruiter, operator, vice-president,
+            # criticalist) are not creatable as user agents — `recruit_agents`
+            # redirects them to update the matching system-*.md instead. We
+            # still need a valid name to pass schema validation here, so just
+            # accept whatever Malik supplied (or generate one); the redirect
+            # discards it.
+            looks_real = (
+                isinstance(supplied, str)
+                and supplied
+                and "_" not in supplied
+                and " " not in supplied
+                and supplied[0].isupper()
+                and (supplied not in used or is_update)
+            )
+            if looks_real:
+                try:
+                    entry["name"] = self._validate_ascii_name(supplied)
+                except ValueError:
+                    looks_real = False
+            if not looks_real:
+                entry["name"] = self._generate_agent_name(persona, i, used)
             used.add(entry["name"])
 
             # Inject mandatory Pydantic fields if the LLM omitted them
@@ -791,21 +796,68 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
                 except Exception:
                     continue
 
+        # Roles owned by permanent staff. Recruiting one of these is meaningless;
+        # the user wants to swap the model on the existing system-*.md file.
+        # Keys are English canonical; Malik's prompt forces English in YAML
+        # regardless of the user's interface language.
+        _STAFF_ROLE_TO_FILE = {
+            "host":            "system-context",
+            "recruiter":       "system-hr",
+            "operator":        "system-orchestrator",
+            "vice-president":  "system-judge",
+            "criticalist":     "system-challenger",
+        }
+
         created: list[Agent] = []
         created_names: list[str] = []
         skipped_collisions: list[str] = []
+        staff_updates: list[str] = []
+        new_names: list[str] = []
+        updated_names: list[str] = []
 
         for agent in new_agents:
             new_role = (agent.role or agent.domain or "").strip().lower()
+
+            # Staff-role redirect: update the system-*.md model field, do not
+            # create a new user agent (covers all five staff slots including
+            # criticalist; the legacy same-name = update path is now redundant
+            # for staff but still applies to user agents).
+            if new_role in _STAFF_ROLE_TO_FILE:
+                system_stem = _STAFF_ROLE_TO_FILE[new_role]
+                system_path = agents_dir / f"{system_stem}.md"
+                if system_path.exists():
+                    try:
+                        existing_staff = Agent.load(system_path)
+                        existing_staff.provider = agent.provider or existing_staff.provider
+                        existing_staff.model = agent.model or existing_staff.model
+                        if agent.reasoning is not None:
+                            existing_staff.reasoning = agent.reasoning
+                        existing_staff.save(system_path)
+                        staff_updates.append(f"{system_stem}({agent.model})")
+                        logger.info(
+                            "recruit: staff model swap %s → model=%s (role=%s, requested name %r ignored)",
+                            system_stem, agent.model, new_role, agent.name,
+                        )
+                    except Exception:
+                        logger.exception("staff model swap failed for %s", system_stem)
+                    continue
+                # If the system file is missing, fall through and let the normal
+                # path create a user agent (defensive — should not happen in
+                # practice since ensure_armance_tree installs all five).
+
             prior_role = existing.get(agent.name)
-            if prior_role is not None and prior_role != new_role:
-                logger.warning(
-                    "recruit: name collision for %r — existing role %r != new role %r. "
-                    "Skipping write to protect the existing agent.",
-                    agent.name, prior_role, new_role,
-                )
-                skipped_collisions.append(agent.name)
-                continue
+            if prior_role is not None:
+                norm_prior = _normalise_domain(prior_role)
+                norm_new = _normalise_domain(new_role)
+                is_same_role = (norm_prior == norm_new) or (norm_prior.split("-")[0] == norm_new.split("-")[0])
+                if not is_same_role:
+                    logger.warning(
+                        "recruit: name collision for %r — existing role %r != new role %r. "
+                        "Skipping write to protect the existing agent.",
+                        agent.name, prior_role, new_role,
+                    )
+                    skipped_collisions.append(agent.name)
+                    continue
 
             # Write agent file via Agent.save (atomic). Same name + same role
             # means the user asked Malik to update model/persona — overwrite.
@@ -823,13 +875,27 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
             )
             created.append(agent)
             created_names.append(agent.name)
+            if prior_role is None:
+                new_names.append(agent.name)
+            else:
+                updated_names.append(agent.name)
 
             self._create_agent_in_registry(agent)
+
+        self.last_new_names = new_names
+        self.last_updated_names = updated_names
+        self.last_skipped_collisions = skipped_collisions
+        self.last_staff_updates = staff_updates
 
         if skipped_collisions:
             logger.warning(
                 "recruit: %d agent(s) skipped due to name×role collision: %s",
                 len(skipped_collisions), skipped_collisions,
+            )
+        if staff_updates:
+            logger.info(
+                "recruit: %d staff model swap(s) applied: %s",
+                len(staff_updates), staff_updates,
             )
         return created, created_names
 

@@ -88,6 +88,10 @@ class RunArtefact:
     def synthesis_path(self) -> Path:
         return self.run_dir / "synthesis.md"
 
+    def assumptions_path(self) -> Path:
+        return self.run_dir / "assumptions.md"
+
+
 
 def create_run(armance_root: Path, workflow_name: str) -> RunArtefact:
     """Mint a new versioned run directory."""
@@ -179,6 +183,13 @@ def write_trace(artefact: RunArtefact, content: str) -> Path:
     return path
 
 
+def write_assumptions(artefact: RunArtefact, content: str) -> Path:
+    path = artefact.assumptions_path()
+    path.write_text(content, encoding="utf-8")
+    return path
+
+
+
 def finalise(artefact: RunArtefact, *, status: str = "completed") -> None:
     """Write the per-run manifest + bump the workflow-level runs.json.
 
@@ -208,6 +219,7 @@ def finalise(artefact: RunArtefact, *, status: str = "completed") -> None:
         "duration_ms": _ms_between(artefact.started_at, artefact.ended_at),
         "steps": step_records,
         "totals": totals,
+        "assumptions_present": artefact.assumptions_path().exists(),
         "synthesis_present": artefact.synthesis_path().exists(),
         "trace_present": artefact.trace_path().exists(),
     }

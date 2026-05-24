@@ -16,6 +16,11 @@ class ChatInput(TextArea):
     BINDINGS = [
         Binding("enter", "submit", "Submit", priority=True),
         Binding("ctrl+j", "newline", "New line", priority=True),
+        # Terminals vary on Ctrl+Backspace: some send "ctrl+backspace", others
+        # "ctrl+h" or "ctrl+w" (readline convention). Bind all three.
+        Binding("ctrl+backspace", "delete_word_left", "Delete word", priority=True),
+        Binding("ctrl+h", "delete_word_left", "Delete word", show=False, priority=True),
+        Binding("ctrl+w", "delete_word_left", "Delete word", show=False, priority=True),
     ]
 
     def action_submit(self) -> None:
@@ -43,7 +48,7 @@ class InputBar(Widget):
         layout: horizontal;
         background: $panel;
         height: auto;
-        max-height: 4;
+        max-height: 8;
         min-height: 3;
     }
 
@@ -60,7 +65,7 @@ class InputBar(Widget):
         width: 1fr;
         height: auto;
         min-height: 1;
-        max-height: 4;
+        max-height: 8;
         background: $panel;
         color: $foreground;
         border: none;

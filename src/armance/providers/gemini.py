@@ -66,15 +66,15 @@ class GeminiClient(LLMClient):
         model: str,
     ) -> list[float]:
         url = f"{self.base_url}/models/{model}:embedContent"
-        params_with_key = {}
+        headers: dict[str, str] = {}
         if self._provider.api_key:
-            params_with_key["key"] = self._provider.api_key
+            headers["x-goog-api-key"] = self._provider.api_key
 
         payload = {
             "content": {"parts": [{"text": text}]},
         }
 
-        response = await self._client.post(url, params=params_with_key, json=payload)
+        response = await self._client.post(url, headers=headers, json=payload)
         if response.status_code >= 400:
             raise GeminiHTTPError(
                 f"gemini embeddings failed: {response.status_code} {response.text}"
@@ -83,6 +83,27 @@ class GeminiClient(LLMClient):
         data = response.json()
         # Format: {"embedding": {"values": [...]}}
         return data["embedding"]["values"]
+
+    def embed_sync(self, text: str, model: str) -> list[float]:
+        # Called from sync_docs worker thread. Driving the persistent
+        # httpx.AsyncClient from a fresh event loop raises
+        # "bound to a different event loop". Use a one-shot sync client.
+        # Pass the API key in a header rather than the URL query string so
+        # it never leaks into httpx INFO logs.
+        url = f"{self.base_url}/models/{model}:embedContent"
+        headers: dict[str, str] = {}
+        if self._provider.api_key:
+            headers["x-goog-api-key"] = self._provider.api_key
+
+        payload = {"content": {"parts": [{"text": text}]}}
+
+        with httpx.Client(timeout=self._timeout) as client:
+            response = client.post(url, headers=headers, json=payload)
+        if response.status_code >= 400:
+            raise GeminiHTTPError(
+                f"gemini embeddings failed: {response.status_code} {response.text}"
+            )
+        return response.json()["embedding"]["values"]
 
     async def stream_complete(
         self,

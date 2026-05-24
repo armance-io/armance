@@ -193,8 +193,8 @@ class ChallengerAgent:
         )
 
     def _build_system_prompt(self, claims: list, rag_context: str = "") -> str:
-        cato = self._load_serge()
-        base = cato.effective_system_prompt(caveman_level="none")
+        serge = self._load_serge()
+        base = serge.effective_system_prompt(caveman_level="none")
 
         if not claims and not rag_context:
             return base

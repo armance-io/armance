@@ -115,3 +115,68 @@ async def test_claude_code_propagates_max_tokens_as_length(
     client = cc_module.ClaudeCodeClient(ProviderConfig(name="claude-code"))
     resp = await client.complete([{"role": "user", "content": "hi"}], "m")
     assert resp.finish_reason == "length"
+
+
+def test_content_to_str_coerces_multipart_blocks() -> None:
+    """Anthropic-style content arrives as list[{"type":"text","text":...}].
+    Coercion must yield plain string for downstream str.join."""
+    from armance.providers.claude_code import _content_to_str
+    assert _content_to_str("plain") == "plain"
+    assert _content_to_str([{"type": "text", "text": "a"}, {"type": "text", "text": "b"}]) == "ab"
+    assert _content_to_str([{"text": "x"}]) == "x"
+    assert _content_to_str(None) == ""
+    assert _content_to_str(["raw", {"text": "z"}]) == "rawz"
+
+
+@pytest.mark.asyncio
+async def test_claude_code_accepts_multipart_system_content(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Regression: TypeError 'sequence item 0: expected str instance, dict found'
+    on Claude models when system content is multipart."""
+    _patch_sdk(
+        monkeypatch,
+        [
+            _StubAssistant(content=[_StubText(text="ok")]),
+            _StubResult(usage={"input_tokens": 1, "output_tokens": 1}),
+        ],
+    )
+    client = cc_module.ClaudeCodeClient(ProviderConfig(name="claude-code"))
+    resp = await client.complete(
+        [
+            {"role": "system", "content": [{"type": "text", "text": "sys1"}]},
+            {"role": "user", "content": [{"type": "text", "text": "u1"}]},
+        ],
+        "claude-haiku-4-5",
+    )
+    assert resp.text == "ok"
+
+
+@pytest.mark.asyncio
+async def test_claude_code_maps_tools_and_avoids_type_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test that generic search tool specifications are correctly mapped to WebSearch inside allowed_tools."""
+    captured = _patch_sdk(
+        monkeypatch,
+        [
+            _StubAssistant(content=[_StubText(text="search result")]),
+            _StubResult(usage={"input_tokens": 5, "output_tokens": 5}),
+        ],
+    )
+    client = cc_module.ClaudeCodeClient(ProviderConfig(name="claude-code"))
+    resp = await client.complete(
+        [
+            {"role": "user", "content": "Search for info"},
+        ],
+        "claude-haiku-4-5",
+        tools=[{"name": "web_search"}],
+        unsupported_param_to_filter="some-val",
+    )
+    assert resp.text == "search result"
+    # Ensure allowed_tools is mapped to "WebSearch" and unsupported_param_to_filter is ignored/filtered if not using stub
+    # Since the stub has **kwargs, all arguments passed will be captured under options.kwargs
+    assert "WebSearch" in captured["options"].kwargs["allowed_tools"]
+    # Wait, because in the stub has_var_keyword is True, unsupported_param_to_filter is passed through
+    assert captured["options"].kwargs["unsupported_param_to_filter"] == "some-val"
+

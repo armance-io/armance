@@ -99,11 +99,15 @@ class SpecialistRunner:
             logger.debug("read-doc inject skipped", exc_info=True)
 
         system_prompt = agent.effective_system_prompt(caveman_level=caveman_level)
-        try:
-            from armance.service.agents._voice_overlay import voice_overlay
-            system_prompt = f"{system_prompt}\n\n{voice_overlay(getattr(self.config, 'language', 'en'))}"
-        except Exception:
-            pass
+
+        if caveman_level == "none":
+            system_prompt += (
+                "\n\n## Communication Style — Direct Human Dialogue\n"
+                "You are in direct, personal dialogue with the human user (CEO). "
+                "Do NOT use caveman mode, telegram style, or truncated sentences. "
+                "Always reply in a natural, polite, and fully-articulated style with proper grammar, "
+                "even if previous turns in the history were generated using caveman mode."
+            )
 
         # Sandbox reminder for non-meta specialists: no tools available.
         # The defense layer strips any [EXECUTE:/...] tag anyway, but
@@ -117,11 +121,27 @@ class SpecialistRunner:
                 "mention `@Kim`. If new project context is needed, suggest the user "
                 "ask `@Armance` to save it. Never emit `<tool_call>` markup."
             )
+            system_prompt += (
+                "\n\n## STRICT NON-HALLUCINATION & ANTI-HYPOTHESIS POLICY\n"
+                "Do NOT speculate, guess, or invent missing information or facts. If you lack "
+                "data, files, or critical elements required to answer a question or make a decision, "
+                "you MUST explicitly flag this in your deliverable output by stating:\n"
+                "- `QUESTION: <the specific question or information needed>`\n"
+                "- `HYPOTHESIS: <the explicitly stated hypothesis you are making to proceed, and why>`\n"
+                "Be extremely transparent. Do not invent context or make silent assumptions."
+            )
 
         if system_addon:
             system_prompt = f"{system_prompt}\n\n{system_addon}"
         if context:
             system_prompt = f"{system_prompt}\n\n--- Context ---\n{context}"
+
+        # Voice overlay LAST — weak models follow the final instruction best.
+        try:
+            from armance.service.agents._voice_overlay import voice_overlay
+            system_prompt = f"{system_prompt}\n\n{voice_overlay(getattr(self.config, 'language', 'en'))}"
+        except Exception:
+            pass
 
         messages: list[dict[str, str]] = [{"role": "system", "content": system_prompt}]
         if history:

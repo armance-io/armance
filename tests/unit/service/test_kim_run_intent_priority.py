@@ -1,5 +1,7 @@
-"""Kim run-intent safety net — when the user says 'lance' but Kim
-re-emits the workflow YAML, we force the run tag instead of re-saving.
+"""Kim run-intent safety net — syntax normalization tests.
+
+Verifies that we normalize malformed tags and retrieve the latest workflow name properly,
+without any eager keyword-based intent parsing.
 """
 from __future__ import annotations
 
@@ -7,9 +9,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from armance.service.chat_handlers.kim import (
-    _inject_run_tag_if_user_says_launch,
     _latest_workflow_name,
-    _user_wants_to_run,
 )
 
 
@@ -23,62 +23,35 @@ def _make_ctx(tmp_path: Path, *, with_workflow: bool = True):
     return ctx
 
 
-def test_user_wants_to_run_recognises_french_and_english() -> None:
-    assert _user_wants_to_run("lance le workflow")
-    assert _user_wants_to_run("RUN LE WORKFLOW")
-    assert _user_wants_to_run("execute it")
-    assert _user_wants_to_run("démarre")
-    assert _user_wants_to_run("Bordel run")
-    assert not _user_wants_to_run("sauvegarde le workflow")
-    assert not _user_wants_to_run("non")
-
-
 def test_latest_workflow_returned(tmp_path: Path) -> None:
     ctx = _make_ctx(tmp_path)
     assert _latest_workflow_name(ctx) == "dossier-historique"
 
 
-def test_inject_run_tag_when_user_launches_and_kim_re_emits_yaml(tmp_path: Path) -> None:
-    ctx = _make_ctx(tmp_path)
-    reply = (
-        "yaml\n"
-        "name: dossier-historique\n"
-        "steps:\n"
-        "  - id: a\n"
-        "    kind: task\n"
-        "    role: historian\n"
-        "    depends_on: []\n"
-        "```\n"
+def test_normalise_tool_call_run_rewrites_to_canonical() -> None:
+    """Weak LLM emits `<tool_call>execute:workflow-run:NAME:MODE` instead of
+    the canonical `[EXECUTE:/workflow-run:NAME:MODE]`. Normaliser rewrites
+    so the intercept fires the real runner."""
+    from armance.service.chat_handlers.kim import _normalise_tool_call_run
+    raw = (
+        "Quelque chose…\n"
+        "<tool_call>execute:workflow-run:dossier-historique:autonome\n"
     )
-    out = _inject_run_tag_if_user_says_launch(reply, "lance le workflow", ctx)
-    assert "[EXECUTE:/workflow-run:dossier-historique]" in out
-    # Raw YAML must be cleaned from the user-visible reply.
-    assert "name: dossier-historique\nsteps:" not in out
+    out = _normalise_tool_call_run(raw)
+    assert "[EXECUTE:/workflow-run:dossier-historique:autonome]" in out
+    assert "<tool_call>" not in out
 
 
-def test_no_inject_when_user_did_not_ask_to_run(tmp_path: Path) -> None:
-    ctx = _make_ctx(tmp_path)
-    reply = "Workflow proposé, ok ?"
-    out = _inject_run_tag_if_user_says_launch(reply, "ok parfait", ctx)
-    assert "[EXECUTE:/workflow-run:" not in out
+def test_normalise_handles_missing_slash_variant() -> None:
+    """`[EXECUTE:workflow-run:X]` (no leading slash) also normalised."""
+    from armance.service.chat_handlers.kim import _normalise_tool_call_run
+    out = _normalise_tool_call_run("[EXECUTE:workflow-run:foo]")
+    assert "[EXECUTE:/workflow-run:foo]" in out
 
 
-def test_no_inject_when_no_workflow_exists(tmp_path: Path) -> None:
-    ctx = _make_ctx(tmp_path, with_workflow=False)
-    out = _inject_run_tag_if_user_says_launch("yaml...", "lance", ctx)
-    assert "[EXECUTE:/workflow-run:" not in out
-
-
-def test_no_inject_when_run_tag_already_present(tmp_path: Path) -> None:
-    ctx = _make_ctx(tmp_path)
-    reply = "[EXECUTE:/workflow-run:dossier-historique:interactive]"
-    out = _inject_run_tag_if_user_says_launch(reply, "lance", ctx)
-    assert out.count("[EXECUTE:/workflow-run:") == 1
-
-
-def test_no_inject_when_design_tag_present(tmp_path: Path) -> None:
-    """Kim legitimately emits a design tag — don't override with run."""
-    ctx = _make_ctx(tmp_path)
-    reply = "[EXECUTE:/workflow-design]\n```yaml\nname:x\n```"
-    out = _inject_run_tag_if_user_says_launch(reply, "lance", ctx)
-    assert "[EXECUTE:/workflow-run:" not in out
+def test_normalise_preserves_canonical_tag() -> None:
+    """No-op when the canonical tag is already present."""
+    from armance.service.chat_handlers.kim import _normalise_tool_call_run
+    canonical = "[EXECUTE:/workflow-run:foo:autonomous]"
+    out = _normalise_tool_call_run(canonical + "\nfoo")
+    assert out.count("[EXECUTE:/workflow-run:foo") == 1

@@ -527,9 +527,22 @@ agents:
         assert (agents_dir / "Theo.md").exists()
         assert Agent.load(agents_dir / "Theo.md").model == "google/gemma-4-26b-a4b-it:free"
 
-    def test_criticalist_always_named_serge(self, hr_service, temp_armance_root):
-        """Whatever name Malik emits for role=criticalist, code forces it to Serge."""
+    def test_criticalist_recruit_redirects_to_system_challenger(
+        self, hr_service, temp_armance_root,
+    ):
+        """role=criticalist must update system-challenger.md (model swap),
+        never create a user agent named Serge/Kai/whatever."""
         agents_dir = temp_armance_root / "agents"
+        # Seed system-challenger.md (minimal frontmatter) so redirect has target.
+        (agents_dir / "system-challenger.md").write_text(
+            "---\nname: system-challenger\ndomain: meta\nrole: meta\n"
+            "persona: null\nprovider: openrouter\nmodel: old/m:free\n"
+            "reasoning: null\nstatus: active\nprovider_family: null\n"
+            "created_at: null\nupdated_at: null\nversion: 1\nparent_version: null\n"
+            "lead_for: []\ndescription: ''\ncreated_by: null\n"
+            "last_health: null\nlast_health_at: null\n---\nbody\n",
+            encoding="utf-8",
+        )
         yaml_kai = """
 agents:
   - name: Kai
@@ -540,6 +553,171 @@ agents:
     description: "adversarial red-teamer"
 """
         created, names = hr_service.recruit_agents(yaml_kai, "criticalist", agents_dir)
-        assert names == ["Serge"], f"Expected ['Serge'] but got {names}"
-        assert (agents_dir / "Serge.md").exists()
+        assert names == []
+        assert not (agents_dir / "Serge.md").exists()
         assert not (agents_dir / "Kai.md").exists()
+        updated = Agent.load(agents_dir / "system-challenger.md")
+        assert updated.model == "openai/gpt-4o-mini:free"
+
+
+class TestStaffRoleRedirect:
+    """When Malik 'recruits' a staff role (host/recruiter/operator/vp),
+    the recruit must rewrite the existing system-*.md model field instead
+    of creating a new user agent."""
+
+    def _seed_staff(self, agents_dir, stem: str) -> None:
+        """Create a minimal system-*.md frontmatter so the redirect path
+        has something to update."""
+        frontmatter = (
+            "---\n"
+            f"name: {stem}\n"
+            "domain: meta\n"
+            "role: meta\n"
+            "persona: null\n"
+            "provider: openrouter\n"
+            "model: old/model:free\n"
+            "reasoning: null\n"
+            "status: active\n"
+            "provider_family: null\n"
+            "created_at: null\n"
+            "updated_at: null\n"
+            "version: 1\n"
+            "parent_version: null\n"
+            "lead_for: []\n"
+            "description: ''\n"
+            "created_by: null\n"
+            "last_health: null\n"
+            "last_health_at: null\n"
+            "---\n"
+            "body\n"
+        )
+        (agents_dir / f"{stem}.md").write_text(frontmatter, encoding="utf-8")
+
+    @pytest.mark.parametrize("role,system_stem", [
+        ("host",           "system-context"),
+        ("recruiter",      "system-hr"),
+        ("operator",       "system-orchestrator"),
+        ("vice-president", "system-judge"),
+        ("criticalist",    "system-challenger"),
+    ])
+    def test_staff_role_redirects_to_system_file(
+        self, hr_service, temp_armance_root, role, system_stem,
+    ):
+        agents_dir = temp_armance_root / "agents"
+        self._seed_staff(agents_dir, system_stem)
+
+        yaml_text = f"""
+agents:
+  - name: Astrid
+    role: {role}
+    persona: alt
+    provider: openrouter
+    model: new/model:free
+    description: "x"
+"""
+        created, names = hr_service.recruit_agents(yaml_text, role, agents_dir)
+        # No new user agent file created
+        assert names == []
+        assert not (agents_dir / "Astrid.md").exists()
+        # system-*.md model field updated in place
+        updated = Agent.load(agents_dir / f"{system_stem}.md")
+        assert updated.model == "new/model:free"
+
+
+class TestRoleCollisionAndTelemetry:
+    """Tests for similar role updates, true collisions, and telemetry tracking."""
+
+    def test_similar_role_update_succeeds(self, hr_service, temp_armance_root):
+        """Updating an existing agent with a similar role (same first token) should succeed."""
+        agents_dir = temp_armance_root / "agents"
+        # Seed Theo with "architecte-systeme"
+        (agents_dir / "Theo.md").write_text(
+            "---\nname: Theo\nrole: architecte-systeme\npersona: audacieux\n"
+            "provider: openrouter\nmodel: old/model:free\n---\nBody\n",
+            encoding="utf-8"
+        )
+        yaml_text = """
+agents:
+  - name: Theo
+    role: architecte
+    persona: audacieux
+    provider: openrouter
+    model: new/model:free
+"""
+        created, names = hr_service.recruit_agents(yaml_text, "architecte", agents_dir)
+        assert names == ["Theo"]
+        assert hr_service.last_new_names == []
+        assert hr_service.last_updated_names == ["Theo"]
+        assert hr_service.last_skipped_collisions == []
+        
+        # Verify the file was updated with the new model
+        updated = Agent.load(agents_dir / "Theo.md")
+        assert updated.model == "new/model:free"
+        assert updated.role == "architecte"
+
+    def test_true_role_collision_blocked(self, hr_service, temp_armance_root):
+        """Updating an existing agent with a completely different role should be blocked."""
+        agents_dir = temp_armance_root / "agents"
+        # Seed Theo with "architecte-systeme"
+        (agents_dir / "Theo.md").write_text(
+            "---\nname: Theo\nrole: architecte-systeme\npersona: audacieux\n"
+            "provider: openrouter\nmodel: old/model:free\n---\nBody\n",
+            encoding="utf-8"
+        )
+        
+        with patch.object(hr_service, "_parse_agents_yaml") as mock_parse:
+            mock_parse.return_value = [
+                Agent(
+                    name="Theo",
+                    role="historien",
+                    persona="audacieux",
+                    provider="openrouter",
+                    model="new/model:free",
+                    system_prompt="New prompt",
+                )
+            ]
+            
+            created, names = hr_service.recruit_agents("dummy yaml", "historien", agents_dir)
+            assert names == []
+            assert hr_service.last_new_names == []
+            assert hr_service.last_updated_names == []
+            assert hr_service.last_skipped_collisions == ["Theo"]
+            
+            # Verify the file was NOT updated and kept the old model/role
+            unchanged = Agent.load(agents_dir / "Theo.md")
+            assert unchanged.model == "old/model:free"
+            assert unchanged.role == "architecte-systeme"
+
+    def test_staff_and_new_agent_telemetry(self, hr_service, temp_armance_root):
+        """Verify new agents and staff updates are tracked correctly in telemetry."""
+        agents_dir = temp_armance_root / "agents"
+        # Seed system-context
+        frontmatter = (
+            "---\nname: system-context\ndomain: meta\nrole: meta\n"
+            "persona: null\nprovider: openrouter\nmodel: old/model:free\n"
+            "reasoning: null\nstatus: active\nprovider_family: null\n"
+            "created_at: null\nupdated_at: null\nversion: 1\nparent_version: null\n"
+            "lead_for: []\ndescription: ''\ncreated_by: null\n"
+            "last_health: null\nlast_health_at: null\n---\nbody\n"
+        )
+        (agents_dir / "system-context.md").write_text(frontmatter, encoding="utf-8")
+
+        yaml_text = """
+agents:
+  - name: Priya
+    role: developpeur
+    persona: innovateur
+    provider: openrouter
+    model: new/model:free
+  - name: Astrid
+    role: host
+    persona: context
+    provider: openrouter
+    model: host/model:free
+"""
+        created, names = hr_service.recruit_agents(yaml_text, "developpeur", agents_dir)
+        assert names == ["Priya"]
+        assert hr_service.last_new_names == ["Priya"]
+        assert hr_service.last_updated_names == []
+        assert hr_service.last_staff_updates == ["system-context(host/model:free)"]
+        assert hr_service.last_skipped_collisions == []

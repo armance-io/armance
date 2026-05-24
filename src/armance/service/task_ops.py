@@ -51,12 +51,26 @@ async def cmd_task(args: list[str], ctx: LoopContext) -> str:
         if agent_obj is None:
             _set_status(ctx, agent_name, "error")
             return t("task.no_agent_for_domain", domain=domain)
+        user_text_lower = prompt.lower()
+        if "caveman" in user_text_lower:
+            if "full" in user_text_lower:
+                task_caveman = "full"
+            elif "ultra" in user_text_lower:
+                task_caveman = "ultra"
+            elif "none" in user_text_lower:
+                task_caveman = "none"
+            else:
+                task_caveman = "ultra"
+        else:
+            task_caveman = "none"
+
         report = await run_specialist(
             agent_obj,
             task,
             ctx.armance_root,
             ctx.cfg,
             reports_root=reports_root,
+            caveman_level=task_caveman,
         )
         _set_status(ctx, agent_name, "completed")
         ctx._last_output = report.content

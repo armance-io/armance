@@ -13,11 +13,11 @@ from typing import Any
 
 from armance.client.tui.widgets.workflow_view import format_claim_density
 
-# Agent kind → Rich colour name
+# Agent kind → warm editorial hex (matches chat._META_AGENT_COLORS)
 KIND_COLORS: dict[str, str] = {
-    "synthesis": "cyan",       # Mona — decision-teal
-    "critique": "orange1",     # Serge — warning-orange
-    "specialist": "white",
+    "synthesis":  "#c5aa72",   # Mona — ambre passé
+    "critique":   "#e98667",   # Serge — rust, the rare warning hue
+    "specialist": "#eeebe4",   # cream foreground
 }
 
 

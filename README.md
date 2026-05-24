@@ -11,7 +11,7 @@ Not a copilot. Not an autonomous agent. A small firm of LLM experts that **debat
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![DCO](https://img.shields.io/badge/DCO-required-orange.svg)](CONTRIBUTING.md#developer-certificate-of-origin-dco)
 
-[Install](#install) · [Quickstart](#quickstart) · [How it works](#how-it-works) · [Contributing](CONTRIBUTING.md) · [Roadmap](roadmap/04_roadmap.md) · [Web (planned)](WEB_NEXT.md)
+[Install](#install) · [Quickstart](#quickstart) · [How it works](#how-it-works) · [Contributing](CONTRIBUTING.md) · [Roadmap](roadmap/04_roadmap.md) · [Issues & user stories](ISSUES.md)
 
 </div>
 
@@ -314,10 +314,13 @@ See [`roadmap/`](roadmap/):
 - [`02_architecture.md`](roadmap/02_architecture.md) — module map & dependency rules.
 - [`03_assessment_2026-05-15.md`](roadmap/03_assessment_2026-05-15.md) — current state audit.
 - [`04_roadmap.md`](roadmap/04_roadmap.md) — phased plan, including the web port.
-- [`05_auto_embed_discovery.md`](roadmap/05_auto_embed_discovery.md) — embedding auto-discovery + per-model parameter discovery.
-- [`06_workflow_runtime_ux.md`](roadmap/06_workflow_runtime_ux.md) — workflow runtime UX, parallelism, pipeline view.
 
-Web client is parked but spec-complete: see [`WEB_NEXT.md`](WEB_NEXT.md).
+For per-issue specs (user stories + known bugs), see
+[`ISSUES.md`](ISSUES.md). The detailed feature/bug files live under
+`issues/features/` and `issues/bugs/` — including the V2 web layer
+build guide ([`issues/features/web-layer.md`](issues/features/web-layer.md))
+and the embedding auto-discovery proposal
+([`issues/features/auto-embed-discovery.md`](issues/features/auto-embed-discovery.md)).
 
 ---
 

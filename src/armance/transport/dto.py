@@ -167,68 +167,8 @@ class SessionState:
     current_model: str | None = None
 
 
-# ============================================================================
-# Event stream DTOs
-# ============================================================================
-
-
-@dataclass
-class Event:
-    """Base event type."""
-
-    timestamp: datetime | None = None
-    type: str = ""
-
-
-@dataclass
-class AgentStateChanged(Event):
-    """Agent state changed event."""
-
-    type: str = "agent_state_changed"
-    agent_name: str = ""
-    old_state: str = ""
-    new_state: str = ""
-
-
-@dataclass
-class TaskEvent(Event):
-    """Task lifecycle event."""
-
-    type: str = "task"
-    task_id: str = ""
-    task_brief: str = ""
-    status: TaskStatus = TaskStatus.DEFINED
-    message: str = ""
-
-
-@dataclass
-class WorkflowEvent(Event):
-    """Workflow lifecycle event."""
-
-    type: str = "workflow"
-    workflow_name: str = ""
-    step_id: str | None = None
-    status: Literal["started", "completed", "failed", "paused", "resumed"] = "started"
-    message: str = ""
-    kind: str = ""  # e.g. "step_done", "confrontation_detected", "finished"
-
-
-@dataclass
-class ContextEvent(Event):
-    """Context layer event."""
-
-    type: str = "context"
-    layer: Literal["L0", "L1", "L2"] = "L0"
-    theme: str | None = None
-    action: Literal["created", "updated", "archived"] = "created"
-    path: str = ""
-
-
-@dataclass
-class BudgetEvent(Event):
-    """Budget-related event."""
-
-    type: str = "budget"
-    current_spent: float = 0.0
-    budget_cap: float | None = None
-    warning_level: Literal["normal", "warning", "critical"] = "normal"
+# Event types live in armance.core.models.event. The dataclass shadows
+# previously defined here (Event/AgentStateChanged/TaskEvent/...) were never
+# emitted anywhere — the production event bus is
+# armance.service.events.LocalEventBus, which uses the canonical Pydantic
+# model directly.

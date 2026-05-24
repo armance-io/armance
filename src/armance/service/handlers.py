@@ -202,14 +202,12 @@ async def _cmd_effort(args: list[str], ctx: LoopContext) -> str:
 
 _STAFF_AGENT_MAP = {
     "mona": "system-judge",
-    "cato": "system-challenger",       # legacy alias (Cato → Serge)
-    "serge": "system-challenger",      # canonical name
+    "serge": "system-challenger",
     "criticalist": "system-challenger",
 }
 
 _STAFF_CANONICAL_NAME = {
     "mona": "Mona",
-    "cato": "Serge",
     "serge": "Serge",
     "criticalist": "Serge",
 }
@@ -218,7 +216,7 @@ _STAFF_CANONICAL_NAME = {
 def _resolve_step_agent(domain: str, ctx: "LoopContext") -> Any:
     """Resolve a step's domain to a concrete Agent.
 
-    - `mona` / `serge` / `cato` / `criticalist` → prefer user-recruited
+    - `mona` / `serge` / `serge` / `criticalist` → prefer user-recruited
       agent (Mona.md / Serge.md in .armance/agents/); fall back to the
       builtin template if absent.
     - Anything else → match against the user roster (ctx.agents) by domain.
@@ -271,6 +269,7 @@ async def _mona_proxy_checkpoint(
     prompt = (
         f"You are Mona answering a human-checkpoint question as the VP, "
         f"on behalf of the absent CEO. Decide pragmatically.\n\n"
+        f"CRITICAL: If the decision/question concerns an extremely important, critical, or high-risk element that you do not know or cannot decide without guessing/inventing, do NOT attempt to guess. Instead, you MUST delegate it to the user by starting your response exactly with `[ASK_USER] <Reason why you cannot decide and the question for the user>`.\n\n"
         f"## Project brief\n{ctx.state.project_brief or '(none)'}\n\n"
         f"## Checkpoint question (step id: {getattr(step, 'id', '?')})\n"
         f"{getattr(step, 'prompt', '(none)')}\n\n"
@@ -296,7 +295,7 @@ def _collect_unhealthy_agents(wf, ctx) -> list[str]:
     required_roles = {
         (getattr(s, "role", None) or getattr(s, "domain", None) or "").lower().strip()
         for s in wf.steps
-    } - {"", "mona", "cato"}
+    } - {"", "mona", "serge"}
     if not required_roles:
         return []
     bad: list[str] = []
@@ -441,13 +440,18 @@ async def _cmd_workflow_run(
                 mark_step_failed(artefact, step.id, msg)
                 return msg
             _missing_streak["count"] = 0
+            # Caveman policy:
+            #   - specialist task / critique steps speak agent→agent → ultra
+            #   - Mona's judge step produces the user-facing synthesis → none
+            #   - deliverable step is read by the user → none
+            step_caveman = "none" if step.kind in ("judge", "deliverable") else "ultra"
             report = await run_specialist(
                 agent_obj,
                 task,
                 ctx.armance_root,
                 ctx.cfg,
                 reports_root=ctx.armance_root / "reports",
-                caveman_level="ultra",
+                caveman_level=step_caveman,
             )
             _set_status(ctx, step.id, "completed")
             write_step_output(artefact, step.id, report.content)
@@ -487,12 +491,36 @@ async def _cmd_workflow_run(
     # Build checkpoint handler for human_checkpoint steps
     from armance.service.checkpoint import Checkpoint, CheckpointResponse
 
+    _abort_state: dict[str, Any] = {"was_canceled": False, "step_id": None}
+
+    def _mark_aborted(step_id: str) -> None:
+        _abort_state["was_canceled"] = True
+        _abort_state["step_id"] = step_id
+        _run_aborted["flag"] = True
+        _run_aborted["reason"] = f"user aborted at checkpoint `{step_id}`"
+
     async def checkpoint_handler(step, prior_outputs: dict[str, str]) -> str:
         # In autonomous mode, Mona speaks on behalf of the CEO. We ask the
         # mona meta-agent to answer the checkpoint based on the project
         # brief + upstream outputs, no TTY prompt to the user.
         if run_mode == "autonomous":
-            return await _mona_proxy_checkpoint(step, prior_outputs, ctx)
+            proxy_res = await _mona_proxy_checkpoint(step, prior_outputs, ctx)
+            if proxy_res.startswith("[ASK_USER]"):
+                reason_and_q = proxy_res[len("[ASK_USER]"):].strip()
+                if ctx.checkpoint_handler is None:
+                    raise RuntimeError("No checkpoint handler configured to prompt user.")
+                checkpoint = Checkpoint(
+                    id=getattr(step, "id", "?"),
+                    prompt=f"{reason_and_q}\n\n(Original question: {getattr(step, 'prompt', '')})",
+                )
+                response: CheckpointResponse = await ctx.checkpoint_handler.prompt(checkpoint)
+                if response.is_abort:
+                    _set_status(ctx, step.id, "canceled")
+                    _mark_aborted(step.id)
+                    ctx.append(f"[abort] workflow aborted at checkpoint '{step.id}'")
+                    return t("workflow.aborted")
+                return response.content
+            return proxy_res
 
         if ctx.checkpoint_handler is None:
             raise RuntimeError("No checkpoint handler configured to prompt user.")
@@ -504,6 +532,7 @@ async def _cmd_workflow_run(
         response: CheckpointResponse = await ctx.checkpoint_handler.prompt(checkpoint)
         if response.is_abort:
             _set_status(ctx, step.id, "canceled")
+            _mark_aborted(step.id)
             ctx.append(f"[abort] workflow aborted at checkpoint '{step.id}'")
             return t("workflow.aborted")
         return response.content
@@ -549,7 +578,24 @@ async def _cmd_workflow_run(
         for sid, r in results.items():
             if sid.startswith("auto_") and not artefact.step_path(sid).exists():
                 write_step_output(artefact, sid, r.output)
-        _finalise_run(artefact, status="completed")
+
+        # Assumptions register — Mona reviews step outputs, extracts
+        # hypotheses/questions, writes assumptions.md next to synthesis.md.
+        from armance.service.assumptions_ops import (
+            compile_and_persist,
+            split_exec_summary,
+        )
+
+        assumptions_content = await compile_and_persist(artefact, results, ctx)
+
+        final_status = "canceled" if _abort_state["was_canceled"] else "completed"
+        _finalise_run(artefact, status=final_status)
+        if _abort_state["was_canceled"]:
+            return t(
+                "workflow.run_aborted",
+                step_id=_abort_state["step_id"],
+                path=str(artefact.run_dir.relative_to(ctx.armance_root)),
+            )
         run_path = str(artefact.run_dir.relative_to(ctx.armance_root))
         # Last non-empty step output → 150-char preview
         last_output = ""
@@ -559,7 +605,11 @@ async def _cmd_workflow_run(
                 break
         preview = last_output[:150].replace("\n", " ")
         mona_offer = t("workflow.run_mona_offer")
-        return t("workflow.run_preview", path=run_path, preview=preview, mona_offer=mona_offer)
+        final_msg = t("workflow.run_preview", path=run_path, preview=preview, mona_offer=mona_offer)
+        exec_summary = split_exec_summary(assumptions_content)
+        if exec_summary:
+            final_msg += t("workflow.assumptions_header") + exec_summary
+        return final_msg
     except RuntimeError as exc:
         _finalise_run(artefact, status="canceled")
         return str(exc)

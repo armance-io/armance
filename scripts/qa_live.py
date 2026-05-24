@@ -231,7 +231,7 @@ async def run_qa() -> None:
         "ne suivent pas leur temps. Projet mobile, public FR, 3 mois."
     )
 
-    if "cato" in r.lower() or "criticalist" in r.lower() or "critic" in r.lower():
+    if "serge" in r.lower() or "criticalist" in r.lower() or "critic" in r.lower():
         ok("B1 Malik includes Serge in recruitment plan")
     else:
         fail("B1 Serge absent from Malik's plan", "Malik should always include Serge")
@@ -264,7 +264,7 @@ async def run_qa() -> None:
     else:
         fail("B5 no agent files created", "expected .md files in .armance/agents/")
 
-    serge_file = next((p for p in user_agents if "cato" in p.stem.lower() or "critic" in p.stem.lower()), None)
+    serge_file = next((p for p in user_agents if "serge" in p.stem.lower() or "critic" in p.stem.lower()), None)
     if serge_file:
         ok("B6 Serge file exists on disk", serge_file.stem)
     else:
@@ -341,7 +341,7 @@ async def run_qa() -> None:
     else:
         warn("E2 Kim explanation quality", f"short or off-topic: {r[:200]}")
 
-    if "cato" in r.lower():
+    if "serge" in r.lower():
         ok("E3 Kim mentions Serge in workflow explanation")
     else:
         warn("E3 Serge not mentioned in workflow explanation")

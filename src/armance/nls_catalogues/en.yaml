@@ -231,6 +231,9 @@ system_msg:
   dismissed: "*(System: dismissed {n} agent(s): {names})*"
   dismiss_empty: "*(System: no user agents found to dismiss)*"
   recruited: "*(System: successfully recruited {n} agents)*"
+  updated: "*(System: successfully updated {n} agent(s): {names})*"
+  staff_updated: "*(System: successfully updated model for {n} staff member(s): {details})*"
+  skipped_collision: "*(System: warning — skipped {n} agent(s) due to name/role collision: {names})*"
   recruit_failed: "*(System: failed to recruit agents: {error})*"
   forwarded: "— forwarded to {target} —"
   health_warning: "⚠️ Unreachable models detected during probe: {agents}. Ask @Malik to propose another model for these agents."
@@ -271,6 +274,7 @@ workflow:
   run_finished: "✅ Run finished. All outputs are in `{path}/`. Ask Mona for a synthesis, or compare against a previous run."
   run_preview: "✅ Run finished → `{path}/`\n\n**Preview:** {preview}…\n\n{mona_offer}"
   run_mona_offer: "Want Mona to give you a synthesis and debrief? Just say the word."
+  assumptions_header: "\n\n### 🔍 Mona's Executive Summary (Assumptions & Critical Uncertainties)\n\n"
   list_usage: "usage: /workflow list <name>"
   list_header: "Runs of **{workflow}** ({n}):"
   list_empty: "No runs for `{workflow}`."
@@ -352,3 +356,42 @@ feedback:
 
 iterate:
   usage: "Usage: `/iterate-from <run-id> [<workflow-name>]`"
+
+# ---------------------------------------------------------------------------
+# `armance init` wizard — RAG / embedding picker
+# ---------------------------------------------------------------------------
+init:
+  rag:
+    title: "Document memory (RAG)"
+    intro: |2
+        Armance can index your documents (.armance/docs/) for semantic search.
+
+        How it works:
+        An embedding model turns each passage into a numeric fingerprint.
+        When you ask a question, Armance finds the most relevant passages.
+
+        → With embedding : precise semantic search across your docs.
+        → Without         : documents listed but not searched.
+                            (enable later via config.yaml)
+    querying: "Querying APIs for available embedding models…"
+    found: "{count} model(s) found"
+    none_found: "none found"
+    skip_label: "none"
+    custom_sentinel: "[custom-openai]  type manually →"
+    custom_only_hint: |2
+        custom-openai doesn't expose a model list — type the model id below.
+        Leave blank to disable RAG.
+    no_models_hint: |2
+        ⚠️  No embedding model found on your providers (check your API keys).
+           You can still type one manually below, or press Enter to skip RAG.
+    prompt_provider: "Provider for this embedding model:"
+    prompt_manual_id: "Embedding model id (leave blank to disable RAG):"
+    prompt_manual_id_custom: "Embedding model id for custom-openai:"
+    prompt_autocomplete: "Embedding model (typeahead):"
+    filter_hint: "Type to filter (e.g. 'bge', 'openai'). Type 'none' or leave blank to skip RAG."
+    disabled_short: "RAG disabled."
+    disabled_edit_yaml: "RAG disabled. Edit .armance/config.yaml to enable later."
+    disabled_edit_keys: "RAG disabled. Edit embedding_provider / embedding_model in .armance/config.yaml to enable later."
+    unrecognised: "Model '{name}' not recognised. RAG disabled."
+    confirmed: "Embedding : [{provider}]  {model}"
+  ssl_skip_prompt: "Skip SSL certificate verification? (needed for self-signed / corporate MITM certs)"

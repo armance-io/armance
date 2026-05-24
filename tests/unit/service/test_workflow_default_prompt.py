@@ -47,7 +47,7 @@ def test_judge_step_pulls_in_upstream_outputs() -> None:
 def test_critique_step_warns_to_stay_in_scope() -> None:
     wf = Workflow(
         name="t", scope="dossier historique uniquement",
-        steps=[WorkflowStep(id="c", kind="critique", role="cato")],
+        steps=[WorkflowStep(id="c", kind="critique", role="serge")],
     )
     prompt = _compose_default_prompt(wf, wf.steps[0], user_prompt="x", results={})
     assert "scope" in prompt.lower()
