@@ -262,10 +262,15 @@ check_invariant_5() {
     fi
 
     if [ -f "src/armance/service/events.py" ]; then
+        # After J.3, service/events.py is a shim; the classes live in platform/events.py.
+        # Accept either the old layout (class in service) or the new layout (shim + class in platform).
         if grep -qn "class EventBus\|class LocalEventBus" src/armance/service/events.py; then
             ok "service/events.py declares EventBus / LocalEventBus"
+        elif grep -qn "class EventBus\|class LocalEventBus" src/armance/platform/events.py 2>/dev/null \
+             && grep -qn "from armance.platform.events import" src/armance/service/events.py; then
+            ok "service/events.py is a shim; EventBus / LocalEventBus declared in platform/events.py"
         else
-            fail "service/events.py exists but does not declare EventBus / LocalEventBus"
+            fail "service/events.py exists but does not declare EventBus / LocalEventBus (nor shim to platform)"
         fi
     else
         fail "service/events.py missing"
