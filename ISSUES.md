@@ -46,6 +46,7 @@
 | [`sidebar-tasks-dead-section`](issues/bugs/sidebar-tasks-dead-section.md) | low | Sidebar `Tasks` section is empty by design. Removed by `workflow-live-pipeline` Phase 1a. |
 | [`spinner-spins-without-tokens`](issues/bugs/spinner-spins-without-tokens.md) | low | The agent spinner (once shipped) will tick during the network / cold-start window. Tracked alongside its feature. |
 | [`provider-rate-limit-during-background-run`](issues/bugs/provider-rate-limit-during-background-run.md) | low | Concurrent calls from a background workflow + the user chat may hit provider 429. Accepted for V2. |
+| [`scrubber-fr-only`](issues/bugs/scrubber-fr-only.md) | low | `truncate_simulated_turns` uses hard-coded FR / EN ack tokens. Non-FR sessions get no defensive net. Tracked, accepted for now. |
 
 ---
 
