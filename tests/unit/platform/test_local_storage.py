@@ -166,7 +166,7 @@ async def test_traversal_raises_on_delete(storage) -> None:
 @pytest.mark.asyncio
 async def test_read_jsonl_returns_dicts(storage) -> None:
     lines = [{"name": "event.one"}, {"name": "event.two"}]
-    content = "\n".join(json.dumps(l) for l in lines) + "\n"
+    content = "\n".join(json.dumps(line) for line in lines) + "\n"
     await storage.write_text("events/log.jsonl", content)
     results = []
     async for item in storage.read_jsonl("events/log.jsonl"):

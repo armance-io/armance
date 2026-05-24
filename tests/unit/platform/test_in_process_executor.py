@@ -66,7 +66,7 @@ async def test_status_working_while_task_alive(executor) -> None:
     async def long_running() -> None:
         await event.wait()
 
-    handle = await executor.start(_make_spec("run-long"), coro=long_running())
+    await executor.start(_make_spec("run-long"), coro=long_running())
     status = await executor.status("run-long")
     assert status == "working"
     event.set()

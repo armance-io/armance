@@ -8,7 +8,6 @@ not import from `armance.service` or `armance.client`.
 from __future__ import annotations
 
 import inspect
-import typing
 
 
 def test_platform_package_is_importable() -> None:
