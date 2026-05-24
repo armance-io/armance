@@ -94,7 +94,7 @@ async def test_status_failed_after_exception() -> None:
     async def failing() -> None:
         raise ValueError("intentional failure")
 
-    handle = await executor.start(WorkflowRunSpec(run_id="fail-run"), coro=failing())
+    await executor.start(WorkflowRunSpec(run_id="fail-run"), coro=failing())
     await asyncio.sleep(0.05)
     status = await executor.status("fail-run")
     assert status == "failed"
