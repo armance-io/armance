@@ -374,4 +374,4 @@ build them now:
 - A2A endpoint for Malik-recruited specialists.
 - OpenTelemetry trace ids on every LLM call.
 
-When the time comes, see `roadmap/04_roadmap.md` Phase P3.
+When the time comes, see [`roadmap/04_roadmap.md`](../../roadmap/04_roadmap.md) Phase P3.

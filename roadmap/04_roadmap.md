@@ -84,31 +84,32 @@ Two independent tracks, can land in any order:
 
 ### P2.a — Web layer
 
-See [`WEB_NEXT.md`](../WEB_NEXT.md) — single-file build guide. Eight
-endpoints, ~1.4k LOC under `web/`, no `src/armance/` changes expected.
-The `WebCheckpointHandler` is the only piece of glue (~40 LOC); the rest
-is wiring.
+See [`issues/features/web-layer.md`](../issues/features/web-layer.md) —
+single-file build guide. Eight endpoints, ~1.4k LOC under `web/`, no
+`src/armance/` changes expected. The `WebCheckpointHandler` is the only
+piece of glue (~40 LOC); the rest is wiring.
 
 ### P2.b — Auto-discovered embedding model
 
-See [`05_auto_embed_discovery.md`](05_auto_embed_discovery.md). Removes
-the embedding question from `armance init` and lets Armance propose a
-model when documents first appear, inferred from doc shape (text vs
-multimodal) × budget. Builds on the live provider catalogue
+See [`issues/features/auto-embed-discovery.md`](../issues/features/auto-embed-discovery.md).
+Removes the embedding question from `armance init` and lets Armance
+propose a model when documents first appear, inferred from doc shape
+(text vs multimodal) × budget. Builds on the live provider catalogue
 (`armance.providers.discovery`) that landed 2026-05-17. ~6h estimate.
 
 ### P2.d — Workflow runtime UX
 
-See [`06_workflow_runtime_ux.md`](06_workflow_runtime_ux.md). Three
-stories on the run lifecycle: staff prompt scope (Mona/Serge stay
-inside workflow scope, not project), parallel step execution, and a
-CI/CD-style pipeline view in TUI + read endpoints for the future web
-layer. Manifest schema and pre-run health-check already landed
-2026-05-18. ~8h remaining.
+Two tracks:
+
+- [`issues/features/workflow-runtime-ux.md`](../issues/features/workflow-runtime-ux.md) —
+  Story 1 (staff scope, ✅ landed) + Story 2 (parallel execution, partial).
+- [`issues/features/workflow-live-pipeline.md`](../issues/features/workflow-live-pipeline.md) —
+  pipeline view + agent spinner + background runs with agent-busy
+  semantics. Supersedes the original Story 3 sketch. ~9h.
 
 ### P2.c — Per-model parameter discovery
 
-See [`05_auto_embed_discovery.md`](05_auto_embed_discovery.md)
+See [`issues/features/auto-embed-discovery.md`](../issues/features/auto-embed-discovery.md)
 (companion section). Extends `ModelSpec` with `context_window`,
 `max_completion_tokens`, `supported_parameters`, `knowledge_cutoff`,
 `is_moderated`, `supports_tools`. Malik picks better models per role,

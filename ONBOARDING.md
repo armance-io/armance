@@ -3,6 +3,11 @@
 > Audience: senior engineers joining the codebase. **Read this once**, then keep
 > [`roadmap/02_architecture.md`](roadmap/02_architecture.md) and
 > [`CLAUDE.md`](CLAUDE.md) bookmarked for day-to-day reference.
+>
+> **Looking for something to work on?** Every open user story and known
+> bug is indexed in [`ISSUES.md`](ISSUES.md). Each entry has its own
+> self-contained file under `issues/features/` or `issues/bugs/` with
+> symptom, cause, fix sketch and acceptance criteria.
 
 ---
 
@@ -380,13 +385,18 @@ bash scripts/check_invariants.sh         # layer + legacy hygiene
 
 ## 13. Macro roadmap
 
-See [`roadmap/04_roadmap.md`](roadmap/04_roadmap.md). The current priorities:
+See [`roadmap/04_roadmap.md`](roadmap/04_roadmap.md) for the phase-level
+plan. See [`ISSUES.md`](ISSUES.md) for the per-issue breakdown — each
+roadmap phase that has a detailed spec links there.
+
+Current priorities (high level):
 
 - **P1.1** Unify the two workflow engines.
 - **P1.2** Split `service/handlers.py` (~750 LOC) — library/save/role/task/mona
   ops already extracted; the workflow-run orchestrator and chat-shell
   dispatch remain.
-- **P2** Web client (FastAPI + WebSocket bridge to the same service layer).
+- **P2** Web client (FastAPI + WebSocket bridge to the same service layer)
+  — full spec in [`issues/features/web-layer.md`](issues/features/web-layer.md).
 - **P3** Plugin system for custom agent skills.
 
 The architecture has already been validated to handle a web layer without

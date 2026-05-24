@@ -13,12 +13,13 @@ state (sqlite-vec only for RAG retrieval). Four providers: `openrouter`,
 |---|---|
 | User-facing intro | [`README.md`](README.md) |
 | Engineering onboarding (senior devs) | [`ONBOARDING.md`](ONBOARDING.md) |
-| V2 web layer build guide | [`WEB_NEXT.md`](WEB_NEXT.md) |
+| V2 web layer build guide | [`issues/features/web-layer.md`](issues/features/web-layer.md) |
+| Issues + user stories index | [`ISSUES.md`](ISSUES.md) |
 | Manual test scenarios (V1 convergence) | [`SCENARIOS.md`](SCENARIOS.md) |
 | Rules for fixing agents | [`BUG_FIXING_GUIDE.md`](BUG_FIXING_GUIDE.md) |
 | Vision & invariants | [`roadmap/01_vision.md`](roadmap/01_vision.md) |
 | Architecture & module map | [`roadmap/02_architecture.md`](roadmap/02_architecture.md) |
-| Latest assessment | [`roadmap/03_assessment_2026-05-15.md`](roadmap/03_assessment_2026-05-15.md) |
+| Latest assessment | [`roadmap/03_assessment_2026-05-19.md`](roadmap/03_assessment_2026-05-19.md) |
 | Macro roadmap (P1 / P2 / P3) | [`roadmap/04_roadmap.md`](roadmap/04_roadmap.md) |
 | Project history | [`roadmap/00_journey.md`](roadmap/00_journey.md) |
 
@@ -122,7 +123,7 @@ searchable library (indexed slips / *feuillets* in FR) and the read set
    first" table.
 2. Read [`roadmap/02_architecture.md`](roadmap/02_architecture.md) — module
    map.
-3. Read [`roadmap/03_assessment_2026-05-15.md`](roadmap/03_assessment_2026-05-15.md)
+3. Read [`roadmap/03_assessment_2026-05-19.md`](roadmap/03_assessment_2026-05-19.md)
    — current state, known gaps.
 4. Open an item in [`roadmap/04_roadmap.md`](roadmap/04_roadmap.md) before
    inventing one.

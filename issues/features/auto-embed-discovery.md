@@ -1,7 +1,7 @@
 # Auto-discovered embedding model — proposal
 
 > Status: **proposed, not started**. Sibling feature to the V2 web layer.
-> See [`WEB_NEXT.md`](../WEB_NEXT.md) for the parallel web track.
+> See [`web-layer.md`](web-layer.md) for the parallel web track.
 > Author: Armance user-journey thread, 2026-05-17.
 
 ## Motivation
@@ -194,7 +194,7 @@ No `armance migrate`. Zero breaking change.
 
 ## Out of scope for V2
 
-Lives alongside the V2 web layer (`WEB_NEXT.md`), not inside it. The web
+Lives alongside the V2 web layer (`web-layer.md`), not inside it. The web
 layer reuses the same auto-discovery once it's wired.
 
 ---
