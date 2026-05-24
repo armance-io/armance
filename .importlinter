@@ -60,3 +60,11 @@ forbidden_modules =
     armance.transport
     armance.client
     armance.providers
+
+[importlinter:contract:platform-limits]
+name = Platform limits (J.0)
+type = forbidden
+source_modules = armance.platform
+forbidden_modules =
+    armance.service
+    armance.client

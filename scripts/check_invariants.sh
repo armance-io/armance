@@ -555,6 +555,61 @@ check_invariant_8() {
 }
 
 # ========================================================================
+# INVARIANT J.0 — armance.platform scaffold (Epic J, task J.0)
+# Package exists; four ABCs + get_current_user exported;
+# import-linter contract present.
+# ========================================================================
+
+check_invariant_j0() {
+    header "Invariant J.0 — armance.platform scaffold"
+
+    local pkg_init="src/armance/platform/__init__.py"
+
+    if [ ! -f "$pkg_init" ]; then
+        fail "$pkg_init missing — armance.platform package not scaffolded"
+        return
+    else
+        ok "$pkg_init exists"
+    fi
+
+    # Four ABCs must be exported
+    for sym in "Storage" "SessionRegistry" "EventBus" "WorkflowExecutor"; do
+        if grep -q "\b${sym}\b" "$pkg_init"; then
+            ok "$pkg_init exports $sym"
+        else
+            fail "$pkg_init does not export $sym"
+        fi
+    done
+
+    # get_current_user must be exported
+    if grep -q "get_current_user" "$pkg_init"; then
+        ok "$pkg_init exports get_current_user"
+    else
+        fail "$pkg_init does not export get_current_user"
+    fi
+
+    # import-linter contract present
+    if grep -q "platform-limits" .importlinter 2>/dev/null; then
+        ok "import-linter platform-limits contract present in .importlinter"
+    else
+        fail "import-linter platform-limits contract missing from .importlinter"
+    fi
+
+    # platform must not import service or client (static check)
+    local tmpfile
+    tmpfile=$(mktemp)
+    grep -rn -E '^\s*(from|import)\s+armance\.(service|client)' \
+        src/armance/platform/ --include="*.py" 2>/dev/null > "$tmpfile" || true
+    if [ -s "$tmpfile" ]; then
+        fail "armance.platform imports from armance.service or armance.client"
+        show_hits "$tmpfile"
+    else
+        ok "armance.platform does not import from service or client"
+    fi
+    rm -f "$tmpfile"
+}
+
+# ========================================================================
 # Run all checks
 # ========================================================================
 
@@ -574,6 +629,7 @@ check_legacy_hygiene
 check_legacy_paths
 check_skill_wiring
 check_layer_cleanliness
+check_invariant_j0
 
 # ========================================================================
 # Summary
