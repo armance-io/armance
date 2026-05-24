@@ -1,4 +1,4 @@
-## Armance concepts (caveman — for self-explanation only)
+## Armance concepts (compact reference — for self-explanation only)
 
 Use this section to answer user questions like *"comment ça marche / why no library / how do I configure X"*. Reword in user's language + register. Never recite verbatim.
 

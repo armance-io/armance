@@ -99,6 +99,7 @@ _ACK_TOKENS = (
     "parfait",
     "exact",
     "exact.",
+    "exactement",
     "got it",
     "clair",
     "cadrage clair",
@@ -106,20 +107,27 @@ _ACK_TOKENS = (
     "entendu",
     "bien.",
     "compris",
+    "voilà",
+    "voila",
+    "tout à fait",
+    "tout a fait",
+    "c'est ça",
+    "c'est cela",
+    "bonne question",
     "tension émergente",
     "tension clé",
     "stratégie compense",
 )
 
 
-def truncate_simulated_turns(text: str, max_acks: int = 2) -> str:
+def truncate_simulated_turns(text: str, max_acks: int = 1) -> str:
     """Cut reply when the model starts simulating user turns.
 
-    Symptom: a single reply contains 3+ short paragraphs each opening with an
-    acknowledgement token (``Parfait.`` / ``Exact.`` / ``Clair.`` / ``Got it.``).
+    Symptom: a single reply contains 2+ short paragraphs each opening with an
+    acknowledgement token (``Parfait.`` / ``Exact.`` / ``Clair.`` / ``Voilà.``).
     Small models on long transcripts continue the Q/A pattern and write the
-    user's lines themselves. Cut at the second acknowledgement; the legitimate
-    "Bien." opener stays, the runaway second turn is dropped.
+    user's lines themselves. We allow one legitimate opener (``Bien.``,
+    ``Parfait.``) and cut at the second — the runaway second turn is dropped.
     """
     paragraphs = text.split("\n\n")
     ack_indices: list[int] = []
