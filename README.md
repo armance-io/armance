@@ -11,7 +11,7 @@ Not a copilot. Not an autonomous agent. A small firm of LLM experts that **debat
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![DCO](https://img.shields.io/badge/DCO-required-orange.svg)](CONTRIBUTING.md#developer-certificate-of-origin-dco)
 
-[Install](#install) · [Quickstart](#quickstart) · [How it works](#how-it-works) · [Contributing](CONTRIBUTING.md) · [Roadmap](roadmap/04_roadmap.md) · [Issues & user stories](ISSUES.md)
+[Install](#install) · [Quickstart](#quickstart) · [How it works](#how-it-works) · [Contributing](CONTRIBUTING.md) · [Vision](roadmap/01_vision.md) · [Architecture](roadmap/02_architecture.md)
 
 </div>
 
@@ -309,18 +309,11 @@ uv run python scripts/qa_live.py           # live OpenRouter free-model QA
 
 See [`roadmap/`](roadmap/):
 
-- [`00_journey.md`](roadmap/00_journey.md) — what got us here.
 - [`01_vision.md`](roadmap/01_vision.md) — the brain-vs-hands manifesto.
 - [`02_architecture.md`](roadmap/02_architecture.md) — module map & dependency rules.
-- [`03_assessment_2026-05-15.md`](roadmap/03_assessment_2026-05-15.md) — current state audit.
-- [`04_roadmap.md`](roadmap/04_roadmap.md) — phased plan, including the web port.
 
-For per-issue specs (user stories + known bugs), see
-[`ISSUES.md`](ISSUES.md). The detailed feature/bug files live under
-`issues/features/` and `issues/bugs/` — including the V2 web layer
-build guide ([`issues/features/web-layer.md`](issues/features/web-layer.md))
-and the embedding auto-discovery proposal
-([`issues/features/auto-embed-discovery.md`](issues/features/auto-embed-discovery.md)).
+Phased planning and per-issue specs are tracked privately by the
+maintainer.
 
 ---
 
