@@ -4,6 +4,11 @@
 > fixing a bug reported by the user during V1 convergence testing.
 > You may be smart, you may be small. Either way, **respect the rules
 > below or your patch will be rejected.**
+>
+> **Before grepping** — the bug you were handed may already be tracked.
+> Check [`ISSUES.md`](ISSUES.md) first. Every known bug or limitation
+> has its own file under `issues/bugs/` with symptom, cause and a fix
+> sketch you can build from.
 
 This file is the contract. Read it before touching code. If you don't
 understand a rule, do not "fix it your way" — flag it back to the user.
