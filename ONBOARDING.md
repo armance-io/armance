@@ -3,11 +3,6 @@
 > Audience: senior engineers joining the codebase. **Read this once**, then keep
 > [`roadmap/02_architecture.md`](roadmap/02_architecture.md) and
 > [`CLAUDE.md`](CLAUDE.md) bookmarked for day-to-day reference.
->
-> **Looking for something to work on?** Every open user story and known
-> bug is indexed in [`ISSUES.md`](ISSUES.md). Each entry has its own
-> self-contained file under `issues/features/` or `issues/bugs/` with
-> symptom, cause, fix sketch and acceptance criteria.
 
 ---
 
@@ -385,22 +380,10 @@ bash scripts/check_invariants.sh         # layer + legacy hygiene
 
 ## 13. Macro roadmap
 
-See [`roadmap/04_roadmap.md`](roadmap/04_roadmap.md) for the phase-level
-plan. See [`ISSUES.md`](ISSUES.md) for the per-issue breakdown — each
-roadmap phase that has a detailed spec links there.
-
-Current priorities (high level):
-
-- **P1.1** Unify the two workflow engines.
-- **P1.2** Split `service/handlers.py` (~750 LOC) — library/save/role/task/mona
-  ops already extracted; the workflow-run orchestrator and chat-shell
-  dispatch remain.
-- **P2** Web client (FastAPI + Next.js bridge to the same service layer)
-  — start at [`issues/features/web-layer-stories.md`](issues/features/web-layer-stories.md)
-  for the overview, then pick one of the six epic files (A spine, B viewer,
-  C deliberation, D pipeline, E onboarding, F finish) — each carries its
-  own TDD task list and acceptance criteria.
-- **P3** Plugin system for custom agent skills.
+Ask the maintainer for the current priorities and the active work
+surface. The published vision (`roadmap/01_vision.md`) and architecture
+(`roadmap/02_architecture.md`) are the stable references; phase-level
+priorities are tracked privately.
 
 The architecture has already been validated to handle a web layer without
 changes to `core/` and `service/` — that's why the transport DTOs exist.
