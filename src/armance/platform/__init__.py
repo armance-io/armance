@@ -22,8 +22,14 @@ enforces this at CI time.
 """
 from __future__ import annotations
 
-from armance.platform.events import EventBus
-from armance.platform.executor import WorkflowExecutor
+from armance.platform.events import EventBus, LocalEventBus
+from armance.platform.executor import (
+    InProcessExecutor,
+    RunHandle,
+    RunStatus,
+    WorkflowExecutor,
+    WorkflowRunSpec,
+)
 from armance.platform.sessions import InMemorySessionRegistry, SessionEntry, SessionRegistry
 from armance.platform.storage import LocalFilesystemStorage, Storage
 from armance.platform.user import get_current_user
@@ -31,10 +37,15 @@ from armance.platform.user import get_current_user
 __all__ = [
     "EventBus",
     "InMemorySessionRegistry",
+    "InProcessExecutor",
+    "LocalEventBus",
     "LocalFilesystemStorage",
+    "RunHandle",
+    "RunStatus",
     "SessionEntry",
     "SessionRegistry",
     "Storage",
     "WorkflowExecutor",
+    "WorkflowRunSpec",
     "get_current_user",
 ]
