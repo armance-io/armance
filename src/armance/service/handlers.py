@@ -440,13 +440,18 @@ async def _cmd_workflow_run(
                 mark_step_failed(artefact, step.id, msg)
                 return msg
             _missing_streak["count"] = 0
+            # Caveman policy:
+            #   - specialist task / critique steps speak agent→agent → ultra
+            #   - Mona's judge step produces the user-facing synthesis → none
+            #   - deliverable step is read by the user → none
+            step_caveman = "none" if step.kind in ("judge", "deliverable") else "ultra"
             report = await run_specialist(
                 agent_obj,
                 task,
                 ctx.armance_root,
                 ctx.cfg,
                 reports_root=ctx.armance_root / "reports",
-                caveman_level="ultra",
+                caveman_level=step_caveman,
             )
             _set_status(ctx, step.id, "completed")
             write_step_output(artefact, step.id, report.content)
