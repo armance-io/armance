@@ -1,99 +1,10 @@
-"""EventBus protocol + LocalEventBus implementation.
+"""armance.service.events — shim (J.3).
 
-Spec: docs/spec/23_future_web_layer.md § Invariant 5
-
-LocalEventBus:
-- Appends one JSON line per event to sessions/<sid>/events.log (JSONL).
-- Exposes an asyncio.Queue for TUI subscription.
-
-V1 is local-only; no OTel exporter is wired.
+EventBus protocol and LocalEventBus implementation moved to
+armance.platform.events.  This module re-exports them for back-compat.
 """
-from __future__ import annotations
+# Re-export for back-compat — do not add new code here.
+from armance.core.models.event import Event  # noqa: F401  # architecture test checks evmod.Event
+from armance.platform.events import EventBus, LocalEventBus  # noqa: F401
 
-import asyncio
-import logging
-from datetime import datetime, timezone
-from pathlib import Path
-from typing import Any, Protocol, runtime_checkable
-
-from armance.core.models.event import Event
-from armance.service.event_helpers import (
-    SpanContext,
-    current_span,
-    generate_span_id,
-    generate_trace_id,
-)
-
-logger = logging.getLogger(__name__)
-
-
-@runtime_checkable
-class EventBus(Protocol):
-    """Protocol for all event buses in Armance.
-
-    Callers use `await bus.emit(name, attributes=...)`.
-    The bus is responsible for trace propagation and persistence.
-    """
-
-    async def emit(
-        self,
-        name: str,
-        attributes: dict[str, Any] | None = None,
-        severity: str = "info",
-        *,
-        _span: SpanContext | None = None,
-    ) -> None: ...
-
-
-class LocalEventBus:
-    """In-process EventBus that writes JSONL to a local log file."""
-
-    def __init__(self, log_path: Path) -> None:
-        self.log_path = log_path
-        self.queue: asyncio.Queue[Event] = asyncio.Queue()
-        self._lock = asyncio.Lock()
-
-    async def emit(
-        self,
-        name: str,
-        attributes: dict[str, Any] | None = None,
-        severity: str = "info",
-        *,
-        _span: SpanContext | None = None,
-    ) -> None:
-        """Emit an event.
-
-        Span context is resolved (in order of priority):
-        1. Explicit _span kwarg (for nested test scenarios).
-        2. Active contextvars span (set by event_helpers.span()).
-        3. Fresh IDs (top-level, unspanned call).
-        """
-        ctx = _span or current_span()
-        if ctx is not None:
-            trace_id = ctx.trace_id
-            span_id = ctx.span_id
-            parent_span_id = ctx.parent_span_id
-        else:
-            trace_id = generate_trace_id()
-            span_id = generate_span_id()
-            parent_span_id = None
-
-        event = Event(
-            trace_id=trace_id,
-            span_id=span_id,
-            parent_span_id=parent_span_id,
-            name=name,
-            timestamp=datetime.now(tz=timezone.utc),
-            attributes=attributes or {},
-            severity=severity,  # type: ignore[arg-type]
-        )
-
-        async with self._lock:
-            self.log_path.parent.mkdir(parents=True, exist_ok=True)
-            with self.log_path.open("a", encoding="utf-8") as fh:
-                fh.write(event.model_dump_json() + "\n")
-
-        try:
-            self.queue.put_nowait(event)
-        except asyncio.QueueFull:
-            logger.debug("EventBus queue full; TUI subscriber is slow")
+__all__ = ["Event", "EventBus", "LocalEventBus"]
