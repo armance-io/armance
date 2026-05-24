@@ -395,8 +395,11 @@ Current priorities (high level):
 - **P1.2** Split `service/handlers.py` (~750 LOC) — library/save/role/task/mona
   ops already extracted; the workflow-run orchestrator and chat-shell
   dispatch remain.
-- **P2** Web client (FastAPI + WebSocket bridge to the same service layer)
-  — full spec in [`issues/features/web-layer.md`](issues/features/web-layer.md).
+- **P2** Web client (FastAPI + Next.js bridge to the same service layer)
+  — start at [`issues/features/web-layer-stories.md`](issues/features/web-layer-stories.md)
+  for the overview, then pick one of the six epic files (A spine, B viewer,
+  C deliberation, D pipeline, E onboarding, F finish) — each carries its
+  own TDD task list and acceptance criteria.
 - **P3** Plugin system for custom agent skills.
 
 The architecture has already been validated to handle a web layer without
