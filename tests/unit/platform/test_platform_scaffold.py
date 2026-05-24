@@ -1,8 +1,9 @@
-"""J.0 — Platform layer scaffold: smoke-import tests.
+"""Platform layer scaffold: smoke-import tests.
 
-These tests must be RED before `src/armance/platform/__init__.py` exists
-and GREEN after. They verify the scaffold contract described in
-issues/features/web-j-platform-abstractions.md § J.0.
+Verify the scaffold of `src/armance/platform/`: four ABCs (Storage,
+SessionRegistry, EventBus, WorkflowExecutor) and the `get_current_user`
+FastAPI dependency, plus the layer rule that the platform package may
+not import from `armance.service` or `armance.client`.
 """
 from __future__ import annotations
 

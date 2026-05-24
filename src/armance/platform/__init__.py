@@ -10,7 +10,7 @@ Four thin ABCs that decouple the service layer from its execution environment:
 Each ABC is defined in its own sub-module; this package re-exports all four
 plus the ``get_current_user`` FastAPI dependency stub.
 
-V3 swap points are documented in issues/features/web-v3-saas-readiness.md.
+V3 swap points are documented in the V3 forward-spec (internal).
 
 Layer rule
 ----------
