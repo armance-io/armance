@@ -24,13 +24,15 @@ from __future__ import annotations
 
 from armance.platform.events import EventBus
 from armance.platform.executor import WorkflowExecutor
-from armance.platform.sessions import SessionRegistry
+from armance.platform.sessions import InMemorySessionRegistry, SessionEntry, SessionRegistry
 from armance.platform.storage import LocalFilesystemStorage, Storage
 from armance.platform.user import get_current_user
 
 __all__ = [
     "EventBus",
+    "InMemorySessionRegistry",
     "LocalFilesystemStorage",
+    "SessionEntry",
     "SessionRegistry",
     "Storage",
     "WorkflowExecutor",
