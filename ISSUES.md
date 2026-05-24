@@ -27,8 +27,14 @@
 | [`workflow-live-pipeline`](issues/features/workflow-live-pipeline.md) | proposed | Repurpose dead sidebar `Tasks` into live workflow view; agent spinner; background runs with agent-busy semantics. |
 | [`workflow-runtime-ux`](issues/features/workflow-runtime-ux.md) | partial | Stories 1 (staff scope) + 2 (parallel execution). Story 3 superseded by `workflow-live-pipeline`. |
 | [`auto-embed-discovery`](issues/features/auto-embed-discovery.md) | proposed | Drop the embedding question from `armance init`; Armance proposes a model when documents first appear. |
-| [`web-layer`](issues/features/web-layer.md) | proposed | FastAPI + Next.js port; same service layer; ~1.4k LOC under `web/`. Build guide. |
-| [`web-layer-stories`](issues/features/web-layer-stories.md) | proposed | Vision and user stories for the V2 web layer. Companion to the build guide. |
+| [`web-layer-stories`](issues/features/web-layer-stories.md) | proposed | **Web V2 overview** — vision, personas, index of the six epic files below. Start here. |
+| [`web-layer`](issues/features/web-layer.md) | proposed | Web V2 build guide — module layout, endpoint shape, glue piece. Reference for every epic. |
+| [`web-a-spine`](issues/features/web-a-spine.md) | ready | Web Epic A — transport & session spine (FastAPI app, `WebCheckpointHandler`, SSE, `armance web` CLI). TDD tasks. |
+| [`web-b-viewer`](issues/features/web-b-viewer.md) | ready (after A) | Web Epic B — library, deliverables, past runs (read-only). TDD tasks. |
+| [`web-c-deliberation`](issues/features/web-c-deliberation.md) | ready (after A) | Web Epic C — chat, checkpoints, panel cards, hypothesis ledger. TDD tasks. |
+| [`web-d-pipeline`](issues/features/web-d-pipeline.md) | partial | Web Epic D — pipeline view, parallel lanes, agent spinner, depth picker. TDD tasks. |
+| [`web-e-onboarding`](issues/features/web-e-onboarding.md) | partial | Web Epic E — first-run setup, embedding proposal, empty state. TDD tasks. |
+| [`web-f-finish`](issues/features/web-f-finish.md) | ready (frontend) | Web Epic F — visual identity, calm motion, designed idle states. TDD tasks. |
 | [`reorder-host-kim-malik-flow`](issues/features/reorder-host-kim-malik-flow.md) | partial | Armance → Kim → Malik instead of Armance → Malik → Kim. Mitigation shipped, full reorder pending. |
 | [`forward-tag-first-class`](issues/features/forward-tag-first-class.md) | proposed | Promote `@<agent>, …` forwarding to a `[FORWARD:@<agent>]` tag with per-role allow-list. |
 

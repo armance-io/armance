@@ -84,10 +84,16 @@ Two independent tracks, can land in any order:
 
 ### P2.a — Web layer
 
-See [`issues/features/web-layer.md`](../issues/features/web-layer.md) —
-single-file build guide. Eight endpoints, ~1.4k LOC under `web/`, no
-`src/armance/` changes expected. The `WebCheckpointHandler` is the only
-piece of glue (~40 LOC); the rest is wiring.
+Start here: [`issues/features/web-layer-stories.md`](../issues/features/web-layer-stories.md)
+— overview, personas, index of six self-contained epic files
+(`web-a-spine`, `web-b-viewer`, `web-c-deliberation`, `web-d-pipeline`,
+`web-e-onboarding`, `web-f-finish`). Each epic file carries its own
+TDD task list, backend dependency table, and acceptance criteria, so a
+fresh agent can pick up a single epic without reading the others.
+
+Build reference: [`issues/features/web-layer.md`](../issues/features/web-layer.md)
+— module layout, endpoint shape, the `WebCheckpointHandler` glue (~40
+LOC). No `src/armance/` rearchitecture expected.
 
 ### P2.b — Auto-discovered embedding model
 
