@@ -1,7 +1,7 @@
 """armance.platform.sessions — SessionRegistry ABC.
 
 V2 implementation: InMemorySessionRegistry (see J.2).
-V3 swap: FirestoreSessionRegistry — see issues/features/web-v3-saas-readiness.md.
+V3 swap: FirestoreSessionRegistry — see the V3 forward-spec (internal).
 """
 from __future__ import annotations
 

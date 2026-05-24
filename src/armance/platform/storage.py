@@ -1,7 +1,7 @@
 """armance.platform.storage — Storage ABC.
 
 V2 implementation: LocalFilesystemStorage (see J.1).
-V3 swap: GcsStorage — see issues/features/web-v3-saas-readiness.md.
+V3 swap: GcsStorage — see the V3 forward-spec (internal).
 """
 from __future__ import annotations
 

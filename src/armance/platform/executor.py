@@ -1,7 +1,7 @@
 """armance.platform.executor — WorkflowExecutor ABC.
 
 V2 implementation: InProcessExecutor (see J.4).
-V3 swap: CloudTasksExecutor — see issues/features/web-v3-saas-readiness.md.
+V3 swap: CloudTasksExecutor — see the V3 forward-spec (internal).
 """
 from __future__ import annotations
 
