@@ -1,7 +1,7 @@
 """armance.platform.events — EventBus ABC.
 
 V2 implementation: LocalEventBus (refactored from armance.service.events in J.3).
-V3 swap: PubSubEventBus — see issues/features/web-v3-saas-readiness.md.
+V3 swap: PubSubEventBus — see the V3 forward-spec (internal).
 
 Note (J.3): when J.3 lands, LocalEventBus will be moved here and
 ``armance.service.events`` will become a one-line shim re-exporting it.
