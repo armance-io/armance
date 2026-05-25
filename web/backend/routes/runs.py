@@ -9,11 +9,11 @@ Delegates to armance.service.workflow_runs.{list_runs, load_run}.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import PlainTextResponse
 
+from armance.platform.storage import LocalFilesystemStorage
 from armance.platform.user import get_current_user
 from armance.service.workflow_runs import list_runs, load_run
 
@@ -102,8 +102,10 @@ async def get_workflow_run_step(
     except ValueError:
         raise HTTPException(status_code=400, detail="invalid_path")
 
-    if not step_file.exists():
+    # Read via Storage ABC (I.12 spirit — V3 GCS swap stays mechanical).
+    storage = LocalFilesystemStorage(root=ws.ctx.armance_root)
+    rel_key = f"exports/{safe_wf}/{run_id}/step-{step_id}.md"
+    if not await storage.exists(rel_key):
         raise HTTPException(status_code=404, detail="step_not_found")
-
-    content = step_file.read_text(encoding="utf-8")
+    content = await storage.read_text(rel_key)
     return PlainTextResponse(content, media_type="text/markdown; charset=utf-8")

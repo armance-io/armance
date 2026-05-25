@@ -4,11 +4,9 @@ These tests cover the lines that are uncovered and push coverage ≥ 85%.
 """
 from __future__ import annotations
 
-import os
 import pytest
-import pytest_asyncio
 from pathlib import Path
-from httpx import AsyncClient, ASGITransport
+from httpx import AsyncClient
 
 
 # ─── docs.py ──────────────────────────────────────────────────────────────────

@@ -77,10 +77,9 @@ async def create_session(
     ctx = make_loop_context(armance_root, cfg, state, session, ledger,
                             checkpoint_handler=handler)
 
-    # Register in the platform SessionRegistry.
-    sid = await app_state.registry.create(pid)
-    # Override the registry sid with the actual session id from start_or_resume.
-    # (The registry entry exists for tracking; the real id comes from session.state.)
+    # The canonical sid comes from start_or_resume (Session.state.id).
+    # The platform registry is unused in V2 — it stays for V3 SaaS
+    # multi-project routing where sids will be minted by the registry.
     sid = state.id
 
     # Determine driver_client_id from the request cookie (for read-along guard).
