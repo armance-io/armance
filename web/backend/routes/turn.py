@@ -29,16 +29,16 @@ class TurnIn(BaseModel):
 
 
 async def _run_turn(ws: WebSession, text: str) -> None:
-    """Background task: call dispatch_input then publish turn_completed."""
+    """Background task: call dispatch_input then publish turn.completed."""
     try:
         reply, agent_name = await dispatch_input(text, ws.ctx)
-        await ws.bus.emit("turn_completed", attributes={
+        await ws.bus.emit("turn.completed", attributes={
             "reply": reply,
             "agent": agent_name or "",
         })
     except Exception as exc:
         logger.exception("turn failed sid=%s", ws.sid)
-        await ws.bus.emit("turn_error", attributes={"error": str(exc)})
+        await ws.bus.emit("turn.error", attributes={"error": str(exc)})
 
 
 @router.post("/turn", status_code=202)
