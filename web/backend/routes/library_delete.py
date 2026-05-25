@@ -9,7 +9,6 @@ B.3 spec: web-b-viewer.md §B.3
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -50,8 +49,10 @@ async def delete_doc(
     if not body.confirm:
         raise HTTPException(status_code=409, detail={"error": "confirm_required"})
 
-    doc_path = ws.ctx.armance_root / "docs" / name
-    if not doc_path.exists():
+    # I.12: every backend write goes through Storage ABC.
+    storage = LocalFilesystemStorage(root=ws.ctx.armance_root)
+    key = f"docs/{name}"
+    if not await storage.exists(key):
         raise HTTPException(status_code=404, detail="doc_not_found")
 
     # Unindex (remove from vector store / JSONL index).
@@ -62,8 +63,8 @@ async def delete_doc(
         logger.warning("forget_doc failed for %s: %s", name, exc)
         unindexed = False
 
-    # Delete from disk.
-    doc_path.unlink(missing_ok=True)
+    # Delete via Storage (no direct pathlib.unlink — I.12).
+    await storage.delete(key)
 
     logger.info("doc deleted sid=%s name=%s unindexed=%s", sid, name, unindexed)
     return {"unindexed": unindexed, "deleted": True}
