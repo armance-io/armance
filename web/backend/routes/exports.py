@@ -5,7 +5,6 @@ Serves files from <armance_root>/exports/<file> as binary responses.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response

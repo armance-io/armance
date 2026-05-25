@@ -11,7 +11,6 @@ so we test the generator function directly.
 from __future__ import annotations
 
 import asyncio
-import json
 import pytest
 from httpx import AsyncClient
 
@@ -30,7 +29,6 @@ async def test_events_generator_delivers_events(client: AsyncClient) -> None:
     await ws.bus.emit("test.two", attributes={"seq": 2})
 
     # Import the generator directly and drain it.
-    from backend.routes.events import _HEARTBEAT_INTERVAL
 
     collected: list[dict] = []
 

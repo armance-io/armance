@@ -38,8 +38,6 @@ async def test_turn_publishes_turn_completed(client: AsyncClient) -> None:
     """After dispatch_input completes, 'turn_completed' event is published."""
     cr = await client.post("/projects/default/sessions")
     sid = cr.json()["id"]
-    from backend.state import AppState
-    from backend.main import create_app
 
     # Re-resolve the app_state from the client's app.
     # We need to access the bus directly.
