@@ -714,10 +714,17 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     import subprocess
 
     web_parser = argparse.ArgumentParser(prog="armance web", add_help=False)
-    web_parser.add_argument("--host", default="127.0.0.1")
+    web_parser.add_argument("--bind", default="127.0.0.1",
+                            help="Network interface to bind (default: 127.0.0.1)")
+    # Legacy --host alias kept for compatibility
+    web_parser.add_argument("--host", default=None,
+                            help="Alias for --bind (deprecated, use --bind)")
     web_parser.add_argument("--port", type=int, default=8000)
     web_parser.add_argument("--no-browser", action="store_true")
     web_args, _ = web_parser.parse_known_args(remaining or [])
+
+    # --host is a legacy alias for --bind
+    bind = web_args.host or web_args.bind
 
     _missing = [m for m in ("fastapi", "uvicorn", "sse_starlette") if __import__("importlib").util.find_spec(m) is None]
     if _missing:
@@ -731,6 +738,13 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
         )
         return 1
 
+    if bind == "0.0.0.0":
+        print(
+            "⚠  LAN exposure: anyone on this network can read this session. "
+            "Driver-only writes.",
+            file=sys.stderr,
+        )
+
     root = repo_root or Path.cwd()
 
     if not web_args.no_browser:
@@ -740,21 +754,24 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
 
         def _open() -> None:
             time.sleep(1.5)
-            webbrowser.open(f"http://{web_args.host}:{web_args.port}")
+            webbrowser.open(f"http://127.0.0.1:{web_args.port}")
 
         threading.Thread(target=_open, daemon=True).start()
 
     import os
+
+    # Locate the web/ directory (sibling of src/ in the repo root).
+    web_dir = Path(__file__).parent.parent.parent / "web"
     env = {**os.environ, "ARMANCE_ROOT": str(root)}
     try:
         subprocess.run(
             [
                 sys.executable, "-m", "uvicorn",
-                "armance_web.main:app",
-                "--host", web_args.host,
+                "backend.main:app",
+                "--host", bind,
                 "--port", str(web_args.port),
-                "--reload",
             ],
+            cwd=str(web_dir),
             env=env,
             check=True,
         )
