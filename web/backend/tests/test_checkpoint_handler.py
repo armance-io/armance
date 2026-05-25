@@ -38,7 +38,7 @@ async def test_prompt_resolves_on_resolve(handler, bus_stub) -> None:
     cp = Checkpoint(id="cp1", prompt="Are you sure?", kind="confirm")
 
     async def _resolve_after_prompt():
-        # Wait until the bus has received the checkpoint_requested event.
+        # Wait until the bus has received the checkpoint.requested event.
         for _ in range(50):
             if bus_stub.events:
                 break
