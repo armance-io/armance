@@ -38,11 +38,14 @@ class WebCheckpointHandler:
         fut: asyncio.Future[CheckpointResponse] = loop.create_future()
         # Register BEFORE publishing — no race window.
         self._pending[cp_id] = fut
-        await self._bus.emit("checkpoint_requested", attributes={
+        # Emit as 'checkpoint.requested' (component.action format).
+        # Complex values (options dict) are JSON-serialised to strings.
+        import json
+        await self._bus.emit("checkpoint.requested", attributes={
             "checkpoint_id": cp_id,
             "kind": checkpoint.kind,
             "prompt": checkpoint.prompt,
-            "options": checkpoint.options,
+            "options": json.dumps(checkpoint.options),
         })
         try:
             return await asyncio.wait_for(fut, timeout=self._timeout)
