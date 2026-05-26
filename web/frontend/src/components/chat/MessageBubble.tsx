@@ -1,5 +1,6 @@
-import { type CSSProperties, type FC, useMemo } from "react";
-import { Marked } from "marked";
+import { type CSSProperties, type FC } from "react";
+
+import { MarkdownRenderer } from "@/components/render/MarkdownRenderer";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -14,10 +15,6 @@ export interface MessageBubbleProps {
   t: (key: string) => string;
 }
 
-/* ─── Markdown renderer ──────────────────────────────────────────────────── */
-
-const md = new Marked({ gfm: true, breaks: true, async: false });
-
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
 export const MessageBubble: FC<MessageBubbleProps> = ({
@@ -30,11 +27,6 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
   streaming = false,
   t,
 }) => {
-  const html = useMemo(
-    () => md.parse(markdown, { async: false }) as string,
-    [markdown],
-  );
-
   const isAgent = role === "agent";
 
   /* ── Styles ── */
@@ -195,11 +187,9 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
               )}
             </div>
           )}
-          <div
-            className="msg-bubble-prose"
-            style={proseStyle}
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
+          <div className="msg-bubble-prose" style={proseStyle}>
+            <MarkdownRenderer markdown={markdown} t={t} />
+          </div>
           <div style={timeStyle}>{timestamp}</div>
         </div>
       </div>
