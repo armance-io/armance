@@ -1,0 +1,58 @@
+/* Armance — global tokens (per web/frontend/DESIGN.md). */
+
+:root,
+:root[data-theme="light"] {
+  --bg-paper: #f4ede0;
+  --bg-paper-deep: #e8dfcd;
+  --bg-paper-card: #faf6ef;
+  --ink: #2a2520;
+  --ink-soft: #5b5145;
+  --ink-faint: #9c8e7e;
+  --rule: #d6c8ad;
+  --rule-soft: #e8dfcd;
+  --accent: #6b4f8a;
+  --accent-soft: #b7a4c9;
+  --accent-deep: #4a3666;
+  --danger: #a44141;
+  --warning: #b08a3a;
+  --ff-serif: "Instrument Serif", "Cormorant Garamond", Georgia, serif;
+  --ff-sans: "Inter", system-ui, sans-serif;
+  --ff-mono: "JetBrains Mono", Menlo, monospace;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg-paper: #1d1a17;
+  --bg-paper-deep: #15120f;
+  --bg-paper-card: #231f1b;
+  --ink: #e9e0cd;
+  --ink-soft: #b3a895;
+  --ink-faint: #6e6152;
+  --rule: #3a3328;
+  --rule-soft: #2a2520;
+  --accent: #b7a4c9;
+  --accent-soft: #6b4f8a;
+  --accent-deep: #d6c8ad;
+  --danger: #c95a5a;
+  --warning: #cf9c77;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-paper);
+  color: var(--ink);
+  font-family: var(--ff-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-deep); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
