@@ -50,3 +50,4 @@ tmp/
 .claude-plugin/
 .idea/
 .vscode/
+.coverage
