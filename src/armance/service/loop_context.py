@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from armance.config import Config
+    from armance.platform.events import EventBus
     from armance.service.llm_service import TokenLedger
     from armance.service.session import SessionState, Session
     from armance.service.checkpoint import CheckpointHandler
@@ -41,6 +42,10 @@ class LoopContext:
     _last_output: str = ""
     _deliverable_confirmation: dict | None = None
     checkpoint_handler: CheckpointHandler | None = None
+    # Optional event bus — populated by the web backend; None in the TUI.
+    # When set, service handlers may emit web-bound events (agents_proposed,
+    # agent_streaming_*, etc.) without coupling to the FastAPI layer.
+    event_bus: EventBus | None = None
 
     def append(self, text: str) -> None:
         lines = text.splitlines()

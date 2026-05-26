@@ -16,6 +16,7 @@ from armance.core.models.agent import Agent
 
 if TYPE_CHECKING:
     from armance.config import Config
+    from armance.platform.events import EventBus
     from armance.service.llm_service import TokenLedger
     from armance.service.session import SessionState, Session
     from armance.service.checkpoint import CheckpointHandler
@@ -178,6 +179,7 @@ def make_loop_context(
     session: "Session",
     ledger: "TokenLedger",
     checkpoint_handler: "CheckpointHandler" | None = None,
+    event_bus: "EventBus | None" = None,
 ) -> LoopContext:
     """Build a LoopContext suitable for service.handlers dispatch."""
     agents = load_user_agents(armance_root)
@@ -191,6 +193,7 @@ def make_loop_context(
         statuses=statuses,
         agents=agents,
         checkpoint_handler=checkpoint_handler,
+        event_bus=event_bus,
     )
 
 

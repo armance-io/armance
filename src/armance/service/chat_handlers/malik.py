@@ -325,6 +325,36 @@ def _inject_recruit_tag_if_yaml_only(reply: str, user_text: str) -> str:
     return reply[:idx].rstrip() + "\n\n[EXECUTE:/recruit]\n" + reply[idx:]
 
 
+async def _emit_agents_proposed(ctx: LoopContext, created: list) -> None:
+    """C.6 — emit `agents_proposed` event on the web event bus.
+
+    No-op when ctx.event_bus is None (TUI path).  The payload carries
+    the contract fields the frontend needs to render the panel cards:
+    name, role, persona label, description, provider, model, reasoning.
+    """
+    bus = getattr(ctx, "event_bus", None)
+    if bus is None or not created:
+        return
+    payload: list[dict[str, object]] = []
+    for a in created:
+        persona_label = ""
+        if getattr(a, "persona", None) is not None:
+            persona_label = getattr(a.persona, "label", "") or ""
+        payload.append({
+            "name": a.name,
+            "role": (a.role or a.domain or "specialist"),
+            "persona": persona_label,
+            "description": getattr(a, "description", "") or "",
+            "provider": a.provider,
+            "model": a.model,
+            "reasoning": a.reasoning,
+        })
+    try:
+        await bus.emit("agents_proposed", attributes={"agents": payload})
+    except Exception:
+        logger.exception("event_bus.emit(agents_proposed) failed")
+
+
 def _handle_dismiss_all(reply: str, ctx: LoopContext) -> str:
     if "[EXECUTE:/dismiss-all]" not in reply:
         return reply
@@ -400,6 +430,10 @@ async def _handle_recruit(reply: str, ctx: LoopContext, hr) -> str:
                 ctx.agents[idx_match] = a
             else:
                 ctx.agents.append(a)
+
+        # C.6: emit `agents_proposed` so the web frontend can render
+        # the recruitment panel cards. No-op in the TUI (no event_bus).
+        await _emit_agents_proposed(ctx, created)
 
         # Second pass: ask the LLM to write a rich persona-grade system
         # prompt for each newly-created agent and persist it into the .md.
