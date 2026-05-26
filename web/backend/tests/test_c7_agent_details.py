@@ -41,7 +41,6 @@ async def test_get_agent_details_returns_payload(
     )
 
     # Append a ledger entry for Aisha so tokens_in/out > 0.
-    from backend.deps import get_app_state
     ws = client._transport.app.state.app_state.get(sid)  # type: ignore[attr-defined]
     ws.ctx.ledger.record("Aisha", 120, 350, 0.0021)
     ws.ctx.agents.clear()
