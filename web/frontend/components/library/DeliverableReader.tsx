@@ -31,14 +31,26 @@ export interface DeliverableReaderProps {
 
 /* ─── Markdown configuration ─────────────────────────────────────────────── */
 
+/* Single shared instance — inline HTML only allowed inside code blocks
+   (marked escapes HTML in code spans/fences by default; we keep that). */
 const md = new marked.Marked({
   gfm: true,
   breaks: false,
+  /* `false` here means: do NOT pass raw HTML through in regular prose.
+     Code blocks already render their content as escaped text inside <code>,
+     so HTML written inside ``` fences is preserved as literal text — which
+     is exactly the "inline HTML inside code blocks only" requirement. */
   async: false,
 });
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
+/**
+ * `<DeliverableReader />` — inline Markdown reader styled to match the
+ * armance.io `.prose` block (Instrument Serif headings, Inter body,
+ * JetBrains Mono code). Top bar carries title + download button, bottom
+ * bar shows the source path.
+ */
 export const DeliverableReader: FC<DeliverableReaderProps> = ({
   title,
   markdown,
@@ -54,6 +66,8 @@ export const DeliverableReader: FC<DeliverableReaderProps> = ({
 
   const formatLabel = t(`library:reader.format.${downloadFormat}`);
   const downloadLabel = t("library:reader.download_label");
+
+  /* ── Styles ── */
 
   const rootStyle: CSSProperties = {
     display: "flex",
@@ -102,8 +116,7 @@ export const DeliverableReader: FC<DeliverableReaderProps> = ({
     letterSpacing: "0.01em",
     textDecoration: "none",
     flexShrink: 0,
-    transition:
-      "background 160ms ease, border-color 160ms ease, color 160ms ease",
+    transition: "background 160ms ease, border-color 160ms ease, color 160ms ease",
   };
 
   const formatBadgeStyle: CSSProperties = {
@@ -162,9 +175,7 @@ export const DeliverableReader: FC<DeliverableReaderProps> = ({
       <style>{PROSE_CSS}</style>
 
       <header style={topBarStyle}>
-        <h1 style={titleStyle} title={title}>
-          {title}
-        </h1>
+        <h1 style={titleStyle} title={title}>{title}</h1>
         <a
           href={downloadUrl}
           download
@@ -196,9 +207,7 @@ export const DeliverableReader: FC<DeliverableReaderProps> = ({
       </div>
 
       <footer style={footerStyle}>
-        <span style={footerLabelStyle}>
-          {t("library:reader.opened_from")}
-        </span>
+        <span style={footerLabelStyle}>{t("library:reader.opened_from")}</span>
         <span style={footerPathStyle} dir="ltr" title={sourcePath}>
           {sourcePath}
         </span>
@@ -211,14 +220,9 @@ export const DeliverableReader: FC<DeliverableReaderProps> = ({
 
 const DownloadIcon: FC = () => (
   <svg
-    width="14"
-    height="14"
-    viewBox="0 0 16 16"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
+    width="14" height="14" viewBox="0 0 16 16"
+    fill="none" stroke="currentColor"
+    strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
     aria-hidden="true"
   >
     <path d="M8 2v8" />
