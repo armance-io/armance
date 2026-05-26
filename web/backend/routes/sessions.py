@@ -74,8 +74,12 @@ async def create_session(
     bus = LocalEventBus(log_path=log_path)
 
     handler = WebCheckpointHandler(bus)
+    # C.6 / C.8 — wire the bus into the service-layer context so
+    # Malik can emit `agents_proposed` and SpecialistRunner can emit
+    # `agent_streaming_*` for the live frontend.
     ctx = make_loop_context(armance_root, cfg, state, session, ledger,
-                            checkpoint_handler=handler)
+                            checkpoint_handler=handler,
+                            event_bus=bus)
 
     # The canonical sid comes from start_or_resume (Session.state.id).
     # The platform registry is unused in V2 — it stays for V3 SaaS

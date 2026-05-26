@@ -282,6 +282,7 @@ async def _mona_proxy_checkpoint(
         report = await run_specialist(
             mona, task, ctx.armance_root, ctx.cfg,
             reports_root=ctx.armance_root / "reports",
+            event_bus=ctx.event_bus,
         )
         return (report.content or "[autonomous: empty mona reply]").strip()
     except Exception as exc:
@@ -452,6 +453,7 @@ async def _cmd_workflow_run(
                 ctx.cfg,
                 reports_root=ctx.armance_root / "reports",
                 caveman_level=step_caveman,
+                event_bus=ctx.event_bus,
             )
             _set_status(ctx, step.id, "completed")
             write_step_output(artefact, step.id, report.content)

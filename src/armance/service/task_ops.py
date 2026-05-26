@@ -71,6 +71,7 @@ async def cmd_task(args: list[str], ctx: LoopContext) -> str:
             ctx.cfg,
             reports_root=reports_root,
             caveman_level=task_caveman,
+            event_bus=ctx.event_bus,
         )
         _set_status(ctx, agent_name, "completed")
         ctx._last_output = report.content
