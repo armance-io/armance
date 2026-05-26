@@ -24,7 +24,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.state import AppState
-from backend.routes import health, whoami, sessions, turn, events, checkpoint, docs, library, library_docs, library_delete, exports, runs, agents
+from backend.routes import health, whoami, sessions, turn, events, checkpoint, docs, library, library_docs, library_delete, exports, runs, agents, providers
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +78,7 @@ def create_app() -> FastAPI:
     app.include_router(exports.router)
     app.include_router(runs.router)
     app.include_router(agents.router)
+    app.include_router(providers.router)
 
     return app
 
