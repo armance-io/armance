@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Armance — Administration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:ital,wght@0,300;0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+/* ============================================================ TOKENS ============================================================ */
+:root {
+  --bg-paper:        #f4ede0;
+  --bg-paper-deep:   #e8dfcd;
+  --bg-paper-card:   #faf6ef;
+  --ink:             #2a2520;
+  --ink-soft:        #5b5145;
+  --ink-faint:       #9c8e7e;
+  --rule:            #d6c8ad;
+  --rule-soft:       #e8dfcd;
+  --accent:          #6b4f8a;
+  --accent-soft:     #b7a4c9;
+  --accent-deep:     #4a3666;
+  --danger:          #a44141;
+
+  --ff-serif: "Instrument Serif", "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --ff-sans:  "Inter", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --ff-mono:  "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --nav-h: 52px;
+  --sidebar-w: 240px;
+
+  --shadow-card: 0 2px 12px -4px rgba(42,37,32,0.10), 0 1px 3px -1px rgba(42,37,32,0.07);
+  --shadow-lift: 0 8px 32px -10px rgba(42,37,32,0.16), 0 2px 8px -3px rgba(42,37,32,0.08);
+}
+
+[data-theme="dark"] {
+  --bg-paper:        #1d1a17;
+  --bg-paper-deep:   #15120f;
+  --bg-paper-card:   #231f1b;
+  --ink:             #e9e0cd;
+  --ink-soft:        #b3a895;
+  --ink-faint:       #6e6152;
+  --rule:            #3a3328;
+  --rule-soft:       #2a2520;
+  --accent:          #b7a4c9;
+  --accent-soft:     #6b4f8a;
+  --accent-deep:     #d6c8ad;
+  --danger:          #c95a5a;
+
+  --shadow-card: 0 2px 12px -4px rgba(0,0,0,0.35), 0 1px 3px -1px rgba(0,0,0,0.25);
+  --shadow-lift: 0 8px 32px -10px rgba(0,0,0,0.50), 0 2px 8px -3px rgba(0,0,0,0.30);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: var(--ff-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--bg-paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+p { margin: 0; }
+h1, h2, h3, h4 { margin: 0; font-weight: 400; }
+ul, ol { margin: 0; padding: 0; }
+li { list-style: none; }
+code { font-family: var(--ff-mono); }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 999px; }
+
+/* ============================================================ NAV ============================================================ */
+.g-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  height: var(--nav-h);
+  background: color-mix(in srgb, var(--bg-paper) 88%, transparent);
+  backdrop-filter: saturate(140%) blur(12px);
+  -webkit-backdrop-filter: saturate(140%) blur(12px);
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  padding: 0 20px 0 0;
+}
+.g-nav-brand {
+  display: flex;
+  align-items: center;
+  width: var(--sidebar-w);
+  padding: 0 20px;
+  border-right: 1px solid var(--rule);
+  height: 100%;
+}
+.g-nav-brand-name {
+  font-family: var(--ff-serif);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--ink);
+}
+.g-nav-brand-sep {
+  color: var(--rule);
+  margin: 0 8px;
+}
+.g-nav-brand-section {
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.g-nav-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.g-ctl {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--ink-soft);
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.g-ctl:hover {
+  color: var(--ink);
+  border-color: var(--ink-soft);
+  background: var(--bg-paper-deep);
+}
+.g-version-pill {
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  color: var(--ink-faint);
+  background: var(--bg-paper-deep);
+}
+
+/* ============================================================ LAYOUT ============================================================ */
+.g-layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  padding-top: var(--nav-h);
+  min-height: 100vh;
+}
+
+.g-sidebar {
+  position: sticky;
+  top: var(--nav-h);
+  align-self: start;
+  height: calc(100vh - var(--nav-h));
+  overflow-y: auto;
+  border-right: 1px solid var(--rule);
+  background: var(--bg-paper-deep);
+  padding: 24px 0 48px;
+}
+.g-sidebar-group {
+  padding: 0 16px 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--rule);
+}
+.g-sidebar-group:last-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+.g-sidebar-group-title {
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 10px;
+  padding: 0 4px;
+}
+.g-sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.g-sidebar-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  transition: color 0.15s, background 0.15s;
+  gap: 8px;
+}
+.g-sidebar-link:hover {
+  color: var(--ink);
+  background: var(--rule-soft);
+}
+.g-sidebar-link.is-active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  font-weight: 500;
+}
+.g-sidebar-badge {
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+  opacity: 0.65;
+  flex-shrink: 0;
+}
+
+.g-main {
+  padding: 52px 64px 120px;
+  min-width: 0;
+}
+
+.g-page-header {
+  margin-bottom: 64px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid var(--rule);
+}
+.g-page-title {
+  font-family: var(--ff-serif);
+  font-weight: 400;
+  font-size: 52px;
+  line-height: 1.04;
+  letter-spacing: -0.018em;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+.g-page-title em {
+  font-style: italic;
+  color: var(--ink-soft);
+}
+.g-page-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.g-page-meta-item + .g-page-meta-item::before {
+  content: "·";
+  margin-right: 20px;
+}
+
+.g-category-title {
+  font-family: var(--ff-serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-faint);
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.g-category-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+/* ============================================================ COMPONENTS ============================================================ */
+.g-component {
+  margin-bottom: 80px;
+  padding-bottom: 80px;
+  border-bottom: 1px solid var(--rule);
+  max-width: 800px;
+}
+.g-component:last-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+.g-component-header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.g-component-title {
+  font-family: var(--ff-serif);
+  font-weight: 400;
+  font-size: 38px;
+  line-height: 1.08;
+  color: var(--ink);
+}
+.g-component-path {
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  background: var(--bg-paper-deep);
+  padding: 3px 9px;
+  border-radius: 4px;
+  border: 1px solid var(--rule);
+  letter-spacing: 0.02em;
+}
+.g-component-desc {
+  font-family: var(--ff-serif);
+  font-style: italic;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  max-width: 52ch;
+  margin-bottom: 40px;
+  text-wrap: pretty;
+}
+
+.g-demo-label {
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.g-demo-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+.g-demo-canvas {
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-paper-card);
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-card);
+}
+.g-demo-canvas--dark {
+  background: #1d1a17;
+  border-color: #3a3328;
+}
+.g-demo-row {
+  padding: 20px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.g-demo-row + .g-demo-row {
+  border-top: 1px solid var(--rule);
+}
+.g-demo-canvas--dark .g-demo-row + .g-demo-row {
+  border-color: #3a3328;
+}
+.g-demo-row-label {
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 8px;
+  align-self: flex-start;
+}
+.g-demo-canvas--dark .g-demo-row-label {
+  color: #6e6152;
+}
+
+.g-props-wrap {
+  overflow-x: auto;
+  margin-bottom: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--rule);
+  box-shadow: var(--shadow-card);
+}
+.g-props-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.g-props-table thead th {
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-paper-deep);
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+.g-props-table tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule-soft);
+  vertical-align: top;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+.g-props-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.td-name { font-family: var(--ff-mono); color: var(--accent); font-weight: 500; }
+.td-type { font-family: var(--ff-mono); color: var(--ink); font-size: 12px; }
+.td-default { font-family: var(--ff-mono); color: var(--ink-faint); font-size: 12px; }
+
+.g-code-block {
+  position: relative;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--bg-paper-deep);
+  padding: 16px 20px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-card);
+}
+.g-code-block pre {
+  margin: 0;
+  overflow-x: auto;
+}
+.g-code-block code {
+  font-family: var(--ff-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.g-copy-btn {
+  position: absolute;
+  top: 12px; right: 12px;
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--rule);
+  background: var(--bg-paper-card);
+  color: var(--ink-soft);
+  transition: all 0.15s;
+}
+.g-copy-btn:hover {
+  color: var(--ink);
+  border-color: var(--ink-soft);
+  background: var(--bg-paper);
+}
+
+.g-notes {
+  margin: 0 0 28px 0;
+  padding-left: 20px;
+}
+.g-note {
+  font-family: var(--ff-serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+  position: relative;
+}
+.g-note::before {
+  content: "❦";
+  color: var(--accent-soft);
+  font-size: 12px;
+  position: absolute;
+  left: -20px;
+  top: 1px;
+}
+
+/* Token syntax colors */
+.tok-kw { color: #8f5c38; font-weight: 500; }
+.tok-str { color: #5a7d5a; }
+.tok-tag { color: #6b4f8a; }
+.tok-attr { color: #b08a3a; }
+.tok-val { color: #2a2520; }
+[data-theme="dark"] .tok-kw { color: #cf9c77; }
+[data-theme="dark"] .tok-str { color: #9abfa2; }
+[data-theme="dark"] .tok-tag { color: #b7a4c9; }
+[data-theme="dark"] .tok-attr { color: #d6c8ad; }
+[data-theme="dark"] .tok-val { color: #e9e0cd; }
+
+/* Fleuron divider styles */
+.c-fleuron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+.c-fleuron__rule {
+  flex: 0 0 auto;
+  height: 0;
+  border-top: 1px solid var(--rule);
+}
+.c-fleuron__glyph {
+  flex: 0 0 auto;
+  font-family: var(--ff-serif);
+  line-height: 1;
+  color: var(--accent);
+  user-select: none;
+}
+.c-fleuron--sm               { gap: 14px; padding: 16px 0; }
+.c-fleuron--sm .c-fleuron__rule  { width: 56px; }
+.c-fleuron--sm .c-fleuron__glyph { font-size: 16px; }
+
+.c-fleuron--md               { gap: 18px; padding: 28px 0; }
+.c-fleuron--md .c-fleuron__rule  { width: 80px; }
+.c-fleuron--md .c-fleuron__glyph { font-size: 20px; }
+
+.c-fleuron--lg               { gap: 22px; padding: 44px 0; }
+.c-fleuron--lg .c-fleuron__rule  { width: 112px; }
+.c-fleuron--lg .c-fleuron__glyph { font-size: 28px; }
+
+.g-demo-canvas--dark .c-fleuron__rule  { border-color: #3a3328; }
+.g-demo-canvas--dark .c-fleuron__glyph { color: #b7a4c9; }
+
+
+/* AgentEditor styles */
+.ae-card { display: grid; grid-template-columns: 120px 1fr; gap: 24px; padding: 24px; background: var(--bg-paper-card); border: 1px solid var(--rule); font-family: var(--ff-sans); color: var(--ink); }
+.ae-label { font-family: var(--ff-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); margin-bottom: 6px; display: block; }
+.ae-input { padding: 8px 10px; border: 1px solid var(--rule); background: var(--bg-paper); font-family: var(--ff-mono); font-size: 13px; color: var(--ink); width: 100%; }
+.ae-pill { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--rule); background: transparent; color: var(--ink-soft); font-family: var(--ff-mono); font-size: 12px; cursor: pointer; transition: all 0.2s; }
+.ae-pill.is-active { border-color: var(--accent); background: var(--accent); color: var(--bg-paper-card); }
+.ae-save-btn { padding: 8px 20px; border-radius: 999px; background: var(--accent); color: var(--bg-paper-card); font-family: var(--ff-sans); font-size: 13px; cursor: pointer; font-weight:500; transition: background 0.2s; }
+.ae-save-btn:hover { background: var(--accent-deep); }
+
+/* ConfigForm styles */
+.cf-form { background: var(--bg-paper-card); border: 1px solid var(--rule); padding: 32px 40px; color: var(--ink); max-width: 640px; }
+.cf-row { display: grid; gap: 6px; margin-bottom: 20px; }
+.cf-err { font-size: 12px; color: var(--danger); font-style: italic; }
+
+/* LogViewer styles */
+.lv-container { background: var(--bg-paper-card); border: 1px solid var(--rule); height: 380px; display: flex; flex-direction: column; overflow: hidden; }
+.lv-filterbar { display: flex; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--rule); background: var(--bg-paper-deep); z-index: 2; flex-wrap: wrap; }
+.lv-rows { flex: 1; overflow-y: auto; font-family: var(--ff-mono); font-size: 12px; }
+.lv-row { border-bottom: 1px solid var(--rule-soft); }
+.lv-row-header { display: grid; grid-template-columns: 20px 60px 110px 1fr; gap: 12px; width: 100%; padding: 8px 16px; border: 0; background: transparent; text-align: left; cursor: pointer; }
+.lv-row-header:hover { background: var(--bg-paper); }
+.lv-payload { margin: 0; padding: 12px 16px 16px 48px; background: var(--bg-paper-deep); color: var(--ink-soft); overflow: auto; border-top: 1px solid var(--rule-soft); display: none; }
+.lv-payload.is-open { display: block; }
+.lvl-info { color: var(--ink-soft); text-transform: uppercase; }
+.lvl-error { color: var(--danger); text-transform: uppercase; }
+.lvl-warn { color: #b08a3a; text-transform: uppercase; }
+
+/* SecretsList styles */
+.sl-wrap { background: var(--bg-paper-card); border: 1px solid var(--rule); }
+.sl-head { display: grid; grid-template-columns: 1fr 1.4fr auto; padding: 12px 20px; border-bottom: 1px solid var(--rule); background: var(--bg-paper-deep); font-family: var(--ff-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+.sl-row { display: grid; grid-template-columns: 1fr 1.4fr auto; padding: 12px 20px; border-bottom: 1px solid var(--rule-soft); align-items: center; gap: 12px; }
+.sl-btn { width: 28px; height: 28px; border-radius: 4px; border: 1px solid var(--rule); display: grid; place-items: center; color: var(--ink-soft); cursor: pointer; }
+.sl-btn--danger { color: var(--danger); }
+.sl-input { padding: 4px 8px; border: 1px solid var(--accent); background: var(--bg-paper); font-family: var(--ff-mono); font-size: 13px; color: var(--ink); }
+.sl-modal { position: fixed; inset: 0; background: rgba(42,37,32,0.4); z-index: 200; display: none; place-items: center; }
+.sl-modal.is-open { display: grid; }
+.sl-modal-card { background: var(--bg-paper-card); border: 1px solid var(--rule); padding: 28px 32px; max-width: 420px; }
+
+/* StatsDashboard styles */
+.sd-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.sd-card { background: var(--bg-paper-card); border: 1px solid var(--rule); padding: 20px 22px; display: flex; flex-direction: column; gap: 8px; }
+.sd-card--accent .sd-card-val { color: var(--accent); }
+.sd-card-lbl { font-family: var(--ff-mono); font-size: 11px; uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+.sd-card-val { font-family: var(--ff-serif); font-size: 32px; color: var(--ink); }
+.sd-bar-track { flex: 1; height: 10px; background: var(--bg-paper-deep); border: 1px solid var(--rule); overflow: hidden; }
+.sd-bar-fill { height: 100%; transition: width 0.3s; }
+.sd-lead-row { display: grid; grid-template-columns: 32px 1fr auto; padding: 10px 14px; border-bottom: 1px solid var(--rule-soft); align-items: center; }
+.sd-lead-num { font-family: var(--ff-serif); font-size: 22px; color: var(--accent); }
+
+</style>
+</head>
+<body>
+
+<!-- ============================================================ NAV ============================================================ -->
+<header class="g-nav" role="banner">
+  <div class="g-nav-brand">
+    <span class="g-nav-brand-name">Armance</span>
+    <span class="g-nav-brand-sep">·</span>
+    <span class="g-nav-brand-section">Composants</span>
+  </div>
+  <div class="g-nav-right">
+    <span class="g-version-pill">React 19 · TS strict</span>
+    <button class="g-ctl" id="themeToggle" aria-label="Basculer le thème">☾</button>
+  </div>
+</header>
+
+<div class="g-layout">
+
+  
+  <aside class="g-sidebar" aria-label="Navigation des composants">
+    <!-- Pages de la Galerie -->
+    <div class="g-sidebar-group">
+      <p class="g-sidebar-group-title">Menu des Galeries</p>
+      <ul class="g-sidebar-list">
+        <li>
+          <a href="Component Gallery.html" class="g-sidebar-link ">
+            Structure & Visuels <span class="g-sidebar-badge">v1</span>
+          </a>
+        </li>
+        <li>
+          <a href="Gallery Chat.html" class="g-sidebar-link ">
+            Conversation & Audio <span class="g-sidebar-badge">v2</span>
+          </a>
+        </li>
+        <li>
+          <a href="Gallery Workflows.html" class="g-sidebar-link ">
+            Workflows & Graphes <span class="g-sidebar-badge">v2</span>
+          </a>
+        </li>
+        <li>
+          <a href="Gallery Rendus.html" class="g-sidebar-link ">
+            Rendus & Blocs <span class="g-sidebar-badge">v2</span>
+          </a>
+        </li>
+        <li>
+          <a href="Gallery Admin.html" class="g-sidebar-link is-active">
+            Administration <span class="g-sidebar-badge">v2</span>
+          </a>
+        </li>
+        <li>
+          <a href="Gallery Divers.html" class="g-sidebar-link ">
+            Divers & Panneaux <span class="g-sidebar-badge">v2</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+    
+    <!-- Composants de la page courante -->
+    <div class="g-sidebar-group">
+      <p class="g-sidebar-group-title">Composants de la page</p>
+      <ul class="g-sidebar-list">
+    
+        <li><a href="#agent-editor" class="g-sidebar-link">AgentEditor</a></li>
+        <li><a href="#config-form" class="g-sidebar-link">ConfigForm</a></li>
+        <li><a href="#log-viewer" class="g-sidebar-link">LogViewer</a></li>
+        <li><a href="#secrets-list" class="g-sidebar-link">SecretsList</a></li>
+        <li><a href="#stats-dashboard" class="g-sidebar-link">StatsDashboard</a></li>
+        
+      </ul>
+    </div>
+  </aside>
+    
+
+  <!-- ============================================================ MAIN ============================================================ -->
+  <main class="g-main">
+    <!-- Page header -->
+    <header class="g-page-header">
+      <h1 class="g-page-title">Administration</h1>
+      <div class="g-page-meta">
+        <span class="g-page-meta-item">armance.io</span>
+        <span class="g-page-meta-item">React 19</span>
+        <span class="g-page-meta-item">TypeScript strict</span>
+        <span class="g-page-meta-item">Tailwind v4</span>
+        <span class="g-page-meta-item">WCAG AA</span>
+      </div>
+    </header>
+
+    
+    <!-- ============================================================ AgentEditor -->
+    <article class="g-component" id="agent-editor">
+      <div class="g-component-header">
+        <h2 class="g-component-title">AgentEditor</h2>
+        <code class="g-component-path">admin/AgentEditor.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Panneau d'édition des agents configurés dans l'Atelier. Permet d'éditer leur prompt système, leur modèle de base et d'activer/régler le raisonnement profond (CoT).
+      </p>
+
+      <p class="g-demo-label">Fiche agent interactrice</p>
+      <div class="g-demo-canvas">
+        <div class="ae-card">
+          <div style="text-align:center;">
+            <div style="width:96px; height:96px; background:#6b4f8a; border-radius:4px; border:1px solid var(--rule); display:grid; place-items:center; font-family:var(--ff-serif); font-size:48px; color:#fff;">M</div>
+            <span style="font-size:11px; font-family:var(--ff-mono); color:var(--ink-faint); display:block; margin-top:8px;">ID: mona-arch</span>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:14px;">
+            <div>
+              <h3 style="font-family:var(--ff-serif); font-size:26px;">Mona l'archiviste</h3>
+              <p style="font-style:italic; color:var(--ink-soft); font-size:14px; margin-top:4px;">Archiviste / Recherche</p>
+            </div>
+
+            <div>
+              <span class="ae-label">Persona (Instructions de base)</span>
+              <p style="font-size:14px; color:var(--ink-soft); line-height:1.5; margin:0;">
+                Rigoureuse et calme. Se concentre uniquement sur les faits textuels issus des documents fournis.
+              </p>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+              <div>
+                <span class="ae-label">Fournisseur</span>
+                <select class="ae-input" id="aeSelectProvider">
+                  <option>Google</option>
+                  <option>OpenAI</option>
+                  <option>Anthropic</option>
+                </select>
+              </div>
+              <div>
+                <span class="ae-label">Modèle</span>
+                <select class="ae-input" id="aeSelectModel">
+                  <!-- options fill dynamically -->
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <span class="ae-label">Raisonnement profond (CoT)</span>
+              <div style="display:flex; gap:8px;">
+                <button class="ae-pill ae-pill--reasoning is-active" data-r="off">Off</button>
+                <button class="ae-pill ae-pill--reasoning" data-r="low">Low</button>
+                <button class="ae-pill ae-pill--reasoning" data-r="high">High</button>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end;">
+              <button class="ae-save-btn" id="btnSaveAgent">Enregistrer</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============================================================ ConfigForm -->
+    <article class="g-component" id="config-form">
+      <div class="g-component-header">
+        <h2 class="g-component-title">ConfigForm</h2>
+        <code class="g-component-path">admin/ConfigForm.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Formulaire central des paramètres de l'Atelier. Gère la validation des champs obligatoires et propose des bascules de sélections simplifiées pour l'effort budgétaire.
+      </p>
+
+      <p class="g-demo-label">Formulaire de configuration interactif</p>
+      <div class="g-demo-canvas">
+        <form class="cf-form" id="configForm" novalidate>
+          <h2 style="font-family:var(--ff-serif); font-size:28px; margin-bottom:24px;">Paramètres généraux</h2>
+          
+          <div class="cf-row">
+            <label class="ae-label">Fournisseur par défaut</label>
+            <div style="padding:10px 12px; border:1px solid var(--rule); background:var(--bg-paper-deep); font-family:var(--ff-mono); font-size:13px; color:var(--ink-soft);">Google</div>
+          </div>
+
+          <div class="cf-row">
+            <label class="ae-label">Modèle principal (requis)</label>
+            <select class="ae-input" id="cfModel" style="padding:10px 12px;">
+              <option value="">Sélectionner...</option>
+              <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+            </select>
+            <span class="cf-err" id="cfModelErr" style="display:none;">Le modèle principal est obligatoire.</span>
+          </div>
+
+          <div class="cf-row">
+            <label class="ae-label">Effort budgétaire</label>
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+              <button type="button" class="ae-pill ae-pill--budget is-active" data-b="free">Gratuit d'abord</button>
+              <button type="button" class="ae-pill ae-pill--budget" data-b="low">Faible</button>
+              <button type="button" class="ae-pill ae-pill--budget" data-b="med">Moyen</button>
+              <button type="button" class="ae-pill ae-pill--budget" data-b="high">Élevé</button>
+            </div>
+          </div>
+
+          <div class="cf-row">
+            <label class="ae-label">Langue de l'Atelier</label>
+            <select class="ae-input" id="cfLang" style="padding:10px 12px;">
+              <option value="fr">Français (Atelier par défaut)</option>
+              <option value="en">Anglais</option>
+            </select>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; margin-top:24px;">
+            <button type="submit" class="ae-save-btn" style="padding:10px 22px;">Enregistrer la configuration</button>
+          </div>
+        </form>
+      </div>
+    </article>
+
+    <!-- ============================================================ LogViewer -->
+    <article class="g-component" id="log-viewer">
+      <div class="g-component-header">
+        <h2 class="g-component-title">LogViewer</h2>
+        <code class="g-component-path">admin/LogViewer.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Visualiseur de logs en temps réel. Offre des filtres multicritères (par agent, par date, recherche de mots clés) et permet d'ouvrir chaque ligne pour explorer sa charge utile (payload JSON).
+      </p>
+
+      <p class="g-demo-label">Rendu interactif</p>
+      <div class="g-demo-canvas" style="padding:0;">
+        <div class="lv-container">
+          <div class="lv-filterbar">
+            <select class="ae-input" style="width:auto; padding:6px 10px;" id="lvAgentFilter">
+              <option value="">Tous les agents</option>
+              <option>Mona</option>
+              <option>Colbert</option>
+            </select>
+            <input type="datetime-local" class="ae-input" style="width:auto; padding:6px 10px;" />
+            <input type="search" class="ae-input" style="flex:1; min-width:160px; padding:6px 10px;" placeholder="Rechercher dans les logs" id="lvSearch" />
+          </div>
+          
+          <div class="lv-rows" id="lvList">
+            <!-- Row 1 -->
+            <div class="lv-row" data-agent="Mona" data-msg="chargement index">
+              <button class="lv-row-header" onclick="toggleLogPayload(this)">
+                <span class="lv-arrow">▸</span>
+                <span class="lvl-info">info</span>
+                <span style="color:var(--ink-soft);">2026-05-26 20:51:04</span>
+                <span><span style="color:var(--accent); margin-right:8px;">Mona</span>Chargement des index de documents</span>
+              </button>
+              <pre class="lv-payload"><code>{
+  "docs_count": 5,
+  "status": "success",
+  "elapsed_ms": 14
+}</code></pre>
+            </div>
+
+            <!-- Row 2 -->
+            <div class="lv-row" data-agent="Colbert" data-msg="erreur calcul">
+              <button class="lv-row-header" onclick="toggleLogPayload(this)">
+                <span class="lv-arrow">▸</span>
+                <span class="lvl-error">error</span>
+                <span style="color:var(--ink-soft);">2026-05-26 20:52:11</span>
+                <span><span style="color:var(--accent); margin-right:8px;">Colbert</span>Erreur lors de l'analyse récursive</span>
+              </button>
+              <pre class="lv-payload"><code>{
+  "step": "reconstruct_hypothesis",
+  "reason": "API Rate Limit Exceeded",
+  "code": 429
+}</code></pre>
+            </div>
+
+            <!-- Row 3 -->
+            <div class="lv-row" data-agent="Colbert" data-msg="calcul budget">
+              <button class="lv-row-header" onclick="toggleLogPayload(this)">
+                <span class="lv-arrow">▸</span>
+                <span class="lvl-warn">warn</span>
+                <span style="color:var(--ink-soft);">2026-05-26 20:53:00</span>
+                <span><span style="color:var(--accent); margin-right:8px;">Colbert</span>Budget restant inférieur à 20%</span>
+              </button>
+              <pre class="lv-payload"><code>{
+  "allocated": 5.00,
+  "consumed": 4.12,
+  "currency": "USD"
+}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============================================================ SecretsList -->
+    <article class="g-component" id="secrets-list">
+      <div class="g-component-header">
+        <h2 class="g-component-title">SecretsList</h2>
+        <code class="g-component-path">admin/SecretsList.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Liste sécurisée des clés d'API (secrets). La valeur est masquée et révélée par pression continue (clic maintenu). Propose un bouton de suppression avec demande de confirmation (modal).
+      </p>
+
+      <p class="g-demo-label">Tableau des secrets interactifs</p>
+      <div class="g-demo-canvas" style="overflow:visible;">
+        <div class="sl-wrap">
+          <div class="sl-head">
+            <span>Clé d'API</span>
+            <span>Valeur masquée</span>
+            <span style="text-align:right;">Actions</span>
+          </div>
+
+          <!-- Secret 1 -->
+          <div class="sl-row" id="secRow1">
+            <code style="font-family:var(--ff-mono); font-size:13px; color:var(--ink);">GEMINI_API_KEY</code>
+            <code style="font-family:var(--ff-mono); font-size:13px; color:var(--ink-soft);" class="sec-val-code" data-plain="gemini-prod-98319-a1b2c3d4" data-mask="sk-***…8319">sk-***…8319</code>
+            <div style="display:flex; gap:6px; justify-content:flex-end;">
+              <button class="sl-btn btn-sec-eye" aria-label="Révéler" title="Maintenir pour révéler">👁</button>
+              <button class="sl-btn sl-btn--edit" aria-label="Éditer" onclick="editSecret('secRow1')">✎</button>
+              <button class="sl-btn sl-btn--danger" aria-label="Supprimer" onclick="confirmDeleteSecret('GEMINI_API_KEY')">🗑</button>
+            </div>
+          </div>
+
+          <!-- Secret 2 -->
+          <div class="sl-row" id="secRow2">
+            <code style="font-family:var(--ff-mono); font-size:13px; color:var(--ink);">OPENAI_API_KEY</code>
+            <code style="font-family:var(--ff-mono); font-size:13px; color:var(--ink-soft);" class="sec-val-code" data-plain="op-key-at-91823-xyz889" data-mask="sk-***…9182">sk-***…9182</code>
+            <div style="display:flex; gap:6px; justify-content:flex-end;">
+              <button class="sl-btn btn-sec-eye" aria-label="Révéler" title="Maintenir pour révéler">👁</button>
+              <button class="sl-btn sl-btn--edit" onclick="editSecret('secRow2')">✎</button>
+              <button class="sl-btn sl-btn--danger" onclick="confirmDeleteSecret('OPENAI_API_KEY')">🗑</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Confirm modal overlay -->
+      <div class="sl-modal" id="deleteSecModal">
+        <div class="sl-modal-card">
+          <p style="margin-bottom:24px; line-height:1.5;">Voulez-vous vraiment supprimer la clé d'API <code id="lblDeleteSecName" style="font-family:var(--ff-mono); color:var(--accent);"></code> de la base de l'Atelier ?</p>
+          <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button class="ae-pill" style="padding:8px 18px;" onclick="closeDeleteModal()">Annuler</button>
+            <button class="ae-pill" style="padding:8px 18px; border-color:var(--danger); background:var(--danger); color:#fff;" onclick="executeDeleteSecret()">Supprimer la clé</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============================================================ StatsDashboard -->
+    <article class="g-component" id="stats-dashboard">
+      <div class="g-component-header">
+        <h2 class="g-component-title">StatsDashboard</h2>
+        <code class="g-component-path">admin/StatsDashboard.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Tableau de bord présentant le récapitulatif global des jetons consommés, des coûts générés et des messages rédigés, assorti d'une table des meilleurs agents.
+      </p>
+
+      <p class="g-demo-label">Tableau des statistiques globales</p>
+      <div class="g-demo-canvas" style="padding:28px;">
+        <div class="sd-cards">
+          <!-- Card In -->
+          <div class="sd-card">
+            <span class="sd-card-lbl">Jetons Entrée</span>
+            <span class="sd-card-val">2 400 000</span>
+          </div>
+          <!-- Card Out -->
+          <div class="sd-card">
+            <span class="sd-card-lbl">Jetons Sortie</span>
+            <span class="sd-card-val">640 110</span>
+          </div>
+          <!-- Card Cost -->
+          <div class="sd-card sd-card--accent">
+            <span class="sd-card-lbl" style="color:var(--accent);">Coût Estimé</span>
+            <span class="sd-card-val">14,28 €</span>
+          </div>
+          <!-- Card Msg -->
+          <div class="sd-card">
+            <span class="sd-card-lbl">Total Messages</span>
+            <span class="sd-card-val">124</span>
+          </div>
+        </div>
+
+        <h3 style="font-family:var(--ff-serif); font-size:22px; margin-bottom:16px; font-style:italic;">Consommation par Agent</h3>
+        
+        <div style="display:flex; flex-direction:column; gap:14px; margin-bottom:32px;">
+          <!-- Mona -->
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px;">
+              <span style="font-family:var(--ff-serif); font-size:16px;">Mona l'archiviste</span>
+              <span style="font-family:var(--ff-mono); font-size:12px; color:var(--ink-soft);">↑1 800 000 · ↓410 000</span>
+            </div>
+            <div style="display:flex; gap:4px;">
+              <div class="sd-bar-track"><div class="sd-bar-fill" style="width:75%; background:var(--accent);"></div></div>
+              <div class="sd-bar-track"><div class="sd-bar-fill" style="width:65%; background:var(--accent-soft);"></div></div>
+            </div>
+          </div>
+
+          <!-- Colbert -->
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:6px;">
+              <span style="font-family:var(--ff-serif); font-size:16px;">Colbert</span>
+              <span style="font-family:var(--ff-mono); font-size:12px; color:var(--ink-soft);">↑600 000 · ↓230 110</span>
+            </div>
+            <div style="display:flex; gap:4px;">
+              <div class="sd-bar-track"><div class="sd-bar-fill" style="width:25%; background:var(--accent);"></div></div>
+              <div class="sd-bar-track"><div class="sd-bar-fill" style="width:35%; background:var(--accent-soft);"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="font-family:var(--ff-serif); font-size:22px; margin-bottom:16px; font-style:italic;">Top 2 Agents par Coût</h3>
+        <ol style="margin:0; padding:0;">
+          <li class="sd-lead-row">
+            <span class="sd-lead-num">1</span>
+            <span>Mona l'archiviste</span>
+            <span style="font-family:var(--ff-mono); font-size:13px; font-weight:500;">9,84 €</span>
+          </li>
+          <li class="sd-lead-row">
+            <span class="sd-lead-num">2</span>
+            <span>Colbert</span>
+            <span style="font-family:var(--ff-mono); font-size:13px; font-weight:500;">4,44 €</span>
+          </li>
+        </ol>
+      </div>
+    </article>
+    
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ── Theme toggle ── */
+  const html = document.documentElement;
+  const btn  = document.getElementById("themeToggle");
+
+  const saved = localStorage.getItem("armance-gallery-theme");
+  if (saved) {
+    html.dataset.theme = saved;
+    btn.textContent = saved === "dark" ? "☀︎" : "☾";
+  }
+
+  btn.addEventListener("click", function () {
+    const isDark = html.dataset.theme === "dark";
+    const next   = isDark ? "light" : "dark";
+    html.dataset.theme = next;
+    btn.textContent    = isDark ? "☾" : "☀︎";
+    localStorage.setItem("armance-gallery-theme", next);
+    window.dispatchEvent(new CustomEvent("armance-theme-change", { detail: next }));
+  });
+
+  /* ── Sidebar active state (IntersectionObserver) ── */
+  var links = Array.from(
+    document.querySelectorAll(".g-sidebar-link[href^='#']")
+  );
+
+  function setActive(id) {
+    links.forEach(function (a) {
+      var matches = a.getAttribute("href") === "#" + id;
+      a.classList.toggle("is-active", matches);
+    });
+  }
+
+  var targets = Array.from(document.querySelectorAll("[id]")).filter(function (t) {
+    return t.tagName.toLowerCase() === "article";
+  });
+  if (targets.length > 0) {
+    var io = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) setActive(e.target.id);
+        });
+      },
+      { rootMargin: "-20% 0px -72% 0px" }
+    );
+    targets.forEach(function (t) { io.observe(t); });
+  }
+
+  /* ── Copy code helper ── */
+  window.copyCode = function (btn) {
+    var pre  = btn.closest(".g-code-block").querySelector("pre");
+    var text = pre.textContent;
+    navigator.clipboard.writeText(text).then(function () {
+      btn.textContent = "Copié";
+      setTimeout(function () { btn.textContent = "Copier"; }, 2000);
+    });
+  };
+
+  
+  /* AgentEditor Provider-Model maps */
+  const modelMap = {
+    "Google": ["Gemini 1.5 Pro", "Gemini 1.5 Flash", "Gemini 1.0 Pro"],
+    "OpenAI": ["GPT-4o", "GPT-4-turbo", "GPT-3.5-turbo"],
+    "Anthropic": ["Claude 3.5 Sonnet", "Claude 3 Opus", "Claude 3 Haiku"]
+  };
+  const selectProv = document.getElementById("aeSelectProvider");
+  const selectModel = document.getElementById("aeSelectModel");
+
+  function fillModels(prov) {
+    if(!selectModel) return;
+    selectModel.innerHTML = "";
+    const list = modelMap[prov] || [];
+    list.forEach(m => {
+      const opt = document.createElement("option");
+      opt.textContent = m;
+      selectModel.appendChild(opt);
+    });
+  }
+
+  if(selectProv && selectModel) {
+    fillModels(selectProv.value);
+    selectProv.addEventListener("change", () => {
+      fillModels(selectProv.value);
+    });
+  }
+
+  /* Reasoning pills toggle */
+  document.querySelectorAll(".ae-pill--reasoning").forEach(p => {
+    p.addEventListener("click", () => {
+      p.parentNode.querySelectorAll(".ae-pill--reasoning").forEach(b => b.classList.remove("is-active"));
+      p.classList.add("is-active");
+    });
+  });
+
+  const btnSaveAgent = document.getElementById("btnSaveAgent");
+  if(btnSaveAgent) {
+    btnSaveAgent.addEventListener("click", () => {
+      btnSaveAgent.textContent = "Enregistrement...";
+      setTimeout(() => {
+        btnSaveAgent.textContent = "Enregistrer";
+        alert("Modifications enregistrées avec succès.");
+      }, 800);
+    });
+  }
+
+  /* ConfigForm save validation */
+  const configForm = document.getElementById("configForm");
+  const cfModel = document.getElementById("cfModel");
+  const cfModelErr = document.getElementById("cfModelErr");
+  if(configForm && cfModel && cfModelErr) {
+    configForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      if(!cfModel.value) {
+        cfModelErr.style.display = "block";
+      } else {
+        cfModelErr.style.display = "none";
+        alert("Configuration sauvegardée.");
+      }
+    });
+
+    cfModel.addEventListener("change", () => {
+      if(cfModel.value) cfModelErr.style.display = "none";
+    });
+  }
+
+  /* ConfigForm budget chips toggle */
+  document.querySelectorAll(".ae-pill--budget").forEach(p => {
+    p.addEventListener("click", () => {
+      p.parentNode.querySelectorAll(".ae-pill--budget").forEach(b => b.classList.remove("is-active"));
+      p.classList.add("is-active");
+    });
+  });
+
+  /* LogViewer row toggling */
+  window.toggleLogPayload = function(btn) {
+    const row = btn.closest(".lv-row");
+    const arrow = row.querySelector(".lv-arrow");
+    const payload = row.querySelector(".lv-payload");
+    const isOpen = payload.classList.toggle("is-open");
+    arrow.textContent = isOpen ? "▾" : "▸";
+  };
+
+  /* LogViewer filtering simulation */
+  const lvAgentFilter = document.getElementById("lvAgentFilter");
+  const lvSearch = document.getElementById("lvSearch");
+  const lvList = document.getElementById("lvList");
+
+  function filterLogs() {
+    if(!lvList) return;
+    const agent = lvAgentFilter.value;
+    const q = lvSearch.value.toLowerCase();
+    
+    Array.from(lvList.querySelectorAll(".lv-row")).forEach(row => {
+      const matchAgent = !agent || row.dataset.agent === agent;
+      const matchText = !q || row.dataset.msg.includes(q) || row.textContent.toLowerCase().includes(q);
+      
+      if(matchAgent && matchText) {
+        row.style.display = "";
+      } else {
+        row.style.display = "none";
+      }
+    });
+  }
+
+  if(lvAgentFilter && lvSearch) {
+    lvAgentFilter.addEventListener("change", filterLogs);
+    lvSearch.addEventListener("input", filterLogs);
+  }
+
+  /* SecretsList reveal and modals */
+  document.querySelectorAll(".btn-sec-eye").forEach(btn => {
+    const code = btn.closest(".sl-row").querySelector(".sec-val-code");
+    
+    // Press and hold reveal
+    function reveal() {
+      code.textContent = code.dataset.plain;
+      code.style.color = "var(--accent)";
+    }
+    function mask() {
+      code.textContent = code.dataset.mask;
+      code.style.color = "";
+    }
+
+    btn.addEventListener("mousedown", reveal);
+    btn.addEventListener("mouseup", mask);
+    btn.addEventListener("mouseleave", mask);
+    btn.addEventListener("touchstart", (e) => { e.preventDefault(); reveal(); });
+    btn.addEventListener("touchend", mask);
+  });
+
+  const deleteSecModal = document.getElementById("deleteSecModal");
+  const lblDeleteSecName = document.getElementById("lblDeleteSecName");
+  let secretToDelete = null;
+
+  window.confirmDeleteSecret = function(name) {
+    if(!deleteSecModal || !lblDeleteSecName) return;
+    secretToDelete = name;
+    lblDeleteSecName.textContent = name;
+    deleteSecModal.classList.add("is-open");
+  };
+  window.closeDeleteModal = function() {
+    if(deleteSecModal) deleteSecModal.classList.remove("is-open");
+  };
+  window.executeDeleteSecret = function() {
+    alert("Secret " + secretToDelete + " supprimé.");
+    closeDeleteModal();
+  };
+
+  window.editSecret = function(rowId) {
+    const row = document.getElementById(rowId);
+    const code = row.querySelector(".sec-val-code");
+    const originalText = code.textContent;
+    row.innerHTML = `
+      <code style="font-family:var(--ff-mono); font-size:13px; color:var(--ink);">${rowId === 'secRow1' ? 'GEMINI_API_KEY' : 'OPENAI_API_KEY'}</code>
+      <input type="text" class="ae-input sl-input" value="${code.dataset.plain}" id="edit_${rowId}" />
+      <div style="display:flex; gap:6px; justify-content:flex-end;">
+        <button class="sl-btn" onclick="saveSecretEdit('${rowId}')">✓</button>
+        <button class="sl-btn" onclick="cancelSecretEdit('${rowId}', '${code.dataset.mask}', '${code.dataset.plain}')">✕</button>
+      </div>
+    `;
+  };
+
+  window.saveSecretEdit = function(rowId) {
+    const row = document.getElementById(rowId);
+    const val = document.getElementById("edit_" + rowId).value;
+    alert("Secret sauvegardé.");
+    location.reload(); // simple reload mockup
+  };
+  
+}());
+</script>
+</body>
+</html>
