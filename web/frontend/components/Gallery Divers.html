@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Armance — Divers & Panneaux</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:ital,wght@0,300;0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+/* ============================================================ TOKENS ============================================================ */
+:root {
+  --bg-paper:        #f4ede0;
+  --bg-paper-deep:   #e8dfcd;
+  --bg-paper-card:   #faf6ef;
+  --ink:             #2a2520;
+  --ink-soft:        #5b5145;
+  --ink-faint:       #9c8e7e;
+  --rule:            #d6c8ad;
+  --rule-soft:       #e8dfcd;
+  --accent:          #6b4f8a;
+  --accent-soft:     #b7a4c9;
+  --accent-deep:     #4a3666;
+  --danger:          #a44141;
+
+  --ff-serif: "Instrument Serif", "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --ff-sans:  "Inter", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --ff-mono:  "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --nav-h: 52px;
+  --sidebar-w: 240px;
+
+  --shadow-card: 0 2px 12px -4px rgba(42,37,32,0.10), 0 1px 3px -1px rgba(42,37,32,0.07);
+  --shadow-lift: 0 8px 32px -10px rgba(42,37,32,0.16), 0 2px 8px -3px rgba(42,37,32,0.08);
+}
+
+[data-theme="dark"] {
+  --bg-paper:        #1d1a17;
+  --bg-paper-deep:   #15120f;
+  --bg-paper-card:   #231f1b;
+  --ink:             #e9e0cd;
+  --ink-soft:        #b3a895;
+  --ink-faint:       #6e6152;
+  --rule:            #3a3328;
+  --rule-soft:       #2a2520;
+  --accent:          #b7a4c9;
+  --accent-soft:     #6b4f8a;
+  --accent-deep:     #d6c8ad;
+  --danger:          #c95a5a;
+
+  --shadow-card: 0 2px 12px -4px rgba(0,0,0,0.35), 0 1px 3px -1px rgba(0,0,0,0.25);
+  --shadow-lift: 0 8px 32px -10px rgba(0,0,0,0.50), 0 2px 8px -3px rgba(0,0,0,0.30);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: var(--ff-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--bg-paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+p { margin: 0; }
+h1, h2, h3, h4 { margin: 0; font-weight: 400; }
+ul, ol { margin: 0; padding: 0; }
+li { list-style: none; }
+code { font-family: var(--ff-mono); }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 999px; }
+
+/* ============================================================ NAV ============================================================ */
+.g-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  height: var(--nav-h);
+  background: color-mix(in srgb, var(--bg-paper) 88%, transparent);
+  backdrop-filter: saturate(140%) blur(12px);
+  -webkit-backdrop-filter: saturate(140%) blur(12px);
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  padding: 0 20px 0 0;
+}
+.g-nav-brand {
+  display: flex;
+  align-items: center;
+  width: var(--sidebar-w);
+  padding: 0 20px;
+  border-right: 1px solid var(--rule);
+  height: 100%;
+}
+.g-nav-brand-name {
+  font-family: var(--ff-serif);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--ink);
+}
+.g-nav-brand-sep {
+  color: var(--rule);
+  margin: 0 8px;
+}
+.g-nav-brand-section {
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.g-nav-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.g-ctl {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--ink-soft);
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.g-ctl:hover {
+  color: var(--ink);
+  border-color: var(--ink-soft);
+  background: var(--bg-paper-deep);
+}
+.g-version-pill {
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  color: var(--ink-faint);
+  background: var(--bg-paper-deep);
+}
+
+/* ============================================================ LAYOUT ============================================================ */
+.g-layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  padding-top: var(--nav-h);
+  min-height: 100vh;
+}
+
+.g-sidebar {
+  position: sticky;
+  top: var(--nav-h);
+  align-self: start;
+  height: calc(100vh - var(--nav-h));
+  overflow-y: auto;
+  border-right: 1px solid var(--rule);
+  background: var(--bg-paper-deep);
+  padding: 24px 0 48px;
+}
+.g-sidebar-group {
+  padding: 0 16px 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--rule);
+}
+.g-sidebar-group:last-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+.g-sidebar-group-title {
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 10px;
+  padding: 0 4px;
+}
+.g-sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.g-sidebar-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  transition: color 0.15s, background 0.15s;
+  gap: 8px;
+}
+.g-sidebar-link:hover {
+  color: var(--ink);
+  background: var(--rule-soft);
+}
+.g-sidebar-link.is-active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  font-weight: 500;
+}
+.g-sidebar-badge {
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+  opacity: 0.65;
+  flex-shrink: 0;
+}
+
+.g-main {
+  padding: 52px 64px 120px;
+  min-width: 0;
+}
+
+.g-page-header {
+  margin-bottom: 64px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid var(--rule);
+}
+.g-page-title {
+  font-family: var(--ff-serif);
+  font-weight: 400;
+  font-size: 52px;
+  line-height: 1.04;
+  letter-spacing: -0.018em;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+.g-page-title em {
+  font-style: italic;
+  color: var(--ink-soft);
+}
+.g-page-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.g-page-meta-item + .g-page-meta-item::before {
+  content: "·";
+  margin-right: 20px;
+}
+
+.g-category-title {
+  font-family: var(--ff-serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-faint);
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.g-category-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+/* ============================================================ COMPONENTS ============================================================ */
+.g-component {
+  margin-bottom: 80px;
+  padding-bottom: 80px;
+  border-bottom: 1px solid var(--rule);
+  max-width: 800px;
+}
+.g-component:last-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+.g-component-header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.g-component-title {
+  font-family: var(--ff-serif);
+  font-weight: 400;
+  font-size: 38px;
+  line-height: 1.08;
+  color: var(--ink);
+}
+.g-component-path {
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  background: var(--bg-paper-deep);
+  padding: 3px 9px;
+  border-radius: 4px;
+  border: 1px solid var(--rule);
+  letter-spacing: 0.02em;
+}
+.g-component-desc {
+  font-family: var(--ff-serif);
+  font-style: italic;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  max-width: 52ch;
+  margin-bottom: 40px;
+  text-wrap: pretty;
+}
+
+.g-demo-label {
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.g-demo-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+.g-demo-canvas {
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-paper-card);
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-card);
+}
+.g-demo-canvas--dark {
+  background: #1d1a17;
+  border-color: #3a3328;
+}
+.g-demo-row {
+  padding: 20px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.g-demo-row + .g-demo-row {
+  border-top: 1px solid var(--rule);
+}
+.g-demo-canvas--dark .g-demo-row + .g-demo-row {
+  border-color: #3a3328;
+}
+.g-demo-row-label {
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 8px;
+  align-self: flex-start;
+}
+.g-demo-canvas--dark .g-demo-row-label {
+  color: #6e6152;
+}
+
+.g-props-wrap {
+  overflow-x: auto;
+  margin-bottom: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--rule);
+  box-shadow: var(--shadow-card);
+}
+.g-props-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.g-props-table thead th {
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-paper-deep);
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+.g-props-table tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule-soft);
+  vertical-align: top;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+.g-props-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.td-name { font-family: var(--ff-mono); color: var(--accent); font-weight: 500; }
+.td-type { font-family: var(--ff-mono); color: var(--ink); font-size: 12px; }
+.td-default { font-family: var(--ff-mono); color: var(--ink-faint); font-size: 12px; }
+
+.g-code-block {
+  position: relative;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--bg-paper-deep);
+  padding: 16px 20px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-card);
+}
+.g-code-block pre {
+  margin: 0;
+  overflow-x: auto;
+}
+.g-code-block code {
+  font-family: var(--ff-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.g-copy-btn {
+  position: absolute;
+  top: 12px; right: 12px;
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--rule);
+  background: var(--bg-paper-card);
+  color: var(--ink-soft);
+  transition: all 0.15s;
+}
+.g-copy-btn:hover {
+  color: var(--ink);
+  border-color: var(--ink-soft);
+  background: var(--bg-paper);
+}
+
+.g-notes {
+  margin: 0 0 28px 0;
+  padding-left: 20px;
+}
+.g-note {
+  font-family: var(--ff-serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+  position: relative;
+}
+.g-note::before {
+  content: "❦";
+  color: var(--accent-soft);
+  font-size: 12px;
+  position: absolute;
+  left: -20px;
+  top: 1px;
+}
+
+/* Token syntax colors */
+.tok-kw { color: #8f5c38; font-weight: 500; }
+.tok-str { color: #5a7d5a; }
+.tok-tag { color: #6b4f8a; }
+.tok-attr { color: #b08a3a; }
+.tok-val { color: #2a2520; }
+[data-theme="dark"] .tok-kw { color: #cf9c77; }
+[data-theme="dark"] .tok-str { color: #9abfa2; }
+[data-theme="dark"] .tok-tag { color: #b7a4c9; }
+[data-theme="dark"] .tok-attr { color: #d6c8ad; }
+[data-theme="dark"] .tok-val { color: #e9e0cd; }
+
+/* Fleuron divider styles */
+.c-fleuron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+.c-fleuron__rule {
+  flex: 0 0 auto;
+  height: 0;
+  border-top: 1px solid var(--rule);
+}
+.c-fleuron__glyph {
+  flex: 0 0 auto;
+  font-family: var(--ff-serif);
+  line-height: 1;
+  color: var(--accent);
+  user-select: none;
+}
+.c-fleuron--sm               { gap: 14px; padding: 16px 0; }
+.c-fleuron--sm .c-fleuron__rule  { width: 56px; }
+.c-fleuron--sm .c-fleuron__glyph { font-size: 16px; }
+
+.c-fleuron--md               { gap: 18px; padding: 28px 0; }
+.c-fleuron--md .c-fleuron__rule  { width: 80px; }
+.c-fleuron--md .c-fleuron__glyph { font-size: 20px; }
+
+.c-fleuron--lg               { gap: 22px; padding: 44px 0; }
+.c-fleuron--lg .c-fleuron__rule  { width: 112px; }
+.c-fleuron--lg .c-fleuron__glyph { font-size: 28px; }
+
+.g-demo-canvas--dark .c-fleuron__rule  { border-color: #3a3328; }
+.g-demo-canvas--dark .c-fleuron__glyph { color: #b7a4c9; }
+
+
+/* CheckpointDrawer styles */
+.cp-trigger-bar { padding: 24px; display: flex; gap: 10px; justify-content: center; }
+.cp-overlay { position: fixed; inset: 0; background: rgba(42,37,32,0.2); z-index: 1000; display: none; justify-content: flex-end; }
+.cp-overlay.is-open { display: flex; }
+.cp-drawer { width: 420px; max-width: 100vw; height: 100%; background: var(--bg-paper); border-left: 1px solid var(--rule); display: flex; flex-direction: column; animation: slide-in 0.28s ease-out; }
+@keyframes slide-in { 0% { transform: translateX(100%); } 100% { transform: translateX(0); } }
+.cp-header { padding: 24px 24px 16px; border-bottom: 1px solid var(--rule); }
+.cp-title { font-family: var(--ff-serif); font-size: 22px; color: var(--ink); }
+.cp-body { padding: 24px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+.cp-prompt { font-size: 16px; line-height: 1.6; color: var(--ink); }
+.cp-textarea { width: 100%; min-height: 120px; padding: 10px; border-radius: 6px; border: 1px solid var(--rule); background: var(--bg-paper-card); font-family: var(--ff-sans); font-size: 14px; color: var(--ink); resize: none; }
+.cp-footer { padding: 16px 24px; background: var(--bg-paper-deep); border-top: 1px solid var(--rule); display: flex; gap: 10px; justify-content: flex-end; }
+.cp-radio-list { display: flex; flex-direction: column; gap: 8px; }
+.cp-radio-item { padding: 10px 14px; border-radius: 6px; border: 1px solid var(--rule); background: var(--bg-paper-card); cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all 0.2s; }
+.cp-radio-item:hover { border-color: var(--accent-soft); }
+.cp-radio-item.is-selected { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--bg-paper-card)); }
+.cp-dot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--rule); display: grid; place-items: center; }
+.cp-radio-item.is-selected .cp-dot { border-color: var(--accent); }
+.cp-dot-inner { width: 6px; height: 6px; border-radius: 50%; background: transparent; }
+.cp-radio-item.is-selected .cp-dot-inner { background: var(--accent); }
+
+/* HypothesisList styles */
+.hl-wrap { display: flex; flex-direction: column; gap: 12px; padding: 24px; }
+.hl-item { border-left: 2px solid var(--accent); padding: 12px 16px; background: var(--bg-paper-card); border-top-right-radius: 4px; border-bottom-right-radius: 4px; box-shadow: var(--shadow-card); }
+.hl-marker { font-family: var(--ff-mono); font-size: 10px; uppercase; letter-spacing: 0.12em; color: var(--accent-deep); font-weight: 500; display: block; margin-bottom: 4px; }
+.hl-text { font-family: var(--ff-serif); font-style: italic; font-size: 16px; line-height: 1.5; color: var(--ink); margin-bottom: 6px; }
+.hl-inv { font-size: 13px; font-style: italic; color: var(--ink-soft); display: flex; align-items: baseline; gap: 6px; }
+.hl-inv-title { font-family: var(--ff-sans); font-weight: 500; text-transform: uppercase; font-size: 10px; color: var(--danger); letter-spacing: 0.04em; }
+
+/* DeliverableReader styles */
+.dr-wrap { display: flex; flex-direction: column; height: 320px; border: 1px solid var(--rule); overflow: hidden; background: var(--bg-paper); }
+.dr-topbar { padding: 12px 20px; border-bottom: 1px solid var(--rule); background: var(--bg-paper-card); display: flex; justify-content: space-between; align-items: center; }
+.dr-title { font-family: var(--ff-serif); font-size: 20px; color: var(--ink); }
+.dr-dl-btn { font-family: var(--ff-mono); font-size: 11px; text-transform: uppercase; border-radius: 999px; border: 1px solid var(--rule); padding: 4px 14px; background: transparent; cursor: pointer; transition: all 0.2s; }
+.dr-dl-btn:hover { background: var(--accent); color: var(--bg-paper-card); border-color: var(--accent); }
+.dr-prose { flex: 1; padding: 20px; overflow-y: auto; font-family: var(--ff-sans); font-size: 14px; line-height: 1.6; }
+.dr-footer { padding: 8px 16px; background: var(--bg-paper-deep); border-top: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; font-family: var(--ff-mono); font-size: 11px; color: var(--ink-faint); }
+
+/* PanelCards styles */
+.pc-cards { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; padding: 24px; }
+.pc-card { width: 240px; min-height: 280px; background: var(--bg-paper-card); border: 1px solid var(--rule); padding: 18px; display: flex; flex-direction: column; gap: 12px; transition: all 0.2s; }
+.pc-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift); }
+.pc-avatar { width: 48px; height: 48px; border-radius: 999px; display: grid; place-items: center; font-family: var(--ff-serif); font-size: 24px; color: #fff; }
+.pc-axis { font-family: var(--ff-serif); font-style: italic; font-size: 13px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--bg-paper); align-self: flex-start; }
+
+/* ArgumentLedger styles */
+.al-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 24px; align-items: start; }
+.al-col-title { font-family: var(--ff-serif); font-size: 18px; font-weight: 500; margin-bottom: 12px; }
+.al-card { border: 1px solid var(--rule); background: var(--bg-paper-card); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.al-card--rejected { opacity: 0.75; }
+.al-claim { font-family: var(--ff-serif); font-style: italic; font-size: 15px; color: var(--ink); }
+.al-card--rejected .al-claim { text-decoration: line-through; }
+.al-source-pills { display: flex; gap: 4px; flex-wrap: wrap; }
+.al-source-pill { font-family: var(--ff-mono); font-size: 10px; padding: 2px 6px; border-radius: 999px; background: var(--bg-paper-deep); color: var(--accent); border: 1px solid transparent; cursor: pointer; }
+.al-source-pill:hover { border-color: var(--accent); }
+
+/* LivePanel sidebar mockup */
+.lp-bar-mock { width: 400px; max-width: 100vw; height: 450px; background: var(--bg-paper); border: 1px solid var(--rule); display: flex; flex-direction: column; overflow: hidden; margin: 20px auto; }
+.lp-sec-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--rule); background: var(--bg-paper-deep); cursor: pointer; }
+.lp-sec-title { font-family: var(--ff-serif); font-size: 17px; }
+.lp-sec-chevron { font-size: 12px; transition: transform 0.2s; }
+.lp-sec-body { padding: 14px 16px; display: none; border-bottom: 1px solid var(--rule); }
+.lp-sec-body.is-open { display: block; }
+.lp-sec-row.is-expanded .lp-sec-chevron { transform: rotate(90deg); }
+
+/* RunDetail step accordion row */
+.rd-row { border-bottom: 1px solid var(--rule-soft); }
+.rd-row-head { display: flex; justify-content: space-between; width: 100%; padding: 10px 16px; background: transparent; cursor: pointer; align-items: center; }
+.rd-row-head:hover { background: var(--bg-paper-deep); }
+.rd-row-body { padding: 16px; background: var(--bg-paper-card); display: none; border-top: 1px solid var(--rule-soft); }
+.rd-row.is-open .rd-row-body { display: block; }
+.rd-row.is-open .rd-chevron { transform: rotate(90deg); }
+.rd-chevron { transition: transform 0.18s; font-size: 10px; }
+
+/* DeliverablesTab rows */
+.dt-row { height: 48px; border-bottom: 1px solid var(--rule-soft); display: grid; grid-template-columns: auto 1fr auto auto; gap: 12px; padding: 0 16px; align-items: center; cursor: pointer; transition: background 0.12s; }
+.dt-row:hover { background: var(--bg-paper-deep); }
+.dt-star { font-size: 15px; color: var(--ink-faint); cursor: pointer; }
+.dt-star.is-starred { color: var(--accent); }
+.dt-badge { font-family: var(--ff-mono); font-size: 10px; uppercase; border: 1px solid var(--accent); color: var(--accent); padding: 2px 6px; border-radius: 3px; }
+
+</style>
+</head>
+<body>
+
+<!-- ============================================================ NAV ============================================================ -->
+<header class="g-nav" role="banner">
+  <div class="g-nav-brand">
+    <span class="g-nav-brand-name">Armance</span>
+    <span class="g-nav-brand-sep">·</span>
+    <span class="g-nav-brand-section">Composants</span>
+  </div>
+  <div class="g-nav-right">
+    <span class="g-version-pill">React 19 · TS strict</span>
+    <button class="g-ctl" id="themeToggle" aria-label="Basculer le thème">☾</button>
+  </div>
+</header>
+
+<div class="g-layout">
+
+  
+  <aside class="g-sidebar" aria-label="Navigation des composants">
+    <!-- Pages de la Galerie -->
+    <div class="g-sidebar-group">
+      <p class="g-sidebar-group-title">Menu des Galeries</p>
+      <ul class="g-sidebar-list">
+        <li>
+          <a href="Component Gallery.html" class="g-sidebar-link ">
+            Structure & Visuels <span class="g-sidebar-badge">v1</span>
+          </a>
+        </li>
+        <li>
+          <a href="Gallery Chat.html" class="g-sidebar-link ">
+            Conversation & Audio <span class="g-sidebar-badge">v2</span>
+          </a>
+        </li>
+        <li>
+          <a href="Gallery Workflows.html" class="g-sidebar-link ">
+            Workflows & Graphes <span class="g-sidebar-badge">v2</span>
+          </a>
+        </li>
+        <li>
+          <a href="Gallery Rendus.html" class="g-sidebar-link ">
+            Rendus & Blocs <span class="g-sidebar-badge">v2</span>
+          </a>
+        </li>
+        <li>
+          <a href="Gallery Admin.html" class="g-sidebar-link ">
+            Administration <span class="g-sidebar-badge">v2</span>
+          </a>
+        </li>
+        <li>
+          <a href="Gallery Divers.html" class="g-sidebar-link is-active">
+            Divers & Panneaux <span class="g-sidebar-badge">v2</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+    
+    <!-- Composants de la page courante -->
+    <div class="g-sidebar-group">
+      <p class="g-sidebar-group-title">Composants de la page</p>
+      <ul class="g-sidebar-list">
+    
+        <li><a href="#checkpoint-drawer" class="g-sidebar-link">CheckpointDrawer</a></li>
+        <li><a href="#hypothesis-list" class="g-sidebar-link">HypothesisList</a></li>
+        <li><a href="#deliverable-reader" class="g-sidebar-link">DeliverableReader</a></li>
+        <li><a href="#panel-cards" class="g-sidebar-link">PanelCards</a></li>
+        <li><a href="#argument-ledger" class="g-sidebar-link">ArgumentLedger</a></li>
+        <li><a href="#live-panel" class="g-sidebar-link">LivePanel</a></li>
+        <li><a href="#run-detail" class="g-sidebar-link">RunDetail</a></li>
+        <li><a href="#deliverables-tab" class="g-sidebar-link">DeliverablesTab</a></li>
+        
+      </ul>
+    </div>
+  </aside>
+    
+
+  <!-- ============================================================ MAIN ============================================================ -->
+  <main class="g-main">
+    <!-- Page header -->
+    <header class="g-page-header">
+      <h1 class="g-page-title">Divers & Panneaux</h1>
+      <div class="g-page-meta">
+        <span class="g-page-meta-item">armance.io</span>
+        <span class="g-page-meta-item">React 19</span>
+        <span class="g-page-meta-item">TypeScript strict</span>
+        <span class="g-page-meta-item">Tailwind v4</span>
+        <span class="g-page-meta-item">WCAG AA</span>
+      </div>
+    </header>
+
+    
+    <!-- ============================================================ CheckpointDrawer -->
+    <article class="g-component" id="checkpoint-drawer">
+      <div class="g-component-header">
+        <h2 class="g-component-title">CheckpointDrawer</h2>
+        <code class="g-component-path">checkpoint/CheckpointDrawer.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Tiroir latéral coulissant déclenché en mode interactif pour poser des questions de cadrage critiques à l'utilisateur (modes texte libre, choix d'options uniques ou confirmation oui/non).
+      </p>
+
+      <p class="g-demo-label">Démo interactive</p>
+      <div class="g-demo-canvas">
+        <div class="cp-trigger-bar">
+          <button class="ae-save-btn" id="btnOpenCpText">Mode Saisie Texte</button>
+          <button class="ae-save-btn" id="btnOpenCpSelect">Mode Sélection Option</button>
+          <button class="ae-save-btn" id="btnOpenCpConfirm">Mode Confirmation</button>
+        </div>
+      </div>
+
+      <!-- Drawer Overlay Structure -->
+      <div class="cp-overlay" id="demoCpDrawer">
+        <div class="cp-drawer">
+          <div class="cp-header">
+            <h3 class="cp-title">Cadrage de Mona</h3>
+          </div>
+          
+          <div class="cp-body" id="cpDrawerBody">
+            <!-- filled dynamically in JS -->
+          </div>
+
+          <div class="cp-footer">
+            <button class="dr-dl-btn" onclick="closeCpDrawer()">Annuler</button>
+            <button class="ae-save-btn" style="padding:6px 16px;" onclick="submitCpDrawer()">Confirmer</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============================================================ HypothesisList -->
+    <article class="g-component" id="hypothesis-list">
+      <div class="g-component-header">
+        <h2 class="g-component-title">HypothesisList</h2>
+        <code class="g-component-path">hypotheses/HypothesisList.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Affiche les hypothèses formulées par les agents intellectuels en cours d'analyse, avec indication éventuelle d'une clause d'invalidation (réfutation).
+      </p>
+
+      <p class="g-demo-label">Liste d'hypothèses actives</p>
+      <div class="g-demo-canvas">
+        <div class="hl-wrap">
+          <!-- Item 1 -->
+          <div class="hl-item">
+            <span class="hl-marker">Hypothèse 01 · Step #492</span>
+            <div class="hl-text">Le taux de fiscalité de 30 % favorise les réinvestissements.</div>
+          </div>
+
+          <!-- Item 2 (Invalidated) -->
+          <div class="hl-item" style="border-left-color: var(--danger);">
+            <span class="hl-marker" style="color:var(--danger);">Hypothèse 02 · Step #501 · Réfutée</span>
+            <div class="hl-text" style="text-decoration:line-through; opacity:0.8;">La suppression totale de la TVA accélèrerait la croissance locale.</div>
+            <div class="hl-inv">
+              <span class="hl-inv-title">Réfutation</span>
+              <span>L'assiette des impôts sur les services s'effondrerait de 40%, créant un déficit immédiat irrattrapable.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============================================================ DeliverableReader -->
+    <article class="g-component" id="deliverable-reader">
+      <div class="g-component-header">
+        <h2 class="g-component-title">DeliverableReader</h2>
+        <code class="g-component-path">library/DeliverableReader.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Composant d'affichage des documents finaux rédigés en Markdown. Propose un en-tête avec bouton de téléchargement de format et un pied de page à rognage intelligent.
+      </p>
+
+      <p class="g-demo-label">Visualiseur de document autonome</p>
+      <div class="g-demo-canvas">
+        <div class="dr-wrap">
+          <div class="dr-topbar">
+            <h3 class="dr-title">Notes de fiscalité Q4.md</h3>
+            <button class="dr-dl-btn">Télécharger (PDF)</button>
+          </div>
+          <div class="dr-prose">
+            <p style="font-family:var(--ff-serif); font-style:italic; font-size:16px;">Atelier cognitif d'archivage d'Armance</p>
+            <p>Le modèle budgétaire intègre le pivot des taux bas.</p>
+            <ul>
+              <li>Assiette fiscale simplifiée</li>
+              <li>Encouragement à l'investissement direct</li>
+            </ul>
+          </div>
+          <div class="dr-footer">
+            <span>Chemin source : <code style="color:var(--ink-soft);">.armance/docs/fiscalite-q4.md</code></span>
+            <span>Taille : 12 KB</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============================================================ PanelCards -->
+    <article class="g-component" id="panel-cards">
+      <div class="g-component-header">
+        <h2 class="g-component-title">PanelCards</h2>
+        <code class="g-component-path">panel/PanelCards.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Affiche les cartes de profils des agents formant le panel consultatif lors d'une délibération critique. Les cartes disposent d'un effet de survol dynamique.
+      </p>
+
+      <p class="g-demo-label">Panel consultatif (Atelier)</p>
+      <div class="g-demo-canvas">
+        <div class="pc-cards">
+          <!-- Card Mona -->
+          <div class="pc-card">
+            <div class="pc-avatar" style="background:#6b4f8a;">M</div>
+            <div style="font-family:var(--ff-serif); font-size:20px;">Mona</div>
+            <span style="font-size:10px; font-family:var(--ff-mono); text-transform:uppercase; color:var(--ink-soft);">Archiviste</span>
+            <div class="pc-axis">Axe Factuel</div>
+            <div style="font-size:13px; color:var(--ink-soft); flex:1;">S'assure du cadrage factuel strict des hypothèses.</div>
+            <span style="font-family:var(--ff-mono); font-size:10px; color:var(--ink-faint);">Google · Gemini 1.5 Pro</span>
+          </div>
+
+          <!-- Card Colbert -->
+          <div class="pc-card">
+            <div class="pc-avatar" style="background:#4a3666;">C</div>
+            <div style="font-family:var(--ff-serif); font-size:20px;">Colbert</div>
+            <span style="font-size:10px; font-family:var(--ff-mono); text-transform:uppercase; color:var(--ink-soft);">Critique Fiscal</span>
+            <div class="pc-axis">Axe Économique</div>
+            <div style="font-size:13px; color:var(--ink-soft); flex:1;">Vérifie la robustesse économique des modèles fiscaux.</div>
+            <span style="font-family:var(--ff-mono); font-size:10px; color:var(--ink-faint);">OpenAI · GPT-4o</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============================================================ ArgumentLedger -->
+    <article class="g-component" id="argument-ledger">
+      <div class="g-component-header">
+        <h2 class="g-component-title">ArgumentLedger</h2>
+        <code class="g-component-path">run/ArgumentLedger.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Registre comptabilisant les arguments retenus par rapport aux arguments invalidés (barrés, à opacité réduite) lors des délibérations.
+      </p>
+
+      <p class="g-demo-label">Registre comptable des arguments</p>
+      <div class="g-demo-canvas">
+        <div class="al-grid">
+          <!-- Col Retained -->
+          <div>
+            <h3 class="al-col-title" style="color:var(--accent);">Arguments retenus</h3>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <div class="al-card">
+                <span class="al-claim">La flat-tax fluidifie l'Atelier.</span>
+                <span style="font-size:12px; color:var(--ink-soft);">Proposé par Mona. Poids : 5</span>
+                <div class="al-source-pills">
+                  <span class="al-source-pill">Doc #1</span>
+                  <span class="al-source-pill">Doc #4</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Col Rejected -->
+          <div>
+            <h3 class="al-col-title" style="color:var(--danger);">Arguments rejetés</h3>
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <div class="al-card al-card--rejected">
+                <span class="al-claim">L'exonération totale résout les impayés.</span>
+                <span style="font-size:12px; color:var(--danger); font-style:italic;">Rejeté par Colbert : détruit l'assiette.</span>
+                <div class="al-source-pills">
+                  <span class="al-source-pill">Doc #2</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============================================================ LivePanel -->
+    <article class="g-component" id="live-panel">
+      <div class="g-component-header">
+        <h2 class="g-component-title">LivePanel</h2>
+        <code class="g-component-path">run/LivePanel.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Panneau latéral de suivi en direct d'un run de travail, affichant des accordéons rétractables, des séparateurs de fleuron et des listes compactes.
+      </p>
+
+      <p class="g-demo-label">Volet latéral miniature interactif</p>
+      <div class="g-demo-canvas" style="padding:0;">
+        <div class="lp-bar-mock">
+          <!-- Accordéon 1 -->
+          <div class="lp-sec-row is-expanded" id="lpSec1">
+            <div class="lp-sec-head" onclick="toggleLiveSec('lpSec1')">
+              <span class="lp-sec-title">Livrables en cours</span>
+              <span class="lp-sec-chevron">▸</span>
+            </div>
+            <div class="lp-sec-body is-open">
+              <span style="font-size:13px; font-style:italic;">Aucun livrable disponible pour le moment.</span>
+            </div>
+          </div>
+
+          <!-- Accordéon 2 -->
+          <div class="lp-sec-row" id="lpSec2">
+            <div class="lp-sec-head" onclick="toggleLiveSec('lpSec2')">
+              <span class="lp-sec-title">Arguments délibérés</span>
+              <span class="lp-sec-chevron">▸</span>
+            </div>
+            <div class="lp-sec-body">
+              <span style="font-size:13px;">Flat-tax : retenu par Mona.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============================================================ RunDetail -->
+    <article class="g-component" id="run-detail">
+      <div class="g-component-header">
+        <h2 class="g-component-title">RunDetail</h2>
+        <code class="g-component-path">runs/RunDetail.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Page de consultation détaillée d'un run, avec en-tête fixe d'affichage des jetons et accordéons fluides sur chaque étape de travail.
+      </p>
+
+      <p class="g-demo-label">Consultant de run détaillé interactif</p>
+      <div class="g-demo-canvas" style="padding:0;">
+        <div style="padding:16px 24px; border-bottom:1px solid var(--rule); background:var(--bg-paper-card);">
+          <h3 style="font-family:var(--ff-serif); font-size:22px;">Run #492a-3 · Analyse Fiscalité</h3>
+          <div style="display:flex; gap:16px; font-family:var(--ff-mono); font-size:11px; color:var(--ink-faint); margin-top:8px;">
+            <span>⏳ EN COURS</span>
+            <span>Durée : 48s</span>
+            <span>Jetons : 240k</span>
+          </div>
+        </div>
+        
+        <div class="rd-row is-open" id="rdRow1">
+          <button class="rd-row-head" onclick="toggleRunStep('rdRow1')">
+            <span style="display:flex; align-items:center; gap:8px;">
+              <span class="rd-chevron">▸</span>
+              <span>🟢 Étape 01 · Mona l'archiviste</span>
+            </span>
+            <span style="font-family:var(--ff-mono); font-size:12px; color:var(--ink-faint);">12s · 45k tokens</span>
+          </button>
+          <div class="rd-row-body">
+            <p style="font-size:13px; font-style:italic;">Sortie de Mona :</p>
+            <p style="font-size:13px; margin:0;">Mona a importé 5 documents de l'Atelier et a commencé à indexer les termes reliés à la flat-tax.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============================================================ DeliverablesTab -->
+    <article class="g-component" id="deliverables-tab">
+      <div class="g-component-header">
+        <h2 class="g-component-title">DeliverablesTab</h2>
+        <code class="g-component-path">sidebar/DeliverablesTab.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Onglet livrables situé dans le panneau latéral gauche, affichant les documents générés avec possibilité de filtrer par format et de les mettre en favori (étoile).
+      </p>
+
+      <p class="g-demo-label">Aperçu interactif de l'onglet livrables</p>
+      <div class="g-demo-canvas" style="padding:0;">
+        <div style="background:var(--bg-paper-deep); padding:10px 16px; border-bottom:1px solid var(--rule); display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-family:var(--ff-mono); font-size:11px; text-transform:uppercase; color:var(--ink-soft);">Livrables rédigés</span>
+          <select class="ae-input" style="width:auto; padding:3px 8px; font-size:11px;">
+            <option>Tous les workflows</option>
+          </select>
+        </div>
+        
+        <div class="dt-row">
+          <span class="dt-star is-starred" onclick="toggleDtStar(this)">★</span>
+          <span style="font-family:var(--ff-serif); font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Notes de fiscalité Q4.md</span>
+          <span class="dt-badge">MD</span>
+          <span style="font-family:var(--ff-mono); font-size:11px; color:var(--ink-faint);">il y a 2m</span>
+        </div>
+
+        <div class="dt-row">
+          <span class="dt-star" onclick="toggleDtStar(this)">☆</span>
+          <span style="font-family:var(--ff-serif); font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Bilan comptable 2026.pdf</span>
+          <span class="dt-badge">PDF</span>
+          <span style="font-family:var(--ff-mono); font-size:11px; color:var(--ink-faint);">hier</span>
+        </div>
+      </div>
+    </article>
+    
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ── Theme toggle ── */
+  const html = document.documentElement;
+  const btn  = document.getElementById("themeToggle");
+
+  const saved = localStorage.getItem("armance-gallery-theme");
+  if (saved) {
+    html.dataset.theme = saved;
+    btn.textContent = saved === "dark" ? "☀︎" : "☾";
+  }
+
+  btn.addEventListener("click", function () {
+    const isDark = html.dataset.theme === "dark";
+    const next   = isDark ? "light" : "dark";
+    html.dataset.theme = next;
+    btn.textContent    = isDark ? "☾" : "☀︎";
+    localStorage.setItem("armance-gallery-theme", next);
+    window.dispatchEvent(new CustomEvent("armance-theme-change", { detail: next }));
+  });
+
+  /* ── Sidebar active state (IntersectionObserver) ── */
+  var links = Array.from(
+    document.querySelectorAll(".g-sidebar-link[href^='#']")
+  );
+
+  function setActive(id) {
+    links.forEach(function (a) {
+      var matches = a.getAttribute("href") === "#" + id;
+      a.classList.toggle("is-active", matches);
+    });
+  }
+
+  var targets = Array.from(document.querySelectorAll("[id]")).filter(function (t) {
+    return t.tagName.toLowerCase() === "article";
+  });
+  if (targets.length > 0) {
+    var io = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) setActive(e.target.id);
+        });
+      },
+      { rootMargin: "-20% 0px -72% 0px" }
+    );
+    targets.forEach(function (t) { io.observe(t); });
+  }
+
+  /* ── Copy code helper ── */
+  window.copyCode = function (btn) {
+    var pre  = btn.closest(".g-code-block").querySelector("pre");
+    var text = pre.textContent;
+    navigator.clipboard.writeText(text).then(function () {
+      btn.textContent = "Copié";
+      setTimeout(function () { btn.textContent = "Copier"; }, 2000);
+    });
+  };
+
+  
+  /* CheckpointDrawer controller */
+  const demoCpDrawer = document.getElementById("demoCpDrawer");
+  const cpDrawerBody = document.getElementById("cpDrawerBody");
+  
+  window.closeCpDrawer = function() {
+    if(demoCpDrawer) demoCpDrawer.classList.remove("is-open");
+  };
+  window.submitCpDrawer = function() {
+    alert("Cadrage validé par l'Atelier.");
+    closeCpDrawer();
+  };
+
+  const btnOpenCpText = document.getElementById("btnOpenCpText");
+  const btnOpenCpSelect = document.getElementById("btnOpenCpSelect");
+  const btnOpenCpConfirm = document.getElementById("btnOpenCpConfirm");
+
+  if(btnOpenCpText && btnOpenCpSelect && btnOpenCpConfirm && cpDrawerBody && demoCpDrawer) {
+    btnOpenCpText.addEventListener("click", () => {
+      cpDrawerBody.innerHTML = `
+        <p class="cp-prompt">Veuillez détailler le but fiscal de l'Atelier :</p>
+        <textarea class="cp-textarea" placeholder="Entrez vos remarques..."></textarea>
+      `;
+      demoCpDrawer.classList.add("is-open");
+    });
+
+    btnOpenCpSelect.addEventListener("click", () => {
+      cpDrawerBody.innerHTML = `
+        <p class="cp-prompt">Sélectionner la structure à analyser :</p>
+        <div class="cp-radio-list">
+          <div class="cp-radio-item is-selected" onclick="toggleCpRadio(this)">
+            <div class="cp-dot"><div class="cp-dot-inner"></div></div>
+            <span>Fiscalité des SARL</span>
+          </div>
+          <div class="cp-radio-item" onclick="toggleCpRadio(this)">
+            <div class="cp-dot"><div class="cp-dot-inner"></div></div>
+            <span>Régime fiscal SAS</span>
+          </div>
+        </div>
+      `;
+      demoCpDrawer.classList.add("is-open");
+    });
+
+    btnOpenCpConfirm.addEventListener("click", () => {
+      cpDrawerBody.innerHTML = `
+        <p class="cp-prompt">Confirmez-vous le lancement de l'archivage avec ces paramètres ?</p>
+        <div style="display:flex; gap:12px; margin-top:10px;">
+          <button class="ae-save-btn" style="flex:1; padding:10px;" onclick="submitCpDrawer()">Oui, confirmer</button>
+          <button class="dr-dl-btn" style="flex:1; padding:10px;" onclick="closeCpDrawer()">Non, annuler</button>
+        </div>
+      `;
+      demoCpDrawer.classList.add("is-open");
+    });
+  }
+
+  window.toggleCpRadio = function(item) {
+    const list = item.parentNode;
+    Array.from(list.querySelectorAll(".cp-radio-item")).forEach(el => el.classList.remove("is-selected"));
+    item.classList.add("is-selected");
+  };
+
+  /* LivePanel Accordion toggle */
+  window.toggleLiveSec = function(secId) {
+    const row = document.getElementById(secId);
+    const body = row.querySelector(".lp-sec-body");
+    const isClosed = body.style.display === "" || body.style.display === "none";
+    
+    if(isClosed) {
+      body.style.display = "block";
+      row.classList.add("is-expanded");
+    } else {
+      body.style.display = "none";
+      row.classList.remove("is-expanded");
+    }
+  };
+
+  /* RunDetail step accordion toggle */
+  window.toggleRunStep = function(stepId) {
+    const row = document.getElementById(stepId);
+    row.classList.toggle("is-open");
+  };
+
+  /* DeliverablesTab star toggle */
+  window.toggleDtStar = function(btn) {
+    const isStarred = btn.classList.toggle("is-starred");
+    btn.textContent = isStarred ? "★" : "☆";
+  };
+  
+}());
+</script>
+</body>
+</html>
