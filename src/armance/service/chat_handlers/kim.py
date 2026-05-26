@@ -95,6 +95,7 @@ async def cmd_orchestrator_chat(
             reports_root=ctx.armance_root / "reports",
             history=history,
             system_addon=addon,
+            event_bus=ctx.event_bus,
         )
         reply = scrub_reply(report.content, agent_role="kim")
         set_status(ctx, KIM_AGENT_NAME, "completed")

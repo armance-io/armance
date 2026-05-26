@@ -61,6 +61,7 @@ async def cmd_hr_chat(text: str, ctx: LoopContext) -> str:
             reports_root=ctx.armance_root / "reports",
             history=history,
             system_addon=models_context,
+            event_bus=ctx.event_bus,
         )
         reply = scrub_reply(hr_report.content, agent_role="malik")
         set_status(ctx, agent_name, "completed")
