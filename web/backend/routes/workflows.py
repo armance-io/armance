@@ -61,3 +61,97 @@ async def list_workflows(
             "step_count": len(getattr(wf, "steps", []) or []),
         })
     return {"workflows": items}
+
+
+def _compute_layered_lr(steps) -> dict[str, Any]:
+    """Tiny dagre-LR replacement — topological levels → (x, y).
+
+    Each step is placed in a column (its topological level), rows
+    within a column are evenly spaced. The frontend's React Flow
+    accepts (x, y) directly; nodes carry { id, position, data }.
+    Edges follow `depends_on`.
+    """
+    by_id: dict[str, Any] = {s.id: s for s in steps}
+    level: dict[str, int] = {}
+
+    def resolve_level(sid: str) -> int:
+        if sid in level:
+            return level[sid]
+        deps = list(getattr(by_id[sid], "depends_on", []) or [])
+        if not deps:
+            level[sid] = 0
+            return 0
+        level[sid] = max(resolve_level(d) for d in deps if d in by_id) + 1
+        return level[sid]
+
+    for s in steps:
+        resolve_level(s.id)
+
+    cols: dict[int, list[str]] = {}
+    for sid, lvl in level.items():
+        cols.setdefault(lvl, []).append(sid)
+
+    nodes: list[dict[str, Any]] = []
+    COL_W = 240
+    ROW_H = 120
+    for lvl, ids in cols.items():
+        for row, sid in enumerate(sorted(ids)):
+            step = by_id[sid]
+            nodes.append({
+                "id": sid,
+                "position": {"x": lvl * COL_W, "y": row * ROW_H},
+                "data": {
+                    "step_id": sid,
+                    "kind": getattr(step, "kind", "task"),
+                    "role": getattr(step, "role", None) or getattr(step, "domain", "") or "",
+                },
+            })
+
+    edges: list[dict[str, str]] = []
+    for s in steps:
+        for dep in (getattr(s, "depends_on", []) or []):
+            edges.append({
+                "id": f"{dep}->{s.id}",
+                "source": dep,
+                "target": s.id,
+            })
+
+    return {"nodes": nodes, "edges": edges}
+
+
+@router.get("/workflows/{name}")
+async def get_workflow(
+    pid: str,
+    sid: str,
+    name: str,
+    user: str = Depends(get_current_user),
+    app_state: AppState = Depends(get_app_state),
+) -> dict:
+    """Return the parsed workflow YAML plus a left-to-right graph layout."""
+    ws = app_state.get(sid)
+    if ws is None:
+        raise HTTPException(status_code=404, detail="session_not_found")
+
+    wf_path = ws.ctx.armance_root / "workflows" / f"{name}.yaml"
+    if not wf_path.exists():
+        raise HTTPException(status_code=404, detail="workflow_not_found")
+    wf = _load_workflow_safe(wf_path)
+    if wf is None:
+        raise HTTPException(status_code=422, detail="workflow_invalid_yaml")
+
+    steps = list(getattr(wf, "steps", []) or [])
+    return {
+        "name": wf.name,
+        "scope": getattr(wf, "scope", "") or "",
+        "strategy": getattr(wf, "strategy", "") or "",
+        "steps": [
+            {
+                "id": s.id,
+                "kind": getattr(s, "kind", "task"),
+                "role": getattr(s, "role", None) or getattr(s, "domain", "") or "",
+                "depends_on": list(getattr(s, "depends_on", []) or []),
+            }
+            for s in steps
+        ],
+        "graph": _compute_layered_lr(steps),
+    }
