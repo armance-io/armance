@@ -65,3 +65,81 @@ export async function createSession(pid: string = "default"): Promise<SessionCre
 export async function getSession(pid: string, sid: string): Promise<SessionState> {
   return api.get<SessionState>(`/projects/${pid}/sessions/${sid}`);
 }
+
+/* ─── Epic C — chat, checkpoint, agents, providers, hypotheses ─────────── */
+
+export interface TurnAck {
+  ack: boolean;
+}
+
+export async function submitTurn(
+  pid: string,
+  sid: string,
+  text: string,
+): Promise<TurnAck> {
+  return api.post<TurnAck>(`/projects/${pid}/sessions/${sid}/turn`, { text });
+}
+
+export interface CheckpointResolvePayload {
+  checkpoint_id: string;
+  content: string;
+  is_abort?: boolean;
+}
+
+export async function resolveCheckpoint(
+  pid: string,
+  sid: string,
+  body: CheckpointResolvePayload,
+): Promise<{ resolved: boolean }> {
+  return api.post(`/projects/${pid}/sessions/${sid}/checkpoint`, body);
+}
+
+export interface AgentDetails {
+  name: string;
+  role: string;
+  persona: string;
+  description: string;
+  provider: string;
+  model: string;
+  reasoning: string | null;
+  tokens_in: number;
+  tokens_out: number;
+  cost_usd: number | null;
+}
+
+export async function getAgentDetails(
+  pid: string,
+  sid: string,
+  name: string,
+): Promise<AgentDetails> {
+  return api.get<AgentDetails>(
+    `/projects/${pid}/sessions/${sid}/agents/${encodeURIComponent(name)}`,
+  );
+}
+
+export interface ProvidersCatalogue {
+  providers: Record<string, Array<Record<string, unknown>>>;
+  hint?: string;
+}
+
+export async function getProviders(): Promise<ProvidersCatalogue> {
+  return api.get<ProvidersCatalogue>(`/providers`);
+}
+
+export interface HypothesisEntry {
+  step_id: string;
+  text: string;
+  language: "fr" | "en";
+}
+
+export async function listHypotheses(
+  pid: string,
+  sid: string,
+  workflow: string,
+  runId: string,
+): Promise<{ hypotheses: HypothesisEntry[] }> {
+  return api.get(
+    `/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(workflow)}` +
+      `/runs/${encodeURIComponent(runId)}/hypotheses`,
+  );
+}
