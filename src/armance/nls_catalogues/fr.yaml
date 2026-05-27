@@ -232,6 +232,7 @@ system_msg:
   staff_updated: "*(Système : modèle mis à jour avec succès pour {n} membre(s) du staff : {details})*"
   skipped_collision: "*(Système : attention — {n} agent(s) ignoré(s) pour collision de nom/rôle : {names})*"
   recruit_failed: "*(Système : échec du recrutement : {error})*"
+  auto_dismissed_before_recruit: "*(Système : remplacement complet de l'équipe détecté — {n} ancien(s) spécialiste(s) dismiss automatiquement avant le recrutement de la nouvelle équipe)*"
   forwarded: "— transféré à {target} —"
   health_warning: "⚠️ Modèles injoignables détectés au test : {agents}. Demandez à @Malik de proposer un autre modèle pour ces agents."
   workflow_health_block: "🛑 Workflow non lancé : agent(s) injoignable(s) — {agents}. Demandez à @Malik de remplacer leur modèle, ou autorisez l'exécution sans eux."

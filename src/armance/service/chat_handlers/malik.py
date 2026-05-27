@@ -390,6 +390,48 @@ async def _emit_agents_proposed(ctx: LoopContext, created: list) -> None:
         logger.exception("event_bus.emit(agents_proposed) failed")
 
 
+def _peek_proposed_names(yaml_text: str) -> list[str]:
+    """Extract `name:` values from the recruit YAML without full parsing.
+
+    Cheap regex scan — we only need to count and de-dup. Returns names in
+    appearance order.
+    """
+    names: list[str] = []
+    seen: set[str] = set()
+    for m in re.finditer(r"^\s*-?\s*name\s*:\s*([A-Za-z0-9_.\- ]+)\s*$", yaml_text, re.MULTILINE):
+        n = m.group(1).strip()
+        if n and n not in seen:
+            names.append(n)
+            seen.add(n)
+    return names
+
+
+def _auto_dismiss_specialists(ctx: LoopContext, agents_dir) -> None:
+    """Delete every specialist .md (keep system-*/_-prefixed assets) and
+    prune the registry. Mirrors the body of [EXECUTE:/dismiss-all] without
+    the surrounding LLM reply plumbing."""
+    if agents_dir.exists():
+        for p in list(agents_dir.glob("*.md")):
+            if p.stem.startswith(("system-", "_")):
+                continue
+            try:
+                p.unlink()
+            except Exception:
+                logger.exception("auto-dismiss: failed to delete %s", p)
+    try:
+        from armance.storage import paths
+        registry = paths.ensure_agents_registry(ctx.armance_root)
+        live_stems = {p.stem for p in agents_dir.glob("*.md")} if agents_dir.exists() else set()
+        registry["agents"] = [
+            a for a in registry.get("agents", [])
+            if a.get("name") in live_stems or str(a.get("name", "")).startswith("system-")
+        ]
+        paths.write_agents_registry(ctx.armance_root, registry)
+    except Exception:
+        logger.exception("auto-dismiss: registry prune failed")
+    ctx.agents = [a for a in ctx.agents if a.name.startswith("system-")]
+
+
 def _handle_dismiss_all(reply: str, ctx: LoopContext) -> str:
     if "[EXECUTE:/dismiss-all]" not in reply:
         return reply
@@ -452,6 +494,33 @@ async def _handle_recruit(reply: str, ctx: LoopContext, hr) -> str:
 
     try:
         agents_dir = ctx.armance_root / "agents"
+
+        # Guard against accidental double-recruitment: if Malik proposes a
+        # full new roster (>=3 agents, none share a name with currently
+        # recruited specialists), dismiss existing specialists first.
+        # Without this, the team silently grows from 8 to 16 because
+        # recruit_agents only matches on name.
+        proposed = _peek_proposed_names(yaml_part)
+        current_specialists = [
+            a.name for a in ctx.agents
+            if not a.name.startswith("system-") and not a.name.startswith("_")
+        ]
+        if (
+            len(proposed) >= 3
+            and current_specialists
+            and not (set(proposed) & set(current_specialists))
+        ):
+            logger.info(
+                "Malik full-roster reshuffle detected; auto-dismissing %d "
+                "existing specialists before recruit",
+                len(current_specialists),
+            )
+            _auto_dismiss_specialists(ctx, agents_dir)
+            reply += "\n\n" + t(
+                "system_msg.auto_dismissed_before_recruit",
+                n=len(current_specialists),
+            )
+
         created, created_names = hr.recruit_agents(
             yaml_text=yaml_part,
             role_name="specialist",
