@@ -30,11 +30,18 @@ class BudgetExceeded(Exception):
 
 
 _CURRENT_CONFIG: Config | None = None
+_CURRENT_SESSION_ID: str | None = None
 
 
 def set_current_config(config: Config) -> None:
     global _CURRENT_CONFIG
     _CURRENT_CONFIG = config
+
+
+def set_current_session_id(session_id: str | None) -> None:
+    """Mark the active session so llm_exchanges logs land in a per-session file."""
+    global _CURRENT_SESSION_ID
+    _CURRENT_SESSION_ID = session_id
 
 
 def get_client(provider_name: str, config: Config) -> LLMClient:
@@ -158,7 +165,14 @@ def log_exchange_details(
     try:
         log_dir = Path.cwd() / ".armance" / "logs"
         log_dir.mkdir(parents=True, exist_ok=True)
-        log_file = log_dir / "llm_exchanges.jsonl"
+        # One log file per session so a run's exchanges stay isolated and
+        # the file can be deleted with the session. Fall back to the legacy
+        # single-file name when no session has been registered yet (e.g.
+        # tests, doctor, workflow-run outside a TUI).
+        if _CURRENT_SESSION_ID:
+            log_file = log_dir / f"{_CURRENT_SESSION_ID}-llm_exchanges.jsonl"
+        else:
+            log_file = log_dir / "llm_exchanges.jsonl"
 
         log_level = "INFO"
         if (

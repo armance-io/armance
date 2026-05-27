@@ -499,11 +499,66 @@ def cmd_index(repo_root: Path | None = None) -> int:
     return 0
 
 
-def cmd_run(repo_root: Path | None = None) -> int:
+def _pick_older_session(armance_root: Path, console):
+    # -> SessionState | None  (annotation deferred to avoid an eager import
+    # at module load — cli.py is the entry path and we want it light.)
+    """Show every persisted session, newest first, and let the user pick one.
+
+    Returns the loaded SessionState, or None if the user aborts. Items are
+    sorted by `updated_at` desc, so the first row is always the most recent
+    even after Y/N/O loops.
+    """
+    from armance.service.session import list_sessions, load_state
+    sessions = list_sessions(armance_root)
+    if not sessions:
+        console.print("[dim]No older sessions on disk.[/dim]")
+        return None
+    console.print()
+    console.print("[bold]Available sessions[/bold] (newest first):")
+    for i, s in enumerate(sessions, start=1):
+        parent = f" ← {s['parent_id']}" if s.get("parent_id") else ""
+        console.print(
+            f"  [cyan]{i:2}[/cyan]  {s['id']}  "
+            f"[dim]{s['updated_at']}[/dim]  · {s['turns']} turns"
+            f" · ~{s['est_tokens']:,} tokens{parent}"
+        )
+    try:
+        raw = input("Pick a session (number or id, blank to cancel): ").strip()
+    except (KeyboardInterrupt, EOFError):
+        return None
+    if not raw:
+        return None
+    picked_id: str | None = None
+    if raw.isdigit():
+        idx = int(raw) - 1
+        if 0 <= idx < len(sessions):
+            picked_id = sessions[idx]["id"]
+    else:
+        for s in sessions:
+            if s["id"].startswith(raw):
+                picked_id = s["id"]
+                break
+    if picked_id is None:
+        console.print(f"[red]no match for {raw!r}[/red]")
+        return None
+    state = load_state(armance_root, picked_id)
+    console.print(f"[green]loaded session[/green] {state.id}")
+    return state
+
+
+def cmd_run(
+    repo_root: Path | None = None,
+    *,
+    session_id: str | None = None,
+) -> int:
     from rich.console import Console
 
     from armance.config import load_config, ensure_armance_tree
-    from armance.service.llm_service import TokenLedger, set_ledger
+    from armance.service.llm_service import (
+        TokenLedger,
+        set_current_session_id,
+        set_ledger,
+    )
     from armance.service.session import start_or_resume
 
     console = Console()
@@ -530,36 +585,55 @@ def cmd_run(repo_root: Path | None = None) -> int:
     # workflow without recruited roles is meaningless, so we don't
     # ship a placeholder.
 
-    # Resume picker: if a prior session exists, ask Y/N before TUI launch.
-    # Honours ARMANCE_NO_RESUME=1 for non-interactive callers (CI, agents).
     from armance.service.session import (
         latest_session_id,
         load_state,
         session_summary,
     )
-    resume = False
-    prior_id = latest_session_id(armance_root)
-    if prior_id and not os.environ.get("ARMANCE_NO_RESUME"):
-        summary = session_summary(armance_root, prior_id)
-        console.print()
-        console.print(
-            f"[dim]Previous session found:[/dim] [cyan]{prior_id}[/cyan] · "
-            f"{summary.get('turns', 0)} turns · "
-            f"~{summary.get('est_tokens', 0):,} tokens · "
-            f"last update {summary.get('last_update', '?')}"
-        )
-        try:
-            answer = input("Resume? [Y/n] ").strip().lower()
-        except (KeyboardInterrupt, EOFError):
-            answer = "n"
-        resume = answer in ("", "y", "yes", "o", "oui")
 
-    if resume:
-        state = load_state(armance_root, prior_id)
-        console.print(f"[green]resumed session[/green] {state.id}")
-    else:
+    # --session <id>: skip the picker entirely.
+    if session_id:
+        try:
+            state = load_state(armance_root, session_id)
+        except Exception:
+            console.print(f"[red]session {session_id!r} not found[/red]")
+            return 1
+        console.print(f"[green]loaded session[/green] {state.id}")
+    elif os.environ.get("ARMANCE_NO_RESUME"):
         state = start_or_resume(armance_root, resume=False)
         console.print(f"[green]session[/green] {state.id}")
+    else:
+        prior_id = latest_session_id(armance_root)
+        if not prior_id:
+            state = start_or_resume(armance_root, resume=False)
+            console.print(f"[green]session[/green] {state.id}")
+        else:
+            summary = session_summary(armance_root, prior_id)
+            console.print()
+            console.print(
+                f"[dim]Previous session:[/dim] [cyan]{prior_id}[/cyan] · "
+                f"{summary.get('turns', 0)} turns · "
+                f"~{summary.get('est_tokens', 0):,} tokens · "
+                f"last update {summary.get('last_update', '?')}"
+            )
+            try:
+                answer = input("Resume previous? [Y]es / [n]ew / [o]lder: ").strip().lower()
+            except (KeyboardInterrupt, EOFError):
+                answer = "n"
+            # Resume = default (empty Enter), Y, yes, oui. 'o' / 'older' jumps
+            # to the older-session picker — kept distinct from 'oui' on purpose.
+            if answer in ("", "y", "yes", "oui"):
+                state = load_state(armance_root, prior_id)
+                console.print(f"[green]resumed session[/green] {state.id}")
+            elif answer in ("o", "older", "a", "ancien"):
+                state = _pick_older_session(armance_root, console)
+                if state is None:
+                    return 0
+            else:
+                state = start_or_resume(armance_root, resume=False)
+                console.print(f"[green]new session[/green] {state.id}")
+
+    set_current_session_id(state.id)
 
     from armance.service.session import Session
     session = Session(state, armance_root)
@@ -927,7 +1001,15 @@ def main(argv: list[str] | None = None) -> int:
             yes=init_args.yes,
         )
     if cmd == "run":
-        return cmd_run(root)
+        run_parser = argparse.ArgumentParser(prog="armance run", add_help=True)
+        run_parser.add_argument(
+            "--session",
+            dest="session_id",
+            default=None,
+            help="Load a specific session id, skipping the resume picker.",
+        )
+        run_args = run_parser.parse_args(remaining)
+        return cmd_run(root, session_id=run_args.session_id)
     if cmd == "index":
         return cmd_index(root)
     if cmd == "doctor":
