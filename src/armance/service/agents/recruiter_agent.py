@@ -674,17 +674,31 @@ agents:
             # still need a valid name to pass schema validation here, so just
             # accept whatever Malik supplied (or generate one); the redirect
             # discards it.
-            looks_real = (
-                isinstance(supplied, str)
-                and supplied
-                and "_" not in supplied
-                and " " not in supplied
-                and supplied[0].isupper()
-                and (supplied not in used or is_update)
+            #
+            # Names must be a single ASCII token so the user can `@-mention`
+            # the agent. If Malik supplied a full name with a title or
+            # surname ("Dr. Élise Moreau", "Prof. Arun Singh", "Dott.
+            # Marta López") we keep the FIRST token that is NOT an
+            # abbreviated title. Heuristic: any token ending with a period
+            # is treated as an abbreviation/honorific and skipped — works
+            # for every Latin-script locale without a per-language list.
+            # CJK and other no-space scripts arrive as a single token and
+            # hit the same downstream ASCII transliteration.
+            first_token = ""
+            if isinstance(supplied, str) and supplied:
+                for tok in supplied.replace("_", " ").split():
+                    if tok.endswith("."):
+                        continue
+                    first_token = tok
+                    break
+            looks_real = bool(
+                first_token
+                and first_token[0].isupper()
+                and (first_token not in used or is_update)
             )
             if looks_real:
                 try:
-                    entry["name"] = self._validate_ascii_name(supplied)
+                    entry["name"] = self._validate_ascii_name(first_token)
                 except ValueError:
                     looks_real = False
             if not looks_real:
