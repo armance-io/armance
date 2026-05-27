@@ -16,8 +16,12 @@ class ChatInput(TextArea):
     BINDINGS = [
         Binding("enter", "submit", "Submit", priority=True),
         Binding("ctrl+j", "newline", "New line", priority=True),
-        # Terminals vary on Ctrl+Backspace: some send "ctrl+backspace", others
-        # "ctrl+h" or "ctrl+w" (readline convention). Bind all three.
+        # Ctrl+Backspace = delete word. Terminals report this key under
+        # several names (true `ctrl+backspace`, the readline aliases
+        # `ctrl+h` / `ctrl+w`, sometimes plain `ctrl+_`). Bind all of
+        # them with priority so the TextArea default (which maps
+        # `ctrl+w` elsewhere) cannot win. `on_key` below catches any
+        # leftover variants the binding table missed.
         Binding("ctrl+backspace", "delete_word_left", "Delete word", priority=True),
         Binding("ctrl+h", "delete_word_left", "Delete word", show=False, priority=True),
         Binding("ctrl+w", "delete_word_left", "Delete word", show=False, priority=True),
@@ -33,11 +37,22 @@ class ChatInput(TextArea):
         self.insert("\n")
 
     def on_key(self, event) -> None:
-        """Intercept Shift+Enter / Ctrl+Enter / Alt+Enter for multiline input."""
+        """Intercept multiline triggers and the various Ctrl+Backspace aliases.
+
+        Some terminals (notably tmux + xterm-256color, and Konsole under
+        certain profiles) don't report `ctrl+backspace` consistently —
+        the BINDINGS table misses them. Match by key name AND character
+        as a safety net.
+        """
         if event.key in ("shift+enter", "ctrl+enter", "alt+enter"):
             event.prevent_default()
             event.stop()
             self.insert("\n")
+            return
+        if event.key in ("ctrl+backspace", "ctrl+h", "ctrl+w"):
+            event.prevent_default()
+            event.stop()
+            self.action_delete_word_left()
 
 
 class InputBar(Widget):
