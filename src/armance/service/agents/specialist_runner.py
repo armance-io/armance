@@ -53,6 +53,7 @@ class SpecialistRunner:
         view: str = "open-space",
         caveman_level: str = "none",
         system_addon: str | None = None,
+        event_bus: Any | None = None,
     ) -> Report:
         """Run a single specialist agent with L0 + L1[role] context.
 
@@ -178,14 +179,27 @@ class SpecialistRunner:
         except Exception:
             logger.debug("search activation lookup failed", exc_info=True)
 
-        response = await call_with_ledger(
-            client,
-            agent.name,
-            messages,
-            effective_model,
-            on_token=on_token,
-            **extras
+        # C.8 — bridge token-stream callbacks to agent_streaming_* events
+        # when an event_bus is wired (web client). No-op in the TUI.
+        from armance.service.agents._streaming_bridge import (
+            AgentStreamingEmitter,
+            bridge_on_token,
         )
+        emitter = AgentStreamingEmitter(bus=event_bus, agent_name=agent.name)
+        await emitter.start()
+        effective_on_token = bridge_on_token(original=on_token, emitter=emitter)
+
+        try:
+            response = await call_with_ledger(
+                client,
+                agent.name,
+                messages,
+                effective_model,
+                on_token=effective_on_token,
+                **extras
+            )
+        finally:
+            await emitter.end()
 
         report = Report.from_completion(
             agent_name=agent.name,
@@ -312,9 +326,18 @@ async def run_specialist(
     view: str = "open-space",
     caveman_level: str = "none",
     system_addon: str | None = None,
+    event_bus: Any | None = None,
 ) -> Report:
     """Convenience function to run a single specialist agent."""
     runner = SpecialistRunner(armance_root, config, reports_root=reports_root)
-    report = await runner.run(agent, task, history=history, on_token=on_token, view=view, caveman_level=caveman_level, system_addon=system_addon)
+    report = await runner.run(
+        agent, task,
+        history=history,
+        on_token=on_token,
+        view=view,
+        caveman_level=caveman_level,
+        system_addon=system_addon,
+        event_bus=event_bus,
+    )
     write_report(report, runner.reports_root)
     return report

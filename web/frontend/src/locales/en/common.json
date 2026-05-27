@@ -1,0 +1,147 @@
+{
+  "app": {
+    "title": "Armance",
+    "tagline": "A house of minds, deliberating with you.",
+    "loading": "Loading…"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "close": "Close",
+    "error": "Error",
+    "yes": "Yes",
+    "no": "No",
+    "retry": "Retry"
+  },
+  "visual": {
+    "shell": {
+      "brand_domain": "armance.io",
+      "sidebar_collapse_aria": "Collapse sidebar",
+      "footer_motto": "A house of thinking agents.",
+      "footer_line": "armance.io · 2026 · made in France"
+    },
+    "theme": { "toggle_aria": "Toggle theme" },
+    "empty": {
+      "library": { "title": "No documents yet", "hint": "Import a file to begin.", "cta": "Import" },
+      "workflow": { "title": "No workflow running", "hint": "Launch one through Kim." },
+      "session": { "title": "A new session begins", "hint": "Describe a decision you're weighing, or drop a document." },
+      "shell": { "title": "Choose a session", "hint": "Pick one in the sidebar, or open a new project." }
+    }
+  },
+  "library": {
+    "title": "Library",
+    "import": "Import",
+    "import_all": "Index all",
+    "search_placeholder": "Search by name",
+    "status_pending": "pending",
+    "status_indexed": "indexed",
+    "status_loaded": "loaded",
+    "actions": { "load": "Load", "unload": "Unload", "unindex": "Unindex", "delete": "Delete" },
+    "confirm_delete": "Delete {{name}}?",
+    "reader": { "download": "Download", "opened_from": "Opened from: {{path}}" }
+  },
+  "chat": {
+    "input": { "placeholder": "Speak freely.", "busy_label": "{{name}} is thinking…", "send_aria": "Send message" },
+    "bubble": { "streaming_aria": "{{name}} is replying" },
+    "tooltip": { "tokens_in": "Tokens in", "tokens_out": "Tokens out", "cost": "Cost", "cost_na": "n/a" },
+    "bottom": { "thinking": "{{name}} is thinking…" }
+  },
+  "checkpoint": {
+    "drawer": {
+      "title": "A question for you",
+      "submit": "Send",
+      "abort": "Cancel",
+      "yes": "Yes",
+      "no": "No"
+    }
+  },
+  "panel": {
+    "approve": "Approve the team",
+    "ask_alternative": "Ask for another perspective"
+  },
+  "render": {
+    "code": { "copy": "Copy", "copied": "Copied", "lang_aria": "Language: {{lang}}" },
+    "mermaid": { "error_title": "Diagram not rendered", "error_hint": "Showing source instead." },
+    "svg": { "error_title": "SVG rejected", "error_hint": "Removed for safety." },
+    "image": { "lightbox_aria": "Open image", "close_aria": "Close" },
+    "md": { "fallback_table": "Table" }
+  },
+  "runs": {
+    "detail": {
+      "duration": "Duration",
+      "tokens": "Tokens",
+      "cost": "Cost",
+      "steps": "Steps",
+      "status": { "running": "running", "completed": "done", "failed": "failed", "cancelled": "cancelled", "skipped": "skipped" }
+    }
+  },
+  "run": {
+    "panel": {
+      "deliverable": "Deliverable",
+      "arguments": "Arguments",
+      "sources": "Sources",
+      "hypotheses": "Hypotheses",
+      "mode": "Mode",
+      "mode_interactive": "interactive",
+      "mode_autonomous": "autonomous"
+    },
+    "ledger": {
+      "retained": "Retained",
+      "rejected": "Rejected",
+      "proposed_by": "Proposed by",
+      "rejected_by": "Rejected by",
+      "weight": "weight"
+    }
+  },
+  "workflow": {
+    "graph": { "empty": "This workflow has no steps yet." },
+    "step": { "status": { "queued": "queued", "working": "working", "completed": "done", "failed": "failed", "cancelled": "cancelled", "skipped": "skipped" } },
+    "run": { "label": "Run", "status": { "running": "running", "completed": "done", "failed": "failed", "cancelled": "cancelled" } },
+    "picker": {
+      "quick": "A quick perspective",
+      "deep": "A thorough, challenged analysis",
+      "mode_interactive": "interactive",
+      "mode_autonomous": "autonomous",
+      "launch": "Launch"
+    }
+  },
+  "hypotheses": {
+    "title": "Hypotheses held by Mona",
+    "marker": "Hypothesis",
+    "invalidator": "invalidator"
+  },
+  "sidebar": {
+    "tabs": { "agents": "Agents", "workflows": "Workflows", "library": "Library", "deliverables": "Deliverables" },
+    "deliverables": {
+      "empty": "No deliverables yet.",
+      "filter_workflow": "Workflow",
+      "filter_format": "Format",
+      "starred_first": "Starred first",
+      "star_aria": "Star {{name}}"
+    }
+  },
+  "admin": {
+    "tabs": { "config": "Configuration", "secrets": "Secrets", "logs": "Logs", "stats": "Statistics", "agents": "Agents" },
+    "config": { "title": "Configuration", "save": "Save" },
+    "secrets": { "title": "Secrets", "masked": "•••• {{last4}}", "edit": "Edit", "delete": "Delete" },
+    "logs": { "title": "Logs", "level": "Level", "search": "Search" },
+    "stats": { "title": "Statistics", "tokens_in": "Tokens in", "tokens_out": "Tokens out", "cost": "Cost", "messages": "Messages" },
+    "agents": { "title": "Agents", "model": "Model", "reasoning": "Reasoning effort" }
+  },
+  "audio": {
+    "voice": { "idle_aria": "Hold to talk", "recording": "Recording…", "error": "Recording failed" },
+    "play": { "play_aria": "Play", "pause_aria": "Pause", "error": "Playback failed" }
+  },
+  "setup": {
+    "title": "Welcome",
+    "step_provider": "Pick a provider",
+    "step_model": "Pick a model",
+    "step_budget": "Pick a budget",
+    "step_language": "Pick a language",
+    "continue": "Continue"
+  }
+}
