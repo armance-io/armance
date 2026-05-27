@@ -23,11 +23,18 @@ logger = logging.getLogger(__name__)
 
 class SessionState(BaseModel):
     """Slim session state.
-    
+
     Per Spec §11_session.md — History moved to .armance/conversations/.
     """
     id: str
     created_at: str
+    # Last write time. Bumped on every Session.save() so the resume picker
+    # can sort sessions by recency without stat()-ing every file.
+    updated_at: str = ""
+    # Id of the session this one was forked from, if any. Forms a chain of
+    # checkpoints: each `armance run` that starts a NEW session while a
+    # previous one exists records the previous id here.
+    parent_id: str | None = None
     current_agent: str | None = "system-context"
     current_context_version: str | None = None
     mode: str = "AMA"
@@ -39,9 +46,15 @@ class SessionState(BaseModel):
     project_brief: str = ""
 
     @classmethod
-    def new(cls) -> "SessionState":
+    def new(cls, parent_id: str | None = None) -> "SessionState":
         sid = _uuid.uuid4().hex[:12]
-        return cls(id=sid, created_at=datetime.now(timezone.utc).isoformat())
+        now = datetime.now(timezone.utc).isoformat()
+        return cls(
+            id=sid,
+            created_at=now,
+            updated_at=now,
+            parent_id=parent_id,
+        )
 
 
 class Session:
@@ -72,6 +85,9 @@ class Session:
         return self._metadata
 
     def save(self) -> Path:
+        # Bump the recency stamp so the resume picker can rank sessions by
+        # most-recent activity without stat()-ing every file.
+        self._state.updated_at = datetime.now(timezone.utc).isoformat()
         if self._conversation is not None:
             self._store.save(self._state.id, self._conversation, self.metadata)
         return save_state(self._root, self._state)
@@ -139,6 +155,45 @@ def session_summary(armance_root: Path, session_id: str) -> dict:
     return out
 
 
+def list_sessions(armance_root: Path) -> list[dict]:
+    """Return every persisted session with its summary fields, newest first.
+
+    Output schema: id, created_at, updated_at, parent_id, turns, est_tokens.
+    `updated_at` falls back to file mtime for legacy sessions whose state.json
+    predates the field. Sorts descending by updated_at so the resume picker
+    can show recency without an extra pass.
+    """
+    sessions_root = armance_root / "sessions"
+    if not sessions_root.exists():
+        return []
+    out: list[dict] = []
+    for sdir in sessions_root.iterdir():
+        state_p = sdir / "state.json"
+        if not state_p.exists():
+            continue
+        try:
+            st = SessionState.model_validate_json(state_p.read_text(encoding="utf-8"))
+        except Exception:
+            logger.debug("list_sessions: skip unreadable %s", state_p, exc_info=True)
+            continue
+        if not st.updated_at:
+            import datetime as _dt
+            st.updated_at = _dt.datetime.fromtimestamp(
+                state_p.stat().st_mtime, tz=_dt.timezone.utc,
+            ).isoformat()
+        summary = session_summary(armance_root, st.id)
+        out.append({
+            "id": st.id,
+            "created_at": st.created_at,
+            "updated_at": st.updated_at,
+            "parent_id": st.parent_id,
+            "turns": summary.get("turns", 0),
+            "est_tokens": summary.get("est_tokens", 0),
+        })
+    out.sort(key=lambda s: s["updated_at"], reverse=True)
+    return out
+
+
 def start_or_resume(armance_root: Path, *, resume: bool) -> SessionState:
     if resume:
         sid = latest_session_id(armance_root)
@@ -149,6 +204,9 @@ def start_or_resume(armance_root: Path, *, resume: bool) -> SessionState:
             )
             return state
         logger.info("no prior session found; starting fresh")
-    state = SessionState.new()
+    # Fresh session: link to the most recent one (if any) so the chain
+    # captures "this checkpoint was forked from <parent>".
+    parent = latest_session_id(armance_root)
+    state = SessionState.new(parent_id=parent)
     save_state(armance_root, state)
     return state
