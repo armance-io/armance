@@ -117,11 +117,9 @@ mona:
   run_queued: "📥 Run `{workflow}/{run_id}` queued for the next question."
 
 greeting:
-  welcome: "Welcome to Armance · session [bold]{session_id}[/]"
+  welcome: "Welcome. Describe your project or ask a question to get started."
   hint: |-
-    Type a project description, ask a question, or use a slash command.
-    Try [bold]/help[/] · [bold]/save[/] · [italic]"@Malik recruit"[/]
-    To switch agent: [bold]/switch <name>[/] or just write [italic]"I want to talk to Tom"[/].
+    Tip — say [italic]\"@Malik recruit a team\"[/] when you're ready to bring in specialists, or type [bold]/help[/] to see what else I can do.
 
 sidebar:
   staff: "Staff"

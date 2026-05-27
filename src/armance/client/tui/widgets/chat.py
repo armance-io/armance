@@ -150,9 +150,13 @@ class ChatView(Widget):
             prefix = f"{prefix_lbl} [grey39]│[/]"
             lines = content.splitlines() or [""]
             self._log.write(f"{prefix} {lines[0]}")
-            # Continuation lines: align under content, dim separator.
-            pad_len = len(text_label) + 1 + len("[copy]") + 1
-            pad = " " * pad_len + "[grey39]│[/]"
+            # Continuation lines: align the dim separator exactly under the
+            # one on the first line. The visible prefix is:
+            #   <text_label><space>#<idx><space>
+            # (markup like [bold ...] is invisible). Index width grows with
+            # the message count, so derive it instead of hard-coding.
+            visible_prefix_len = len(text_label) + 1 + 1 + len(str(idx)) + 1
+            pad = " " * visible_prefix_len + "[grey39]│[/]"
             for line in lines[1:]:
                 self._log.write(f"{pad} {line}")
         self._log.write("")  # spacer between turns
