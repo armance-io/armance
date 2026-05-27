@@ -1,0 +1,147 @@
+{
+  "app": {
+    "title": "Armance",
+    "tagline": "Une maison d'esprits qui délibèrent avec vous.",
+    "loading": "Chargement…"
+  },
+  "common": {
+    "save": "Sauvegarder",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "next": "Suivant",
+    "close": "Fermer",
+    "error": "Erreur",
+    "yes": "Oui",
+    "no": "Non",
+    "retry": "Réessayer"
+  },
+  "visual": {
+    "shell": {
+      "brand_domain": "armance.io",
+      "sidebar_collapse_aria": "Replier la barre latérale",
+      "footer_motto": "Une maison d'agents qui pensent.",
+      "footer_line": "armance.io · 2026 · établi en France"
+    },
+    "theme": { "toggle_aria": "Basculer le thème" },
+    "empty": {
+      "library": { "title": "Aucun document encore", "hint": "Importez un fichier pour commencer.", "cta": "Importer" },
+      "workflow": { "title": "Aucun workflow en cours", "hint": "Lancez-en un via Kim." },
+      "session": { "title": "Une nouvelle séance commence", "hint": "Décrivez une décision que vous pesez, ou déposez un document." },
+      "shell": { "title": "Choisissez une séance", "hint": "Ouvrez-en une dans la barre latérale, ou démarrez un projet." }
+    }
+  },
+  "library": {
+    "title": "Bibliothèque",
+    "import": "Importer",
+    "import_all": "Tout indexer",
+    "search_placeholder": "Filtrer par nom",
+    "status_pending": "en attente",
+    "status_indexed": "indexé",
+    "status_loaded": "chargé",
+    "actions": { "load": "Charger", "unload": "Décharger", "unindex": "Désindexer", "delete": "Supprimer" },
+    "confirm_delete": "Supprimer {{name}} ?",
+    "reader": { "download": "Télécharger", "opened_from": "Ouvert depuis : {{path}}" }
+  },
+  "chat": {
+    "input": { "placeholder": "Parlez librement.", "busy_label": "{{name}} réfléchit…", "send_aria": "Envoyer le message" },
+    "bubble": { "streaming_aria": "{{name}} répond" },
+    "tooltip": { "tokens_in": "Tokens entrants", "tokens_out": "Tokens sortants", "cost": "Coût", "cost_na": "n/a" },
+    "bottom": { "thinking": "{{name}} réfléchit…" }
+  },
+  "checkpoint": {
+    "drawer": {
+      "title": "Une question pour vous",
+      "submit": "Envoyer",
+      "abort": "Annuler",
+      "yes": "Oui",
+      "no": "Non"
+    }
+  },
+  "panel": {
+    "approve": "Approuver l'équipe",
+    "ask_alternative": "Demander une autre vue"
+  },
+  "render": {
+    "code": { "copy": "Copier", "copied": "Copié", "lang_aria": "Langage : {{lang}}" },
+    "mermaid": { "error_title": "Diagramme non rendu", "error_hint": "Source affichée à la place." },
+    "svg": { "error_title": "SVG rejeté", "error_hint": "Retiré pour des raisons de sécurité." },
+    "image": { "lightbox_aria": "Ouvrir l'image", "close_aria": "Fermer" },
+    "md": { "fallback_table": "Tableau" }
+  },
+  "runs": {
+    "detail": {
+      "duration": "Durée",
+      "tokens": "Tokens",
+      "cost": "Coût",
+      "steps": "Étapes",
+      "status": { "running": "en cours", "completed": "terminé", "failed": "échoué", "cancelled": "annulé", "skipped": "passé" }
+    }
+  },
+  "run": {
+    "panel": {
+      "deliverable": "Livrable",
+      "arguments": "Arguments",
+      "sources": "Sources",
+      "hypotheses": "Hypothèses",
+      "mode": "Mode",
+      "mode_interactive": "interactif",
+      "mode_autonomous": "autonome"
+    },
+    "ledger": {
+      "retained": "Retenus",
+      "rejected": "Rejetés",
+      "proposed_by": "Proposé par",
+      "rejected_by": "Rejeté par",
+      "weight": "poids"
+    }
+  },
+  "workflow": {
+    "graph": { "empty": "Ce workflow n'a pas encore d'étapes." },
+    "step": { "status": { "queued": "en attente", "working": "en cours", "completed": "terminé", "failed": "échoué", "cancelled": "annulé", "skipped": "passé" } },
+    "run": { "label": "Run", "status": { "running": "en cours", "completed": "terminé", "failed": "échoué", "cancelled": "annulé" } },
+    "picker": {
+      "quick": "Un avis rapide",
+      "deep": "Une analyse approfondie, challengée",
+      "mode_interactive": "interactif",
+      "mode_autonomous": "autonome",
+      "launch": "Lancer"
+    }
+  },
+  "hypotheses": {
+    "title": "Hypothèses assumées par Mona",
+    "marker": "Hypothèse",
+    "invalidator": "invalidant"
+  },
+  "sidebar": {
+    "tabs": { "agents": "Agents", "workflows": "Workflows", "library": "Bibliothèque", "deliverables": "Livrables" },
+    "deliverables": {
+      "empty": "Aucun livrable encore.",
+      "filter_workflow": "Workflow",
+      "filter_format": "Format",
+      "starred_first": "Étoilés en premier",
+      "star_aria": "Mettre {{name}} en favori"
+    }
+  },
+  "admin": {
+    "tabs": { "config": "Configuration", "secrets": "Secrets", "logs": "Logs", "stats": "Statistiques", "agents": "Agents" },
+    "config": { "title": "Configuration", "save": "Sauvegarder" },
+    "secrets": { "title": "Secrets", "masked": "•••• {{last4}}", "edit": "Modifier", "delete": "Supprimer" },
+    "logs": { "title": "Journaux", "level": "Niveau", "search": "Rechercher" },
+    "stats": { "title": "Statistiques", "tokens_in": "Tokens entrants", "tokens_out": "Tokens sortants", "cost": "Coût", "messages": "Messages" },
+    "agents": { "title": "Agents", "model": "Modèle", "reasoning": "Effort de raisonnement" }
+  },
+  "audio": {
+    "voice": { "idle_aria": "Maintenez pour parler", "recording": "Enregistrement…", "error": "Échec de l'enregistrement" },
+    "play": { "play_aria": "Lire", "pause_aria": "Pause", "error": "Échec de la lecture" }
+  },
+  "setup": {
+    "title": "Bienvenue",
+    "step_provider": "Choisissez un fournisseur",
+    "step_model": "Choisissez un modèle",
+    "step_budget": "Choisissez un budget",
+    "step_language": "Choisissez une langue",
+    "continue": "Continuer"
+  }
+}
