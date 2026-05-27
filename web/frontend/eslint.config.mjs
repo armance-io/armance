@@ -1,5 +1,7 @@
 import nextPlugin from "eslint-config-next";
 import importPlugin from "eslint-plugin-import";
+import reactPlugin from "eslint-plugin-react";
+import reactHooksPlugin from "eslint-plugin-react-hooks";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 
@@ -52,16 +54,21 @@ export default [
     },
   },
   {
+    // I.1 (no string literal in user-visible code) is enforced by the
+    // CI grep in `web/scripts/check_web_invariants.sh`, not by ESLint.
+    // The react/jsx-no-literals rule mis-fires on aria/data attrs,
+    // <style> tag children, and decorative glyphs.
     files: ["src/components/**/*.{ts,tsx}"],
+    plugins: {
+      react: reactPlugin,
+      "react-hooks": reactHooksPlugin,
+    },
+    settings: {
+      react: { version: "detect" },
+    },
     rules: {
-      "react/jsx-no-literals": [
-        "warn",
-        {
-          noStrings: true,
-          ignoreProps: false,
-          allowedStrings: ["·", "❦", "—", "→", "↗"],
-        },
-      ],
+      "react-hooks/rules-of-hooks": "error",
+      "react-hooks/exhaustive-deps": "warn",
     },
   },
 ];

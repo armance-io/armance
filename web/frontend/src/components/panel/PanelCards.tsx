@@ -142,7 +142,7 @@ export const PanelCards: FC<PanelCardsProps> = ({
 
 const PanelCard: FC<{ member: PanelMember; t: (key: string) => string }> = ({
   member,
-  t,
+  t: _t,
 }) => {
   const portraitStyle: CSSProperties = {
     width: "48px",

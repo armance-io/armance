@@ -12,7 +12,7 @@
  *       web-v2-wire-prompts.md  § C-WIRE.1
  */
 
-import { type FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type FC, useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { submitTurn } from "@/lib/api";
