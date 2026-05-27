@@ -156,7 +156,6 @@ def _ask_embedding(
             available_prov = questionary.select(
                 _tr("prompt_provider"),
                 choices=non_claude,
-                use_indicator=True,
             ).ask() or available_prov
         model_id_manual = (questionary.text(_tr("prompt_manual_id")).ask() or "").strip()
         if not model_id_manual:
@@ -312,7 +311,6 @@ def cmd_init(
         "Interface language (agents will reply in this language)",
         choices=[label for label, _ in LANGUAGE_CHOICES],
         default=lang_default,
-        use_indicator=True,
         use_arrow_keys=True,
     ).ask() or lang_default
     language = next((code for label, code in LANGUAGE_CHOICES if label == lang_label), "en")
@@ -360,7 +358,6 @@ def cmd_init(
     default_provider = questionary.select(
         "Default provider",
         choices=[p.name for p in providers],
-        use_indicator=True,
         use_arrow_keys=True,
     ).ask()
     default_model = questionary.text("Default model").ask() or ""
@@ -369,7 +366,6 @@ def cmd_init(
         "Budget effort — cost constraint for agents (adjustable at runtime via /effort)",
         choices=["free-first", "low", "medium", "high", "adaptive"],
         default="free-first",
-        use_indicator=True,
         use_arrow_keys=True,
     ).ask() or "free-first"
 
