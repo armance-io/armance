@@ -198,6 +198,72 @@ def _ask_embedding(
     return (prov, model)
 
 
+def _fetch_chat_models(
+    provider_name: str,
+    providers: list["ProviderConfig"],
+) -> list[tuple[str, str]]:
+    """Return list of (model_id, tier) for chat/LLM models of a single provider.
+
+    Uses the provider class directly — cfg isn't built yet at init time.
+    Empty list when provider can't enumerate (e.g. custom-openai).
+    """
+    from armance.providers.discovery import _provider_for  # type: ignore
+    from armance.config import Config as _Cfg
+
+    # Build a stub cfg shim with .providers so _provider_for picks up the api_key.
+    cfg = _Cfg(providers=providers)
+    prov = _provider_for(provider_name, cfg)
+    if prov is None:
+        return []
+    try:
+        models = asyncio.run(prov.list_models())
+    except Exception:
+        logger.exception("init: list_models failed for %s", provider_name)
+        return []
+    return [(m.id, m.tier) for m in models]
+
+
+_TIER_GEM = {"free": "🟢", "low": "🟡", "medium": "🟠", "high": "🔴"}
+
+
+def _ask_default_model(
+    default_provider: str | None,
+    providers: list["ProviderConfig"],
+) -> str:
+    """Pick the default model via typeahead autocomplete.
+
+    Lists models from the chosen provider's catalogue as `provider / model_id`,
+    matching the embedding picker UX. Falls back to free-text when the provider
+    can't enumerate (custom-openai) or discovery returns nothing.
+    """
+    if not default_provider:
+        return (questionary.text("Default model").ask() or "").strip()
+    models = _fetch_chat_models(default_provider, providers)
+    if not models:
+        return (
+            questionary.text(f"Default model for {default_provider}").ask() or ""
+        ).strip()
+    completions: list[str] = []
+    meta: dict[str, str] = {}
+    for mid, tier in models:
+        gem = _TIER_GEM.get(tier, "")
+        display = f"{default_provider} / {mid}  {gem}".rstrip()
+        completions.append(display)
+        meta[display] = mid
+    chosen = questionary.autocomplete(
+        "Default model (type to filter, Enter to confirm)",
+        choices=completions,
+        match_middle=True,
+    ).ask()
+    chosen = (chosen or "").strip()
+    if not chosen:
+        return ""
+    if chosen in meta:
+        return meta[chosen]
+    # User typed something not in the list — accept as raw id.
+    return chosen
+
+
 _DEFAULT_BASE_URLS = {
     "openrouter": "https://openrouter.ai/api/v1",
     "gemini": "https://generativelanguage.googleapis.com/v1beta",
@@ -360,7 +426,7 @@ def cmd_init(
         choices=[p.name for p in providers],
         use_arrow_keys=True,
     ).ask()
-    default_model = questionary.text("Default model").ask() or ""
+    default_model = _ask_default_model(default_provider, providers)
 
     budget_effort = questionary.select(
         "Budget effort — cost constraint for agents (adjustable at runtime via /effort)",
