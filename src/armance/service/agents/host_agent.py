@@ -983,8 +983,14 @@ Preserve all factual content. Skip conversational filler. Output ONLY raw Markdo
         orphans = indexed - current_files  # in library but file removed from disk
 
         from armance.nls import t
+        from armance.storage.library_availability import is_library_available
         if not files and not orphans:
-            return t("docs_section.empty_title") + "\n" + t("docs_section.empty_body")
+            body_key = (
+                "docs_section.empty_body"
+                if is_library_available(self.config)
+                else "docs_section.empty_body_no_library"
+            )
+            return t("docs_section.empty_title") + "\n" + t(body_key)
 
         lines = [t("docs_section.title")]
         for f in files:

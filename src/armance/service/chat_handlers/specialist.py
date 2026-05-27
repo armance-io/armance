@@ -82,6 +82,7 @@ async def cmd_chat(text: str, ctx: LoopContext) -> str:
             report = await runner.run(
                 agent_obj, task, history=history, view=view,
                 caveman_level=chat_caveman,
+                event_bus=ctx.event_bus,
             )
             reply = scrub_reply(report.content, agent_role="specialist")
             reply = intercept_load_run_tag(reply, ctx)
@@ -98,6 +99,7 @@ async def cmd_chat(text: str, ctx: LoopContext) -> str:
                     reports_root=ctx.armance_root / "reports",
                     history=history,
                     caveman_level=chat_caveman,
+                    event_bus=ctx.event_bus,
                 )
                 reply = fb.content
         set_status(ctx, agent_name, "completed")
