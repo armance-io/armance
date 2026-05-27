@@ -85,20 +85,26 @@ def test_agent_label_no_agent():
 # detect_switch_intent
 # ---------------------------------------------------------------------------
 
-def test_detect_switch_french_avec_name():
-    assert detect_switch_intent("je veux discuter avec Tom") == "Tom"
-
-
-def test_detect_switch_french_avec_role():
-    assert detect_switch_intent("je veux discuter avec un woodworker") == "woodworker"
-
-
-def test_detect_switch_english_talk_to():
-    assert detect_switch_intent("I want to talk to Tom") == "Tom"
-
-
 def test_detect_switch_at_mention():
     assert detect_switch_intent("@Tom please help") == "Tom"
+
+
+def test_detect_switch_at_mention_only():
+    assert detect_switch_intent("@Tom") == "Tom"
+
+
+def test_detect_switch_nl_french_no_longer_matches():
+    # Natural-language verbs are no longer a switch trigger — only `@`.
+    assert detect_switch_intent("je veux discuter avec Tom") is None
+
+
+def test_detect_switch_nl_english_no_longer_matches():
+    assert detect_switch_intent("I want to talk to Tom") is None
+
+
+def test_detect_switch_addressing_someone_in_third_person():
+    # "Malik, change Priya's model" used to switch to Priya — must not.
+    assert detect_switch_intent("Malik, change Priya's model to sonnet") is None
 
 
 def test_detect_switch_no_match():
