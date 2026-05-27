@@ -119,7 +119,7 @@ mona:
 greeting:
   welcome: "Welcome. Describe your project or ask a question to get started."
   hint: |-
-    Tip — say [italic]\"@Malik recruit a team\"[/] when you're ready to bring in specialists, or type [bold]/help[/] to see what else I can do.
+    Tip — say [italic]"@Malik recruit a team"[/] when you're ready to bring in specialists, or type [bold]/help[/] to see what else I can do.
 
 sidebar:
   staff: "Staff"
