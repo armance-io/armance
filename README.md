@@ -54,7 +54,7 @@ Five permanent meta-agents live in every Armance project. They never recruit the
 
 | | Role | Voice |
 |---|---|---|
-| **Armance** | Host — frames the project, routes the room | French refinement (Audrey Tautou). Systematic *vouvoiement*. |
+| **Armance** | Host — frames the project, routes the room | French refinement. Systematic *vouvoiement*. |
 | **Malik**   | Recruiter — picks specialists whose personas disagree usefully | Quiet force, slow tempo, Gainsbourgian nonchalance. |
 | **Kim**     | Operator — designs and runs the workflow | Direct, technical, square. Numbered lists, no padding. |
 | **Mona**    | VP — synthesises, challenges, recommends | Cash and direct. Changes a room's centre of gravity in two sentences. |

@@ -116,12 +116,17 @@ class ClaudeCodeClient(LLMClient):
         if tokens_out == 0:
             tokens_out = _estimate_tokens(text)
 
+        # cost intentionally suppressed: claude-code users are billed via
+        # subscription (or have separate API tracking). Showing
+        # `total_cost_usd` from the SDK misleads subscription users into
+        # thinking they pay for this session. When in doubt, don't show.
+        _ = cost
         return LLMResponse(
             text=text,
             tokens_in=tokens_in,
             tokens_out=tokens_out,
             finish_reason=finish_reason,
-            cost_usd=cost,
+            cost_usd=None,
         )
 
     async def stream_complete(
@@ -208,12 +213,14 @@ class ClaudeCodeClient(LLMClient):
         if tokens_out == 0:
             tokens_out = _estimate_tokens(text)
 
+        # See note above — cost suppressed for claude-code provider.
+        _ = cost
         return LLMResponse(
             text=text,
             tokens_in=tokens_in,
             tokens_out=tokens_out,
             finish_reason=finish_reason,
-            cost_usd=cost,
+            cost_usd=None,
         )
 
 
