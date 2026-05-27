@@ -64,6 +64,7 @@ async def cmd_hr_chat(text: str, ctx: LoopContext) -> str:
             event_bus=ctx.event_bus,
         )
         reply = scrub_reply(hr_report.content, agent_role="malik")
+        reply = await _normalise_tier_gems(reply, ctx.cfg)
         set_status(ctx, agent_name, "completed")
 
         reply = _normalise_tool_call_recruit(reply)
@@ -93,6 +94,64 @@ def _filter_history(ctx: LoopContext, agent_name: str) -> list[dict[str, str]]:
 
 
 _TIER_GEMS = {"free": "🟢", "low": "🟡", "medium": "🟠", "high": "🔴"}
+
+
+_TIER_GEM_RE = re.compile(r"[🟢🟡🟠🔴]\s*(?:free|low|medium|high)\b", re.IGNORECASE)
+_ALL_GEMS = "🟢🟡🟠🔴"
+
+
+async def _normalise_tier_gems(reply: str, cfg) -> str:
+    """Rewrite tier gems in Malik's narrative to match the catalogue.
+
+    Small free models routinely mis-label a model's tier (e.g. announce
+    `claude-opus-4-7 🟡 low` when the discovery catalogue says
+    `🔴 high`). We scan the reply for known model ids and, when one
+    is followed within ~80 chars by a gem+tier blurb, replace that
+    blurb with the canonical one. Lines without a matched model id are
+    left untouched.
+    """
+    if not reply or not any(g in reply for g in _ALL_GEMS):
+        return reply
+    try:
+        from armance.providers.discovery import discover_all
+        catalogues = await discover_all(cfg)
+    except Exception:
+        logger.debug("tier-normalise: discovery failed", exc_info=True)
+        return reply
+    id_to_tier: dict[str, str] = {}
+    for models in catalogues.values():
+        for m in models:
+            id_to_tier.setdefault(m.id, m.tier)
+    if not id_to_tier:
+        return reply
+    # Sort longest-first so `qwen3-coder:free` doesn't match before
+    # `qwen/qwen3-coder:free`.
+    sorted_ids = sorted(id_to_tier.keys(), key=len, reverse=True)
+    out = reply
+    for mid in sorted_ids:
+        canonical_tier = id_to_tier[mid]
+        canonical_gem = _TIER_GEMS.get(canonical_tier, "")
+        if not canonical_gem:
+            continue
+        canonical_label = f"{canonical_gem} {canonical_tier}"
+        pos = 0
+        while True:
+            idx = out.find(mid, pos)
+            if idx == -1:
+                break
+            window_start = idx + len(mid)
+            window_end = min(len(out), window_start + 80)
+            window = out[window_start:window_end]
+            match = _TIER_GEM_RE.search(window)
+            if match:
+                wstart, wend = match.span()
+                out = (
+                    out[: window_start + wstart]
+                    + canonical_label
+                    + out[window_start + wend:]
+                )
+            pos = idx + len(mid)
+    return out
 
 
 async def _resolve_tier(provider: str, model: str, cfg) -> str:
