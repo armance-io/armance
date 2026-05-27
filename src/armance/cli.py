@@ -22,6 +22,17 @@ logger = logging.getLogger(__name__)
 
 ALL_PROVIDERS = ("openrouter", "claude-code", "custom-openai", "gemini")
 
+
+# Styling for single-choice select prompts. The default questionary style
+# leaves `highlighted` and `pointer` empty, which collapses to a static
+# pointer glyph and zero visual feedback when arrows move — users couldn't
+# tell which row the cursor was on. Make the active row obvious.
+_SELECT_STYLE = questionary.Style([
+    ("pointer", "fg:#FFA500 bold"),
+    ("highlighted", "fg:#FFA500 bold"),
+    ("selected", "fg:#FFA500 bold"),
+])
+
 LANGUAGE_CHOICES = [
     ("English", "en"),
     ("Français", "fr"),
@@ -156,6 +167,7 @@ def _ask_embedding(
             available_prov = questionary.select(
                 _tr("prompt_provider"),
                 choices=non_claude,
+                style=_SELECT_STYLE,
             ).ask() or available_prov
         model_id_manual = (questionary.text(_tr("prompt_manual_id")).ask() or "").strip()
         if not model_id_manual:
@@ -378,6 +390,7 @@ def cmd_init(
         choices=[label for label, _ in LANGUAGE_CHOICES],
         default=lang_default,
         use_arrow_keys=True,
+        style=_SELECT_STYLE,
     ).ask() or lang_default
     language = next((code for label, code in LANGUAGE_CHOICES if label == lang_label), "en")
     from armance.nls import set_language as _set_lang
@@ -425,6 +438,7 @@ def cmd_init(
         "Default provider",
         choices=[p.name for p in providers],
         use_arrow_keys=True,
+        style=_SELECT_STYLE,
     ).ask()
     default_model = _ask_default_model(default_provider, providers)
 
@@ -433,6 +447,7 @@ def cmd_init(
         choices=["free-first", "low", "medium", "high", "adaptive"],
         default="free-first",
         use_arrow_keys=True,
+        style=_SELECT_STYLE,
     ).ask() or "free-first"
 
     embedding_provider, embedding_model = _ask_embedding(selected, providers, language=language)
