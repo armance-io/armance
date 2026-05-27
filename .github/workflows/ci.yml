@@ -55,12 +55,12 @@ jobs:
           version: "latest"
 
       - name: Install web dependencies
-        run: uv sync --extra web
+        run: cd web && uv sync
 
       - name: Run web backend tests
         run: |
           if [ -d "web/backend/tests" ]; then
-            uv run python -m pytest web/backend/tests/ -q --tb=short
+            cd web && uv run pytest -q --tb=short
           else
             echo "No web backend tests yet — skipping"
           fi
