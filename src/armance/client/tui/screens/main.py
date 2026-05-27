@@ -391,25 +391,34 @@ class MainScreen(Screen[int]):
         self.run_worker(self._quit_with_save_prompt(), exclusive=True)
 
     async def _quit_with_save_prompt(self) -> None:
-        """Always persist the host buffer before exit — no prompt.
-
-        Users were missing the Y/N save dialog and losing context. Save is
-        cheap (no LLM call; the buffer is dumped to context/L0/ as a
-        freeze note) so we do it unconditionally and notify briefly.
-        """
+        """Ask Y/N before exit. Save = persist host buffer to L0 + ledger flush."""
         from armance.nls import t as _t
         buffer = list(self.session.metadata.get("host_buffer", []))
         if not buffer:
             self.app.exit(0)
             return
         try:
-            from armance.service.context_service import ContextService
-            ContextService(self.armance_root).append_quick_freeze("\n".join(buffer))
-            self.session.metadata["host_buffer"] = []
-            self.session.save()
-            self.notify(_t("quit.saved"), severity="information", timeout=2)
+            from armance.service.checkpoint import Checkpoint
+            handler = self._loop_ctx.checkpoint_handler if self._loop_ctx else None
+            if handler is None:
+                self.app.exit(0)
+                return
+            resp = await handler.prompt(
+                Checkpoint(id="quit.save", prompt=_t("quit.save_prompt"), kind="confirm")
+            )
+            if not resp.is_abort and resp.content == "yes":
+                # Save WITHOUT calling the LLM — write the buffer as a freeze
+                # note to context/L0/.
+                try:
+                    from armance.service.context_service import ContextService
+                    ContextService(self.armance_root).append_quick_freeze("\n".join(buffer))
+                    self.session.metadata["host_buffer"] = []
+                    self.session.save()
+                    self.notify(_t("quit.saved"), severity="information", timeout=2)
+                except Exception:
+                    logger.exception("quit save failed")
         except Exception:
-            logger.exception("quit save failed")
+            logger.exception("quit prompt failed")
         self.app.exit(0)
 
     def action_cancel(self) -> None:
