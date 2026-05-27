@@ -201,7 +201,7 @@ nl_switch:
   switched_meta: "OK — basculé sur {label}."
   switched_agent: "OK — basculé sur {label}. À vous."
   switched_by_role: "OK — basculé sur {label}."
-  multiple_for_role: "Plusieurs agents {target} : {names}\nRépondez avec `/switch <nom>` ou « discuter avec <nom> » pour choisir."
+  multiple_for_role: "Plusieurs agents {target} : {names}\nRépondez avec `/switch <nom>` ou `@<nom>` pour choisir."
 
 # ---------------------------------------------------------------------------
 # /switch
