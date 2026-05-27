@@ -95,6 +95,40 @@ def _filter_history(ctx: LoopContext, agent_name: str) -> list[dict[str, str]]:
 _TIER_GEMS = {"free": "🟢", "low": "🟡", "medium": "🟠", "high": "🔴"}
 
 
+async def _resolve_tier(provider: str, model: str, cfg) -> str:
+    """Look up the canonical tier for `<provider>/<model>` via discovery.
+
+    Returns one of free/low/medium/high; falls back to 'low' if unknown so
+    the roster table never carries an empty cell.
+    """
+    try:
+        from armance.providers.discovery import discover_provider
+        models = await discover_provider(provider, cfg)
+        for m in models:
+            if m.id == model:
+                return m.tier
+    except Exception:
+        logger.debug("tier lookup failed for %s/%s", provider, model, exc_info=True)
+    return "low"
+
+
+async def _build_roster_table(created: list, cfg) -> str:
+    """Render a deterministic roster table: name · provider · model · tier-gem.
+
+    LLMs free-handing this table mis-coloured pairs at the same tier
+    (e.g. opus-4-6 orange, opus-4-7 red). Generating it in Python from
+    the discovery catalogue removes that drift.
+    """
+    if not created:
+        return ""
+    lines = ["", "| Agent | Provider | Model | Tier |", "|---|---|---|---|"]
+    for a in created:
+        tier = await _resolve_tier(a.provider, a.model, cfg)
+        gem = _TIER_GEMS.get(tier, "")
+        lines.append(f"| {a.name} | {a.provider} | `{a.model}` | {gem} {tier} |")
+    return "\n".join(lines)
+
+
 async def _build_models_context(ctx: LoopContext) -> str:
     """Build the [SYSTEM CONTEXT] addon injected into Malik's prompt.
 
@@ -468,6 +502,12 @@ async def _handle_recruit(reply: str, ctx: LoopContext, hr) -> str:
         new_names = getattr(hr, "last_new_names", [])
         if new_names:
             reply += "\n\n" + t("system_msg.recruited", n=len(new_names))
+            try:
+                roster = await _build_roster_table(created, ctx.cfg)
+                if roster:
+                    reply += "\n" + roster
+            except Exception:
+                logger.debug("roster table build failed", exc_info=True)
 
         updated_names = getattr(hr, "last_updated_names", [])
         if updated_names:
