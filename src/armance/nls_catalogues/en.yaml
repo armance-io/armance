@@ -78,6 +78,7 @@ docs_section:
   title: "## Documents in `.armance/docs/` (library state)"
   empty_title: "## Documents in `.armance/docs/`"
   empty_body: "_No documents yet._ Tell the user they can drop PDF / DOCX / MD / TXT files into `.armance/docs/` and pick which to **index** (library, searchable by slip) and/or **load** (every agent reads the full text)."
+  empty_body_no_library: "_No documents yet._ Tell the user they can drop PDF / DOCX / MD / TXT files into `.armance/docs/` and pick which to **load** (every agent reads the full text in this session). The searchable library is **not configured** on this install (no embedding model), so indexing is unavailable. Do not propose to index. If the user asks, mention they can enable the library by re-running `armance init` and choosing an embedding model."
   status_retained: "✅ indexed in library (searchable by slip)"
   status_unread: "⏳ not yet indexed (offer to index and/or load)"
   file_line: "- `{name}` — {status}"
