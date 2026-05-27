@@ -16,7 +16,7 @@ from textual.widgets import Static
 logger = logging.getLogger(__name__)
 
 # Spinner frames (same as sidebar)
-_SPINNER_FRAMES = ["⠅", "⠙", "⠹", "⠸", "⠼", "⠾", "⡊", "⡋", "⡇", "⡏"]
+_SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 _SPINNER_INTERVAL = 0.1  # seconds per frame
 
 
