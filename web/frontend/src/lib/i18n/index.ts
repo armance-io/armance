@@ -37,8 +37,14 @@ export function ensureI18n(language: string = "en"): typeof i18n {
     defaultNS: "common",
     interpolation: { escapeValue: false },
     resources: {
-      en: { common: en },
-      fr: { common: fr },
+      en: NAMESPACES.reduce((acc, ns) => {
+        acc[ns] = (en as Record<string, any>)[ns] || {};
+        return acc;
+      }, {} as Record<string, any>),
+      fr: NAMESPACES.reduce((acc, ns) => {
+        acc[ns] = (fr as Record<string, any>)[ns] || {};
+        return acc;
+      }, {} as Record<string, any>),
     },
   });
   initialised = true;

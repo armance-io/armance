@@ -53,7 +53,7 @@ describe("getFootprint", () => {
       expect.stringContaining("/projects/default/admin/footprint"),
       expect.anything(),
     );
-    const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0]![0] as string;
     expect(url).toContain("group_by=agent");
   });
 
@@ -67,14 +67,14 @@ describe("getFootprint", () => {
   it("defaults group_by to agent", async () => {
     mockFetch(SAMPLE_RESPONSE);
     await getFootprint("default");
-    const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0]![0] as string;
     expect(url).toContain("group_by=agent");
   });
 
   it("passes group_by=session when requested", async () => {
     mockFetch(SAMPLE_RESPONSE);
     await getFootprint("default", "session");
-    const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const url = (fetch as ReturnType<typeof vi.fn>).mock.calls[0]![0] as string;
     expect(url).toContain("group_by=session");
   });
 });
