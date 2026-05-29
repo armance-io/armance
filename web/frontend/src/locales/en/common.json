@@ -91,7 +91,9 @@
       "duration": "Duration",
       "tokens": "Tokens",
       "cost": "Cost",
+      "cost_na": "n/a",
       "steps": "Steps",
+      "step": "Step",
       "status": { "running": "running", "completed": "done", "failed": "failed", "cancelled": "cancelled", "skipped": "skipped" }
     }
   },

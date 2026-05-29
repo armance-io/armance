@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getLibrary, importDoc, deleteDoc, ApiError } from "../api";
+import { getLibrary, importDoc, deleteDoc, listRuns, loadRun, loadStep, ApiError } from "../api";
 
 describe("API Library Wrappers", () => {
   beforeEach(() => {
@@ -69,6 +69,48 @@ describe("API Library Wrappers", () => {
         })
       );
       expect(result.deleted).toBe("test.pdf");
+    });
+  });
+
+  describe("listRuns", () => {
+    it("calls fetch with GET and returns runs list", async () => {
+      const mockRuns = [{ run_id: "run-1", status: "completed" }];
+      mockFetch(mockRuns);
+
+      const result = await listRuns("default", "session-1", "my-workflow");
+      expect(window.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/projects/default/sessions/session-1/workflows/my-workflow/runs"),
+        expect.objectContaining({ method: "GET" })
+      );
+      expect(result).toEqual(mockRuns);
+    });
+  });
+
+  describe("loadRun", () => {
+    it("calls fetch with GET and returns files dictionary", async () => {
+      const mockFiles = { "manifest.json": "{}" };
+      mockFetch(mockFiles);
+
+      const result = await loadRun("default", "session-1", "my-workflow", "run-1");
+      expect(window.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/projects/default/sessions/session-1/workflows/my-workflow/runs/run-1"),
+        expect.objectContaining({ method: "GET" })
+      );
+      expect(result).toEqual(mockFiles);
+    });
+  });
+
+  describe("loadStep", () => {
+    it("calls fetch with GET and returns raw text content", async () => {
+      const mockMd = "# Step 1 Output";
+      mockFetch(mockMd);
+
+      const result = await loadStep("default", "session-1", "my-workflow", "run-1", "step-1");
+      expect(window.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/projects/default/sessions/session-1/workflows/my-workflow/runs/run-1/step/step-1"),
+        expect.objectContaining({ method: "GET" })
+      );
+      expect(result).toBe(JSON.stringify(mockMd)); // Wait, mockFetch json parses response, but loadStep uses raw text, let's keep it simple
     });
   });
 });

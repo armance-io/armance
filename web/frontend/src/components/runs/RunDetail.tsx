@@ -38,6 +38,7 @@ export interface Run {
 
 export interface RunDetailProps {
   run: Run;
+  onStepExpand?: (stepId: string) => Promise<void>;
   t: (key: string) => string;
 }
 
@@ -230,18 +231,22 @@ const StepRow: FC<{
 
 /* ─── Main Component ─────────────────────────────────────────────────────── */
 
-export const RunDetail: FC<RunDetailProps> = ({ run, t }) => {
+export const RunDetail: FC<RunDetailProps> = ({ run, onStepExpand, t }) => {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const headerRef = useRef<HTMLDivElement>(null);
 
-  const toggleStep = useCallback((id: string) => {
+  const toggleStep = useCallback(async (id: string) => {
+    const isExpanding = !expanded.has(id);
+    if (isExpanding && onStepExpand) {
+      await onStepExpand(id);
+    }
     setExpanded((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  }, []);
+  }, [expanded, onStepExpand]);
 
   const rootStyle: CSSProperties = {
     display: "flex",
