@@ -66,7 +66,7 @@ test.describe("Workflow Runs History E2E", () => {
     await page.goto("/projects/default/sessions/session-1/workflows/my-workflow");
 
     // 2. Verify sidebar contains the workflow name header and both runs
-    const sidebar = page.locator("aside, [style*='width']");
+    const sidebar = page.locator("aside");
     await expect(sidebar.locator("text=my-workflow")).toBeVisible();
 
     const historySection = sidebar.locator("#run-history-list");

@@ -2,12 +2,14 @@
 
 import { use } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/visual/AppShell";
 import { RunDetailContainer } from "@/components/runs/RunDetailContainer";
 import { WorkflowGraphContainer } from "@/components/workflow/WorkflowGraphContainer";
 import { InterruptButtonContainer } from "@/components/workflow/InterruptButtonContainer";
 import { RunHistoryContainer } from "@/components/workflow/RunHistoryContainer";
 import { LivePanelContainer } from "@/components/run/LivePanelContainer";
+import { getActiveWorkflow } from "@/lib/api";
 
 interface RunDetailPageProps {
   params: Promise<{
@@ -23,6 +25,15 @@ export default function RunDetailPage({ params }: RunDetailPageProps) {
   const { t } = useTranslation();
 
   const workflowName = decodeURIComponent(name);
+
+  // 1. Fetch active workflow state dynamically with 2-second polling interval (D-WIRE.8)
+  const { data: activeData } = useQuery({
+    queryKey: ["active-workflow", pid, sid],
+    queryFn: () => getActiveWorkflow(pid, sid).catch(() => null),
+    refetchInterval: 2000,
+  });
+
+  const activeRunId = activeData?.active?.run_id;
 
   return (
     <AppShell
@@ -59,12 +70,14 @@ export default function RunDetailPage({ params }: RunDetailPageProps) {
             }}>
               Run details — {runId}
             </h3>
-            <InterruptButtonContainer
-              pid={pid}
-              sid={sid}
-              workflowName={workflowName}
-              runId={runId}
-            />
+            {activeRunId === runId && (
+              <InterruptButtonContainer
+                pid={pid}
+                sid={sid}
+                workflowName={workflowName}
+                runId={runId}
+              />
+            )}
           </div>
           <WorkflowGraphContainer
             pid={pid}
@@ -91,3 +104,4 @@ export default function RunDetailPage({ params }: RunDetailPageProps) {
     </AppShell>
   );
 }
+
