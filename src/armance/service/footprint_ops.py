@@ -24,6 +24,93 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
+# footprint_stats — shared with EI.7 web route
+# ---------------------------------------------------------------------------
+
+def footprint_stats(logs_dir: Path, project_id: str) -> dict[str, Any]:
+    """Aggregate footprint records from all session log files under logs_dir.
+
+    Returns::
+
+        {
+            "by_agent":   {name: bucket},
+            "by_day":     {"YYYY-MM-DD": bucket},
+            "by_month":   {"YYYY-MM": bucket},
+            "by_session": {sid: bucket},
+            "dominant_zone": str | None,
+        }
+
+    Each bucket: {gco2e, water_ml, calls, has_estimate, has_unknown}.
+
+    ``by_session`` is keyed by the session-id prefix of the filename
+    (``{sid}-llm_exchanges.jsonl``); the bare ``llm_exchanges.jsonl``
+    fallback file is keyed ``"default"``.
+    """
+    if not logs_dir.exists():
+        return {
+            "by_agent": {}, "by_day": {}, "by_month": {},
+            "by_session": {}, "dominant_zone": None,
+        }
+
+    log_files = sorted(logs_dir.glob("*.jsonl"))
+
+    # by_agent / by_day / by_month from shared aggregator
+    base = aggregate_footprint_records(log_files)
+
+    # by_session — keyed by filename-derived sid
+    def _empty() -> dict[str, Any]:
+        return {"gco2e": 0.0, "water_ml": 0.0, "calls": 0,
+                "has_estimate": False, "has_unknown": False}
+
+    by_session: dict[str, dict[str, Any]] = defaultdict(lambda: _empty())
+
+    for log_file in log_files:
+        name = log_file.name  # e.g. "abc123-llm_exchanges.jsonl"
+        if name == "llm_exchanges.jsonl":
+            sid = "default"
+        else:
+            sid = name.split("-llm_exchanges.jsonl")[0]
+
+        try:
+            lines = log_file.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                rec = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if rec.get("event") != "response":
+                continue
+
+            gco2e = rec.get("gco2e")
+            water_ml = rec.get("water_ml")
+            estimate = rec.get("estimate")
+            bucket = by_session[sid]
+            bucket["calls"] += 1
+            if gco2e is None:
+                bucket["has_unknown"] = True
+            else:
+                bucket["gco2e"] += gco2e
+                if water_ml is not None:
+                    bucket["water_ml"] += water_ml
+                if estimate:
+                    bucket["has_estimate"] = True
+
+    return {
+        "by_agent": base["by_agent"],
+        "by_day": base["by_day"],
+        "by_month": base["by_month"],
+        "by_session": dict(by_session),
+        "dominant_zone": base["dominant_zone"],
+    }
+
+
+# ---------------------------------------------------------------------------
 # Sub-title chip
 # ---------------------------------------------------------------------------
 
