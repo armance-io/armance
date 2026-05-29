@@ -72,3 +72,17 @@ def test_bare_malik_viewer_sees_recruitment():
 
 def test_empty_turns_returns_empty():
     assert visible_turns([], "Samir") == []
+
+
+def test_orchestrator_excludes_recruitment_and_specialist_dms():
+    turns = [
+        Turn(role="user", content="framing goal", agent="system-context"),
+        Turn(role="user", content="recruit a scientist", agent="system-hr"),
+        Turn(role="user", content="hello specialist", agent="Samir"),
+        Turn(role="user", content="design a workflow", agent="system-orchestrator"),
+    ]
+    out = [m["content"] for m in visible_turns(turns, "system-orchestrator")]
+    assert "framing goal" in out
+    assert "design a workflow" in out
+    assert "recruit a scientist" not in out
+    assert "hello specialist" not in out

@@ -20,6 +20,7 @@ from typing import Any
 
 from armance.nls import t
 from armance.service.agent_sandbox import scrub_reply
+from armance.service.agent_visibility import visible_turns
 from armance.service.agents.specialist_runner import run_specialist
 from armance.service.chat_handlers.common import resolve_agent_path, set_status
 from armance.service.library_ops import intercept_library_status
@@ -29,7 +30,6 @@ logger = logging.getLogger(__name__)
 
 
 KIM_AGENT_NAME = "system-orchestrator"
-_KIM_AGENTS = {"system-orchestrator", "orchestrator", "kim"}
 _META_FORWARD_TARGETS = {
     "Armance": "system-context",
     "Malik": "system-hr",
@@ -79,7 +79,7 @@ async def cmd_orchestrator_chat(
     kim_agent = Agent.load(kim_path)
 
     addon = _build_system_context(ctx)
-    history = _filter_history(ctx)
+    history = visible_turns(ctx.session.conversation.turns, KIM_AGENT_NAME)
 
     ctx.session.conversation.append("user", text, agent=KIM_AGENT_NAME)
 
@@ -118,15 +118,6 @@ async def cmd_orchestrator_chat(
     ctx.session.save()
     ctx._last_output = reply
     return reply
-
-
-def _filter_history(ctx: LoopContext) -> list[dict[str, str]]:
-    out: list[dict[str, str]] = []
-    for turn in ctx.session.conversation.turns:
-        norm = (turn.agent or "").lower().replace("system-", "")
-        if turn.role == "user" or norm in _KIM_AGENTS or turn.agent == KIM_AGENT_NAME:
-            out.append({"role": turn.role, "content": turn.content})
-    return out
 
 
 def _build_system_context(ctx: LoopContext) -> str:
