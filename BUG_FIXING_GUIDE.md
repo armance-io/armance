@@ -133,6 +133,27 @@ docs: explain feuillet vs charger to user-level
 test(qa_live): J/K/N checkpoint round-trip
 ```
 
+### Always sign your commits
+
+**Every commit must be cryptographically signed** (`git commit -S`).
+This holds for humans *and* agents — a project this small lives or dies
+on a trustworthy history. Unsigned commits will be rejected.
+
+```bash
+git commit -S -m "fix(library): ..."        # one-off
+git config commit.gpgsign true              # make it the default, once
+```
+
+The DCO CI workflow checks the `Signed-off-by:` trailer too, so add
+`-s` as well (or use `-sS` to do both):
+
+```bash
+git commit -sS -m "fix(library): unload now clears persistent state too"
+```
+
+If you have no signing key configured, set one up (GPG or SSH signing)
+before committing — do **not** work around it with `--no-gpg-sign`.
+
 ### One PR = one logical change
 
 Don't bundle "fix bug X" with "refactor module Y". The user will ask for

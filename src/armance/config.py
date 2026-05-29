@@ -33,6 +33,19 @@ class ProviderConfig(BaseModel):
     ssl_verify: bool = True  # set False to skip TLS cert check (corporate MITM proxies)
 
 
+class FootprintConfig(BaseModel):
+    """Environmental footprint tracking settings.
+
+    ``electricity_mix_zone`` is an ISO 3166-1 alpha-3 EcoLogits zone code.
+    Common values: WOR (world avg), FRA, USA, DEU, GBR.
+    V3 swap point: feed a GCP region carbon-intensity source here instead.
+    """
+
+    enabled: bool = True
+    electricity_mix_zone: str = "WOR"
+    show_water: bool = True
+
+
 class Config(BaseModel):
     providers: list[ProviderConfig] = Field(default_factory=list)
     default_provider: str = "openrouter"
@@ -46,6 +59,7 @@ class Config(BaseModel):
     log_level: str = "INFO"  # INFO, DEBUG, etc
     language: LanguageCode = "en"  # UI + agent voice language
     prices: dict[str, dict[str, float]] = Field(default_factory=dict)
+    footprint: FootprintConfig = Field(default_factory=FootprintConfig)
 
     def provider(self, name: str) -> ProviderConfig:
         for p in self.providers:

@@ -1,0 +1,148 @@
+# env_model_aliases.yaml — Armance model id → EcoLogits (provider, model) mapping.
+#
+# Covers Armance's four providers: openrouter, gemini, claude-code, custom-openai.
+# OpenRouter uses "vendor/model" ids; Gemini uses bare model names.
+# EcoLogits registry provider names: anthropic, openai, google_genai, mistralai,
+# cohere, huggingface_hub.
+#
+# All target (ecologits_provider, ecologits_model) values verified against
+# EcoLogits 0.10.1 registry. See service/footprint.py for the resolution chain.
+#
+# Format:
+#   - armance_provider: <str>       # as passed by llm_service
+#     armance_model:    <str>       # exact model id used by armance
+#     ecologits_provider: <str>     # EcoLogits registry provider key
+#     ecologits_model:    <str>     # EcoLogits registry model name
+
+# ---------------------------------------------------------------------------
+# OpenRouter — anthropic family
+# ---------------------------------------------------------------------------
+- armance_provider: openrouter
+  armance_model: anthropic/claude-sonnet-4-6
+  ecologits_provider: anthropic
+  ecologits_model: claude-sonnet-4-6
+
+- armance_provider: openrouter
+  armance_model: anthropic/claude-opus-4-6
+  ecologits_provider: anthropic
+  ecologits_model: claude-opus-4-6
+
+- armance_provider: openrouter
+  armance_model: anthropic/claude-haiku-4-5
+  ecologits_provider: anthropic
+  ecologits_model: claude-haiku-4-5
+
+- armance_provider: openrouter
+  armance_model: anthropic/claude-opus-4-5
+  ecologits_provider: anthropic
+  ecologits_model: claude-opus-4-5
+
+- armance_provider: openrouter
+  armance_model: anthropic/claude-sonnet-4-5
+  ecologits_provider: anthropic
+  ecologits_model: claude-sonnet-4-5
+
+- armance_provider: openrouter
+  armance_model: anthropic/claude-3-haiku-20240307
+  ecologits_provider: anthropic
+  ecologits_model: claude-3-haiku-20240307
+
+# ---------------------------------------------------------------------------
+# OpenRouter — openai family
+# ---------------------------------------------------------------------------
+- armance_provider: openrouter
+  armance_model: openai/gpt-4o
+  ecologits_provider: openai
+  ecologits_model: gpt-4o
+
+- armance_provider: openrouter
+  armance_model: openai/gpt-4o-mini
+  ecologits_provider: openai
+  ecologits_model: gpt-4o-mini
+
+- armance_provider: openrouter
+  armance_model: openai/gpt-4o-2024-11-20
+  ecologits_provider: openai
+  ecologits_model: gpt-4o-2024-11-20
+
+# ---------------------------------------------------------------------------
+# OpenRouter — google family
+# ---------------------------------------------------------------------------
+- armance_provider: openrouter
+  armance_model: google/gemini-2.0-flash
+  ecologits_provider: google_genai
+  ecologits_model: gemini-2.0-flash
+
+- armance_provider: openrouter
+  armance_model: google/gemini-2.5-flash
+  ecologits_provider: google_genai
+  ecologits_model: gemini-2.5-flash
+
+- armance_provider: openrouter
+  armance_model: google/gemini-2.5-pro
+  ecologits_provider: google_genai
+  ecologits_model: gemini-2.5-pro
+
+- armance_provider: openrouter
+  armance_model: google/gemini-2.0-flash-lite
+  ecologits_provider: google_genai
+  ecologits_model: gemini-2.0-flash-lite
+
+# ---------------------------------------------------------------------------
+# OpenRouter — mistral family
+# ---------------------------------------------------------------------------
+- armance_provider: openrouter
+  armance_model: mistralai/mistral-large-2512
+  ecologits_provider: mistralai
+  ecologits_model: mistral-large-2512
+
+- armance_provider: openrouter
+  armance_model: mistralai/mistral-small-2603
+  ecologits_provider: mistralai
+  ecologits_model: mistral-small-2603
+
+- armance_provider: openrouter
+  armance_model: mistralai/ministral-8b-2512
+  ecologits_provider: mistralai
+  ecologits_model: ministral-8b-2512
+
+# ---------------------------------------------------------------------------
+# Armance gemini provider (direct Gemini API, bare model names)
+# ---------------------------------------------------------------------------
+- armance_provider: gemini
+  armance_model: gemini-2.0-flash
+  ecologits_provider: google_genai
+  ecologits_model: gemini-2.0-flash
+
+- armance_provider: gemini
+  armance_model: gemini-2.5-flash
+  ecologits_provider: google_genai
+  ecologits_model: gemini-2.5-flash
+
+- armance_provider: gemini
+  armance_model: gemini-2.5-pro
+  ecologits_provider: google_genai
+  ecologits_model: gemini-2.5-pro
+
+- armance_provider: gemini
+  armance_model: gemini-2.0-flash-lite
+  ecologits_provider: google_genai
+  ecologits_model: gemini-2.0-flash-lite
+
+# ---------------------------------------------------------------------------
+# claude-code provider (uses Anthropic models via claude-agent-sdk auth)
+# ---------------------------------------------------------------------------
+- armance_provider: claude-code
+  armance_model: claude-sonnet-4-6
+  ecologits_provider: anthropic
+  ecologits_model: claude-sonnet-4-6
+
+- armance_provider: claude-code
+  armance_model: claude-opus-4-6
+  ecologits_provider: anthropic
+  ecologits_model: claude-opus-4-6
+
+- armance_provider: claude-code
+  armance_model: claude-haiku-4-5
+  ecologits_provider: anthropic
+  ecologits_model: claude-haiku-4-5

@@ -5,6 +5,11 @@ export default defineConfig({
   resolve: {
     alias: { "@": path.resolve(__dirname, "src") },
   },
+  // tsconfig keeps `jsx: "preserve"` for the Next build. Vitest transforms
+  // TSX via esbuild, which does not read that setting, so pin the automatic
+  // runtime here — test files (and components) rely on it and omit
+  // `import React`.
+  esbuild: { jsx: "automatic" },
   test: {
     environment: "jsdom",
     globals: true,

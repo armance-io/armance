@@ -395,3 +395,21 @@ init:
     unrecognised: "Model '{name}' not recognised. RAG disabled."
     confirmed: "Embedding : [{provider}]  {model}"
   ssl_skip_prompt: "Skip SSL certificate verification? (needed for self-signed / corporate MITM certs)"
+
+# ---------------------------------------------------------------------------
+# Environmental footprint (/footprint command)
+# ---------------------------------------------------------------------------
+footprint:
+  cmd_title: "Environmental footprint"
+  col_agent: "Agent"
+  col_gco2e: "gCO₂e"
+  col_water: "mL H₂O"
+  col_calls: "Calls"
+  col_estimate: "Est."
+  total_row: "TOTAL"
+  no_data: "No footprint data yet. Run some queries first."
+  estimate_note: "~ = estimated (similar model proxy)"
+  unknown_note: "? = unknown model (no data)"
+  zone_note: "Electricity zone: {zone}"
+  by_day: "By day"
+  by_month: "By month"
