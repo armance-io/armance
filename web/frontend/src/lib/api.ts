@@ -237,3 +237,18 @@ export async function loadStep(
   }
   return res.text();
 }
+
+export async function listWorkflows(
+  _pid: string,
+  _sid: string,
+): Promise<never> {
+  throw new Error("NotImplemented");
+}
+
+export async function getWorkflow(
+  _pid: string,
+  _sid: string,
+  _name: string,
+): Promise<never> {
+  throw new Error("NotImplemented");
+}
