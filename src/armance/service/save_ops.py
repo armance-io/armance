@@ -29,8 +29,11 @@ async def cmd_save(args: list[str], ctx: LoopContext) -> str:
         return _save_l2(args_str, ctx)
 
     # Validate buffer content: minimum 30 non-greeting characters.
+    # freeze() consumes the on-disk cache first, so the brevity guard must
+    # measure the same source (cache, falling back to the in-memory buffer).
     buffer_list = list(ctx.session.metadata.get("host_buffer", []))
-    full_text = "\n".join(buffer_list)
+    from armance.service.context_service import ContextService
+    full_text = ContextService(ctx.armance_root).read_cache() or "\n".join(buffer_list)
     cleaned = full_text.lower()
     for greeting in [
         "hello", "hi", "hey", "yo", "bonjour", "salut", "coucou",
