@@ -7,18 +7,7 @@ import {
 } from "react";
 
 import { EmptyLibrary } from "../visual/EmptyState/EmptyLibrary";
-
-/* ─── Types ──────────────────────────────────────────────────────────────── */
-
-export type DocFormat = "pdf" | "docx" | "md" | "txt";
-export type DocStatus = "pending" | "indexed" | "loaded";
-
-export interface Doc {
-  name: string;
-  format: DocFormat;
-  status: DocStatus;
-  size_bytes: number;
-}
+import { type Doc, type DocFormat, type DocStatus } from "@/lib/api";
 
 export interface LibraryPaneProps {
   docs: Doc[];

@@ -34,14 +34,30 @@
   },
   "library": {
     "title": "Library",
-    "import": "Import",
-    "import_all": "Index all",
-    "search_placeholder": "Search by name",
-    "status_pending": "pending",
-    "status_indexed": "indexed",
-    "status_loaded": "loaded",
-    "actions": { "load": "Load", "unload": "Unload", "unindex": "Unindex", "delete": "Delete" },
-    "confirm_delete": "Delete {{name}}?",
+    "list_aria": "Document library",
+    "toolbar": {
+      "search_placeholder": "Search by name",
+      "index_all": "Index all",
+      "import": "Import"
+    },
+    "status": {
+      "pending": "pending",
+      "indexed": "indexed",
+      "loaded": "loaded"
+    },
+    "action": {
+      "index": "Index",
+      "load": "Load",
+      "unload": "Unload",
+      "unindex": "Unindex",
+      "delete": "Delete"
+    },
+    "confirm": {
+      "delete_title": "Delete document",
+      "delete_hint": "Are you sure you want to delete this document?",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
     "reader": { "download": "Download", "opened_from": "Opened from: {{path}}" }
   },
   "chat": {

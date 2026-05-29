@@ -34,14 +34,30 @@
   },
   "library": {
     "title": "Bibliothèque",
-    "import": "Importer",
-    "import_all": "Tout indexer",
-    "search_placeholder": "Filtrer par nom",
-    "status_pending": "en attente",
-    "status_indexed": "indexé",
-    "status_loaded": "chargé",
-    "actions": { "load": "Charger", "unload": "Décharger", "unindex": "Désindexer", "delete": "Supprimer" },
-    "confirm_delete": "Supprimer {{name}} ?",
+    "list_aria": "Bibliothèque de documents",
+    "toolbar": {
+      "search_placeholder": "Filtrer par nom",
+      "index_all": "Tout indexer",
+      "import": "Importer"
+    },
+    "status": {
+      "pending": "en attente",
+      "indexed": "indexé",
+      "loaded": "chargé"
+    },
+    "action": {
+      "index": "Indexer",
+      "load": "Charger",
+      "unload": "Décharger",
+      "unindex": "Désindexer",
+      "delete": "Supprimer"
+    },
+    "confirm": {
+      "delete_title": "Supprimer le document",
+      "delete_hint": "Êtes-vous sûr de vouloir supprimer ce document ?",
+      "cancel": "Annuler",
+      "confirm": "Confirmer"
+    },
     "reader": { "download": "Télécharger", "opened_from": "Ouvert depuis : {{path}}" }
   },
   "chat": {
