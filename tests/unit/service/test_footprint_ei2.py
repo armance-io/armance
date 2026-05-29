@@ -17,8 +17,10 @@ from __future__ import annotations
 
 import pytest
 
-from armance.core.models.footprint import Footprint
-from armance.service.footprint import estimate_footprint
+from armance.service.footprint import _load_aliases, estimate_footprint
+
+# Collected once at import so each alias becomes its own parametrized case.
+_ALIAS_KEYS = sorted(_load_aliases().keys())
 
 
 # ---------------------------------------------------------------------------
@@ -274,3 +276,45 @@ class TestEI1UpdatedBehavior:
         # Must not return None — that would mean silently skipping a known family.
         assert result is not None
         assert result.estimate is True
+
+
+# ---------------------------------------------------------------------------
+# Alias-table integrity — every entry must resolve to tier="aliased"
+# ---------------------------------------------------------------------------
+
+class TestAliasTableIntegrity:
+    """Guard against silent tier degradation.
+
+    A wrong/stale alias (typo, or a model renamed in a newer EcoLogits
+    release) makes ``_build_footprint`` return None, so ``estimate_footprint``
+    falls through tier 2 → tier 4 ("similar", estimate=True) with no error and
+    no test failure — a confidently-wrong figure the spec forbids
+    ("scientific and sourced, not invented"). The 3-id sample in TestTier2*
+    cannot catch this. Iterate the whole table instead.
+    """
+
+    def test_table_is_non_empty(self) -> None:
+        assert _ALIAS_KEYS, "env_model_aliases.yaml resolved to no entries"
+
+    @pytest.mark.parametrize("provider,model", _ALIAS_KEYS)
+    def test_every_alias_resolves_to_aliased_tier(
+        self, provider: str, model: str
+    ) -> None:
+        result = estimate_footprint(
+            provider=provider,
+            model=model,
+            tokens_out=300,
+            latency_s=2.0,
+            zone="WOR",
+        )
+        assert result is not None, f"alias {provider}/{model} returned None"
+        # The crux: if the alias target is missing from the registry, this
+        # would silently be "similar"/estimate=True instead of "aliased".
+        assert result.tier == "aliased", (
+            f"alias {provider}/{model} degraded to tier={result.tier!r} "
+            f"(estimate={result.estimate}) — alias target likely missing "
+            f"from the EcoLogits registry"
+        )
+        assert result.estimate is False
+        assert result.proxy_model is None
+        assert result.gco2e > 0.0
