@@ -3,7 +3,7 @@
 Single entry point: ``estimate_footprint()``.
 Wraps EcoLogits (MPL-2.0, genai-impact/ecologits) via a 6-tier resolution
 chain.  No SDK monkey-patching — only the pure ``compute_llm_impacts``
-function is called.
+function is called (in ``footprint_resolve._build_footprint``).
 
 Resolution chain
 ----------------
@@ -17,178 +17,31 @@ Resolution chain
 ``estimate=True`` for tiers 4–5 only.  EcoLogits' inherent RangeValue
 (MoE / ranged PUE) is not an "estimate" flag — we collapse it to the mean.
 
+Resolution primitives (alias table, family maps, the compute wrapper) live in
+``footprint_resolve``; this module owns the public chain only.
+
 Layer rule: only ``armance.core`` imports allowed here.  No client/transport.
 """
 from __future__ import annotations
 
 import logging
-import os
-from functools import lru_cache
-from typing import Union
-
-import yaml
-from ecologits.electricity_mix_repository import electricity_mixes
-from ecologits.impacts.llm import compute_llm_impacts
-from ecologits.model_repository import ParametersMoE, models as eco_models
-from ecologits.tracers.utils import PROVIDER_CONFIG_MAP
-from ecologits.utils.range_value import RangeValue
 
 from armance.core.models.footprint import Footprint
+from armance.service.footprint_resolve import (
+    FAMILY_DEFAULT,
+    PROVIDER_DEFAULT_ACTIVE_PARAMS,
+    PROVIDER_DEFAULT_PROXY,
+    PROVIDER_DEFAULT_TOTAL_PARAMS,
+    _build_footprint,
+    _infer_eco_provider,
+    _load_aliases,
+    eco_models,
+)
 
 logger = logging.getLogger(__name__)
 
-_ValueOrRange = Union[float, RangeValue]
+__all__ = ["estimate_footprint"]
 
-# ---------------------------------------------------------------------------
-# EcoLogits provider families recognised by the PROVIDER_CONFIG_MAP.
-# Used for tier-4 (similar) detection.
-# ---------------------------------------------------------------------------
-_KNOWN_ECO_PROVIDERS = frozenset(PROVIDER_CONFIG_MAP.keys())
-
-# Tier-4: per-family default model (small, representative, verified in 0.10.1).
-_FAMILY_DEFAULT: dict[str, tuple[str, str]] = {
-    "anthropic":      ("anthropic",   "claude-haiku-4-5"),
-    "openai":         ("openai",      "gpt-4o-mini"),
-    "google_genai":   ("google_genai","gemini-2.0-flash-lite"),
-    "mistralai":      ("mistralai",   "ministral-8b-2512"),
-    "cohere":         ("cohere",      "c4ai-aya-expanse-8b"),
-    "huggingface_hub":("huggingface_hub", "databricks/dolly-v2-7b"),
-}
-
-# Tier-5: conservative bucket — generic dense 8B, WOR zone, generic PUE/WUE.
-_PROVIDER_DEFAULT_ACTIVE_PARAMS: float = 8.0
-_PROVIDER_DEFAULT_TOTAL_PARAMS: float = 8.0
-_PROVIDER_DEFAULT_PROXY = "generic-dense-8b"
-
-
-# ---------------------------------------------------------------------------
-# Alias table
-# ---------------------------------------------------------------------------
-
-@lru_cache(maxsize=1)
-def _load_aliases() -> dict[tuple[str, str], tuple[str, str]]:
-    """Return {(armance_provider, armance_model): (eco_provider, eco_model)}."""
-    yaml_path = os.path.join(os.path.dirname(__file__), "env_model_aliases.yaml")
-    with open(yaml_path) as fh:
-        entries = yaml.safe_load(fh)
-    result: dict[tuple[str, str], tuple[str, str]] = {}
-    for e in entries:
-        key = (e["armance_provider"], e["armance_model"])
-        result[key] = (e["ecologits_provider"], e["ecologits_model"])
-    return result
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _mean(v: _ValueOrRange) -> float:
-    if isinstance(v, RangeValue):
-        return (v.min + v.max) / 2
-    return float(v)
-
-
-def _build_footprint(
-    eco_provider: str,
-    eco_model_name: str,
-    tokens_out: int,
-    latency_s: float,
-    zone: str,
-    tier: str,
-    estimate: bool,
-    proxy_model: str | None,
-    active_params: float | None = None,
-    total_params: float | None = None,
-) -> Footprint | None:
-    """Run compute_llm_impacts and return a Footprint.  Returns None on mix miss."""
-    registry_entry = eco_models.find_model(
-        provider=eco_provider, model_name=eco_model_name
-    )
-
-    if active_params is not None and total_params is not None:
-        p_active: _ValueOrRange = active_params
-        p_total: _ValueOrRange = total_params
-        deployment_tps = None
-        deployment_ttft = None
-    elif registry_entry is not None:
-        params = registry_entry.architecture.parameters
-        if isinstance(params, ParametersMoE):
-            p_active = params.active
-            p_total = params.total
-        else:
-            p_active = p_total = params
-        dep = registry_entry.deployment
-        deployment_tps = dep.tps if dep else None
-        deployment_ttft = dep.ttft if dep else None
-    else:
-        logger.debug("footprint: registry miss for %s/%s in _build_footprint", eco_provider, eco_model_name)
-        return None
-
-    mix = electricity_mixes.find_electricity_mix(zone=zone)
-    if mix is None:
-        logger.warning("footprint: unknown electricity mix zone %r", zone)
-        return None
-
-    provider_cfg = PROVIDER_CONFIG_MAP.get(eco_provider)
-    if provider_cfg is not None:
-        datacenter_pue: _ValueOrRange = provider_cfg.datacenter_pue
-        datacenter_wue: _ValueOrRange = provider_cfg.datacenter_wue
-    else:
-        datacenter_pue = 1.2
-        datacenter_wue = 0.2
-
-    impacts = compute_llm_impacts(
-        model_active_parameter_count=p_active,
-        model_total_parameter_count=p_total,
-        output_token_count=float(tokens_out),
-        request_latency=latency_s,
-        if_electricity_mix_adpe=mix.adpe,
-        if_electricity_mix_pe=mix.pe,
-        if_electricity_mix_gwp=mix.gwp,
-        if_electricity_mix_wue=mix.wue,
-        datacenter_pue=datacenter_pue,
-        datacenter_wue=datacenter_wue,
-        tps=deployment_tps if active_params is None else None,
-        ttft=deployment_ttft if active_params is None else None,
-    )
-
-    return Footprint(
-        energy_wh=_mean(impacts.energy.value) * 1_000,
-        gco2e=_mean(impacts.gwp.value) * 1_000,
-        water_ml=_mean(impacts.wcf.value) * 1_000,
-        embodied_gco2e=_mean(impacts.embodied.gwp.value) * 1_000,
-        estimate=estimate,
-        tier=tier,
-        proxy_model=proxy_model,
-        zone=zone,
-    )
-
-
-def _infer_eco_provider(armance_provider: str, armance_model: str) -> str | None:
-    """Guess the EcoLogits provider from armance provider + model vendor prefix.
-
-    OpenRouter ids are "vendor/model"; the vendor maps to an EcoLogits provider.
-    """
-    if armance_provider in _KNOWN_ECO_PROVIDERS:
-        return armance_provider
-    if armance_provider in ("gemini",):
-        return "google_genai"
-    if armance_provider == "openrouter":
-        vendor = armance_model.split("/")[0].lower() if "/" in armance_model else ""
-        _vendor_map = {
-            "anthropic":  "anthropic",
-            "openai":     "openai",
-            "google":     "google_genai",
-            "mistralai":  "mistralai",
-            "cohere":     "cohere",
-        }
-        return _vendor_map.get(vendor)
-    return None
-
-
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
 
 def estimate_footprint(
     provider: str,
@@ -261,8 +114,7 @@ def estimate_footprint(
     # ------------------------------------------------------------------
     # Tier 2 — alias table
     # ------------------------------------------------------------------
-    aliases = _load_aliases()
-    alias = aliases.get((provider, model))
+    alias = _load_aliases().get((provider, model))
     if alias is not None:
         eco_prov, eco_model = alias
         result = _build_footprint(
@@ -282,8 +134,8 @@ def estimate_footprint(
     # Tier 4 — similar (known provider family, borrow family default)
     # ------------------------------------------------------------------
     eco_family = _infer_eco_provider(provider, model)
-    if eco_family is not None and eco_family in _FAMILY_DEFAULT:
-        default_eco_prov, default_eco_model = _FAMILY_DEFAULT[eco_family]
+    if eco_family is not None and eco_family in FAMILY_DEFAULT:
+        default_eco_prov, default_eco_model = FAMILY_DEFAULT[eco_family]
         logger.warning(
             "footprint: tier=similar for %s/%s — borrowing %s/%s",
             provider, model, default_eco_prov, default_eco_model,
@@ -315,7 +167,7 @@ def estimate_footprint(
         zone=zone,
         tier="provider-default",
         estimate=True,
-        proxy_model=_PROVIDER_DEFAULT_PROXY,
-        active_params=_PROVIDER_DEFAULT_ACTIVE_PARAMS,
-        total_params=_PROVIDER_DEFAULT_TOTAL_PARAMS,
+        proxy_model=PROVIDER_DEFAULT_PROXY,
+        active_params=PROVIDER_DEFAULT_ACTIVE_PARAMS,
+        total_params=PROVIDER_DEFAULT_TOTAL_PARAMS,
     )
