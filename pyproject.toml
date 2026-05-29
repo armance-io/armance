@@ -75,9 +75,6 @@
   [tool.hatch.build.targets.wheel]
   packages = ["src/armance"]
 
-  [tool.hatch.build.targets.wheel.force-include]
-  "src/armance/protocols" = "armance/protocols"
-
   [tool.uv]
   dev-dependencies = [
       "pytest>=8.0",
