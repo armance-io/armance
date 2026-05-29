@@ -139,6 +139,7 @@ class TokenLedger:
             total: dict[str, Any] = {
                 "tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0,
                 "calls": 0, "gco2e": 0.0, "water_ml": 0.0,
+                "has_estimate": False, "has_unknown": False,
             }
             for e in self.entries:
                 b = per_agent.setdefault(
@@ -146,6 +147,7 @@ class TokenLedger:
                     {
                         "tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0,
                         "calls": 0, "gco2e": 0.0, "water_ml": 0.0,
+                        "has_estimate": False, "has_unknown": False,
                     },
                 )
                 for d in (b, total):
@@ -155,6 +157,10 @@ class TokenLedger:
                     d["calls"] += 1
                     d["gco2e"] += e.footprint.gco2e if e.footprint else 0.0
                     d["water_ml"] += e.footprint.water_ml if e.footprint else 0.0
+                    if e.footprint is None:
+                        d["has_unknown"] = True
+                    elif e.footprint.estimate:
+                        d["has_estimate"] = True
             return {"per_agent": per_agent, "total": total}
 
 
