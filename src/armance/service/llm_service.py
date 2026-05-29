@@ -341,11 +341,17 @@ async def call_with_ledger(
             if provider is not None:
                 try:
                     from armance.service.footprint import estimate_footprint
+                    zone = (
+                        _CURRENT_CONFIG.footprint.electricity_mix_zone
+                        if _CURRENT_CONFIG is not None
+                        else "WOR"
+                    )
                     footprint = estimate_footprint(
                         provider=provider,
                         model=model,
                         tokens_out=response.tokens_out,
                         latency_s=latency_s,
+                        zone=zone,
                     )
                 except Exception:
                     logger.exception("footprint estimation failed — recording None")
