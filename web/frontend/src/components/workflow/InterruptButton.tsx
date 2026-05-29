@@ -288,6 +288,7 @@ export const InterruptButton: FC<InterruptButtonProps> = ({
           <p style={promptStyle}>{t("workflow:interrupt.confirm_title")}</p>
           <div style={actionsStyle}>
             <button
+              data-testid="interrupt-cancel"
               style={noBtnStyle}
               onClick={handleCancel}
               onMouseEnter={() => setIsNoHovered(true)}
@@ -298,6 +299,7 @@ export const InterruptButton: FC<InterruptButtonProps> = ({
               {t("workflow:interrupt.confirm_no")}
             </button>
             <button
+              data-testid="interrupt-confirm"
               style={yesBtnStyle}
               onClick={handleConfirm}
               onMouseEnter={() => setIsYesHovered(true)}
