@@ -91,7 +91,9 @@
       "duration": "Durée",
       "tokens": "Tokens",
       "cost": "Coût",
+      "cost_na": "n/a",
       "steps": "Étapes",
+      "step": "Étape",
       "status": { "running": "en cours", "completed": "terminé", "failed": "échoué", "cancelled": "annulé", "skipped": "passé" }
     }
   },

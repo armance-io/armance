@@ -199,3 +199,41 @@ export async function deleteDoc(
     { confirm },
   );
 }
+
+export async function listRuns(
+  pid: string,
+  sid: string,
+  workflowName: string,
+): Promise<unknown[]> {
+  return api.get<unknown[]>(
+    `/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(workflowName)}/runs`,
+  );
+}
+
+export async function loadRun(
+  pid: string,
+  sid: string,
+  workflowName: string,
+  runId: string,
+): Promise<Record<string, string>> {
+  return api.get<Record<string, string>>(
+    `/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(workflowName)}/runs/${encodeURIComponent(runId)}`,
+  );
+}
+
+export async function loadStep(
+  pid: string,
+  sid: string,
+  workflowName: string,
+  runId: string,
+  stepId: string,
+): Promise<string> {
+  const path = `/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(workflowName)}/runs/${encodeURIComponent(runId)}/step/${encodeURIComponent(stepId)}`;
+  const res = await api.raw(path, { method: "GET" });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({ detail: res.statusText }));
+    const code = typeof detail.detail === "string" ? detail.detail : detail.detail?.error ?? "unknown";
+    throw new ApiError(res.status, String(code), String(code));
+  }
+  return res.text();
+}
