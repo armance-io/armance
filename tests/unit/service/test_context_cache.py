@@ -32,3 +32,21 @@ def test_cache_append_ignores_empty(tmp_path: Path):
     svc.cache_append("")
     svc.cache_append("   ")
     assert svc.read_cache() == ""
+
+
+def test_layered_context_includes_cache(tmp_path: Path):
+    from armance.core.models.agent import Agent
+    from armance.service.agents.specialist_runner import SpecialistRunner
+
+    root = tmp_path / ".armance"
+    ContextService(root).cache_append("forest restoration is the takeaway")
+
+    runner = SpecialistRunner(root, config=None)
+    agent = Agent(
+        name="Samir",
+        domain="communication",
+        provider="openrouter",
+        model="x",
+    )
+    ctx = runner._build_layered_context(agent)
+    assert "forest restoration is the takeaway" in ctx
