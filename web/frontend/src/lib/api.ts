@@ -252,3 +252,18 @@ export async function getWorkflow(
 ): Promise<never> {
   throw new Error("NotImplemented");
 }
+
+export interface ActiveWorkflow {
+  active: null | {
+    workflow: string;
+    run_id: string;
+    manifest_path: string;
+  };
+}
+
+export async function getActiveWorkflow(
+  pid: string,
+  sid: string,
+): Promise<ActiveWorkflow> {
+  return api.get<ActiveWorkflow>(`/projects/${pid}/sessions/${sid}/active-workflow`);
+}

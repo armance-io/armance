@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getLibrary, importDoc, deleteDoc, listRuns, loadRun, loadStep, ApiError } from "../api";
+import { getLibrary, importDoc, deleteDoc, listRuns, loadRun, loadStep, getActiveWorkflow, ApiError } from "../api";
 
 describe("API Library Wrappers", () => {
   beforeEach(() => {
@@ -111,6 +111,20 @@ describe("API Library Wrappers", () => {
         expect.objectContaining({ method: "GET" })
       );
       expect(result).toBe(JSON.stringify(mockMd)); // Wait, mockFetch json parses response, but loadStep uses raw text, let's keep it simple
+    });
+  });
+
+  describe("getActiveWorkflow", () => {
+    it("calls fetch with GET and returns active workflow data", async () => {
+      const mockActive = { active: { workflow: "my-wf", run_id: "run-1", manifest_path: "..." } };
+      mockFetch(mockActive);
+
+      const result = await getActiveWorkflow("default", "session-1");
+      expect(window.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/projects/default/sessions/session-1/active-workflow"),
+        expect.objectContaining({ method: "GET" })
+      );
+      expect(result).toEqual(mockActive);
     });
   });
 });
