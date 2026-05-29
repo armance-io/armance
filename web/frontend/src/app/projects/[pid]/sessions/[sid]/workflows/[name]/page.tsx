@@ -4,9 +4,10 @@ import { use, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/visual/AppShell";
-import { EmptyShell } from "@/components/visual/EmptyState/EmptyShell";
 import { DepthPicker } from "@/components/workflow/DepthPicker";
 import { WorkflowGraphContainer } from "@/components/workflow/WorkflowGraphContainer";
+import { InterruptButtonContainer } from "@/components/workflow/InterruptButtonContainer";
+import { RunHistoryContainer } from "@/components/workflow/RunHistoryContainer";
 import { launchWorkflow, getActiveWorkflow } from "@/lib/api";
 
 interface WorkflowPageProps {
@@ -64,24 +65,45 @@ export default function WorkflowPage({ params }: WorkflowPageProps) {
   return (
     <AppShell
       sidebar={
-        <EmptyShell
-          title={t("visual:empty.shell.title")}
-          hint={t("visual:empty.shell.hint")}
-        />
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px", padding: "16px", height: "100%" }}>
+          <div style={{
+            fontFamily: "var(--ff-serif, 'Instrument Serif', serif)",
+            fontSize: "18px",
+            fontWeight: 600,
+            color: "var(--ink, #2a2520)",
+            paddingBottom: "8px",
+            borderBottom: "1px solid var(--rule, #d6c8ad)",
+          }}>
+            {workflowName}
+          </div>
+          <RunHistoryContainer
+            pid={pid}
+            sid={sid}
+            workflowName={workflowName}
+          />
+        </div>
       }
       t={t}
     >
       <div style={{ padding: "24px", color: "var(--ink-soft)" }}>
         {activeRunId ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-            <h3 style={{
-              fontFamily: "var(--ff-serif, 'Instrument Serif', serif)",
-              fontSize: "22px",
-              color: "var(--ink, #2a2520)",
-              margin: 0,
-            }}>
-              {workflowName} — Live Graph
-            </h3>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{
+                fontFamily: "var(--ff-serif, 'Instrument Serif', serif)",
+                fontSize: "22px",
+                color: "var(--ink, #2a2520)",
+                margin: 0,
+              }}>
+                {workflowName} — Live Graph
+              </h3>
+              <InterruptButtonContainer
+                pid={pid}
+                sid={sid}
+                workflowName={workflowName}
+                runId={activeRunId}
+              />
+            </div>
             <WorkflowGraphContainer
               pid={pid}
               sid={sid}

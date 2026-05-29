@@ -14,6 +14,13 @@ export class ApiError extends Error {
   }
 }
 
+export class ApiConflictError extends ApiError {
+  constructor(code: string, message: string) {
+    super(409, code, message);
+    this.name = "ApiConflictError";
+  }
+}
+
 async function request<T>(
   method: string,
   path: string,
@@ -32,6 +39,9 @@ async function request<T>(
   if (!res.ok) {
     const detail = await res.json().catch(() => ({ detail: res.statusText }));
     const code = typeof detail.detail === "string" ? detail.detail : detail.detail?.error ?? "unknown";
+    if (res.status === 409) {
+      throw new ApiConflictError(String(code), String(code));
+    }
     throw new ApiError(res.status, String(code), String(code));
   }
   if (res.status === 204) return undefined as T;
@@ -200,12 +210,23 @@ export async function deleteDoc(
   );
 }
 
+export type RunStatus = "running" | "completed" | "failed" | "cancelled";
+
+export interface RunItem {
+  run_id: string;
+  status: RunStatus;
+  started_at: string;
+  ended_at: string | null;
+  duration_ms: number | null;
+  tokens_total: number | null;
+}
+
 export async function listRuns(
   pid: string,
   sid: string,
   workflowName: string,
-): Promise<unknown[]> {
-  return api.get<unknown[]>(
+): Promise<RunItem[]> {
+  return api.get<RunItem[]>(
     `/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(workflowName)}/runs`,
   );
 }
@@ -339,6 +360,31 @@ export async function launchWorkflow(
   return api.post<RunLaunched>(
     `/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(name)}/run`,
     body,
+  );
+}
+
+export async function stopWorkflow(
+  pid: string,
+  sid: string,
+  name: string,
+  confirm: boolean = true,
+): Promise<{ status: string }> {
+  return api.post<{ status: string }>(
+    `/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(name)}/stop`,
+    { confirm },
+  );
+}
+
+export async function deleteRun(
+  pid: string,
+  sid: string,
+  name: string,
+  runId: string,
+  confirm: boolean = true,
+): Promise<{ deleted: string }> {
+  return api.del<{ deleted: string }>(
+    `/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(name)}/runs/${encodeURIComponent(runId)}`,
+    { confirm },
   );
 }
 
