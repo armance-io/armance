@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
+import { ThemeProvider } from "@/lib/theme";
+import { I18nBootstrap } from "@/components/visual/I18nBootstrap";
 
 export const metadata: Metadata = {
   title: "Armance",
@@ -10,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" data-theme="light">
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -19,7 +21,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <ThemeProvider>
+          <I18nBootstrap>{children}</I18nBootstrap>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
