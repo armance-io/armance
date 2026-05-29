@@ -321,30 +321,36 @@ export interface RunHypothesis {
 }
 
 export async function getRunArguments(
-  _pid: string,
-  _sid: string,
-  _workflowName: string,
-  _runId: string,
+  pid: string,
+  sid: string,
+  workflowName: string,
+  runId: string,
 ): Promise<{ arguments: RunArgument[] }> {
-  throw new Error("NotImplemented");
+  return api.get<{ arguments: RunArgument[] }>(
+    `/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(workflowName)}/runs/${encodeURIComponent(runId)}/arguments`,
+  );
 }
 
 export async function getRunSources(
-  _pid: string,
-  _sid: string,
-  _workflowName: string,
-  _runId: string,
+  pid: string,
+  sid: string,
+  workflowName: string,
+  runId: string,
 ): Promise<{ sources: RunSource[] }> {
-  throw new Error("NotImplemented");
+  return api.get<{ sources: RunSource[] }>(
+    `/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(workflowName)}/runs/${encodeURIComponent(runId)}/sources`,
+  );
 }
 
 export async function getRunHypotheses(
-  _pid: string,
-  _sid: string,
-  _workflowName: string,
-  _runId: string,
+  pid: string,
+  sid: string,
+  workflowName: string,
+  runId: string,
 ): Promise<{ hypotheses: RunHypothesis[] }> {
-  throw new Error("NotImplemented");
+  return api.get<{ hypotheses: RunHypothesis[] }>(
+    `/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(workflowName)}/runs/${encodeURIComponent(runId)}/hypotheses`,
+  );
 }
 
 export interface RunLaunched {

@@ -12,6 +12,7 @@ export interface Source {
 export interface SourceListProps {
   sources: Source[];
   onClickSource: (source: Source) => void;
+  highlightedId?: string | null;
   t: (key: string) => string;
 }
 
@@ -20,6 +21,7 @@ export interface SourceListProps {
 export const SourceList: FC<SourceListProps> = ({
   sources,
   onClickSource,
+  highlightedId,
   t,
 }) => {
   const handleDocOrMsgClick = useCallback(
@@ -134,8 +136,18 @@ export const SourceList: FC<SourceListProps> = ({
           const isWeb = src.kind === "web";
           const kindLabel = t(`run:sources.kind.${src.kind}`).toUpperCase();
 
+          const isHighlighted = src.id === highlightedId;
           return (
-            <div key={src.id} className="source-row" style={rowStyle}>
+            <div
+              key={src.id}
+              id={`source-row-${src.id}`}
+              className="source-row"
+              style={{
+                ...rowStyle,
+                background: isHighlighted ? "color-mix(in srgb, var(--accent, #6b4f8a) 15%, transparent)" : undefined,
+                transition: isHighlighted ? "none" : "background 600ms ease-out",
+              }}
+            >
               {/* Kind chip */}
               <div style={chipStyle}>{kindLabel}</div>
 
