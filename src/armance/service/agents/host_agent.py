@@ -31,6 +31,28 @@ logger = logging.getLogger(__name__)
 # Back-compat: handlers import these names. Real impl lives in agent_sandbox.
 
 
+def _read_doc_text(path: "Path") -> str:
+    """Extract plain text from a doc file regardless of format.
+
+    .md/.txt → raw read. .pdf/.docx/.doc → reuse the ingestion loaders so
+    /library load works on the same set of formats the indexer accepts.
+    Failures degrade silently to empty string — the caller skips empty.
+    """
+    suffix = path.suffix.lower()
+    try:
+        if suffix in (".md", ".txt", ".text", ""):
+            return path.read_text(encoding="utf-8", errors="ignore")
+        if suffix == ".pdf":
+            from armance.storage.ingestion import load_pdf
+            return "\n\n".join(c.text for c in load_pdf(path))
+        if suffix in (".docx", ".doc"):
+            from armance.storage.ingestion import load_docx
+            return "\n\n".join(c.text for c in load_docx(path))
+    except Exception:
+        logger.exception("doc text extract failed: %s", path)
+    return ""
+
+
 class HostAgentService:
     """Service for the host agent (Armance)."""
 
@@ -852,16 +874,13 @@ Preserve all factual content. Skip conversational filler. Output ONLY raw Markdo
         for f in sorted(docs_dir.rglob("*")):
             if not f.is_file() or f.name.startswith("."):
                 continue
-            if f.suffix.lower() not in (".md", ".txt"):
-                # Skip binary formats; they go through the indexer normally.
+            suffix = f.suffix.lower()
+            if suffix not in (".md", ".txt", ".pdf", ".docx", ".doc"):
                 continue
             if only_files is not None and f.name not in only_files:
                 continue
-            try:
-                content = f.read_text(encoding="utf-8", errors="ignore")
-            except Exception:
-                continue
-            if not content.strip():
+            content = _read_doc_text(f)
+            if not content or not content.strip():
                 continue
             rel = f.relative_to(docs_dir).as_posix()
             out.append(f"### `{rel}`\n{content[:max_chars_per_file]}")
@@ -879,7 +898,7 @@ Preserve all factual content. Skip conversational filler. Output ONLY raw Markdo
                 break
         if target is None:
             return t("system.error", body=t("load.not_found", filename=filename))
-        if target.suffix.lower() not in (".md", ".txt"):
+        if target.suffix.lower() not in (".md", ".txt", ".pdf", ".docx", ".doc"):
             return t(
                 "system.warn",
                 body=t("load.binary_format", filename=filename, suffix=target.suffix),
@@ -983,8 +1002,14 @@ Preserve all factual content. Skip conversational filler. Output ONLY raw Markdo
         orphans = indexed - current_files  # in library but file removed from disk
 
         from armance.nls import t
+        from armance.storage.library_availability import is_library_available
         if not files and not orphans:
-            return t("docs_section.empty_title") + "\n" + t("docs_section.empty_body")
+            body_key = (
+                "docs_section.empty_body"
+                if is_library_available(self.config)
+                else "docs_section.empty_body_no_library"
+            )
+            return t("docs_section.empty_title") + "\n" + t(body_key)
 
         lines = [t("docs_section.title")]
         for f in files:

@@ -172,11 +172,6 @@ class OpenRouterClient(LLMClient):
             headers["Authorization"] = f"Bearer {self._provider.api_key}"
 
         payload: dict[str, Any] = {"model": model, "messages": messages, "stream": True, **params}
-        response = await self._client.post(url, headers=headers, json=payload, stream=True)
-        if response.status_code >= 400:
-            raise LLMHTTPError(
-                f"openrouter call failed: {response.status_code} {response.text}"
-            )
 
         text_parts: list[str] = []
         tokens_in = 0
@@ -184,32 +179,42 @@ class OpenRouterClient(LLMClient):
         finish_reason: FinishReason = "stop"
         cost_usd: float | None = None
 
-        async for line in response.aiter_lines():
-            line = line.strip()
-            if not line or not line.startswith("data: "):
-                continue
-            data_str = line[6:]  # strip "data: " prefix
-            if data_str.strip() == "[DONE]":
-                break
-            try:
-                chunk = json.loads(data_str)
-            except json.JSONDecodeError:
-                continue
-            choices = chunk.get("choices") or []
-            for choice in choices:
-                delta = choice.get("delta", {})
-                content = _coerce_content(delta.get("content"))
-                if content:
-                    text_parts.append(content)
-                    on_token(content)
-                fr = choice.get("finish_reason")
-                if fr:
-                    finish_reason = _normalize_finish_reason(fr)
-            usage = chunk.get("usage")
-            if usage:
-                tokens_in = int(usage.get("prompt_tokens", 0))
-                tokens_out = int(usage.get("completion_tokens", 0))
-                cost_usd = float(usage.get("cost", 0) or 0)
+        # httpx streams via `client.stream("POST", ...)`, NOT a `stream=`
+        # kwarg on `.post()` — that signature is from `requests` and raises
+        # TypeError on AsyncClient. Use the proper context-manager API.
+        async with self._client.stream("POST", url, headers=headers, json=payload) as response:
+            if response.status_code >= 400:
+                body = (await response.aread()).decode("utf-8", errors="replace")
+                raise LLMHTTPError(
+                    f"openrouter call failed: {response.status_code} {body}"
+                )
+
+            async for line in response.aiter_lines():
+                line = line.strip()
+                if not line or not line.startswith("data: "):
+                    continue
+                data_str = line[6:]  # strip "data: " prefix
+                if data_str.strip() == "[DONE]":
+                    break
+                try:
+                    chunk = json.loads(data_str)
+                except json.JSONDecodeError:
+                    continue
+                choices = chunk.get("choices") or []
+                for choice in choices:
+                    delta = choice.get("delta", {})
+                    content = _coerce_content(delta.get("content"))
+                    if content:
+                        text_parts.append(content)
+                        on_token(content)
+                    fr = choice.get("finish_reason")
+                    if fr:
+                        finish_reason = _normalize_finish_reason(fr)
+                usage = chunk.get("usage")
+                if usage:
+                    tokens_in = int(usage.get("prompt_tokens", 0))
+                    tokens_out = int(usage.get("completion_tokens", 0))
+                    cost_usd = float(usage.get("cost", 0) or 0)
 
         return LLMResponse(
             text=_strip_thinking("".join(text_parts)),

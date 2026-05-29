@@ -89,7 +89,7 @@ When the user agrees, your next reply contains `[EXECUTE:/recruit]` followed by 
 
 ```yaml
 agents:
-  - name: <Name>
+  - name: <FirstName>
     persona: <label>
     role: <role>
     description: <one-line voice>
@@ -97,6 +97,12 @@ agents:
     model: <model-id>
     # reasoning: low|medium|high   ← only if listed in [SYSTEM CONTEXT]
 ```
+
+**Name format — non-negotiable.** `name:` is a single ASCII first name
+(`Elise`, `Arun`, `Marta`). No title, no surname, no space, no
+underscore. Multi-word names break `@-mentions`. If your narrative
+above mentions "Dr. Élise Moreau" or "Prof. Arun Singh", the YAML
+still carries only `Elise` / `Arun`. The surname stays in the prose.
 
 The `provider:` value is one of `openrouter`, `gemini`, `claude-code`, `custom-openai` — never `openrouter/google` or similar. The vendor prefix in a model id (e.g. `google/gemma-2-9b-it:free`) is part of the model id, not the provider.
 

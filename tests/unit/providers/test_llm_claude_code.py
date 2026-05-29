@@ -81,7 +81,8 @@ async def test_claude_code_collects_text_and_telemetry(
     assert resp.text == "foo bar"
     assert resp.tokens_in == 12
     assert resp.tokens_out == 5
-    assert resp.cost_usd == 0.02
+    # cost is suppressed for claude-code (subscription holders don't pay it).
+    assert resp.cost_usd is None
     assert resp.finish_reason == "stop"
     assert captured["prompt"] == "hi"
     assert captured["options"].kwargs["system_prompt"] == "be terse"

@@ -86,12 +86,6 @@ export const DepthPicker: FC<DepthPickerProps> = ({
     flex: 1,
   };
 
-  const modeRowStyle: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-  };
-
   const toggleWrapStyle: CSSProperties = {
     display: "flex",
     border: "1px solid var(--rule, #d6c8ad)",
