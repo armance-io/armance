@@ -11,10 +11,12 @@ import datetime
 import json
 import logging
 import threading
+import time
 from pathlib import Path
 from typing import Any
 
 from armance.config import Config
+from armance.core.models.footprint import Footprint
 from armance.core.protocols.llm import (
     LLMClient,
     LLMResponse,
@@ -62,11 +64,13 @@ class LedgerEntry:
         tokens_in: int,
         tokens_out: int,
         cost_usd: float | None,
+        footprint: Footprint | None = None,
     ) -> None:
         self.agent = agent
         self.tokens_in = tokens_in
         self.tokens_out = tokens_out
         self.cost_usd = cost_usd
+        self.footprint = footprint
 
 
 class TokenLedger:
@@ -94,9 +98,10 @@ class TokenLedger:
         ti: int,
         to: int,
         cost_usd: float | None = None,
+        footprint: Footprint | None = None,
     ) -> None:
         with self._lock:
-            self.entries.append(LedgerEntry(agent, ti, to, cost_usd))
+            self.entries.append(LedgerEntry(agent, ti, to, cost_usd, footprint))
             if self.persist_path:
                 self._flush()
 
@@ -111,6 +116,12 @@ class TokenLedger:
                         "tokens_in": e.tokens_in,
                         "tokens_out": e.tokens_out,
                         "cost_usd": e.cost_usd,
+                        "gco2e": e.footprint.gco2e if e.footprint else None,
+                        "water_ml": e.footprint.water_ml if e.footprint else None,
+                        "energy_wh": e.footprint.energy_wh if e.footprint else None,
+                        "tier": e.footprint.tier if e.footprint else None,
+                        "estimate": e.footprint.estimate if e.footprint else None,
+                        "zone": e.footprint.zone if e.footprint else None,
                     }
                     for e in self.entries
                 ],
@@ -125,17 +136,25 @@ class TokenLedger:
     def snapshot(self) -> dict[str, Any]:
         with self._lock:
             per_agent: dict[str, dict[str, Any]] = {}
-            total = {"tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0, "calls": 0}
+            total: dict[str, Any] = {
+                "tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0,
+                "calls": 0, "gco2e": 0.0, "water_ml": 0.0,
+            }
             for e in self.entries:
                 b = per_agent.setdefault(
                     e.agent,
-                    {"tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0, "calls": 0},
+                    {
+                        "tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0,
+                        "calls": 0, "gco2e": 0.0, "water_ml": 0.0,
+                    },
                 )
                 for d in (b, total):
                     d["tokens_in"] += e.tokens_in
                     d["tokens_out"] += e.tokens_out
                     d["cost_usd"] += e.cost_usd or 0.0
                     d["calls"] += 1
+                    d["gco2e"] += e.footprint.gco2e if e.footprint else 0.0
+                    d["water_ml"] += e.footprint.water_ml if e.footprint else 0.0
             return {"per_agent": per_agent, "total": total}
 
 
@@ -271,10 +290,16 @@ async def call_with_ledger(
     *,
     ledger: TokenLedger | None = None,
     on_token: Any = None,
+    provider: str | None = None,
     **params: Any,
 ) -> LLMResponse:
     """Run a single LLM call with budget check, structured logging, retry,
-    and ledger accounting."""
+    and ledger accounting.
+
+    ``provider`` is the Armance provider name (e.g. "anthropic", "openrouter").
+    When supplied, the environmental footprint is estimated and recorded on the
+    ledger entry.  When omitted (existing callers), footprint is None.
+    """
     target = ledger or _GLOBAL_LEDGER
     target.check_budget()
 
@@ -284,6 +309,7 @@ async def call_with_ledger(
     backoff = 2.0
     for attempt in range(1, max_retries + 1):
         try:
+            t0 = time.perf_counter()
             if on_token:
                 response = await client.stream_complete(
                     messages, model, on_token=on_token, **params
@@ -292,12 +318,28 @@ async def call_with_ledger(
                 response = await complete_with_continuation(
                     client, messages, model, **params
                 )
+            latency_s = time.perf_counter() - t0
+
+            footprint: Footprint | None = None
+            if provider is not None:
+                try:
+                    from armance.service.footprint import estimate_footprint
+                    footprint = estimate_footprint(
+                        provider=provider,
+                        model=model,
+                        tokens_out=response.tokens_out,
+                        latency_s=latency_s,
+                    )
+                except Exception:
+                    logger.exception("footprint estimation failed — recording None")
+
             log_response(agent_name, model, response)
             target.record(
                 agent_name,
                 response.tokens_in,
                 response.tokens_out,
                 response.cost_usd,
+                footprint=footprint,
             )
             return response
 
