@@ -125,10 +125,13 @@ class TestEstimateFootprintExactTier:
         assert result is not None
         assert result.proxy_model is None
 
-    def test_unknown_model_returns_none(self) -> None:
+    def test_free_model_returns_none(self) -> None:
+        # ':free' suffix with no params → tier 6 / None (never fabricate).
+        # Updated from EI.1 original: unknown anthropic model now returns
+        # tier='similar' (tier 4) after EI.2 added the fallback chain.
         result = estimate_footprint(
-            provider="anthropic",
-            model="claude-totally-unknown-xyz",
+            provider="openrouter",
+            model="some-vendor/mystery-model:free",
             tokens_out=600,
             latency_s=4.0,
             zone="WOR",
