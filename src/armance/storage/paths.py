@@ -61,6 +61,11 @@ def context_dir(armance_root: Path) -> Path:
     return armance_root / "context"
 
 
+def context_cache_path(armance_root: Path) -> Path:
+    """Pending shared-context cache (incremental brief, pre-freeze)."""
+    return context_dir(armance_root) / "cache.md"
+
+
 def context_l0_path(armance_root: Path, version: int, date: str, slug: str) -> Path:
     """Get path for an L0 context version file.
 
