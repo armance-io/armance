@@ -46,6 +46,7 @@ from armance.service.task_ops import (
     cmd_report as _cmd_report,
     cmd_task as _cmd_task,
 )
+from armance.service.footprint_ops import cmd_footprint as _cmd_footprint
 
 logger = logging.getLogger(__name__)
 
@@ -748,6 +749,8 @@ HANDLERS = {
     "feedback_loop": _cmd_feedback_loop,
     "iterate-from": _cmd_iterate_from,
     "iterate_from": _cmd_iterate_from,
+    "footprint": _cmd_footprint,
+    "empreinte": _cmd_footprint,
     "library": _cmd_library,
     "lib": _cmd_library,
     # Legacy aliases (route into /library)

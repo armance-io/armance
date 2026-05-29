@@ -371,3 +371,21 @@ init:
     unrecognised: "Modèle '{name}' non reconnu. RAG désactivé."
     confirmed: "Embedding : [{provider}]  {model}"
   ssl_skip_prompt: "Ignorer la vérification du certificat SSL ? (utile pour les certificats auto-signés / proxys MITM d'entreprise)"
+
+# ---------------------------------------------------------------------------
+# Empreinte environnementale (/footprint)
+# ---------------------------------------------------------------------------
+footprint:
+  cmd_title: "Empreinte environnementale"
+  col_agent: "Agent"
+  col_gco2e: "gCO₂e"
+  col_water: "mL H₂O"
+  col_calls: "Appels"
+  col_estimate: "Est."
+  total_row: "TOTAL"
+  no_data: "Aucune donnée d'empreinte. Lancez d'abord quelques requêtes."
+  estimate_note: "~ = estimé (modèle proxy similaire)"
+  unknown_note: "? = modèle inconnu (pas de données)"
+  zone_note: "Zone électrique : {zone}"
+  by_day: "Par jour"
+  by_month: "Par mois"
