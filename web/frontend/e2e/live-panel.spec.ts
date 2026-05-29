@@ -28,7 +28,7 @@ test.describe("LivePanel Deliberation E2E", () => {
 
     // 4. Sources Check
     // Locate the Sources collapsible section button and its body
-    const sourcesButton = page.getByRole("button", { name: "Sources" });
+    const sourcesButton = page.getByRole("button", { name: "Sources", exact: true });
     await expect(sourcesButton).toBeVisible();
     
     // We expect the source item within the page to be visible
