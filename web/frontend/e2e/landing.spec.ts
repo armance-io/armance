@@ -13,6 +13,11 @@ test.describe("Landing page / AppShell e2e", () => {
     await expect(page.locator("footer")).toContainText("A house of thinking agents.");
     await expect(page.locator("footer")).toContainText("armance.io · 2026 · made in France");
 
+    // Main content area renders EmptySession
+    const main = page.locator("main");
+    await expect(main.locator("h2")).toContainText("A new session begins");
+    await expect(main.locator("p")).toContainText("Describe a decision you're weighing, or drop a document.");
+
     // ThemeToggle is present and keyboard-accessible (can be focused and toggled)
     const toggle = page.locator(".theme-toggle");
     await expect(toggle).toBeVisible();

@@ -38,13 +38,13 @@ export function ensureI18n(language: string = "en"): typeof i18n {
     interpolation: { escapeValue: false },
     resources: {
       en: NAMESPACES.reduce((acc, ns) => {
-        acc[ns] = (en as Record<string, any>)[ns] || {};
+        acc[ns] = (en as unknown as Record<string, unknown>)[ns] || {};
         return acc;
-      }, {} as Record<string, any>),
+      }, {} as Record<string, unknown>),
       fr: NAMESPACES.reduce((acc, ns) => {
-        acc[ns] = (fr as Record<string, any>)[ns] || {};
+        acc[ns] = (fr as unknown as Record<string, unknown>)[ns] || {};
         return acc;
-      }, {} as Record<string, any>),
+      }, {} as Record<string, unknown>),
     },
   });
   initialised = true;
