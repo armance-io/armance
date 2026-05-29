@@ -8,15 +8,10 @@ from armance.nls import t
 from armance.service.agent_sandbox import scrub_reply
 from armance.service.agents.specialist_runner import SpecialistRunner, run_specialist
 from armance.service.chat_handlers.common import intercept_load_run_tag, set_status
+from armance.service.agent_visibility import visible_turns
 from armance.service.loop_context import LoopContext
 
 logger = logging.getLogger(__name__)
-
-
-# Coordination shells whose turns content specialists must NOT see — they
-# carry recruitment plans, workflow design dialogue, framing chatter, not
-# project content.
-_COORD_AGENTS = {"system-context", "system-hr", "system-orchestrator"}
 
 
 async def cmd_chat(text: str, ctx: LoopContext) -> str:
@@ -52,11 +47,7 @@ async def cmd_chat(text: str, ctx: LoopContext) -> str:
         agent_obj = next((a for a in ctx.agents if a.name == agent_name), None)
         domain = agent_obj.domain if agent_obj else agent_name.split("_")[0]
         task = Task(prompt=text, domain=domain, mode="light", requested_agent=agent_name)
-        history = [
-            {"role": t.role, "content": t.content}
-            for t in ctx.session.conversation.turns
-            if t.role == "user" or (t.agent or "") not in _COORD_AGENTS
-        ]
+        history = visible_turns(ctx.session.conversation.turns, agent_name)
         ctx.session.conversation.append("user", text, agent=agent_name)
 
         user_text_lower = text.lower()
