@@ -195,16 +195,16 @@ class MainScreen(Screen[int]):
     # ------------------------------------------------------------------
 
     def _refresh_token_display(self) -> None:
-        """Update sub_title with live token + cost; add per-agent breakdown when active."""
+        """Update sub_title with live token + cost + footprint chip."""
         try:
+            from armance.service.footprint_ops import format_token_subtitle
             snap = self.ledger.snapshot()
-            total = snap.get("total", {})
-            ti = total.get("tokens_in", 0)
-            to = total.get("tokens_out", 0)
-            cost = total.get("cost_usd", 0.0)
-            parts = [f"↑{ti:,} ↓{to:,} ${cost:.4f}"]
+            show_water = getattr(
+                getattr(self.cfg, "footprint", None), "show_water", True
+            )
+            subtitle = format_token_subtitle(snap, show_water=show_water)
 
-            # Current agent model + IN/OUT pricing (per MTok)
+            # Append current agent model + pricing
             active = self.state.current_agent
             if active:
                 try:
@@ -225,11 +225,11 @@ class MainScreen(Screen[int]):
                                 price_tag = "free"
                             else:
                                 price_tag = f"${price['input_per_mtok']:g}/${price['output_per_mtok']:g}/Mtok"
-                            parts.append(f"{short_model}·{price_tag}")
+                            subtitle += f" · {short_model}·{price_tag}"
                 except Exception:
                     pass
 
-            self.sub_title = " · ".join(parts)
+            self.sub_title = subtitle
         except Exception:
             pass
 
