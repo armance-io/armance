@@ -391,7 +391,7 @@ class MainScreen(Screen[int]):
         self.run_worker(self._quit_with_save_prompt(), exclusive=True)
 
     async def _quit_with_save_prompt(self) -> None:
-        """Ask Y/N before exit. Save = fold cache into L0; dismiss = drop cache."""
+        """Ctrl+Q gate. yes=fold cache into L0; no=drop cache; Esc=cancel quit (cache kept)."""
         from armance.nls import t as _t
         from armance.service.context_service import ContextService
         svc = ContextService(self.armance_root)
@@ -408,7 +408,11 @@ class MainScreen(Screen[int]):
             resp = await handler.prompt(
                 Checkpoint(id="quit.save", prompt=_t("quit.save_prompt"), kind="confirm")
             )
-            if not resp.is_abort and resp.content == "yes":
+            if resp.is_abort:
+                # Esc: cancel the quit entirely. Keep the cache, stay in the app.
+                self._quit_in_progress = False
+                return
+            if resp.content == "yes":
                 try:
                     svc.append_quick_freeze(cache)
                     svc.clear_cache()
@@ -417,10 +421,12 @@ class MainScreen(Screen[int]):
                 except Exception:
                     logger.exception("quit save failed")
             else:
-                # Dismiss: drop the pending cache, keep the last L0 version.
+                # Explicit decline: drop the pending cache, keep the last L0 version.
                 svc.clear_cache()
         except Exception:
             logger.exception("quit prompt failed")
+            self._quit_in_progress = False
+            return
         self.app.exit(0)
 
     def action_cancel(self) -> None:
