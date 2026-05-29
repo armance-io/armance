@@ -46,7 +46,7 @@ export function ensureI18n(language: string = "en"): typeof i18n {
         return acc;
       }, {} as Record<string, unknown>),
     },
-  });
+  } as unknown as import("i18next").InitOptions);
   initialised = true;
   return i18n;
 }

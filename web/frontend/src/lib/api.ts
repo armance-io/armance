@@ -143,3 +143,59 @@ export async function listHypotheses(
       `/runs/${encodeURIComponent(runId)}/hypotheses`,
   );
 }
+
+/* ─── Epic B — Library room ──────────────────────────────────────────────── */
+
+export type DocFormat = "pdf" | "docx" | "md" | "txt";
+export type DocStatus = "pending" | "indexed" | "loaded";
+
+export interface Doc {
+  name: string;
+  format: DocFormat;
+  status: DocStatus;
+  size_bytes: number;
+}
+
+export async function getLibrary(
+  pid: string,
+  sid: string,
+): Promise<{ docs: Doc[] }> {
+  return api.get<{ docs: Doc[] }>(`/projects/${pid}/sessions/${sid}/library`);
+}
+
+export async function importDoc(
+  pid: string,
+  sid: string,
+  file: File,
+  autoIndex: boolean = false,
+): Promise<{ imported: string }> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("auto_index", String(autoIndex));
+  
+  const res = await api.raw(`/projects/${pid}/sessions/${sid}/library/docs`, {
+    method: "POST",
+    body: formData,
+    credentials: "include",
+  });
+  
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({ detail: res.statusText }));
+    const code = typeof detail.detail === "string" ? detail.detail : detail.detail?.error ?? "unknown";
+    throw new ApiError(res.status, String(code), String(code));
+  }
+  
+  return res.json() as Promise<{ imported: string }>;
+}
+
+export async function deleteDoc(
+  pid: string,
+  sid: string,
+  name: string,
+  confirm: boolean = true,
+): Promise<{ deleted: string }> {
+  return api.del<{ deleted: string }>(
+    `/projects/${pid}/sessions/${sid}/library/docs/${encodeURIComponent(name)}`,
+    { confirm },
+  );
+}

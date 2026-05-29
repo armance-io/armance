@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import "./globals.css";
 import { ThemeProvider } from "@/lib/theme";
 import { I18nBootstrap } from "@/components/visual/I18nBootstrap";
+import { QueryProvider } from "@/components/visual/QueryProvider";
 
 export const metadata: Metadata = {
   title: "Armance",
@@ -22,9 +23,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body>
-        <ThemeProvider>
-          <I18nBootstrap>{children}</I18nBootstrap>
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider>
+            <I18nBootstrap>{children}</I18nBootstrap>
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   );
