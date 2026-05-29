@@ -320,3 +320,20 @@ export async function getRunHypotheses(
   throw new Error("NotImplemented");
 }
 
+export interface RunLaunched {
+  run_id: string;
+}
+
+export async function launchWorkflow(
+  pid: string,
+  sid: string,
+  name: string,
+  body: { mode: "interactive" | "autonomous"; depth: "quick" | "deep" },
+): Promise<RunLaunched> {
+  return api.post<RunLaunched>(
+    `/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(name)}/run`,
+    body,
+  );
+}
+
+
