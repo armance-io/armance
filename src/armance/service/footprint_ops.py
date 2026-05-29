@@ -122,6 +122,13 @@ def format_token_subtitle(snapshot: dict[str, Any], *, show_water: bool) -> str:
       ``· 💧{water_ml:.0f}mL``   (when show_water=True and not unknown)
 
     Estimate flag adds ``~`` prefix to the 🌱 chip.
+
+    Three cases:
+      * pure unknown (no figures at all) → ``🌱?`` — never a fabricated 0.
+      * mixed (some calls had figures, some did not) → the summed chip plus a
+        trailing ``?`` so the partial coverage is visible rather than passed
+        off as a complete total.
+      * fully known → just the chip (``~`` prefix if any figure is an estimate).
     """
     total = snapshot.get("total", {})
     ti = total.get("tokens_in", 0)
@@ -135,10 +142,14 @@ def format_token_subtitle(snapshot: dict[str, Any], *, show_water: bool) -> str:
     parts = [f"↑{ti:,} ↓{to_:,} ${cost:.4f}"]
 
     if has_unknown and gco2e == 0.0:
+        # No figures at all — show only the honest unknown marker.
         parts.append("🌱?")
     else:
         prefix = "~" if has_estimate else ""
-        chip = f"{prefix}🌱{gco2e:.2g}gCO₂e"
+        # Partial coverage: some entries had no footprint. Flag the sum as
+        # incomplete instead of presenting it as a complete total.
+        suffix = "?" if has_unknown else ""
+        chip = f"{prefix}🌱{gco2e:.2g}gCO₂e{suffix}"
         parts.append(chip)
         if show_water and not has_unknown:
             parts.append(f"💧{water_ml:.0f}mL")
