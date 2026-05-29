@@ -245,11 +245,17 @@ export async function listWorkflows(
   throw new Error("NotImplemented");
 }
 
+export interface Workflow {
+  name: string;
+  nodes: Array<{ id: string; data: Record<string, unknown> }>;
+  edges: Array<{ id: string; source: string; target: string }>;
+}
+
 export async function getWorkflow(
   _pid: string,
   _sid: string,
   _name: string,
-): Promise<never> {
+): Promise<Workflow> {
   throw new Error("NotImplemented");
 }
 

@@ -8,7 +8,7 @@ test.describe("Workflow Graph Preview E2E", () => {
     const main = page.locator("main");
 
     // Verify WorkflowGraphContainer wrapper is present
-    const graphWrapper = main.locator('[data-testid="workflow-graph-preview"]');
+    const graphWrapper = main.locator('[data-testid="workflow-graph-container"]');
     await expect(graphWrapper).toBeVisible();
 
     // Verify all 3 step nodes exist and show their respective step IDs
