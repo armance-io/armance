@@ -224,6 +224,12 @@ def log_exchange_details(
             entry["cost_usd"] = data.get("cost_usd")
             entry["finish_reason"] = data.get("finish_reason")
             entry["response_preview"] = str(data.get("text", ""))[:200] + "..."
+            entry["gco2e"] = data.get("gco2e")
+            entry["water_ml"] = data.get("water_ml")
+            entry["energy_wh"] = data.get("energy_wh")
+            entry["estimate"] = data.get("estimate")
+            entry["tier"] = data.get("tier")
+            entry["zone"] = data.get("zone")
         elif event_type == "failure":
             entry["error_type"] = data.get("error_type")
             entry["error_message"] = data.get("error_message")
@@ -244,7 +250,12 @@ def log_request(
     log_exchange_details("request", agent_name, model, {"messages": messages})
 
 
-def log_response(agent_name: str, model: str, response: LLMResponse) -> None:
+def log_response(
+    agent_name: str,
+    model: str,
+    response: LLMResponse,
+    footprint: Footprint | None = None,
+) -> None:
     log_exchange_details(
         "response",
         agent_name,
@@ -255,6 +266,12 @@ def log_response(agent_name: str, model: str, response: LLMResponse) -> None:
             "tokens_out": response.tokens_out,
             "finish_reason": response.finish_reason,
             "cost_usd": response.cost_usd,
+            "gco2e": footprint.gco2e if footprint else None,
+            "water_ml": footprint.water_ml if footprint else None,
+            "energy_wh": footprint.energy_wh if footprint else None,
+            "estimate": footprint.estimate if footprint else None,
+            "tier": footprint.tier if footprint else None,
+            "zone": footprint.zone if footprint else None,
         },
     )
 
@@ -333,7 +350,7 @@ async def call_with_ledger(
                 except Exception:
                     logger.exception("footprint estimation failed — recording None")
 
-            log_response(agent_name, model, response)
+            log_response(agent_name, model, response, footprint=footprint)
             target.record(
                 agent_name,
                 response.tokens_in,
