@@ -681,14 +681,15 @@ Preserve all factual content. Skip conversational filler. Output ONLY raw Markdo
 
     async def _handle_save(self) -> str:
         """Handle /save intent — freeze context to L0 via LLM-compiled freeze()."""
-        full_text = "\n".join(self._buffer)
+        from armance.service.context_service import ContextService
+        ctx_svc = ContextService(self.armance_root)
+        full_text = ctx_svc.read_cache() or "\n".join(self._buffer)
         cleaned = full_text.lower()
         for greeting in ["hello", "hi", "hey", "yo", "bonjour", "salut", "coucou", "merci", "thanks", "s'il te plaît", "please", "s'il vous plaît", "svp"]:
             cleaned = re.sub(r'\b' + re.escape(greeting) + r'\b', '', cleaned)
         alphanum = "".join(c for c in cleaned if c.isalnum())
 
-        from armance.service.context_service import ContextService
-        has_prior = bool((ContextService(self.armance_root).read_l0_body() or "").strip())
+        has_prior = bool((ctx_svc.read_l0_body() or "").strip())
         if len(alphanum) < 30 and not has_prior:
             return "error: context is too brief to save (minimum 30 non-greeting characters required to frame a project context)"
 
