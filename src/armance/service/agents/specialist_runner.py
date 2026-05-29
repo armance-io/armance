@@ -222,6 +222,7 @@ class SpecialistRunner:
                 caveman_protocol +
                 agent.system_prompt +
                 L0_body +
+                cache_body (shared pending notes) +
                 (L1[agent.role] if exists) +
                 ...
             )
@@ -232,6 +233,11 @@ class SpecialistRunner:
         l0_body = self.context_service.read_l0_body()
         if l0_body:
             parts.append(f"## L0 — Project Context\n\n{l0_body}")
+
+        # Shared incremental brief: pending cache notes (Armance-owned).
+        cache_body = self.context_service.read_cache()
+        if cache_body:
+            parts.append(f"## Shared notes (pending context)\n\n{cache_body}")
 
         # L1: per-role, only if agent has a role and L1 exists
         role = getattr(agent, "role", None) or getattr(agent, "domain", None)
