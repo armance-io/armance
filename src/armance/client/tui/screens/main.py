@@ -391,10 +391,12 @@ class MainScreen(Screen[int]):
         self.run_worker(self._quit_with_save_prompt(), exclusive=True)
 
     async def _quit_with_save_prompt(self) -> None:
-        """Ask Y/N before exit. Save = persist host buffer to L0 + ledger flush."""
+        """Ask Y/N before exit. Save = fold cache into L0; dismiss = drop cache."""
         from armance.nls import t as _t
-        buffer = list(self.session.metadata.get("host_buffer", []))
-        if not buffer:
+        from armance.service.context_service import ContextService
+        svc = ContextService(self.armance_root)
+        cache = svc.read_cache()
+        if not cache:
             self.app.exit(0)
             return
         try:
@@ -407,16 +409,16 @@ class MainScreen(Screen[int]):
                 Checkpoint(id="quit.save", prompt=_t("quit.save_prompt"), kind="confirm")
             )
             if not resp.is_abort and resp.content == "yes":
-                # Save WITHOUT calling the LLM — write the buffer as a freeze
-                # note to context/L0/.
                 try:
-                    from armance.service.context_service import ContextService
-                    ContextService(self.armance_root).append_quick_freeze("\n".join(buffer))
-                    self.session.metadata["host_buffer"] = []
+                    svc.append_quick_freeze(cache)
+                    svc.clear_cache()
                     self.session.save()
                     self.notify(_t("quit.saved"), severity="information", timeout=2)
                 except Exception:
                     logger.exception("quit save failed")
+            else:
+                # Dismiss: drop the pending cache, keep the last L0 version.
+                svc.clear_cache()
         except Exception:
             logger.exception("quit prompt failed")
         self.app.exit(0)
