@@ -267,3 +267,56 @@ export async function getActiveWorkflow(
 ): Promise<ActiveWorkflow> {
   return api.get<ActiveWorkflow>(`/projects/${pid}/sessions/${sid}/active-workflow`);
 }
+
+export interface RunArgument {
+  id: string;
+  claim: string;
+  status: "retained" | "rejected" | "open";
+  proposed_by: string[];
+  proposed_in_steps: string[];
+  rejected_by?: string;
+  rejection_reason?: string;
+  sources: string[];
+  weight?: number;
+}
+
+export interface RunSource {
+  id: string;
+  kind: "doc" | "user_msg" | "web";
+  ref: string;
+  label: string;
+}
+
+export interface RunHypothesis {
+  step_id: string;
+  text: string;
+  invalidator?: string;
+}
+
+export async function getRunArguments(
+  _pid: string,
+  _sid: string,
+  _workflowName: string,
+  _runId: string,
+): Promise<{ arguments: RunArgument[] }> {
+  throw new Error("NotImplemented");
+}
+
+export async function getRunSources(
+  _pid: string,
+  _sid: string,
+  _workflowName: string,
+  _runId: string,
+): Promise<{ sources: RunSource[] }> {
+  throw new Error("NotImplemented");
+}
+
+export async function getRunHypotheses(
+  _pid: string,
+  _sid: string,
+  _workflowName: string,
+  _runId: string,
+): Promise<{ hypotheses: RunHypothesis[] }> {
+  throw new Error("NotImplemented");
+}
+
