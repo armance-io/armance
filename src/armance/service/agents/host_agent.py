@@ -183,6 +183,11 @@ class HostAgentService:
         stripped = user_text.strip()
         if stripped and not self._is_greeting(stripped):
             self._buffer.append(stripped)
+            try:
+                from armance.service.context_service import ContextService
+                ContextService(self.armance_root).cache_append(stripped)
+            except Exception:
+                logger.debug("cache append from buffer failed", exc_info=True)
 
         # Everything else: the LLM decides (ask questions, mirror back,
         # propose /save, suggest Malik — all via the system prompt).
@@ -405,7 +410,8 @@ class HostAgentService:
 
         # Get existing L0 body (without frontmatter)
         prev_body = (ctx_svc.read_l0_body() or "").strip()
-        buffer_content = "\n".join(self._buffer).strip()
+        cache_content = ctx_svc.read_cache()
+        buffer_content = (cache_content or "\n".join(self._buffer)).strip()
 
         # Build full dialogue transcript for LLM compilation.
         # Richer than buffer alone: captures context even when buffer has short confirmations.
@@ -508,6 +514,7 @@ Preserve all factual content. Skip conversational filler. Output ONLY raw Markdo
 
         # Clear buffer
         self._buffer.clear()
+        ctx_svc.clear_cache()
 
         # Derive version from filename
         m = re.match(r"^v(\d+)_", path.name)
@@ -1074,6 +1081,21 @@ Preserve all factual content. Skip conversational filler. Output ONLY raw Markdo
                 f"{self._project_brief.strip()}\n"
                 "Do NOT re-ask the user to describe this. Reference it as needed."
             )
+
+        # Pending shared cache (incremental notes not yet frozen into L0).
+        try:
+            from armance.service.context_service import ContextService
+            _cache = ContextService(self.armance_root).read_cache()
+            if _cache:
+                sections.append(
+                    "## Pending context cache (not yet saved)\n"
+                    f"{_cache}\n"
+                    "When this looks like a coherent milestone (or it grows large), "
+                    "propose saving it: recap what you'd add, then emit "
+                    "[EXECUTE:/save] ONLY after the user confirms."
+                )
+        except Exception:
+            logger.debug("cache inject failed", exc_info=True)
 
         # Inject team roster
         if self._team_roster:
