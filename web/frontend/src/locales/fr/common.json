@@ -58,7 +58,7 @@
       "cancel": "Annuler",
       "confirm": "Confirmer"
     },
-    "reader": { "download": "Télécharger", "opened_from": "Ouvert depuis : {{path}}" }
+    "reader": { "download": "Télécharger", "download_label": "Télécharger", "download_aria": "Télécharger ce livrable", "opened_from": "Ouvert depuis : {{path}}" }
   },
   "chat": {
     "input": { "placeholder": "Parlez librement.", "busy_label": "{{name}} réfléchit…", "send_aria": "Envoyer le message" },
@@ -105,8 +105,14 @@
       "hypotheses": "Hypothèses",
       "mode": "Mode",
       "mode_interactive": "interactif",
-      "mode_autonomous": "autonome"
+      "mode_autonomous": "autonome",
+      "loading": "Chargement…",
+      "compiling": "Compilation du livrable…",
+      "compiling_desc": "L'équipe assemble ses conclusions.",
+      "downloads": "Téléchargements"
     },
+    "mode": { "title_aria": "Mode d'exécution" },
+    "sources": { "empty": "Aucune source citée pour l'instant.", "open_aria": "Ouvrir la source" },
     "ledger": {
       "retained": "Retenus",
       "rejected": "Rejetés",
@@ -122,9 +128,40 @@
     "picker": {
       "quick": "Un avis rapide",
       "deep": "Une analyse approfondie, challengée",
+      "quick_title": "Un regard rapide",
+      "quick_desc": "Une passe, rapide. Idéal pour une première lecture.",
+      "deep_title": "Une analyse approfondie et contradictoire",
+      "deep_desc": "Plusieurs tours, mis à l'épreuve. Plus lent, plus fin.",
+      "hint_interactive": "Une confirmation vous est demandée aux étapes clés.",
+      "hint_autonomous": "S'exécute de bout en bout sans interruption.",
       "mode_interactive": "interactif",
       "mode_autonomous": "autonome",
       "launch": "Lancer"
+    },
+    "history": {
+      "title": "Exécutions passées",
+      "empty": "Aucune exécution passée pour l'instant.",
+      "duration_aria": "Durée de l'exécution",
+      "time_just_now": "à l'instant",
+      "time_mins": "il y a {count} min",
+      "time_hours": "il y a {count} h",
+      "time_days": "il y a {count} j"
+    },
+    "delete": {
+      "error": "Impossible de supprimer cette exécution.",
+      "aria": "Supprimer l'exécution",
+      "blocked_active": "Impossible de supprimer une exécution en cours.",
+      "confirm_title": "Supprimer cette exécution ?",
+      "confirm_hint": "Cela supprime définitivement l'exécution et ses résultats.",
+      "confirm_no": "Annuler",
+      "confirm_yes": "Supprimer"
+    },
+    "interrupt": {
+      "error": "Impossible d'interrompre cette exécution.",
+      "label": "Interrompre",
+      "confirm_title": "Interrompre cette exécution ?",
+      "confirm_no": "Continuer",
+      "confirm_yes": "Interrompre"
     }
   },
   "hypotheses": {

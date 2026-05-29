@@ -87,8 +87,9 @@ test.describe("Workflow Live Interruption E2E", () => {
     await expect(popover).toBeVisible();
     await expect(popover).toContainText(/interrupt/i);
 
-    // Confirm interruption by clicking yes
-    const yesBtn = popover.getByRole("button", { name: /yes/i });
+    // Confirm interruption by clicking the confirm button (stable testid —
+    // the visible label is i18n-resolved and locale-dependent).
+    const yesBtn = popover.getByTestId("interrupt-confirm");
     await expect(yesBtn).toBeVisible();
     await yesBtn.click();
 

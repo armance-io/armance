@@ -58,7 +58,7 @@
       "cancel": "Cancel",
       "confirm": "Confirm"
     },
-    "reader": { "download": "Download", "opened_from": "Opened from: {{path}}" }
+    "reader": { "download": "Download", "download_label": "Download", "download_aria": "Download this deliverable", "opened_from": "Opened from: {{path}}" }
   },
   "chat": {
     "input": { "placeholder": "Speak freely.", "busy_label": "{{name}} is thinking…", "send_aria": "Send message" },
@@ -105,8 +105,14 @@
       "hypotheses": "Hypotheses",
       "mode": "Mode",
       "mode_interactive": "interactive",
-      "mode_autonomous": "autonomous"
+      "mode_autonomous": "autonomous",
+      "loading": "Loading…",
+      "compiling": "Compiling the deliverable…",
+      "compiling_desc": "The team is assembling its findings.",
+      "downloads": "Downloads"
     },
+    "mode": { "title_aria": "Run mode" },
+    "sources": { "empty": "No sources cited yet.", "open_aria": "Open source" },
     "ledger": {
       "retained": "Retained",
       "rejected": "Rejected",
@@ -122,9 +128,40 @@
     "picker": {
       "quick": "A quick perspective",
       "deep": "A thorough, challenged analysis",
+      "quick_title": "A quick perspective",
+      "quick_desc": "One pass, fast. Good for a first read.",
+      "deep_title": "A thorough, challenged analysis",
+      "deep_desc": "Multiple rounds, cross-examined. Slower, sharper.",
+      "hint_interactive": "You are asked to confirm at key steps.",
+      "hint_autonomous": "Runs end to end without interruption.",
       "mode_interactive": "interactive",
       "mode_autonomous": "autonomous",
       "launch": "Launch"
+    },
+    "history": {
+      "title": "Past runs",
+      "empty": "No past runs yet.",
+      "duration_aria": "Run duration",
+      "time_just_now": "just now",
+      "time_mins": "{count} min ago",
+      "time_hours": "{count} h ago",
+      "time_days": "{count} d ago"
+    },
+    "delete": {
+      "error": "Could not delete this run.",
+      "aria": "Delete run",
+      "blocked_active": "Cannot delete a running run.",
+      "confirm_title": "Delete this run?",
+      "confirm_hint": "This permanently removes the run and its outputs.",
+      "confirm_no": "Cancel",
+      "confirm_yes": "Delete"
+    },
+    "interrupt": {
+      "error": "Could not interrupt this run.",
+      "label": "Interrupt",
+      "confirm_title": "Interrupt this run?",
+      "confirm_no": "Keep running",
+      "confirm_yes": "Interrupt"
     }
   },
   "hypotheses": {

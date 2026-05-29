@@ -60,7 +60,7 @@ jobs:
       - name: Run web backend tests
         run: |
           if [ -d "web/backend/tests" ]; then
-            cd web && uv run pytest -q --tb=short
+            cd web && uv run pytest -q --tb=short --cov=backend --cov-fail-under=85
           else
             echo "No web backend tests yet — skipping"
           fi
@@ -94,10 +94,22 @@ jobs:
             cd web/frontend && pnpm lint && pnpm build
           fi
 
-      - name: Playwright smoke E2E
+      - name: Unit tests + coverage
         run: |
-          if [ -d "web/frontend/tests/e2e" ]; then
-            cd web/frontend && pnpm test:e2e
+          if [ -d "web/frontend" ]; then
+            cd web/frontend && pnpm test
+          fi
+
+      - name: Install Playwright browsers
+        run: |
+          if [ -d "web/frontend/e2e" ]; then
+            cd web/frontend && pnpm exec playwright install --with-deps chromium
+          fi
+
+      - name: Playwright E2E
+        run: |
+          if [ -d "web/frontend/e2e" ]; then
+            cd web/frontend && pnpm e2e
           else
             echo "No E2E tests yet — skipping"
           fi
