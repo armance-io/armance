@@ -24,7 +24,7 @@ test.describe("DepthPicker Workflow Launch E2E", () => {
     await page.goto("/projects/default/sessions/session-1/workflows/my-workflow");
 
     // 1. Verify workflow name title displays
-    await expect(page.getByRole("heading", { name: "my-workflow" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "my-workflow" }).first()).toBeVisible();
 
     // 2. Select the "Thorough, challenged analysis" (deep) card
     const deepCard = page.getByRole("radio", { name: "A thorough, challenged analysis" });

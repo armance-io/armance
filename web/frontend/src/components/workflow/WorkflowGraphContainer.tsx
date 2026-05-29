@@ -21,7 +21,7 @@ export interface WorkflowGraphContainerProps {
   pid: string;
   sid: string;
   workflowName: string;
-  runId?: string;
+  runId?: string | undefined;
 }
 
 export const WorkflowGraphContainer: FC<WorkflowGraphContainerProps> = ({
