@@ -166,7 +166,7 @@ class MainScreen(Screen[int]):
         chat = self.query_one(ChatView)
         chat.append_message(
             "system",
-            _t("greeting.welcome", session_id=self.state.id[:12]),
+            _t("greeting.welcome"),
             label="armance",
         )
 

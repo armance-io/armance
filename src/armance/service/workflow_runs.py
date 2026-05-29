@@ -174,6 +174,14 @@ def _ms_between(started_iso: str | None, ended_iso: str | None) -> int | None:
 def write_synthesis(artefact: RunArtefact, content: str) -> Path:
     path = artefact.synthesis_path()
     path.write_text(content, encoding="utf-8")
+    # D.8 — extract Mona's structured sidecars (arguments.json + sources.json)
+    # alongside the synthesis. No-op when the synthesis carries no fenced
+    # ```json argument-ledger / source-ledger blocks.
+    try:
+        from armance.service.argument_ledger import persist_sidecars
+        persist_sidecars(content, artefact.run_dir)
+    except Exception:
+        logger.exception("argument_ledger persist failed for run %s", artefact.run_dir)
     return path
 
 

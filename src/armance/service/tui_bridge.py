@@ -150,22 +150,18 @@ def find_agent_by_name(agents: list[Agent], name: str) -> Agent | None:
 # Natural-language switch detection
 # ---------------------------------------------------------------------------
 
-# Patterns: "je veux discuter avec X" / "talk to X" / "switch to X"
-_SWITCH_PATTERNS = [
-    re.compile(r"\b(?:discuter|parler|talk)(?:\s+\w+){0,3}\s+avec\s+(?:un\s+|une\s+|le\s+|la\s+)?(?P<target>[\w\-]+)", re.I),
-    re.compile(r"\b(?:talk|chat|speak)\s+to\s+(?:a\s+|the\s+)?(?P<target>[\w\-]+)", re.I),
-    re.compile(r"\b(?:switch|change)\s+(?:to\s+)?(?:a\s+|the\s+)?(?P<target>[\w\-]+)", re.I),
-    re.compile(r"^\s*@(?P<target>[\w\-]+)", re.I),
-]
+# Switch is EXPLICIT: only `@<Name>` at the start of the message (with or
+# without trailing text) triggers it. Natural-language verbs ("talk to",
+# "change", "switch to") matched too aggressively — saying "Malik, change
+# Priya's model" used to silently switch to Priya. Use `/switch` for the
+# verb-driven path.
+_SWITCH_AT_RE = re.compile(r"^\s*@(?P<target>[\w\-]+)", re.I)
 
 
 def detect_switch_intent(text: str) -> str | None:
-    """Return the target name or role if the text looks like a switch request."""
-    for pat in _SWITCH_PATTERNS:
-        m = pat.search(text)
-        if m:
-            return m.group("target")
-    return None
+    """Return the target name if the text starts with `@<Name>`, else None."""
+    m = _SWITCH_AT_RE.match(text)
+    return m.group("target") if m else None
 
 
 # ---------------------------------------------------------------------------
@@ -242,7 +238,7 @@ async def dispatch_input(text: str, ctx: LoopContext) -> tuple[str, str | None]:
             reply = t("dispatch.handler_error", cmd=cmd, error=str(exc))
         return (reply, ctx.state.current_agent)
 
-    # 2) Natural-language switch ("je veux discuter avec Tom")
+    # 2) Explicit `@<Name>` switch (with optional trailing text to forward)
     # Special case: @mention with trailing text → switch + forward the text
     _at_match = re.match(r"^\s*@([\w\-]+)\s*[,\s]\s*(.+)", text_stripped, re.DOTALL)
     _at_mention_text: str | None = None

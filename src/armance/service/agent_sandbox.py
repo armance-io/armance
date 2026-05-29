@@ -35,7 +35,7 @@ _ROLE_TAG_ALLOWLIST: dict[str, set[str]] = {
         "ingest-docs", "load", "forget", "rag-status",
     },
     "malik": {"recruit", "dismiss-all", "library-status"},
-    "kim": {"workflow-design", "workflow-run", "library-status"},
+    "kim": {"workflow-design", "workflow-run", "workflow-stop", "library-status"},
     "mona": {"library-status", "save-deliverable", "load-run"},
     "specialist": {"load-run"},
 }

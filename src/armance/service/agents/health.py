@@ -37,6 +37,10 @@ class HealthResult:
 
 _PROBE_MESSAGES = [{"role": "user", "content": "hi"}]
 _PROBE_TIMEOUT_SECONDS = 15.0
+# Opus and other 'high' tier models can take 7s+ to cold-start through the
+# Claude Agent SDK subprocess; under parallel fan-out (recruit of 8+ agents)
+# they thrash and time out at 15s. Give the heavy tier more headroom.
+_PROBE_TIMEOUT_HIGH_SECONDS = 60.0
 
 
 async def check_agent_health(agent: Agent, cfg) -> HealthResult:
@@ -51,6 +55,7 @@ async def check_agent_health(agent: Agent, cfg) -> HealthResult:
             agent=agent.name, status="error:client", detail=str(exc),
         )
 
+    timeout = _timeout_for(agent)
     try:
         import asyncio
         resp = await asyncio.wait_for(
@@ -59,14 +64,14 @@ async def check_agent_health(agent: Agent, cfg) -> HealthResult:
                 model=agent.model,
                 max_tokens=1,
             ),
-            timeout=_PROBE_TIMEOUT_SECONDS,
+            timeout=timeout,
         )
         _ = resp
         return HealthResult(agent=agent.name, status="ok")
     except asyncio.TimeoutError:
         return HealthResult(
             agent=agent.name, status="error:timeout",
-            detail=f"no reply within {_PROBE_TIMEOUT_SECONDS}s",
+            detail=f"no reply within {timeout}s",
         )
     except Exception as exc:
         msg = str(exc)
@@ -86,13 +91,32 @@ def _extract_http_code(msg: str) -> str:
     return m.group(1) if m else ""
 
 
+def _timeout_for(agent: Agent) -> float:
+    """High-tier Claude models (opus) need extra time when many agents
+    are probed in parallel through the SDK subprocess."""
+    mid = (agent.model or "").lower()
+    if agent.provider == "claude-code" and "opus" in mid:
+        return _PROBE_TIMEOUT_HIGH_SECONDS
+    return _PROBE_TIMEOUT_SECONDS
+
+
 async def check_many(agents: list[Agent], cfg) -> list[HealthResult]:
-    """Fan out health checks in parallel."""
+    """Fan out health checks in parallel, with a per-provider concurrency
+    cap so the claude-code SDK isn't asked to spawn N subprocesses at once
+    (causes spurious timeouts on opus models)."""
     if not agents:
         return []
     import asyncio
+    cc_limit = asyncio.Semaphore(2)
+
+    async def _guarded(a: Agent) -> HealthResult:
+        if a.provider == "claude-code":
+            async with cc_limit:
+                return await check_agent_health(a, cfg)
+        return await check_agent_health(a, cfg)
+
     return await asyncio.gather(
-        *(check_agent_health(a, cfg) for a in agents),
+        *(_guarded(a) for a in agents),
         return_exceptions=False,
     )
 

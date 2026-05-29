@@ -22,6 +22,17 @@ logger = logging.getLogger(__name__)
 
 ALL_PROVIDERS = ("openrouter", "claude-code", "custom-openai", "gemini")
 
+
+# Styling for single-choice select prompts. The default questionary style
+# leaves `highlighted` and `pointer` empty, which collapses to a static
+# pointer glyph and zero visual feedback when arrows move — users couldn't
+# tell which row the cursor was on. Make the active row obvious.
+_SELECT_STYLE = questionary.Style([
+    ("pointer", "fg:#FFA500 bold"),
+    ("highlighted", "fg:#FFA500 bold"),
+    ("selected", "fg:#FFA500 bold"),
+])
+
 LANGUAGE_CHOICES = [
     ("English", "en"),
     ("Français", "fr"),
@@ -156,7 +167,7 @@ def _ask_embedding(
             available_prov = questionary.select(
                 _tr("prompt_provider"),
                 choices=non_claude,
-                use_indicator=True,
+                style=_SELECT_STYLE,
             ).ask() or available_prov
         model_id_manual = (questionary.text(_tr("prompt_manual_id")).ask() or "").strip()
         if not model_id_manual:
@@ -197,6 +208,72 @@ def _ask_embedding(
     prov, model = choice_meta[chosen]
     print("\n  ✅  " + _tr("confirmed", provider=prov, model=model) + "\n")
     return (prov, model)
+
+
+def _fetch_chat_models(
+    provider_name: str,
+    providers: list["ProviderConfig"],
+) -> list[tuple[str, str]]:
+    """Return list of (model_id, tier) for chat/LLM models of a single provider.
+
+    Uses the provider class directly — cfg isn't built yet at init time.
+    Empty list when provider can't enumerate (e.g. custom-openai).
+    """
+    from armance.providers.discovery import _provider_for  # type: ignore
+    from armance.config import Config as _Cfg
+
+    # Build a stub cfg shim with .providers so _provider_for picks up the api_key.
+    cfg = _Cfg(providers=providers)
+    prov = _provider_for(provider_name, cfg)
+    if prov is None:
+        return []
+    try:
+        models = asyncio.run(prov.list_models())
+    except Exception:
+        logger.exception("init: list_models failed for %s", provider_name)
+        return []
+    return [(m.id, m.tier) for m in models]
+
+
+_TIER_GEM = {"free": "🟢", "low": "🟡", "medium": "🟠", "high": "🔴"}
+
+
+def _ask_default_model(
+    default_provider: str | None,
+    providers: list["ProviderConfig"],
+) -> str:
+    """Pick the default model via typeahead autocomplete.
+
+    Lists models from the chosen provider's catalogue as `provider / model_id`,
+    matching the embedding picker UX. Falls back to free-text when the provider
+    can't enumerate (custom-openai) or discovery returns nothing.
+    """
+    if not default_provider:
+        return (questionary.text("Default model").ask() or "").strip()
+    models = _fetch_chat_models(default_provider, providers)
+    if not models:
+        return (
+            questionary.text(f"Default model for {default_provider}").ask() or ""
+        ).strip()
+    completions: list[str] = []
+    meta: dict[str, str] = {}
+    for mid, tier in models:
+        gem = _TIER_GEM.get(tier, "")
+        display = f"{default_provider} / {mid}  {gem}".rstrip()
+        completions.append(display)
+        meta[display] = mid
+    chosen = questionary.autocomplete(
+        "Default model (type to filter, Enter to confirm)",
+        choices=completions,
+        match_middle=True,
+    ).ask()
+    chosen = (chosen or "").strip()
+    if not chosen:
+        return ""
+    if chosen in meta:
+        return meta[chosen]
+    # User typed something not in the list — accept as raw id.
+    return chosen
 
 
 _DEFAULT_BASE_URLS = {
@@ -312,8 +389,8 @@ def cmd_init(
         "Interface language (agents will reply in this language)",
         choices=[label for label, _ in LANGUAGE_CHOICES],
         default=lang_default,
-        use_indicator=True,
         use_arrow_keys=True,
+        style=_SELECT_STYLE,
     ).ask() or lang_default
     language = next((code for label, code in LANGUAGE_CHOICES if label == lang_label), "en")
     from armance.nls import set_language as _set_lang
@@ -360,17 +437,17 @@ def cmd_init(
     default_provider = questionary.select(
         "Default provider",
         choices=[p.name for p in providers],
-        use_indicator=True,
         use_arrow_keys=True,
+        style=_SELECT_STYLE,
     ).ask()
-    default_model = questionary.text("Default model").ask() or ""
+    default_model = _ask_default_model(default_provider, providers)
 
     budget_effort = questionary.select(
         "Budget effort — cost constraint for agents (adjustable at runtime via /effort)",
         choices=["free-first", "low", "medium", "high", "adaptive"],
         default="free-first",
-        use_indicator=True,
         use_arrow_keys=True,
+        style=_SELECT_STYLE,
     ).ask() or "free-first"
 
     embedding_provider, embedding_model = _ask_embedding(selected, providers, language=language)
@@ -437,11 +514,66 @@ def cmd_index(repo_root: Path | None = None) -> int:
     return 0
 
 
-def cmd_run(repo_root: Path | None = None) -> int:
+def _pick_older_session(armance_root: Path, console):
+    # -> SessionState | None  (annotation deferred to avoid an eager import
+    # at module load — cli.py is the entry path and we want it light.)
+    """Show every persisted session, newest first, and let the user pick one.
+
+    Returns the loaded SessionState, or None if the user aborts. Items are
+    sorted by `updated_at` desc, so the first row is always the most recent
+    even after Y/N/O loops.
+    """
+    from armance.service.session import list_sessions, load_state
+    sessions = list_sessions(armance_root)
+    if not sessions:
+        console.print("[dim]No older sessions on disk.[/dim]")
+        return None
+    console.print()
+    console.print("[bold]Available sessions[/bold] (newest first):")
+    for i, s in enumerate(sessions, start=1):
+        parent = f" ← {s['parent_id']}" if s.get("parent_id") else ""
+        console.print(
+            f"  [cyan]{i:2}[/cyan]  {s['id']}  "
+            f"[dim]{s['updated_at']}[/dim]  · {s['turns']} turns"
+            f" · ~{s['est_tokens']:,} tokens{parent}"
+        )
+    try:
+        raw = input("Pick a session (number or id, blank to cancel): ").strip()
+    except (KeyboardInterrupt, EOFError):
+        return None
+    if not raw:
+        return None
+    picked_id: str | None = None
+    if raw.isdigit():
+        idx = int(raw) - 1
+        if 0 <= idx < len(sessions):
+            picked_id = sessions[idx]["id"]
+    else:
+        for s in sessions:
+            if s["id"].startswith(raw):
+                picked_id = s["id"]
+                break
+    if picked_id is None:
+        console.print(f"[red]no match for {raw!r}[/red]")
+        return None
+    state = load_state(armance_root, picked_id)
+    console.print(f"[green]loaded session[/green] {state.id}")
+    return state
+
+
+def cmd_run(
+    repo_root: Path | None = None,
+    *,
+    session_id: str | None = None,
+) -> int:
     from rich.console import Console
 
     from armance.config import load_config, ensure_armance_tree
-    from armance.service.llm_service import TokenLedger, set_ledger
+    from armance.service.llm_service import (
+        TokenLedger,
+        set_current_session_id,
+        set_ledger,
+    )
     from armance.service.session import start_or_resume
 
     console = Console()
@@ -468,36 +600,55 @@ def cmd_run(repo_root: Path | None = None) -> int:
     # workflow without recruited roles is meaningless, so we don't
     # ship a placeholder.
 
-    # Resume picker: if a prior session exists, ask Y/N before TUI launch.
-    # Honours ARMANCE_NO_RESUME=1 for non-interactive callers (CI, agents).
     from armance.service.session import (
         latest_session_id,
         load_state,
         session_summary,
     )
-    resume = False
-    prior_id = latest_session_id(armance_root)
-    if prior_id and not os.environ.get("ARMANCE_NO_RESUME"):
-        summary = session_summary(armance_root, prior_id)
-        console.print()
-        console.print(
-            f"[dim]Previous session found:[/dim] [cyan]{prior_id}[/cyan] · "
-            f"{summary.get('turns', 0)} turns · "
-            f"~{summary.get('est_tokens', 0):,} tokens · "
-            f"last update {summary.get('last_update', '?')}"
-        )
-        try:
-            answer = input("Resume? [Y/n] ").strip().lower()
-        except (KeyboardInterrupt, EOFError):
-            answer = "n"
-        resume = answer in ("", "y", "yes", "o", "oui")
 
-    if resume:
-        state = load_state(armance_root, prior_id)
-        console.print(f"[green]resumed session[/green] {state.id}")
-    else:
+    # --session <id>: skip the picker entirely.
+    if session_id:
+        try:
+            state = load_state(armance_root, session_id)
+        except Exception:
+            console.print(f"[red]session {session_id!r} not found[/red]")
+            return 1
+        console.print(f"[green]loaded session[/green] {state.id}")
+    elif os.environ.get("ARMANCE_NO_RESUME"):
         state = start_or_resume(armance_root, resume=False)
         console.print(f"[green]session[/green] {state.id}")
+    else:
+        prior_id = latest_session_id(armance_root)
+        if not prior_id:
+            state = start_or_resume(armance_root, resume=False)
+            console.print(f"[green]session[/green] {state.id}")
+        else:
+            summary = session_summary(armance_root, prior_id)
+            console.print()
+            console.print(
+                f"[dim]Previous session:[/dim] [cyan]{prior_id}[/cyan] · "
+                f"{summary.get('turns', 0)} turns · "
+                f"~{summary.get('est_tokens', 0):,} tokens · "
+                f"last update {summary.get('last_update', '?')}"
+            )
+            try:
+                answer = input("Resume previous? [Y]es / [n]ew / [o]lder: ").strip().lower()
+            except (KeyboardInterrupt, EOFError):
+                answer = "n"
+            # Resume = default (empty Enter), Y, yes, oui. 'o' / 'older' jumps
+            # to the older-session picker — kept distinct from 'oui' on purpose.
+            if answer in ("", "y", "yes", "oui"):
+                state = load_state(armance_root, prior_id)
+                console.print(f"[green]resumed session[/green] {state.id}")
+            elif answer in ("o", "older", "a", "ancien"):
+                state = _pick_older_session(armance_root, console)
+                if state is None:
+                    return 0
+            else:
+                state = start_or_resume(armance_root, resume=False)
+                console.print(f"[green]new session[/green] {state.id}")
+
+    set_current_session_id(state.id)
 
     from armance.service.session import Session
     session = Session(state, armance_root)
@@ -865,7 +1016,15 @@ def main(argv: list[str] | None = None) -> int:
             yes=init_args.yes,
         )
     if cmd == "run":
-        return cmd_run(root)
+        run_parser = argparse.ArgumentParser(prog="armance run", add_help=True)
+        run_parser.add_argument(
+            "--session",
+            dest="session_id",
+            default=None,
+            help="Load a specific session id, skipping the resume picker.",
+        )
+        run_args = run_parser.parse_args(remaining)
+        return cmd_run(root, session_id=run_args.session_id)
     if cmd == "index":
         return cmd_index(root)
     if cmd == "doctor":
