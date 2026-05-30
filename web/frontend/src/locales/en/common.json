@@ -181,11 +181,47 @@
   },
   "admin": {
     "tabs": { "config": "Configuration", "secrets": "Secrets", "logs": "Logs", "stats": "Statistics", "agents": "Agents" },
-    "config": { "title": "Configuration", "save": "Save" },
-    "secrets": { "title": "Secrets", "masked": "•••• {{last4}}", "edit": "Edit", "delete": "Delete" },
-    "logs": { "title": "Logs", "level": "Level", "search": "Search" },
+    "config": {
+      "title": "Configuration",
+      "save": "Save",
+      "saving": "Saving…",
+      "default_provider": "Default provider",
+      "default_model": "Default model",
+      "budget_effort": "Budget effort",
+      "language": "Language",
+      "judge_model": "Judge model",
+      "log_level": "Log level",
+      "err": { "required": "Required" }
+    },
+    "secrets": {
+      "title": "Secrets",
+      "masked": "•••• {{last4}}",
+      "edit": "Edit",
+      "delete": "Delete",
+      "empty": "No secrets configured.",
+      "col": { "key": "Key", "value": "Value", "actions": "Actions" },
+      "action": { "edit": "Edit", "delete": "Delete", "reveal": "Reveal", "save": "Save", "cancel": "Cancel" },
+      "confirm_delete": "Delete this secret?"
+    },
+    "logs": {
+      "title": "Logs",
+      "level": "Level",
+      "search": "Search",
+      "empty": "No log entries.",
+      "loading_more": "Loading…",
+      "filter": { "agent": "Agent", "all_agents": "All agents", "from": "From", "to": "To", "search": "Search" }
+    },
     "stats": { "title": "Statistics", "tokens_in": "Tokens in", "tokens_out": "Tokens out", "cost": "Cost", "messages": "Messages", "per_agent": "Per agent", "top5_cost": "Top 5 by cost" },
-    "agents": { "title": "Agents", "model": "Model", "reasoning": "Reasoning effort" }
+    "agents": {
+      "title": "Agents",
+      "model": "Model",
+      "reasoning": "Reasoning effort",
+      "provider": "Provider",
+      "persona": "Persona",
+      "persona_hint": "Edit persona via Malik chat.",
+      "save": "Save",
+      "saving": "Saving…"
+    }
   },
   "audio": {
     "voice": { "idle_aria": "Hold to talk", "recording": "Recording…", "error": "Recording failed" },
