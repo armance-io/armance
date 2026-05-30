@@ -19,25 +19,6 @@ router = APIRouter()
 
 _LOOPBACK = {"127.0.0.1", "::1"}
 
-
-def _guard_localhost(request: Request) -> None:
-    host = request.client.host if request.client else None
-    if host not in _LOOPBACK:
-        raise _forbidden()
-
-
-def _forbidden() -> Exception:
-    from fastapi import HTTPException
-    from fastapi.responses import JSONResponse
-    # Return a JSONResponse directly via a helper to get top-level {"error":...}
-    # We raise a special marker; the route catches it.
-    return _LockhostForbidden()
-
-
-class _LockhostForbidden(Exception):
-    pass
-
-
 @router.get("/projects/{pid}/admin/secrets")
 async def get_secrets(
     pid: str,

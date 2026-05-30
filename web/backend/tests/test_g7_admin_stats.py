@@ -8,7 +8,6 @@ Tests:
 from __future__ import annotations
 
 import json
-import time
 import pytest
 from pathlib import Path
 from httpx import AsyncClient

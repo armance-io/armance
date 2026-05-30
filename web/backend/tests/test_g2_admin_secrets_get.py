@@ -11,7 +11,6 @@ from __future__ import annotations
 import pytest
 from pathlib import Path
 from httpx import AsyncClient, ASGITransport
-import pytest_asyncio
 import os
 
 
