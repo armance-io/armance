@@ -1,1 +1,39 @@
-{}
+{
+  "visual": {
+    "empty": {
+      "workflow": { "cta": "Workflow starten" },
+      "session": { "cta": "Neue Sitzung" },
+      "deliberation": { "title": "Noch keine Daten", "hint": "Starten Sie eine Beratung, um Statistiken zu sammeln." }
+    }
+  },
+  "checkpoint": {
+    "drawer": {
+      "submitted_title": "Antwort aufgezeichnet",
+      "submitted_desc": "Ihre Antwort wurde erfolgreich gespeichert."
+    }
+  },
+  "sidebar": {
+    "nav_section": {
+      "workspace": "Arbeitsbereich",
+      "account": "Konto"
+    },
+    "tabs": {
+      "session_active": "Aktive Sitzung",
+      "settings": "Einstellungen"
+    }
+  },
+  "admin": {
+    "config": {
+      "budget": {
+        "free-first": "Kostenlos zuerst",
+        "low": "Niedrig",
+        "medium": "Mittel",
+        "high": "Hoch"
+      }
+    },
+    "logs": {
+      "level_changed_title": "Protokollebene aktualisiert",
+      "level_changed_desc": "Die Protokollebene wurde in {level} geändert."
+    }
+  }
+}

@@ -1,1 +1,39 @@
-{}
+{
+  "visual": {
+    "empty": {
+      "workflow": { "cta": "启动工作流" },
+      "session": { "cta": "新建会话" },
+      "deliberation": { "title": "暂无数据", "hint": "启动审议以收集统计数据。" }
+    }
+  },
+  "checkpoint": {
+    "drawer": {
+      "submitted_title": "已记录回复",
+      "submitted_desc": "您的回复已成功保存。"
+    }
+  },
+  "sidebar": {
+    "nav_section": {
+      "workspace": "工作区",
+      "account": "账户"
+    },
+    "tabs": {
+      "session_active": "当前会话",
+      "settings": "设置"
+    }
+  },
+  "admin": {
+    "config": {
+      "budget": {
+        "free-first": "免费优先",
+        "low": "低",
+        "medium": "中",
+        "high": "高"
+      }
+    },
+    "logs": {
+      "level_changed_title": "日志级别已更新",
+      "level_changed_desc": "日志级别已更改为 {level}。"
+    }
+  }
+}

@@ -1,39 +1,14 @@
 "use client";
 
-import { type CSSProperties, type FC, useEffect, useState } from "react";
-import { useRouteParams } from "@/lib/routeParams";
+import { type CSSProperties, type FC } from "react";
+import { useLatestSession } from "@/lib/useLatestSession";
 
 export interface SidebarNavProps {
   t: (key: string) => string;
 }
 
 export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
-  const { pid = "default", sid: urlSid } = useRouteParams();
-  const [sid, setSid] = useState<string | null>(urlSid || null);
-
-  // Sync and persist latest session ID to localStorage so navigation remains active outside session pages
-  useEffect(() => {
-    if (urlSid) {
-      setSid(urlSid);
-      localStorage.setItem("armance.latest-session-id", urlSid);
-    } else {
-      const stored = localStorage.getItem("armance.latest-session-id");
-      if (stored) {
-        setSid(stored);
-      } else {
-        // Fallback to fetch latest session
-        fetch("/api/projects/default/sessions/latest")
-          .then((res) => (res.ok ? res.json() : null))
-          .then((data) => {
-            if (data && data.id) {
-              setSid(data.id);
-              localStorage.setItem("armance.latest-session-id", data.id);
-            }
-          })
-          .catch(console.error);
-      }
-    }
-  }, [urlSid]);
+  const { pid, sid } = useLatestSession();
 
   const pathname = typeof window !== "undefined" ? window.location.pathname : "";
 
@@ -97,7 +72,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-      <p style={sectionHeaderStyle}>{t("sidebar:nav_section.workspace") || "Espace de travail"}</p>
+      <p style={sectionHeaderStyle}>{t("sidebar:nav_section.workspace")}</p>
       <nav style={navContainerStyle}>
         <a
           href={sid ? getWorkflowLink() : "#"}
@@ -106,7 +81,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
             if (!sid) e.preventDefault();
           }}
         >
-          {t("sidebar:tabs.session_active") || "Session en cours"}
+          {t("sidebar:tabs.session_active")}
         </a>
         <a
           href={sid ? getLibraryLink() : "#"}
@@ -115,7 +90,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
             if (!sid) e.preventDefault();
           }}
         >
-          {t("sidebar:tabs.library") || "Documents"}
+          {t("sidebar:tabs.library")}
         </a>
         <a
           href={sid ? getDeliverablesLink() : "#"}
@@ -124,14 +99,14 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
             if (!sid) e.preventDefault();
           }}
         >
-          {t("sidebar:tabs.deliverables") || "Résultats"}
+          {t("sidebar:tabs.deliverables")}
         </a>
       </nav>
 
-      <p style={sectionHeaderStyle}>{t("sidebar:nav_section.account") || "Compte"}</p>
+      <p style={sectionHeaderStyle}>{t("sidebar:nav_section.account")}</p>
       <nav style={navContainerStyle}>
         <a href={getAdminLink()} style={linkStyle(isTabActive("admin"))}>
-          {t("sidebar:tabs.settings") || "Paramètres"}
+          {t("sidebar:tabs.settings")}
         </a>
       </nav>
     </div>

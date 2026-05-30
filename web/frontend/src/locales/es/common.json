@@ -1,1 +1,39 @@
-{}
+{
+  "visual": {
+    "empty": {
+      "workflow": { "cta": "Iniciar flujo de trabajo" },
+      "session": { "cta": "Nueva sesión" },
+      "deliberation": { "title": "No hay datos aún", "hint": "Inicie una deliberación para recopilar estadísticas." }
+    }
+  },
+  "checkpoint": {
+    "drawer": {
+      "submitted_title": "Respuesta registrada",
+      "submitted_desc": "Su respuesta ha sido guardada exitosamente."
+    }
+  },
+  "sidebar": {
+    "nav_section": {
+      "workspace": "Espacio de trabajo",
+      "account": "Cuenta"
+    },
+    "tabs": {
+      "session_active": "Sesión activa",
+      "settings": "Ajustes"
+    }
+  },
+  "admin": {
+    "config": {
+      "budget": {
+        "free-first": "Gratuito primero",
+        "low": "Bajo",
+        "medium": "Medio",
+        "high": "Alto"
+      }
+    },
+    "logs": {
+      "level_changed_title": "Nivel de registro actualizado",
+      "level_changed_desc": "El nivel de registro se ha cambiado a {level}."
+    }
+  }
+}

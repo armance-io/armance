@@ -27,9 +27,10 @@
     "theme": { "toggle_aria": "Basculer le thème" },
     "empty": {
       "library": { "title": "Aucun document encore", "hint": "Importez un fichier pour commencer.", "cta": "Importer" },
-      "workflow": { "title": "Aucun workflow en cours", "hint": "Lancez-en un via Kim." },
-      "session": { "title": "Une nouvelle séance commence", "hint": "Décrivez une décision que vous pesez, ou déposez un document." },
-      "shell": { "title": "Choisissez une séance", "hint": "Ouvrez-en une dans la barre latérale, ou démarrez un projet." }
+      "workflow": { "title": "Aucun workflow en cours", "hint": "Lancez-en un via Kim.", "cta": "Lancer le workflow" },
+      "session": { "title": "Une nouvelle séance commence", "hint": "Décrivez une décision que vous pesez, ou déposez un document.", "cta": "Nouvelle session" },
+      "shell": { "title": "Choisissez une séance", "hint": "Ouvrez-en une dans la barre latérale, ou démarrez un projet." },
+      "deliberation": { "title": "Aucune donnée pour l'instant", "hint": "Lancez une délibération pour recueillir des statistiques." }
     }
   },
   "library": {
@@ -72,7 +73,9 @@
       "submit": "Envoyer",
       "abort": "Annuler",
       "yes": "Oui",
-      "no": "Non"
+      "no": "Non",
+      "submitted_title": "Réponse enregistrée",
+      "submitted_desc": "Votre réponse a été enregistrée avec succès."
     }
   },
   "panel": {
@@ -170,7 +173,18 @@
     "invalidator": "invalidant"
   },
   "sidebar": {
-    "tabs": { "agents": "Agents", "workflows": "Workflows", "library": "Bibliothèque", "deliverables": "Livrables" },
+    "nav_section": {
+      "workspace": "Espace de travail",
+      "account": "Compte"
+    },
+    "tabs": {
+      "agents": "Agents",
+      "workflows": "Workflows",
+      "library": "Bibliothèque",
+      "deliverables": "Livrables",
+      "session_active": "Session en cours",
+      "settings": "Paramètres"
+    },
     "deliverables": {
       "empty": "Aucun livrable encore.",
       "filter": {
@@ -190,6 +204,12 @@
       "default_provider": "Fournisseur par défaut",
       "default_model": "Modèle par défaut",
       "budget_effort": "Effort budgétaire",
+      "budget": {
+        "free-first": "Gratuit en priorité",
+        "low": "Faible",
+        "medium": "Moyen",
+        "high": "Élevé"
+      },
       "language": "Langue",
       "judge_model": "Modèle juge",
       "log_level": "Niveau de journalisation",
@@ -214,7 +234,9 @@
       "search": "Rechercher",
       "empty": "Aucune entrée de journal.",
       "loading_more": "Chargement…",
-      "filter": { "agent": "Agent", "all_agents": "Tous les agents", "from": "De", "to": "À", "search": "Rechercher" }
+      "filter": { "agent": "Agent", "all_agents": "Tous les agents", "from": "De", "to": "À", "search": "Rechercher" },
+      "level_changed_title": "Niveau de log mis à jour",
+      "level_changed_desc": "Le niveau de log a été changé en {level}."
     },
     "stats": { "title": "Statistiques", "tokens_in": "Tokens entrants", "tokens_out": "Tokens sortants", "cost": "Coût", "messages": "Messages", "per_agent": "Par agent", "top5_cost": "Top 5 par coût" },
     "agents": {

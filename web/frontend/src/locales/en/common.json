@@ -27,9 +27,10 @@
     "theme": { "toggle_aria": "Toggle theme" },
     "empty": {
       "library": { "title": "No documents yet", "hint": "Import a file to begin.", "cta": "Import" },
-      "workflow": { "title": "No workflow running", "hint": "Launch one through Kim." },
-      "session": { "title": "A new session begins", "hint": "Describe a decision you're weighing, or drop a document." },
-      "shell": { "title": "Choose a session", "hint": "Pick one in the sidebar, or open a new project." }
+      "workflow": { "title": "No workflow running", "hint": "Launch one through Kim.", "cta": "Launch workflow" },
+      "session": { "title": "A new session begins", "hint": "Describe a decision you're weighing, or drop a document.", "cta": "New session" },
+      "shell": { "title": "Choose a session", "hint": "Pick one in the sidebar, or open a new project." },
+      "deliberation": { "title": "No data yet", "hint": "Launch a deliberation to gather statistics." }
     }
   },
   "library": {
@@ -72,7 +73,9 @@
       "submit": "Send",
       "abort": "Cancel",
       "yes": "Yes",
-      "no": "No"
+      "no": "No",
+      "submitted_title": "Response Recorded",
+      "submitted_desc": "Your response has been successfully saved."
     }
   },
   "panel": {
@@ -170,7 +173,18 @@
     "invalidator": "invalidator"
   },
   "sidebar": {
-    "tabs": { "agents": "Agents", "workflows": "Workflows", "library": "Library", "deliverables": "Deliverables" },
+    "nav_section": {
+      "workspace": "Workspace",
+      "account": "Account"
+    },
+    "tabs": {
+      "agents": "Agents",
+      "workflows": "Workflows",
+      "library": "Library",
+      "deliverables": "Deliverables",
+      "session_active": "Current session",
+      "settings": "Settings"
+    },
     "deliverables": {
       "empty": "No deliverables yet.",
       "filter": {
@@ -190,6 +204,12 @@
       "default_provider": "Default provider",
       "default_model": "Default model",
       "budget_effort": "Budget effort",
+      "budget": {
+        "free-first": "Free first",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
       "language": "Language",
       "judge_model": "Judge model",
       "log_level": "Log level",
@@ -214,7 +234,9 @@
       "search": "Search",
       "empty": "No log entries.",
       "loading_more": "Loading…",
-      "filter": { "agent": "Agent", "all_agents": "All agents", "from": "From", "to": "To", "search": "Search" }
+      "filter": { "agent": "Agent", "all_agents": "All agents", "from": "From", "to": "To", "search": "Search" },
+      "level_changed_title": "Log level updated",
+      "level_changed_desc": "Log level has been changed to {level}."
     },
     "stats": { "title": "Statistics", "tokens_in": "Tokens in", "tokens_out": "Tokens out", "cost": "Cost", "messages": "Messages", "per_agent": "Per agent", "top5_cost": "Top 5 by cost" },
     "agents": {

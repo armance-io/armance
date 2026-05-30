@@ -1,1 +1,39 @@
-{}
+{
+  "visual": {
+    "empty": {
+      "workflow": { "cta": "ワークフローを開始" },
+      "session": { "cta": "新規セッション" },
+      "deliberation": { "title": "データがありません", "hint": "統計データを収集するには討議を開始してください。" }
+    }
+  },
+  "checkpoint": {
+    "drawer": {
+      "submitted_title": "回答が記録されました",
+      "submitted_desc": "回答が正常に保存されました。"
+    }
+  },
+  "sidebar": {
+    "nav_section": {
+      "workspace": "ワークスペース",
+      "account": "アカウント"
+    },
+    "tabs": {
+      "session_active": "現在のセッション",
+      "settings": "設定"
+    }
+  },
+  "admin": {
+    "config": {
+      "budget": {
+        "free-first": "無料優先",
+        "low": "低",
+        "medium": "中",
+        "high": "高"
+      }
+    },
+    "logs": {
+      "level_changed_title": "ログレベルが更新されました",
+      "level_changed_desc": "ログレベルが {level} に変更されました。"
+    }
+  }
+}
