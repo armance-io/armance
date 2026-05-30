@@ -417,8 +417,9 @@ export interface SecretEntry {
   set: boolean;
 }
 
-export async function getAdminSecrets(pid: string): Promise<SecretEntry[]> {
-  return api.get<SecretEntry[]>(`/projects/${pid}/admin/secrets`);
+export async function getAdminSecrets(pid: string, reveal?: boolean): Promise<SecretEntry[]> {
+  const url = reveal ? `/projects/${pid}/admin/secrets?reveal=true` : `/projects/${pid}/admin/secrets`;
+  return api.get<SecretEntry[]>(url);
 }
 
 export async function putAdminSecret(
@@ -445,6 +446,9 @@ export interface LogLine {
   event: string;
   agent: string;
   timestamp: string;
+  tokens_in?: number;
+  tokens_out?: number;
+  cost_usd?: number | null;
   [key: string]: unknown;
 }
 

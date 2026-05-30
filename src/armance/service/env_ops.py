@@ -45,17 +45,19 @@ def _parse_env(text: str) -> list[tuple[str, str | None, str]]:
     return result
 
 
-async def list_secrets(storage: "Storage") -> list[dict]:
-    """Return masked list of env entries: [{name, value, set}]."""
+async def list_secrets(storage: "Storage", reveal: bool = False) -> list[dict]:
+    """Return masked or clear list of env entries: [{name, value, set}]."""
     if not await storage.exists(_ENV_KEY):
         return []
     text = await storage.read_text(_ENV_KEY)
     entries: list[dict] = []
     for key, value, _ in _parse_env(text):
         if key and _KEY_RE.match(key):
+            is_base_url = key.endswith("_BASE_URL")
+            is_masked = not (reveal or is_base_url)
             entries.append({
                 "name": key,
-                "value": _mask(value) if value else "",
+                "value": (_mask(value) if is_masked else value) if value else "",
                 "set": bool(value),
             })
     return entries

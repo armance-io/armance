@@ -123,6 +123,7 @@ describe("<SecretsList />", () => {
         secrets={mockSecrets}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
+        onReveal={vi.fn()}
         t={mockT}
       />
     );
@@ -137,6 +138,7 @@ describe("<SecretsList />", () => {
         secrets={[]}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
+        onReveal={vi.fn()}
         t={mockT}
       />
     );
@@ -144,22 +146,27 @@ describe("<SecretsList />", () => {
     expect(screen.getByText("admin:secrets.empty")).toBeDefined();
   });
 
-  it("allows revealing value on mouse down and hiding on mouse up", () => {
+  it("allows revealing value on click toggle", async () => {
+    const handleReveal = vi.fn().mockResolvedValue("sk-or-v1-abcdef");
     render(
       <SecretsList
         secrets={mockSecrets}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
+        onReveal={handleReveal}
         t={mockT}
       />
     );
 
     const revealBtn = screen.getByLabelText("admin:secrets.action.reveal");
     
-    fireEvent.mouseDown(revealBtn);
-    expect(screen.getByText("sk-or-v1-abcdef")).toBeDefined();
+    fireEvent.click(revealBtn);
+    await waitFor(() => {
+      expect(handleReveal).toHaveBeenCalledWith("OPENROUTER_API_KEY");
+      expect(screen.getByText("sk-or-v1-abcdef")).toBeDefined();
+    });
 
-    fireEvent.mouseUp(revealBtn);
+    fireEvent.click(revealBtn);
     expect(screen.queryByText("sk-or-v1-abcdef")).toBeNull();
   });
 
@@ -170,6 +177,7 @@ describe("<SecretsList />", () => {
         secrets={mockSecrets}
         onEdit={handleEdit}
         onDelete={vi.fn()}
+        onReveal={vi.fn()}
         t={mockT}
       />
     );
@@ -194,6 +202,7 @@ describe("<SecretsList />", () => {
         secrets={mockSecrets}
         onEdit={vi.fn()}
         onDelete={vi.fn()}
+        onReveal={vi.fn()}
         t={mockT}
       />
     );
@@ -216,6 +225,7 @@ describe("<SecretsList />", () => {
         secrets={mockSecrets}
         onEdit={vi.fn()}
         onDelete={handleDelete}
+        onReveal={vi.fn()}
         t={mockT}
       />
     );

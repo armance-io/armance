@@ -105,7 +105,7 @@ export const LogLevelToggle: FC<LogLevelToggleProps> = ({ current, onChange, t }
               margin: 0,
               color: "var(--ink, #2a2520)",
             }}>
-              {t("admin:logs.level_changed_title") || "Confirmation"}
+              {t("admin:logs.level_changed_title")}
             </h3>
             <p style={{
               fontFamily: "var(--ff-sans, 'Inter', sans-serif)",

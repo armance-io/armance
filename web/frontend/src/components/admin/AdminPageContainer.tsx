@@ -16,7 +16,7 @@ import { LogLevelToggle } from "./LogLevelToggle";
 import { StatsDashboard, type AgentStat } from "./StatsDashboard";
 import { AgentEditor, type AgentRecord } from "./AgentEditor";
 import { FootprintTab } from "./FootprintTab";
-import { useFootprint } from "@/lib/footprint";
+import { useFootprint, getFootprint } from "@/lib/footprint";
 import {
   getAdminConfig,
   patchAdminConfig,
@@ -116,7 +116,7 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
         default_model: String(raw.default_model ?? ""),
         budget_effort: (raw.budget_effort as ConfigValues["budget_effort"]) ?? "free-first",
         language: String(raw.language ?? "en"),
-        providers: raw.providers ?? [],
+        providers: (raw.providers as ConfigValues["providers"]) ?? [],
       });
     });
   }, [pid]);
@@ -128,7 +128,7 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
       default_model: String(updated.default_model ?? ""),
       budget_effort: (updated.budget_effort as ConfigValues["budget_effort"]) ?? "free-first",
       language: String(updated.language ?? "en"),
-      providers: updated.providers ?? [],
+      providers: (updated.providers as ConfigValues["providers"]) ?? [],
     });
   };
 
@@ -202,6 +202,11 @@ const SecretsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =
     await deleteAdminSecret(pid, key);
     reload();
   };
+  const onReveal = async (key: string) => {
+    const data = await getAdminSecrets(pid, true);
+    const found = data.find((s) => s.name === key);
+    return found ? found.value : "";
+  };
 
   if (showOffline) {
     return (
@@ -229,7 +234,7 @@ const SecretsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =
 
   return (
     <div data-testid="secrets-list">
-      <SecretsList secrets={secrets} onEdit={onEdit} onDelete={onDelete} t={t} />
+      <SecretsList secrets={secrets} onEdit={onEdit} onDelete={onDelete} onReveal={onReveal} t={t} />
     </div>
   );
 };
@@ -248,10 +253,12 @@ const LogsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
       setEntries(
         res.lines.map((l, i) => ({
           id: String(i),
-          ts: l.timestamp,
-          agent: l.agent,
+          ts: l.timestamp || "",
+          agent: l.agent || "System",
           level: "info" as LogEntry["level"],
-          message: JSON.stringify(l),
+          message: l.event
+            ? `${String(l.event).toUpperCase()} — ${l.tokens_in ?? 0} In / ${l.tokens_out ?? 0} Out ($${(l.cost_usd ?? 0).toFixed(4)})`
+            : JSON.stringify(l),
           payload: l,
         })),
       );
@@ -266,10 +273,12 @@ const LogsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
       ...prev,
       ...res.lines.map((l, i) => ({
         id: `more-${i}`,
-        ts: l.timestamp,
-        agent: l.agent,
+        ts: l.timestamp || "",
+        agent: l.agent || "System",
         level: "info" as LogEntry["level"],
-        message: JSON.stringify(l),
+        message: l.event
+          ? `${String(l.event).toUpperCase()} — ${l.tokens_in ?? 0} In / ${l.tokens_out ?? 0} Out ($${(l.cost_usd ?? 0).toFixed(4)})`
+          : JSON.stringify(l),
         payload: l,
       })),
     ]);
@@ -294,20 +303,47 @@ const LogsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
 
 const StatsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
   const [agents, setAgents] = useState<AgentStat[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    void getAdminStats(pid).then((data) => {
-      setAgents(
-        Object.entries(data.agents).map(([name, s]) => ({
+    setLoading(true);
+    void Promise.all([
+      getAdminStats(pid),
+      getFootprint(pid, "agent").catch(() => null),
+    ]).then(([statsData, footprintData]) => {
+      const statsMap = statsData?.agents ?? {};
+      const footprintMap = footprintData?.by_agent ?? {};
+
+      const allAgentNames = Array.from(
+        new Set([...Object.keys(statsMap), ...Object.keys(footprintMap)]),
+      );
+
+      const merged: AgentStat[] = allAgentNames.map((name) => {
+        const s = statsMap[name] ?? { tokens_in: 0, tokens_out: 0, cost_usd: 0, msg_count: 0 };
+        const f = footprintMap[name] ?? { gco2e: 0, water_ml: 0, has_estimate: false };
+        return {
           agent: name,
           tokens_in: s.tokens_in,
           tokens_out: s.tokens_out,
           cost: s.cost_usd,
           messages: s.msg_count,
-        })),
-      );
+          gco2e: f.gco2e,
+          water_ml: f.water_ml,
+          has_estimate: f.has_estimate,
+        };
+      });
+
+      setAgents(merged);
+      setLoading(false);
+    }).catch((err) => {
+      console.error(err);
+      setLoading(false);
     });
   }, [pid]);
+
+  if (loading) {
+    return <div style={{ padding: 20, color: tokens.inkSoft, fontFamily: tokens.ffSans }}>{t("app:loading")}</div>;
+  }
 
   return (
     <div data-testid="stats-dashboard">
