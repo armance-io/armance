@@ -44,6 +44,50 @@ class ContextService:
         """Return the current L0 file path, or None if none exists."""
         return read_current_l0(self.armance_root)
 
+    CACHE_FULL_CHARS = 1500  # cache proposes a freeze past this size
+
+    def _cache_path(self) -> Path:
+        from armance.storage.paths import context_cache_path
+        return context_cache_path(self.armance_root)
+
+    def read_cache(self) -> str:
+        """Return the pending cache body, or '' if missing/unreadable."""
+        path = self._cache_path()
+        if not path.exists():
+            return ""
+        try:
+            return path.read_text(encoding="utf-8").strip()
+        except Exception:
+            logger.debug("cache read failed", exc_info=True)
+            return ""
+
+    def cache_append(self, note: str) -> None:
+        """Append a worth-saving note to the cache (Armance only)."""
+        note = (note or "").strip()
+        if not note:
+            return
+        path = self._cache_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        existing = self.read_cache()
+        body = f"{existing}\n\n{note}".strip() if existing else note
+        try:
+            path.write_text(body + "\n", encoding="utf-8")
+        except Exception:
+            logger.exception("cache append failed")
+
+    def clear_cache(self) -> None:
+        """Delete the pending cache file (no-op if absent)."""
+        path = self._cache_path()
+        try:
+            if path.exists():
+                path.unlink()
+        except Exception:
+            logger.debug("cache clear failed", exc_info=True)
+
+    def cache_is_full(self) -> bool:
+        """True once the cache reaches the freeze-proposal threshold."""
+        return len(self.read_cache()) >= self.CACHE_FULL_CHARS
+
     def append_quick_freeze(self, text: str, slug: str = "quit-quick-save") -> Path:
         """Quick non-LLM save used by the Ctrl+C×2 quit modal.
 
