@@ -211,7 +211,6 @@
         "high": "Élevé"
       },
       "language": "Langue",
-      "judge_model": "Modèle juge",
       "log_level": "Niveau de journalisation",
       "err": { "required": "Requis" },
       "providers": "Fournisseurs configurés",

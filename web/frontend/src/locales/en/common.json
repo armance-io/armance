@@ -211,7 +211,6 @@
         "high": "High"
       },
       "language": "Language",
-      "judge_model": "Judge model",
       "log_level": "Log level",
       "err": { "required": "Required" },
       "providers": "Configured Providers",

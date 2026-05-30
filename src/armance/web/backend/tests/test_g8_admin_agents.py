@@ -76,9 +76,15 @@ async def test_get_agents_list(session_with_agents, armance_root: Path) -> None:
     body = resp.json()
     assert isinstance(body, list)
     names = {a["name"] for a in body}
+    slugs = {a.get("slug") for a in body}
     assert "Alice" in names
-    assert "system-context" in names
+    # Staff surfaced with friendly name + system slug + staff=True.
+    assert "Armance" in names
+    assert "system-context" in slugs
+    armance = next(a for a in body if a.get("slug") == "system-context")
+    assert armance["staff"] is True
     alice = next(a for a in body if a["name"] == "Alice")
+    assert alice["staff"] is False
     assert alice["model"] == "gpt-4o-mini"
     assert alice["provider"] == "openrouter"
 

@@ -368,7 +368,9 @@ const AgentsTab: FC<{ pid: string; sid: string | null; t: (k: string) => string 
       ([agts, prov]) => {
         setAgentRecords(
           agts.map((a) => ({
-            id: a.name,
+            // id holds the file slug — PATCH targets the slug, not the
+            // friendly display name (staff names are labels like "Armance").
+            id: a.slug ?? a.name,
             name: a.name,
             role: a.role,
             persona: "",
@@ -386,7 +388,7 @@ const AgentsTab: FC<{ pid: string; sid: string | null; t: (k: string) => string 
 
   const onSave = async (agent: AgentRecord) => {
     if (!sid) return;
-    await patchAdminAgent(pid, sid, agent.name, {
+    await patchAdminAgent(pid, sid, agent.id, {
       model: agent.model,
       reasoning: agent.reasoning ?? null,
     });

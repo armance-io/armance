@@ -496,11 +496,14 @@ export async function getAdminStats(pid: string): Promise<StatsResponse> {
 
 export interface AdminAgent {
   name: string;
+  /** File slug — use this for PATCH (staff `name` is a friendly label). */
+  slug?: string;
   domain: string;
   role: string;
   provider: string;
   model: string;
   reasoning: string | null;
+  staff?: boolean;
 }
 
 export async function getAdminAgents(pid: string, sid: string): Promise<AdminAgent[]> {
