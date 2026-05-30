@@ -1,0 +1,89 @@
+"""Admin secrets routes — /projects/{pid}/admin/secrets/*.
+
+All routes are V2 IP-guarded: only accessible from 127.0.0.1 or ::1.
+"""
+from __future__ import annotations
+
+from typing import Any
+
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
+
+from armance.platform.storage import LocalFilesystemStorage
+from armance.platform.user import get_current_user
+from armance.service.env_ops import EnvKeyError, delete_secret, list_secrets, set_secret
+from backend.deps import get_app_state
+from backend.state import AppState
+
+router = APIRouter()
+
+_LOOPBACK = {"127.0.0.1", "::1"}
+
+
+def _guard_localhost(request: Request) -> None:
+    host = request.client.host if request.client else None
+    if host not in _LOOPBACK:
+        raise _forbidden()
+
+
+def _forbidden() -> Exception:
+    from fastapi import HTTPException
+    from fastapi.responses import JSONResponse
+    # Return a JSONResponse directly via a helper to get top-level {"error":...}
+    # We raise a special marker; the route catches it.
+    return _LockhostForbidden()
+
+
+class _LockhostForbidden(Exception):
+    pass
+
+
+@router.get("/projects/{pid}/admin/secrets")
+async def get_secrets(
+    pid: str,
+    request: Request,
+    _user: str = Depends(get_current_user),
+    app_state: AppState = Depends(get_app_state),
+) -> Any:
+    host = request.client.host if request.client else None
+    if host not in _LOOPBACK:
+        return JSONResponse(status_code=403, content={"error": "secrets_localhost_only"})
+    storage = LocalFilesystemStorage(root=app_state.armance_root)
+    return await list_secrets(storage)
+
+
+@router.put("/projects/{pid}/admin/secrets/{name}")
+async def put_secret(
+    pid: str,
+    name: str,
+    body: dict[str, Any],
+    request: Request,
+    _user: str = Depends(get_current_user),
+    app_state: AppState = Depends(get_app_state),
+) -> Any:
+    host = request.client.host if request.client else None
+    if host not in _LOOPBACK:
+        return JSONResponse(status_code=403, content={"error": "secrets_localhost_only"})
+    value = body.get("value", "")
+    storage = LocalFilesystemStorage(root=app_state.armance_root)
+    try:
+        await set_secret(storage, name, value)
+    except EnvKeyError as exc:
+        return JSONResponse(status_code=400, content={"error": "invalid_key_name", "detail": str(exc)})
+    return {"name": name, "set": True}
+
+
+@router.delete("/projects/{pid}/admin/secrets/{name}")
+async def delete_secret_route(
+    pid: str,
+    name: str,
+    request: Request,
+    _user: str = Depends(get_current_user),
+    app_state: AppState = Depends(get_app_state),
+) -> Any:
+    host = request.client.host if request.client else None
+    if host not in _LOOPBACK:
+        return JSONResponse(status_code=403, content={"error": "secrets_localhost_only"})
+    storage = LocalFilesystemStorage(root=app_state.armance_root)
+    found = await delete_secret(storage, name)
+    return {"deleted": found}
