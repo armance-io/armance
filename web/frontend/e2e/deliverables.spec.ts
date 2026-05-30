@@ -80,7 +80,7 @@ test.describe("H.3 — Deliverables tab E2E", () => {
     await page.goto(DELIVERABLES_URL);
     
     // Click on Synthesis A to trigger details load
-    await page.getByText("Synthesis A").click();
+    await page.getByRole("complementary").getByText("Synthesis A").click();
     await expect(page.locator(".deliverable-reader").getByRole("heading", { name: "Synthesis A" }).first()).toBeVisible();
   });
 });

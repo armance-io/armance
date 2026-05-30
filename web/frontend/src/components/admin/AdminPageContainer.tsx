@@ -14,6 +14,8 @@ import { LogViewer, type LogEntry } from "./LogViewer";
 import { LogLevelToggle } from "./LogLevelToggle";
 import { StatsDashboard, type AgentStat } from "./StatsDashboard";
 import { AgentEditor, type AgentRecord } from "./AgentEditor";
+import { FootprintTab } from "./FootprintTab";
+import { useFootprint } from "@/lib/footprint";
 import {
   getAdminConfig,
   patchAdminConfig,
@@ -28,8 +30,8 @@ import {
   getProviders,
 } from "@/lib/api";
 
-type Tab = "config" | "secrets" | "logs" | "stats" | "agents";
-const TABS: Tab[] = ["config", "secrets", "logs", "stats", "agents"];
+type Tab = "config" | "secrets" | "logs" | "stats" | "agents" | "empreinte";
+const TABS: Tab[] = ["config", "secrets", "logs", "stats", "agents", "empreinte"];
 
 interface AdminPageContainerProps {
   pid: string;
@@ -87,9 +89,15 @@ export const AdminPageContainer: FC<AdminPageContainerProps> = ({ pid, t }) => {
         {activeTab === "logs" && <LogsTab pid={pid} t={t} />}
         {activeTab === "stats" && <StatsTab pid={pid} t={t} />}
         {activeTab === "agents" && <AgentsTab pid={pid} t={t} />}
+        {activeTab === "empreinte" && <EmpreinteTab pid={pid} t={t} />}
       </div>
     </div>
   );
+};
+
+const EmpreinteTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
+  const { data, loading, error } = useFootprint(pid, "agent");
+  return <FootprintTab data={data} loading={loading} error={error} zone="WOR" t={t} />;
 };
 
 // ---------------------------------------------------------------------------

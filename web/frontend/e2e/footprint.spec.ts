@@ -1,17 +1,116 @@
 /**
  * EI.8 Playwright spec — footprint chip + Empreinte admin tab.
- *
- * STATUS: fixme — blocked on two dependencies:
- *   1. Visual components (FootprintChip, FootprintTab, Méthode expander)
- *      must be generated via web-v2-claude-design-prompts.md and wired in.
- *   2. Live header chip blocked on Epic C (SSE ledger-snapshot channel).
- *
- * Remove fixme annotations and fill assertions when Design hand-off is done
- * and Epic C's SSE ledger event is wired.
  */
 import { test, expect } from "@playwright/test";
 
+const ADMIN_URL = "/projects/default/admin";
+
 test.describe("EI.8 — Footprint chip + Empreinte admin tab", () => {
+  test.beforeEach(async ({ page }) => {
+    // Mock Config API
+    await page.route("**/api/projects/*/admin/config", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          default_provider: "openrouter",
+          default_model: "gpt-4o",
+          budget_effort: "low",
+          language: "en",
+          judge_model: "mona-judge",
+          log_level: "info",
+        }),
+      });
+    });
+
+    // Mock Secrets API
+    await page.route("**/api/projects/*/admin/secrets", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([
+          { name: "OPENROUTER_API_KEY", value: "sk-or-v1-abcdef", set: true },
+        ]),
+      });
+    });
+
+    // Mock Logs API
+    await page.route("**/api/projects/*/admin/logs*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          lines: [
+            { timestamp: "2026-05-30T10:00:00Z", agent: "Armance", event: "response", message: "Hello user" },
+          ],
+          total: 1,
+          cursor: null,
+        }),
+      });
+    });
+
+    // Mock Stats API
+    await page.route("**/api/projects/*/admin/stats", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          agents: {
+            Armance: { tokens_in: 120, tokens_out: 250, cost_usd: 0.003, msg_count: 2 },
+          },
+          global: { tokens_in: 120, tokens_out: 250, cost_usd: 0.003, msg_count: 2 },
+        }),
+      });
+    });
+
+    // Mock Agents API
+    await page.route("**/api/projects/*/sessions/*/agents", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify([
+          { name: "Armance", domain: "host", role: "host", provider: "openrouter", model: "gpt-4o", reasoning: "low" },
+        ]),
+      });
+    });
+
+    // Mock Providers API
+    await page.route("**/providers", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          providers: {
+            openrouter: [{ id: "gpt-4o", name: "gpt-4o" }],
+          },
+        }),
+      });
+    });
+
+    // Mock Footprint API
+    await page.route("**/api/projects/*/admin/footprint?group_by=agent", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          by_agent: {
+            Armance: {
+              calls: 12,
+              gco2e: 42.5,
+              water_ml: 240,
+              has_estimate: true,
+              has_unknown: false,
+            },
+          },
+          by_day: {},
+          by_month: {},
+          by_session: {},
+          dominant_zone: "WOR",
+        }),
+      });
+    });
+  });
+
   test.fixme(
     "header shows 🌱 gCO₂e chip after a deliberation turn",
     async ({ page }) => {
@@ -38,30 +137,28 @@ test.describe("EI.8 — Footprint chip + Empreinte admin tab", () => {
     },
   );
 
-  test.fixme(
+  test(
     "admin Empreinte tab renders per-agent gCO₂e rollup",
     async ({ page }) => {
-      // Blocked: FootprintTab skeleton.
-      // After Design: assert tab visible, agent rows present.
-      await page.goto("/projects/default/admin");
+      await page.goto(ADMIN_URL);
       await page.getByRole("tab", { name: /empreinte/i }).click();
       await expect(page.getByTestId("footprint-tab")).toBeVisible();
     },
   );
 
-  test.fixme(
+  test(
     "Empreinte tab shows estimate badge for ~ rows",
     async ({ page }) => {
-      await page.goto("/projects/default/admin");
+      await page.goto(ADMIN_URL);
       await page.getByRole("tab", { name: /empreinte/i }).click();
       await expect(page.getByTestId("estimate-badge")).toBeVisible();
     },
   );
 
-  test.fixme(
+  test(
     "Méthode expander cites EcoLogits + ISO 14044",
     async ({ page }) => {
-      await page.goto("/projects/default/admin");
+      await page.goto(ADMIN_URL);
       await page.getByRole("tab", { name: /empreinte/i }).click();
       await page.getByRole("button", { name: /méthode/i }).click();
       await expect(page.getByTestId("methode-panel")).toContainText("EcoLogits");
