@@ -138,20 +138,53 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
 
 const SecretsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
   const [secrets, setSecrets] = useState<SecretEntry[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   const reload = useCallback(() => {
-    void getAdminSecrets(pid).then((data) =>
-      setSecrets(
-        data.map((s) => ({
-          key: s.name,
-          value: s.value,
-          last4: s.value.slice(-4),
-        })),
-      ),
-    );
+    setError(null);
+    void getAdminSecrets(pid)
+      .then((data) => {
+        setSecrets(
+          data.map((s) => ({
+            key: s.name,
+            value: s.value,
+            last4: s.value.slice(-4),
+          })),
+        );
+      })
+      .catch((err: unknown) => {
+        const errorWithStatus = err as { status?: number } | null | undefined;
+        if (errorWithStatus && errorWithStatus.status === 403) {
+          setError("localhost_only");
+        } else {
+          setError("fetch_failed");
+        }
+      });
   }, [pid]);
 
-  useEffect(() => { reload(); }, [reload]);
+  const isNonLoopback = typeof window !== "undefined" && !["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
+  const showOffline = !isOnline && isNonLoopback;
+
+  useEffect(() => {
+    if (showOffline) {
+      setError("offline");
+      return;
+    }
+    reload();
+  }, [reload, showOffline]);
 
   const onEdit = async (key: string, newValue: string) => {
     await putAdminSecret(pid, key, newValue);
@@ -161,6 +194,30 @@ const SecretsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =
     await deleteAdminSecret(pid, key);
     reload();
   };
+
+  if (showOffline) {
+    return (
+      <div style={{ padding: 20, color: tokens.inkSoft, fontFamily: tokens.ffSans }}>
+        {t("admin:secrets.offline")}
+      </div>
+    );
+  }
+
+  if (error === "localhost_only") {
+    return (
+      <div style={{ padding: 20, color: tokens.accent, fontFamily: tokens.ffSans, fontWeight: 500 }}>
+        {t("admin:secrets.localhost_only")}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: 20, color: tokens.accent, fontFamily: tokens.ffSans }}>
+        {t("admin:secrets.error_loading")}
+      </div>
+    );
+  }
 
   return (
     <div data-testid="secrets-list">
