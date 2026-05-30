@@ -113,6 +113,33 @@ async def test_cmd_save_clears_buffer_from_state(tmp_armance: Path, cfg: Config)
 
 
 @pytest.mark.asyncio
+async def test_cmd_save_l0_uses_cache_when_buffer_empty(tmp_armance: Path, cfg: Config) -> None:
+    """/save (L0) must pass the brevity guard from the on-disk cache even when
+    the host_buffer metadata is empty, because freeze() consumes the cache."""
+    from armance.service.context_service import ContextService
+    from armance.service.handlers import _cmd_save
+
+    # Cache populated (40+ chars), buffer metadata empty.
+    ContextService(tmp_armance).cache_append(
+        "We are launching a renewable energy marketplace for European SMEs in Q3 2026."
+    )
+    ctx = _make_ctx(tmp_armance, cfg, buffer=[])
+
+    with patch("armance.service.agents.host_agent.get_client") as mock_gc, \
+         patch("armance.service.agents.host_agent.call_with_ledger", new_callable=AsyncMock) as mock_call:
+
+        mock_response = MagicMock()
+        mock_response.text = "## Goal\nA renewable energy marketplace for European SMEs."
+        mock_call.return_value = mock_response
+
+        result = await _cmd_save([], ctx)
+
+    assert "too brief" not in result.lower(), f"unexpected too-brief: {result}"
+    l0_files = list((tmp_armance / "context" / "L0").glob("v*.md"))
+    assert len(l0_files) == 1, f"Expected 1 L0 file written, got {l0_files}"
+
+
+@pytest.mark.asyncio
 async def test_cmd_save_empty_or_trivial_buffer_is_rejected(tmp_armance: Path, cfg: Config) -> None:
     """/save with empty or trivial buffer must be rejected."""
     from armance.service.handlers import _cmd_save
