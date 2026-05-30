@@ -133,6 +133,23 @@ cd armance
 uv sync && uv pip install -e '.[web]'
 ```
 
+> An editable install lives in the project's `.venv` — it is **not** put on
+> your `PATH`. Run the CLI with **`uv run armance …`** (or activate the venv:
+> `source .venv/bin/activate`). A separate `uv tool install` / `pipx install`
+> is what puts a global `armance` on `PATH`; don't confuse the two.
+
+The web UI is a build artifact and is **not** in git, so a fresh clone has no
+bundle yet. Build it once (needs Node + pnpm), then run:
+
+```bash
+uv run armance web --build          # builds the UI bundle, then serves it
+# subsequent runs (bundle already built):
+uv run armance web
+```
+
+See [`web/DEVELOPMENT.md`](web/DEVELOPMENT.md) for the full dev loop
+(hot-reload vs bundled, tests).
+
 ---
 
 ## Running the web client (UI)
@@ -153,23 +170,27 @@ folder, exactly like `armance run`). Options:
 | `--port 8000` | port (default `8000`) |
 | `--bind 0.0.0.0` | expose on the LAN (read-only for watchers; only the first client may write) |
 | `--no-browser` | don't auto-open a browser |
+| `--build` | (repo checkout only) rebuild the UI bundle before serving — needs Node + pnpm |
 
-Released wheels bundle the prebuilt UI, so `pip install armance && armance web`
-just works.
+**Where the UI comes from:**
 
-### Frontend dev mode (contributors)
+| Install method | Ships the UI? | How to get the UI |
+|---|---|---|
+| `pip install armance` (PyPI release) | ✅ bundled | nothing — `armance web` just works |
+| `git clone` + editable / `uv tool install git+…` | ❌ artifact, not in git | run `armance web --build` once from a **checkout** (the tool install has no frontend sources — clone the repo) |
 
-For hot-reload iteration on the UI, run the two dev servers side by side:
+If you see *“no bundled UI found — running API only”*, the bundle hasn't been
+built for this install. Use a release wheel, or `armance web --build` from a
+clone.
+
+### Frontend dev mode (hot reload)
+
+For live iteration on the UI, run the two dev servers side by side (no bundle
+needed):
 
 ```bash
-armance web --no-browser            # API on :8000
-cd web/frontend && pnpm install && pnpm dev   # UI on :3000, proxies /api → :8000
-```
-
-To regenerate the bundled UI from a checkout (needs Node + pnpm):
-
-```bash
-armance web --build                 # builds web/frontend → src/armance/web_dist/
+uv run armance web --no-browser              # API on :8000
+cd web/frontend && pnpm install && pnpm dev  # UI on :3000, proxies /api → :8000
 ```
 
 ---
