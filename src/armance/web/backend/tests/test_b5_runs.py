@@ -30,13 +30,18 @@ async def test_get_workflow_runs(client: AsyncClient, armance_root: Path) -> Non
 
 
 @pytest.mark.asyncio
-async def test_get_workflow_runs_unknown_returns_404(client: AsyncClient) -> None:
-    """GET /runs for an unknown workflow returns 404."""
+async def test_get_workflow_runs_unknown_returns_empty(client: AsyncClient) -> None:
+    """GET /runs for a workflow with no runs returns [] (not 404).
+
+    The frontend polls this endpoint; a 404 on a not-yet-launched workflow
+    produced a redirect/error loop in the run-history sidebar.
+    """
     cr = await client.post("/projects/default/sessions")
     sid = cr.json()["id"]
 
     resp = await client.get(f"/projects/default/sessions/{sid}/workflows/unknown_wf/runs")
-    assert resp.status_code == 404
+    assert resp.status_code == 200
+    assert resp.json() == []
 
 
 @pytest.mark.asyncio
