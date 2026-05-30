@@ -201,7 +201,10 @@
       "empty": "Aucun secret configuré.",
       "col": { "key": "Clé", "value": "Valeur", "actions": "Actions" },
       "action": { "edit": "Modifier", "delete": "Supprimer", "reveal": "Révéler", "save": "Sauvegarder", "cancel": "Annuler" },
-      "confirm_delete": "Supprimer ce secret ?"
+      "confirm_delete": "Supprimer ce secret ?",
+      "localhost_only": "Les secrets ne sont gérables que depuis des origines localhost / loopback.",
+      "offline": "Les secrets ne sont pas disponibles hors ligne.",
+      "error_loading": "Échec du chargement des secrets."
     },
     "logs": {
       "title": "Journaux",

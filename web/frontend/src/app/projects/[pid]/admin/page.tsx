@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use } from "react";
 import { useTranslation } from "react-i18next";
 import { AppShell } from "@/components/visual/AppShell";
 import { EmptyShell } from "@/components/visual/EmptyState/EmptyShell";

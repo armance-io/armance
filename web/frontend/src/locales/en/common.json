@@ -201,7 +201,10 @@
       "empty": "No secrets configured.",
       "col": { "key": "Key", "value": "Value", "actions": "Actions" },
       "action": { "edit": "Edit", "delete": "Delete", "reveal": "Reveal", "save": "Save", "cancel": "Cancel" },
-      "confirm_delete": "Delete this secret?"
+      "confirm_delete": "Delete this secret?",
+      "localhost_only": "Secrets are only manageable from localhost / loopback origins.",
+      "offline": "Secrets are unavailable while offline.",
+      "error_loading": "Failed to load secrets."
     },
     "logs": {
       "title": "Logs",
