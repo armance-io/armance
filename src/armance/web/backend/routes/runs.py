@@ -41,15 +41,10 @@ async def get_workflow_runs(
     if ws is None:
         raise HTTPException(status_code=404, detail="session_not_found")
 
-    runs = list_runs(ws.ctx.armance_root, name)
-    if not runs:
-        # Check if it's genuinely an empty workflow or an unknown one.
-        import re
-        safe_wf = re.sub(r"[^\w-]", "_", name)[:64]
-        wf_dir = ws.ctx.armance_root / "exports" / safe_wf
-        if not wf_dir.exists():
-            raise HTTPException(status_code=404, detail="workflow_not_found")
-    return runs
+    # A workflow with no runs yet is normal (nothing launched) — return an
+    # empty list, not 404. The frontend polls this; a 404 produced a noisy
+    # redirect/error loop in the run-history sidebar.
+    return list_runs(ws.ctx.armance_root, name)
 
 
 @router.get("/runs/{run_id}")
