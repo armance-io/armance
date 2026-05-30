@@ -58,6 +58,19 @@ describe("i18n key validation guard", () => {
       }
     }
 
+    // Dynamic keys built via template literals — `t(`ns:prefix.${value}`)` —
+    // are invisible to the literal regex above. Enumerate the known value
+    // sets so these families are guarded too (e.g. run status glyphs).
+    const dynamicFamilies: Record<string, string[]> = {
+      "workflow:history.status": [
+        "queued", "working", "running", "completed", "failed",
+        "cancelled", "canceled",
+      ],
+    };
+    for (const [prefix, values] of Object.entries(dynamicFamilies)) {
+      for (const v of values) usedKeys.add(`${prefix}.${v}`);
+    }
+
     const missingEn: string[] = [];
     const missingFr: string[] = [];
 

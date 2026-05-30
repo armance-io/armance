@@ -24,13 +24,33 @@
       "footer_motto": "A house of thinking agents.",
       "footer_line": "armance.io · 2026 · made in France"
     },
-    "theme": { "toggle_aria": "Toggle theme" },
+    "theme": {
+      "toggle_aria": "Toggle theme"
+    },
     "empty": {
-      "library": { "title": "No documents yet", "hint": "Import a file to begin.", "cta": "Import" },
-      "workflow": { "title": "No workflow running", "hint": "Launch one through Kim.", "cta": "Launch workflow" },
-      "session": { "title": "A new session begins", "hint": "Describe a decision you're weighing, or drop a document.", "cta": "New session" },
-      "shell": { "title": "Choose a session", "hint": "Pick one in the sidebar, or open a new project." },
-      "deliberation": { "title": "No data yet", "hint": "Launch a deliberation to gather statistics." }
+      "library": {
+        "title": "No documents yet",
+        "hint": "Import a file to begin.",
+        "cta": "Import"
+      },
+      "workflow": {
+        "title": "No workflow running",
+        "hint": "Launch one through Kim.",
+        "cta": "Launch workflow"
+      },
+      "session": {
+        "title": "A new session begins",
+        "hint": "Describe a decision you're weighing, or drop a document.",
+        "cta": "New session"
+      },
+      "shell": {
+        "title": "Choose a session",
+        "hint": "Pick one in the sidebar, or open a new project."
+      },
+      "deliberation": {
+        "title": "No data yet",
+        "hint": "Launch a deliberation to gather statistics."
+      }
     }
   },
   "library": {
@@ -59,13 +79,31 @@
       "cancel": "Cancel",
       "confirm": "Confirm"
     },
-    "reader": { "download": "Download", "download_label": "Download", "download_aria": "Download this deliverable", "opened_from": "Opened from: {{path}}" }
+    "reader": {
+      "download": "Download",
+      "download_label": "Download",
+      "download_aria": "Download this deliverable",
+      "opened_from": "Opened from: {{path}}"
+    }
   },
   "chat": {
-    "input": { "placeholder": "Speak freely.", "busy_label": "{{name}} is thinking…", "send_aria": "Send message" },
-    "bubble": { "streaming_aria": "{{name}} is replying" },
-    "tooltip": { "tokens_in": "Tokens in", "tokens_out": "Tokens out", "cost": "Cost", "cost_na": "n/a" },
-    "bottom": { "thinking": "{{name}} is thinking…" }
+    "input": {
+      "placeholder": "Speak freely.",
+      "busy_label": "{{name}} is thinking…",
+      "send_aria": "Send message"
+    },
+    "bubble": {
+      "streaming_aria": "{{name}} is replying"
+    },
+    "tooltip": {
+      "tokens_in": "Tokens in",
+      "tokens_out": "Tokens out",
+      "cost": "Cost",
+      "cost_na": "n/a"
+    },
+    "bottom": {
+      "thinking": "{{name}} is thinking…"
+    }
   },
   "checkpoint": {
     "drawer": {
@@ -83,11 +121,28 @@
     "ask_alternative": "Ask for another perspective"
   },
   "render": {
-    "code": { "copy": "Copy", "copied": "Copied", "download": "Download", "downloaded": "Downloaded", "lang_aria": "Language: {{lang}}" },
-    "mermaid": { "error_title": "Diagram not rendered", "error_hint": "Showing source instead." },
-    "svg": { "error_title": "SVG rejected", "error_hint": "Removed for safety." },
-    "image": { "lightbox_aria": "Open image", "close_aria": "Close" },
-    "md": { "fallback_table": "Table" }
+    "code": {
+      "copy": "Copy",
+      "copied": "Copied",
+      "download": "Download",
+      "downloaded": "Downloaded",
+      "lang_aria": "Language: {{lang}}"
+    },
+    "mermaid": {
+      "error_title": "Diagram not rendered",
+      "error_hint": "Showing source instead."
+    },
+    "svg": {
+      "error_title": "SVG rejected",
+      "error_hint": "Removed for safety."
+    },
+    "image": {
+      "lightbox_aria": "Open image",
+      "close_aria": "Close"
+    },
+    "md": {
+      "fallback_table": "Table"
+    }
   },
   "runs": {
     "detail": {
@@ -97,7 +152,13 @@
       "cost_na": "n/a",
       "steps": "Steps",
       "step": "Step",
-      "status": { "running": "running", "completed": "done", "failed": "failed", "cancelled": "cancelled", "skipped": "skipped" }
+      "status": {
+        "running": "running",
+        "completed": "done",
+        "failed": "failed",
+        "cancelled": "cancelled",
+        "skipped": "skipped"
+      }
     }
   },
   "run": {
@@ -114,8 +175,13 @@
       "compiling_desc": "The team is assembling its findings.",
       "downloads": "Downloads"
     },
-    "mode": { "title_aria": "Run mode" },
-    "sources": { "empty": "No sources cited yet.", "open_aria": "Open source" },
+    "mode": {
+      "title_aria": "Run mode"
+    },
+    "sources": {
+      "empty": "No sources cited yet.",
+      "open_aria": "Open source"
+    },
     "ledger": {
       "retained": "Retained",
       "rejected": "Rejected",
@@ -125,9 +191,28 @@
     }
   },
   "workflow": {
-    "graph": { "empty": "This workflow has no steps yet." },
-    "step": { "status": { "queued": "queued", "working": "working", "completed": "done", "failed": "failed", "cancelled": "cancelled", "skipped": "skipped" } },
-    "run": { "label": "Run", "status": { "running": "running", "completed": "done", "failed": "failed", "cancelled": "cancelled" } },
+    "graph": {
+      "empty": "This workflow has no steps yet."
+    },
+    "step": {
+      "status": {
+        "queued": "queued",
+        "working": "working",
+        "completed": "done",
+        "failed": "failed",
+        "cancelled": "cancelled",
+        "skipped": "skipped"
+      }
+    },
+    "run": {
+      "label": "Run",
+      "status": {
+        "running": "running",
+        "completed": "done",
+        "failed": "failed",
+        "cancelled": "cancelled"
+      }
+    },
     "picker": {
       "quick": "A quick perspective",
       "deep": "A thorough, challenged analysis",
@@ -148,7 +233,16 @@
       "time_just_now": "just now",
       "time_mins": "{count} min ago",
       "time_hours": "{count} h ago",
-      "time_days": "{count} d ago"
+      "time_days": "{count} d ago",
+      "status": {
+        "queued": "⋯",
+        "working": "⏳",
+        "running": "⏳",
+        "completed": "✓",
+        "failed": "✗",
+        "cancelled": "⊘",
+        "canceled": "⊘"
+      }
     },
     "delete": {
       "error": "Could not delete this run.",
@@ -196,7 +290,14 @@
     }
   },
   "admin": {
-    "tabs": { "config": "Configuration", "secrets": "Secrets", "logs": "Logs", "stats": "Statistics", "agents": "Agents", "empreinte": "Empreinte" },
+    "tabs": {
+      "config": "Configuration",
+      "secrets": "Secrets",
+      "logs": "Logs",
+      "stats": "Statistics",
+      "agents": "Agents",
+      "empreinte": "Empreinte"
+    },
     "config": {
       "title": "Configuration",
       "save": "Save",
@@ -212,7 +313,9 @@
       },
       "language": "Language",
       "log_level": "Log level",
-      "err": { "required": "Required" },
+      "err": {
+        "required": "Required"
+      },
       "providers": "Configured Providers",
       "default": "Default"
     },
@@ -222,8 +325,18 @@
       "edit": "Edit",
       "delete": "Delete",
       "empty": "No secrets configured.",
-      "col": { "key": "Key", "value": "Value", "actions": "Actions" },
-      "action": { "edit": "Edit", "delete": "Delete", "reveal": "Reveal", "save": "Save", "cancel": "Cancel" },
+      "col": {
+        "key": "Key",
+        "value": "Value",
+        "actions": "Actions"
+      },
+      "action": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "reveal": "Reveal",
+        "save": "Save",
+        "cancel": "Cancel"
+      },
       "confirm_delete": "Delete this secret?",
       "localhost_only": "Secrets are only manageable from localhost / loopback origins.",
       "offline": "Secrets are unavailable while offline.",
@@ -235,11 +348,25 @@
       "search": "Search",
       "empty": "No log entries.",
       "loading_more": "Loading…",
-      "filter": { "agent": "Agent", "all_agents": "All agents", "from": "From", "to": "To", "search": "Search" },
+      "filter": {
+        "agent": "Agent",
+        "all_agents": "All agents",
+        "from": "From",
+        "to": "To",
+        "search": "Search"
+      },
       "level_changed_title": "Log level updated",
       "level_changed_desc": "Log level has been changed to {level}."
     },
-    "stats": { "title": "Statistics", "tokens_in": "Tokens in", "tokens_out": "Tokens out", "cost": "Cost", "messages": "Messages", "per_agent": "Per agent", "top5_cost": "Top 5 by cost" },
+    "stats": {
+      "title": "Statistics",
+      "tokens_in": "Tokens in",
+      "tokens_out": "Tokens out",
+      "cost": "Cost",
+      "messages": "Messages",
+      "per_agent": "Per agent",
+      "top5_cost": "Top 5 by cost"
+    },
     "agents": {
       "title": "Agents",
       "model": "Model",
@@ -252,8 +379,16 @@
     }
   },
   "audio": {
-    "voice": { "idle_aria": "Hold to talk", "recording": "Recording…", "error": "Recording failed" },
-    "play": { "play_aria": "Play", "pause_aria": "Pause", "error": "Playback failed" }
+    "voice": {
+      "idle_aria": "Hold to talk",
+      "recording": "Recording…",
+      "error": "Recording failed"
+    },
+    "play": {
+      "play_aria": "Play",
+      "pause_aria": "Pause",
+      "error": "Playback failed"
+    }
   },
   "setup": {
     "title": "Welcome",

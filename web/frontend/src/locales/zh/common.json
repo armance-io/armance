@@ -1,9 +1,16 @@
 {
   "visual": {
     "empty": {
-      "workflow": { "cta": "启动工作流" },
-      "session": { "cta": "新建会话" },
-      "deliberation": { "title": "暂无数据", "hint": "启动审议以收集统计数据。" }
+      "workflow": {
+        "cta": "启动工作流"
+      },
+      "session": {
+        "cta": "新建会话"
+      },
+      "deliberation": {
+        "title": "暂无数据",
+        "hint": "启动审议以收集统计数据。"
+      }
     }
   },
   "checkpoint": {
@@ -36,6 +43,19 @@
     "logs": {
       "level_changed_title": "日志级别已更新",
       "level_changed_desc": "日志级别已更改为 {level}。"
+    }
+  },
+  "workflow": {
+    "history": {
+      "status": {
+        "queued": "⋯",
+        "working": "⏳",
+        "running": "⏳",
+        "completed": "✓",
+        "failed": "✗",
+        "cancelled": "⊘",
+        "canceled": "⊘"
+      }
     }
   }
 }
