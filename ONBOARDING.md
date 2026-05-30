@@ -88,6 +88,9 @@ transport/
   events.py / local.py In-process event bus
 client/
   tui/                Textual app — chat, sidebar, claims, workflow view
+web/
+  backend/            FastAPI server — translates services into REST endpoints & event streams
+  frontend/           Next.js 16 (App Router) + React 19 Belle Époque client
 nls_catalogues/
   en.yaml / fr.yaml   Translation catalogues (single source of truth for
                       all user-facing strings outside agent prompts)
@@ -95,7 +98,13 @@ protocols/            Caveman protocol prompts (ultra/lite/full)
 templates/            WeasyPrint stylesheet
 ```
 
-### 2.3 The big files you'll touch first
+### 2.3 The Web Layer Architecture
+
+The web platform is designed around a fully decoupled interface and transport paradigm:
+- **FastAPI Transport Layer (`web/backend/`)**: Mounts lightweight HTTP routers (found in `web/backend/routes/`) that translate CLI core models and service operations to standard REST structures. It uses a FastAPI lifespan context (`backend/state.py::AppState`) to maintain active `SessionRegistry` and `EventBus` mappings. Server-Sent Events (SSE) via `sse-starlette` power the real-time workflow status polling.
+- **Next.js Frontend (`web/frontend/`)**: Next.js 16 + React 19 application styled with premium design tokens (`globals.css` and `components/_shared/armance-tokens.ts`). Data fetching, updates, and mutation hooks are managed using React Query. Visual pages are organized as standard React containers (e.g. `/app/projects/[pid]/sessions/[sid]/deliverables/` and `/app/projects/[pid]/admin/`), ensuring a seamless and fully-responsive strategic deliberation canvas.
+
+### 2.4 The big files you'll touch first
 
 | File | LOC | Why it's big | Plan |
 |---|---|---|---|
@@ -106,6 +115,7 @@ templates/            WeasyPrint stylesheet
 | `service/agents/host_agent.py` | ~990 | Armance dialogue + intent detection + state | Extract intent/state helpers when you touch it |
 
 Other modules respect the ~300-line target.
+
 
 ---
 

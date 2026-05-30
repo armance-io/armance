@@ -17,23 +17,19 @@ state (sqlite-vec only for RAG retrieval). Four providers: `openrouter`,
 | Rules for fixing agents | [`BUG_FIXING_GUIDE.md`](BUG_FIXING_GUIDE.md) |
 | Vision & invariants | [`roadmap/01_vision.md`](roadmap/01_vision.md) |
 | Architecture & module map | [`roadmap/02_architecture.md`](roadmap/02_architecture.md) |
+| Web Backend (FastAPI routes) | `web/backend/routes/` |
+| Web Frontend (Next.js components) | `web/frontend/src/components/` |
 
 ## Code conventions
 
-- Python ≥ 3.11. `from __future__ import annotations` at the top of every
-  module.
-- Type hints everywhere. `asyncio` for parallelism. No blocking I/O on the
-  hot path.
+- Python ≥ 3.11. `from __future__ import annotations` at the top of every module.
+- Type hints everywhere. `asyncio` for parallelism. No blocking I/O on the hot path.
 - `logging` module. No `print` debug.
-- Files ≤ ~300 lines. Open exceptions (split queued — P1.6+):
-  `service/agents/host_agent.py` (~1080), `service/agents/recruiter_agent.py`
-  (~930), `cli.py` (~880), `core/models/context.py` (~760),
-  `service/handlers.py` (~750), `client/tui/screens/main.py` (~660),
-  `core/models/workflow.py` (~620). New code stays small; refactor
-  before adding to any of these.
-- `uv` for deps. Conventional commits.
-- Tests: `pytest` + `pytest-asyncio` + `respx` (httpx) + `monkeypatch`
-  (claude-agent-sdk). No real network.
+- **File size limits**: Python files must be ≤ 300 LOC. React component files must be ≤ 250 LOC.
+- Open exceptions (split queued — P1.6+):
+  `service/agents/host_agent.py` (~1080), `service/agents/recruiter_agent.py` (~930), `cli.py` (~880), `core/models/context.py` (~760), `service/handlers.py` (~750), `client/tui/screens/main.py` (~660), `core/models/workflow.py` (~620). New code stays small; refactor before adding to any of these.
+- `uv` for Python deps, `pnpm` for frontend deps. Conventional commits (signed off with `git commit -s`).
+- Tests: `pytest` + `pytest-asyncio` + `respx` (httpx) + `monkeypatch` (claude-agent-sdk). No real network. React components unit tested via `vitest` + `@testing-library/react`. E2E tested via Playwright.
 
 ## Layering — non-negotiable
 
@@ -87,14 +83,28 @@ to every system prompt so all agents reply in the chosen language. Set at
 
 ## Tests & QA
 
+### CLI / Core Tests
 ```bash
-uv run pytest tests/                 # offline
+uv run pytest tests/                 # offline suite (~900 tests)
 uv run python scripts/qa_live.py     # live OpenRouter free-model journey
 ```
 
-`qa_live.py` exercises A → R / L / M sections: greeting → context → recruit
-→ dismiss → re-recruit → Kim chat → design dialogue → run → RAG
-round-trip → language switch → workflow tailoring differentiation.
+### Web Backend Tests
+Run from the `web/` directory:
+```bash
+uv run pytest backend/tests/         # offline backend routes suite
+```
+
+### Web Frontend Tests
+Run from the `web/frontend/` directory:
+```bash
+pnpm run typecheck                   # compile check
+pnpm run lint                        # lint check
+pnpm test                            # unit tests (vitest)
+pnpm playwright test                 # E2E tests (playwright)
+```
+
+`qa_live.py` exercises CLI sections: greeting → context → recruit → dismiss → re-recruit → Kim chat → design dialogue → run → RAG round-trip → language switch → workflow tailoring differentiation.
 
 ## TUI commands
 

@@ -111,6 +111,24 @@ armance doctor
 
 Reports: config validity, provider reachability, sqlite-vec availability, deliverable libs, ledger writability.
 
+### Running the Web Client (UI)
+
+Armance V2 features a Belle Époque styled Web Client built with Next.js 16 (App Router) + React 19, backed by a FastAPI transport server.
+
+To start the FastAPI backend:
+```bash
+armance web --port 8000
+```
+This runs the REST and Event Stream backend on `http://127.0.0.1:8000` and automatically opens the user interface in your default browser.
+
+To start the Next.js frontend in development mode (for local iteration and hot reloading):
+```bash
+cd web/frontend
+pnpm install
+pnpm dev
+```
+Navigate to `http://localhost:3000` to interact with the responsive visual client.
+
 ---
 
 ## Quickstart
