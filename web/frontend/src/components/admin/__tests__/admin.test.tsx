@@ -26,14 +26,17 @@ vi.mock("@/lib/api", () => ({
   getProviders: vi.fn(),
 }));
 
+vi.mock("@/lib/useLatestSession", () => ({
+  useLatestSession: () => ({ pid: "default", sid: "default", loading: false }),
+}));
+
 describe("<ConfigForm />", () => {
   const defaultValues: ConfigValues = {
     default_provider: "openrouter",
     default_model: "gpt-4o",
     budget_effort: "low",
     language: "en",
-    judge_model: "mona-judge",
-    log_level: "info",
+    providers: [{ name: "openrouter", base_url: "https://openrouter.ai" }],
   };
 
   it("renders correctly with provided values", () => {
@@ -41,7 +44,6 @@ describe("<ConfigForm />", () => {
       <ConfigForm
         values={defaultValues}
         modelOptions={["gpt-4o", "claude-3-5"]}
-        judgeModelOptions={["mona-judge"]}
         languageOptions={["en", "fr"]}
         onSave={vi.fn()}
         t={mockT}
@@ -49,9 +51,8 @@ describe("<ConfigForm />", () => {
     );
 
     expect(screen.getByText("admin:config.title")).toBeDefined();
-    expect(screen.getByText("openrouter")).toBeDefined();
+    expect(screen.getAllByText("openrouter").length).toBeGreaterThan(0);
     expect(screen.getByDisplayValue("gpt-4o")).toBeDefined();
-    expect(screen.getByDisplayValue("mona-judge")).toBeDefined();
     expect(screen.getByDisplayValue("en")).toBeDefined();
   });
 
@@ -59,9 +60,8 @@ describe("<ConfigForm />", () => {
     const handleSave = vi.fn();
     render(
       <ConfigForm
-        values={{ ...defaultValues, default_model: "", judge_model: "", language: "" }}
+        values={{ ...defaultValues, default_model: "", language: "" }}
         modelOptions={[]}
-        judgeModelOptions={[]}
         languageOptions={[]}
         onSave={handleSave}
         t={mockT}
@@ -73,7 +73,7 @@ describe("<ConfigForm />", () => {
 
     expect(handleSave).not.toHaveBeenCalled();
     const errors = screen.getAllByText("admin:config.err.required");
-    expect(errors.length).toBe(3);
+    expect(errors.length).toBe(2);
   });
 
   it("calls onSave when form is submitted successfully", async () => {
@@ -82,7 +82,6 @@ describe("<ConfigForm />", () => {
       <ConfigForm
         values={defaultValues}
         modelOptions={["gpt-4o"]}
-        judgeModelOptions={["mona-judge"]}
         languageOptions={["en"]}
         onSave={handleSave}
         t={mockT}
@@ -97,12 +96,11 @@ describe("<ConfigForm />", () => {
     });
   });
 
-  it("allows clicking Chips to change budget and log level", () => {
+  it("allows clicking Chips to change budget", () => {
     render(
       <ConfigForm
         values={defaultValues}
         modelOptions={[]}
-        judgeModelOptions={[]}
         languageOptions={[]}
         onSave={vi.fn()}
         t={mockT}
@@ -111,9 +109,6 @@ describe("<ConfigForm />", () => {
 
     const highChip = screen.getByText("admin:config.budget.high");
     fireEvent.click(highChip);
-
-    const debugChip = screen.getByText("debug");
-    fireEvent.click(debugChip);
   });
 });
 
