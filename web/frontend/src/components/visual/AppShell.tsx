@@ -8,12 +8,13 @@ import {
 } from "react";
 
 import { ThemeToggle } from "./ThemeToggle";
+import { SidebarNav } from "./SidebarNav";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
 export interface AppShellProps {
   /** Content rendered inside the collapsible left sidebar. */
-  sidebar: ReactNode;
+  sidebar?: ReactNode;
   /** Page body — fills the main content area. */
   children: ReactNode;
   /**
@@ -65,6 +66,8 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
   const [sidebarW,    setSidebarW]    = useState(W_DEFAULT);
   const [handleHover, setHandleHover] = useState(false);
   const [dragging,    setDragging]    = useState(false);
+  const [toggleHover, setToggleHover] = useState(false);
+
 
   const motion = useRef(
     typeof window !== "undefined"
@@ -135,9 +138,11 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
     flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
     color: "var(--ink-soft,#5b5145)",
     borderRight: "1px solid var(--rule,#d6c8ad)",
-    transition: motion ? "none" : "color 0.15s ease",
+    transition: motion ? "none" : "background 0.15s ease, color 0.15s ease",
     padding: 0,
-    background: "var(--rule,#d6c8ad)",
+    background: toggleHover ? "var(--bg-paper-deep, #e8dfcd)" : "var(--rule,#d6c8ad)",
+    cursor: "pointer",
+    outline: "none",
   };
 
   const sidebarStyle: CSSProperties = {
@@ -188,6 +193,8 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
       <header style={headerStyle}>
         <button type="button" style={toggleStyle}
           onClick={toggleSidebar}
+          onMouseEnter={() => setToggleHover(true)}
+          onMouseLeave={() => setToggleHover(false)}
           aria-label={t("visual:shell.sidebar_collapse_aria")}
           aria-expanded={!collapsed}
         >
@@ -209,7 +216,15 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <aside style={sidebarStyle} aria-hidden={collapsed}>
-          <div style={sidebarInnerStyle}>{sidebar}</div>
+          <div style={sidebarInnerStyle}>
+            <SidebarNav t={t} />
+            {sidebar && (
+              <>
+                <div style={{ borderTop: "1px solid var(--rule, #d6c8ad)", margin: "12px 12px 0" }} />
+                {sidebar}
+              </>
+            )}
+          </div>
         </aside>
 
         {!collapsed && (
