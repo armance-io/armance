@@ -265,18 +265,21 @@ export const RunHistory: FC<RunHistoryProps> = ({
             >
               <span
                 style={{
-                  display: "inline-block",
-                  width: "10px",
-                  height: "10px",
-                  borderRadius: "50%",
-                  backgroundColor: STATUS_COLORS[run.status].bg,
-                  border: `1px solid ${STATUS_COLORS[run.status].border}`,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "14px",
+                  height: "14px",
+                  fontSize: "11px",
+                  lineHeight: 1,
+                  color: STATUS_COLORS[run.status].border,
                   flexShrink: 0,
                   animation: STATUS_COLORS[run.status].pulse ? "runhistory-pulse 1s infinite alternate" : "none",
                 }}
                 title={t(`workflow:history.status.${run.status}`)}
-                aria-hidden="true"
-              />
+              >
+                {t(`workflow:history.status.${run.status}`)}
+              </span>
 
               <span
                 style={timeStyle}

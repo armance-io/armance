@@ -24,13 +24,33 @@
       "footer_motto": "Une maison d'agents qui pensent.",
       "footer_line": "armance.io · 2026 · établi en France"
     },
-    "theme": { "toggle_aria": "Basculer le thème" },
+    "theme": {
+      "toggle_aria": "Basculer le thème"
+    },
     "empty": {
-      "library": { "title": "Aucun document encore", "hint": "Importez un fichier pour commencer.", "cta": "Importer" },
-      "workflow": { "title": "Aucun workflow en cours", "hint": "Lancez-en un via Kim.", "cta": "Lancer le workflow" },
-      "session": { "title": "Une nouvelle séance commence", "hint": "Décrivez une décision que vous pesez, ou déposez un document.", "cta": "Nouvelle session" },
-      "shell": { "title": "Choisissez une séance", "hint": "Ouvrez-en une dans la barre latérale, ou démarrez un projet." },
-      "deliberation": { "title": "Aucune donnée pour l'instant", "hint": "Lancez une délibération pour recueillir des statistiques." }
+      "library": {
+        "title": "Aucun document encore",
+        "hint": "Importez un fichier pour commencer.",
+        "cta": "Importer"
+      },
+      "workflow": {
+        "title": "Aucun workflow en cours",
+        "hint": "Lancez-en un via Kim.",
+        "cta": "Lancer le workflow"
+      },
+      "session": {
+        "title": "Une nouvelle séance commence",
+        "hint": "Décrivez une décision que vous pesez, ou déposez un document.",
+        "cta": "Nouvelle session"
+      },
+      "shell": {
+        "title": "Choisissez une séance",
+        "hint": "Ouvrez-en une dans la barre latérale, ou démarrez un projet."
+      },
+      "deliberation": {
+        "title": "Aucune donnée pour l'instant",
+        "hint": "Lancez une délibération pour recueillir des statistiques."
+      }
     }
   },
   "library": {
@@ -59,13 +79,31 @@
       "cancel": "Annuler",
       "confirm": "Confirmer"
     },
-    "reader": { "download": "Télécharger", "download_label": "Télécharger", "download_aria": "Télécharger ce livrable", "opened_from": "Ouvert depuis : {{path}}" }
+    "reader": {
+      "download": "Télécharger",
+      "download_label": "Télécharger",
+      "download_aria": "Télécharger ce livrable",
+      "opened_from": "Ouvert depuis : {{path}}"
+    }
   },
   "chat": {
-    "input": { "placeholder": "Parlez librement.", "busy_label": "{{name}} réfléchit…", "send_aria": "Envoyer le message" },
-    "bubble": { "streaming_aria": "{{name}} répond" },
-    "tooltip": { "tokens_in": "Tokens entrants", "tokens_out": "Tokens sortants", "cost": "Coût", "cost_na": "n/a" },
-    "bottom": { "thinking": "{{name}} réfléchit…" }
+    "input": {
+      "placeholder": "Parlez librement.",
+      "busy_label": "{{name}} réfléchit…",
+      "send_aria": "Envoyer le message"
+    },
+    "bubble": {
+      "streaming_aria": "{{name}} répond"
+    },
+    "tooltip": {
+      "tokens_in": "Tokens entrants",
+      "tokens_out": "Tokens sortants",
+      "cost": "Coût",
+      "cost_na": "n/a"
+    },
+    "bottom": {
+      "thinking": "{{name}} réfléchit…"
+    }
   },
   "checkpoint": {
     "drawer": {
@@ -83,11 +121,28 @@
     "ask_alternative": "Demander une autre vue"
   },
   "render": {
-    "code": { "copy": "Copier", "copied": "Copié", "download": "Télécharger", "downloaded": "Téléchargé", "lang_aria": "Langage : {{lang}}" },
-    "mermaid": { "error_title": "Diagramme non rendu", "error_hint": "Source affichée à la place." },
-    "svg": { "error_title": "SVG rejeté", "error_hint": "Retiré pour des raisons de sécurité." },
-    "image": { "lightbox_aria": "Ouvrir l'image", "close_aria": "Fermer" },
-    "md": { "fallback_table": "Tableau" }
+    "code": {
+      "copy": "Copier",
+      "copied": "Copié",
+      "download": "Télécharger",
+      "downloaded": "Téléchargé",
+      "lang_aria": "Langage : {{lang}}"
+    },
+    "mermaid": {
+      "error_title": "Diagramme non rendu",
+      "error_hint": "Source affichée à la place."
+    },
+    "svg": {
+      "error_title": "SVG rejeté",
+      "error_hint": "Retiré pour des raisons de sécurité."
+    },
+    "image": {
+      "lightbox_aria": "Ouvrir l'image",
+      "close_aria": "Fermer"
+    },
+    "md": {
+      "fallback_table": "Tableau"
+    }
   },
   "runs": {
     "detail": {
@@ -97,7 +152,13 @@
       "cost_na": "n/a",
       "steps": "Étapes",
       "step": "Étape",
-      "status": { "running": "en cours", "completed": "terminé", "failed": "échoué", "cancelled": "annulé", "skipped": "passé" }
+      "status": {
+        "running": "en cours",
+        "completed": "terminé",
+        "failed": "échoué",
+        "cancelled": "annulé",
+        "skipped": "passé"
+      }
     }
   },
   "run": {
@@ -114,8 +175,13 @@
       "compiling_desc": "L'équipe assemble ses conclusions.",
       "downloads": "Téléchargements"
     },
-    "mode": { "title_aria": "Mode d'exécution" },
-    "sources": { "empty": "Aucune source citée pour l'instant.", "open_aria": "Ouvrir la source" },
+    "mode": {
+      "title_aria": "Mode d'exécution"
+    },
+    "sources": {
+      "empty": "Aucune source citée pour l'instant.",
+      "open_aria": "Ouvrir la source"
+    },
     "ledger": {
       "retained": "Retenus",
       "rejected": "Rejetés",
@@ -125,9 +191,28 @@
     }
   },
   "workflow": {
-    "graph": { "empty": "Ce workflow n'a pas encore d'étapes." },
-    "step": { "status": { "queued": "en attente", "working": "en cours", "completed": "terminé", "failed": "échoué", "cancelled": "annulé", "skipped": "passé" } },
-    "run": { "label": "Run", "status": { "running": "en cours", "completed": "terminé", "failed": "échoué", "cancelled": "annulé" } },
+    "graph": {
+      "empty": "Ce workflow n'a pas encore d'étapes."
+    },
+    "step": {
+      "status": {
+        "queued": "en attente",
+        "working": "en cours",
+        "completed": "terminé",
+        "failed": "échoué",
+        "cancelled": "annulé",
+        "skipped": "passé"
+      }
+    },
+    "run": {
+      "label": "Run",
+      "status": {
+        "running": "en cours",
+        "completed": "terminé",
+        "failed": "échoué",
+        "cancelled": "annulé"
+      }
+    },
     "picker": {
       "quick": "Un avis rapide",
       "deep": "Une analyse approfondie, challengée",
@@ -148,7 +233,16 @@
       "time_just_now": "à l'instant",
       "time_mins": "il y a {count} min",
       "time_hours": "il y a {count} h",
-      "time_days": "il y a {count} j"
+      "time_days": "il y a {count} j",
+      "status": {
+        "queued": "⋯",
+        "working": "⏳",
+        "running": "⏳",
+        "completed": "✓",
+        "failed": "✗",
+        "cancelled": "⊘",
+        "canceled": "⊘"
+      }
     },
     "delete": {
       "error": "Impossible de supprimer cette exécution.",
@@ -196,7 +290,14 @@
     }
   },
   "admin": {
-    "tabs": { "config": "Configuration", "secrets": "Secrets", "logs": "Journaux", "stats": "Statistiques", "agents": "Agents", "empreinte": "Empreinte" },
+    "tabs": {
+      "config": "Configuration",
+      "secrets": "Secrets",
+      "logs": "Journaux",
+      "stats": "Statistiques",
+      "agents": "Agents",
+      "empreinte": "Empreinte"
+    },
     "config": {
       "title": "Configuration",
       "save": "Sauvegarder",
@@ -212,7 +313,9 @@
       },
       "language": "Langue",
       "log_level": "Niveau de journalisation",
-      "err": { "required": "Requis" },
+      "err": {
+        "required": "Requis"
+      },
       "providers": "Fournisseurs configurés",
       "default": "Par défaut"
     },
@@ -222,8 +325,18 @@
       "edit": "Modifier",
       "delete": "Supprimer",
       "empty": "Aucun secret configuré.",
-      "col": { "key": "Clé", "value": "Valeur", "actions": "Actions" },
-      "action": { "edit": "Modifier", "delete": "Supprimer", "reveal": "Révéler", "save": "Sauvegarder", "cancel": "Annuler" },
+      "col": {
+        "key": "Clé",
+        "value": "Valeur",
+        "actions": "Actions"
+      },
+      "action": {
+        "edit": "Modifier",
+        "delete": "Supprimer",
+        "reveal": "Révéler",
+        "save": "Sauvegarder",
+        "cancel": "Annuler"
+      },
       "confirm_delete": "Supprimer ce secret ?",
       "localhost_only": "Les secrets ne sont gérables que depuis des origines localhost / loopback.",
       "offline": "Les secrets ne sont pas disponibles hors ligne.",
@@ -235,11 +348,25 @@
       "search": "Rechercher",
       "empty": "Aucune entrée de journal.",
       "loading_more": "Chargement…",
-      "filter": { "agent": "Agent", "all_agents": "Tous les agents", "from": "De", "to": "À", "search": "Rechercher" },
+      "filter": {
+        "agent": "Agent",
+        "all_agents": "Tous les agents",
+        "from": "De",
+        "to": "À",
+        "search": "Rechercher"
+      },
       "level_changed_title": "Niveau de log mis à jour",
       "level_changed_desc": "Le niveau de log a été changé en {level}."
     },
-    "stats": { "title": "Statistiques", "tokens_in": "Tokens entrants", "tokens_out": "Tokens sortants", "cost": "Coût", "messages": "Messages", "per_agent": "Par agent", "top5_cost": "Top 5 par coût" },
+    "stats": {
+      "title": "Statistiques",
+      "tokens_in": "Tokens entrants",
+      "tokens_out": "Tokens sortants",
+      "cost": "Coût",
+      "messages": "Messages",
+      "per_agent": "Par agent",
+      "top5_cost": "Top 5 par coût"
+    },
     "agents": {
       "title": "Agents",
       "model": "Modèle",
@@ -252,8 +379,16 @@
     }
   },
   "audio": {
-    "voice": { "idle_aria": "Maintenez pour parler", "recording": "Enregistrement…", "error": "Échec de l'enregistrement" },
-    "play": { "play_aria": "Lire", "pause_aria": "Pause", "error": "Échec de la lecture" }
+    "voice": {
+      "idle_aria": "Maintenez pour parler",
+      "recording": "Enregistrement…",
+      "error": "Échec de l'enregistrement"
+    },
+    "play": {
+      "play_aria": "Lire",
+      "pause_aria": "Pause",
+      "error": "Échec de la lecture"
+    }
   },
   "setup": {
     "title": "Bienvenue",

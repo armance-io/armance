@@ -1,9 +1,16 @@
 {
   "visual": {
     "empty": {
-      "workflow": { "cta": "Iniciar flujo de trabajo" },
-      "session": { "cta": "Nueva sesión" },
-      "deliberation": { "title": "No hay datos aún", "hint": "Inicie una deliberación para recopilar estadísticas." }
+      "workflow": {
+        "cta": "Iniciar flujo de trabajo"
+      },
+      "session": {
+        "cta": "Nueva sesión"
+      },
+      "deliberation": {
+        "title": "No hay datos aún",
+        "hint": "Inicie una deliberación para recopilar estadísticas."
+      }
     }
   },
   "checkpoint": {
@@ -36,6 +43,19 @@
     "logs": {
       "level_changed_title": "Nivel de registro actualizado",
       "level_changed_desc": "El nivel de registro se ha cambiado a {level}."
+    }
+  },
+  "workflow": {
+    "history": {
+      "status": {
+        "queued": "⋯",
+        "working": "⏳",
+        "running": "⏳",
+        "completed": "✓",
+        "failed": "✗",
+        "cancelled": "⊘",
+        "canceled": "⊘"
+      }
     }
   }
 }

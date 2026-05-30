@@ -1,9 +1,16 @@
 {
   "visual": {
     "empty": {
-      "workflow": { "cta": "Workflow starten" },
-      "session": { "cta": "Neue Sitzung" },
-      "deliberation": { "title": "Noch keine Daten", "hint": "Starten Sie eine Beratung, um Statistiken zu sammeln." }
+      "workflow": {
+        "cta": "Workflow starten"
+      },
+      "session": {
+        "cta": "Neue Sitzung"
+      },
+      "deliberation": {
+        "title": "Noch keine Daten",
+        "hint": "Starten Sie eine Beratung, um Statistiken zu sammeln."
+      }
     }
   },
   "checkpoint": {
@@ -36,6 +43,19 @@
     "logs": {
       "level_changed_title": "Protokollebene aktualisiert",
       "level_changed_desc": "Die Protokollebene wurde in {level} geändert."
+    }
+  },
+  "workflow": {
+    "history": {
+      "status": {
+        "queued": "⋯",
+        "working": "⏳",
+        "running": "⏳",
+        "completed": "✓",
+        "failed": "✗",
+        "cancelled": "⊘",
+        "canceled": "⊘"
+      }
     }
   }
 }

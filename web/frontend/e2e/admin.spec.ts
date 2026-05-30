@@ -4,6 +4,16 @@ const ADMIN_URL = "/projects/default/admin";
 
 test.describe("G.10 — Admin page tabs E2E", () => {
   test.beforeEach(async ({ page }) => {
+    // Persistent SidebarNav + session-aware admin resolve the current session
+    // via /sessions/latest; mock it so the Agents tab gets a sid.
+    await page.route("**/api/projects/*/sessions/latest", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ id: "sess-e2e" }),
+      });
+    });
+
     // Mock Config API
     await page.route("**/api/projects/*/admin/config", async (route) => {
       await route.fulfill({
