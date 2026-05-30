@@ -65,6 +65,8 @@ async def set_secret(storage: "Storage", name: str, value: str) -> None:
     """Write or overwrite *name* in .env, preserving other lines."""
     if not _KEY_RE.match(name):
         raise EnvKeyError(f"invalid key name: {name!r}")
+    if any(c in value for c in "\r\n\x00"):
+        raise EnvKeyError(f"value for {name!r} contains illegal control characters")
 
     text = await storage.read_text(_ENV_KEY) if await storage.exists(_ENV_KEY) else ""
     lines = _parse_env(text)
