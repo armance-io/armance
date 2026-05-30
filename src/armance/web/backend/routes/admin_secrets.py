@@ -23,6 +23,7 @@ _LOOPBACK = {"127.0.0.1", "::1"}
 async def get_secrets(
     pid: str,
     request: Request,
+    reveal: bool = False,
     _user: str = Depends(get_current_user),
     app_state: AppState = Depends(get_app_state),
 ) -> Any:
@@ -30,7 +31,7 @@ async def get_secrets(
     if host not in _LOOPBACK:
         return JSONResponse(status_code=403, content={"error": "secrets_localhost_only"})
     storage = LocalFilesystemStorage(root=app_state.armance_root)
-    return await list_secrets(storage)
+    return await list_secrets(storage, reveal=reveal)
 
 
 @router.put("/projects/{pid}/admin/secrets/{name}")

@@ -332,7 +332,7 @@ export const CheckpointDrawer: FC<CheckpointDrawerProps> = ({
               margin: 0,
               color: "var(--ink, #2a2520)",
             }}>
-              {t("checkpoint:drawer.submitted_title") || "Confirmation"}
+              {t("checkpoint:drawer.submitted_title")}
             </h3>
             <p style={{
               fontFamily: "var(--ff-sans, 'Inter', sans-serif)",
@@ -340,7 +340,7 @@ export const CheckpointDrawer: FC<CheckpointDrawerProps> = ({
               color: "var(--ink-soft, #5b5145)",
               margin: 0,
             }}>
-              {t("checkpoint:drawer.submitted_desc") || "Votre réponse a été enregistrée avec succès."}
+              {t("checkpoint:drawer.submitted_desc")}
             </p>
           </div>
         </div>

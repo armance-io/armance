@@ -50,7 +50,7 @@ export const ModeBadge: FC<ModeBadgeProps> = ({ mode, t }) => {
       style={badgeStyle}
       title={hint}
       role="status"
-      aria-label={`${t("run:mode.title_aria") || "Mode"}: ${label}. ${hint}`}
+      aria-label={`${t("run:mode.title_aria")}: ${label}. ${hint}`}
       tabIndex={0}
     >
       <style>{`

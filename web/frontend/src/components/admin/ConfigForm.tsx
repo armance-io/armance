@@ -112,7 +112,7 @@ export const ConfigForm: FC<ConfigFormProps> = ({
 
       {/* Configured Providers Section */}
       <div style={row}>
-        <label style={label}>{t("admin:config.providers") || "Configured Providers"}</label>
+        <label style={label}>{t("admin:config.providers")}</label>
         <div style={{ display: "grid", gap: 10 }}>
           {draft.providers && draft.providers.length > 0 ? (
             draft.providers.map((prov) => {
@@ -149,7 +149,7 @@ export const ConfigForm: FC<ConfigFormProps> = ({
                         fontFamily: tokens.ffMono,
                       }}
                     >
-                      {t("admin:config.default") || "Default"}
+                      {t("admin:config.default")}
                     </span>
                   )}
                 </div>

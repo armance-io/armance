@@ -94,7 +94,7 @@ export const FootprintTab: FC<FootprintTabProps> = ({
     lineHeight: 1.6,
   };
 
-  if (loading) return <div style={{ color: tokens.inkSoft }}>{t("app:loading") || "Loading..."}</div>;
+  if (loading) return <div style={{ color: tokens.inkSoft }}>{t("app:loading")}</div>;
   if (error) return <div style={{ color: tokens.accent }}>Error loading footprint stats.</div>;
   if (!data) return null;
 

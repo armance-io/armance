@@ -18,6 +18,7 @@
   --ff-serif: "Instrument Serif", "Cormorant Garamond", Georgia, serif;
   --ff-sans: "Inter", system-ui, sans-serif;
   --ff-mono: "JetBrains Mono", Menlo, monospace;
+  --shadow-lift: 0 4px 20px rgba(42, 37, 32, 0.08);
   color-scheme: light;
 }
 
@@ -35,6 +36,7 @@
   --accent-deep: #d6c8ad;
   --danger: #c95a5a;
   --warning: #cf9c77;
+  --shadow-lift: 0 4px 20px rgba(0, 0, 0, 0.35);
   color-scheme: dark;
 }
 

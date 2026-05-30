@@ -13,16 +13,14 @@ function getFiles(dir: string): string[] {
   return files.reduce<string[]>((acc, file) => acc.concat(file), []);
 }
 
-function hasKey(localeObj: any, ns: string, dottedKey: string): boolean {
-  const nsObj = localeObj[ns];
-  if (!nsObj) return false;
-  const parts = dottedKey.split(".");
-  let current = nsObj;
-  for (const part of parts) {
-    if (current === undefined || current === null || typeof current !== "object") {
-      return false;
-    }
-    current = current[part];
+type LocaleTree = Record<string, unknown>;
+
+function hasKey(localeObj: LocaleTree, ns: string, dottedKey: string): boolean {
+  let current: unknown = localeObj[ns];
+  if (!current) return false;
+  for (const part of dottedKey.split(".")) {
+    if (current === null || typeof current !== "object") return false;
+    current = (current as Record<string, unknown>)[part];
   }
   return current !== undefined;
 }
@@ -64,9 +62,10 @@ describe("i18n key validation guard", () => {
     const missingFr: string[] = [];
 
     for (const key of usedKeys) {
-      const [ns, dotted] = key.split(":");
-      if (!hasKey(en, ns, dotted)) missingEn.push(key);
-      if (!hasKey(fr, ns, dotted)) missingFr.push(key);
+      const ns = key.slice(0, key.indexOf(":"));
+      const dotted = key.slice(key.indexOf(":") + 1);
+      if (!hasKey(en as LocaleTree, ns, dotted)) missingEn.push(key);
+      if (!hasKey(fr as LocaleTree, ns, dotted)) missingFr.push(key);
     }
 
     const missingAll = new Set([...missingEn, ...missingFr]);

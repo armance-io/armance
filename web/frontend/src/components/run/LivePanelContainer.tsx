@@ -64,7 +64,7 @@ export const LivePanelContainer: FC<LivePanelContainerProps> = ({
           background: "var(--bg-paper, #f4ede0)",
         }}
       >
-        {t("run:panel.loading") || "Loading deliberation..."}
+        {t("run:panel.loading")}
       </div>
     );
   }
@@ -83,7 +83,7 @@ export const LivePanelContainer: FC<LivePanelContainerProps> = ({
 
   const deliverable = {
     title: runManifest ? `${workflowName} — Deliverable` : "Deliverable",
-    markdown: deliverableMarkdown || `# ${t("run:panel.compiling") || "Compiling..."}\n\n${t("run:panel.compiling_desc") || "The final deliberation synthesis is compiling."}`,
+    markdown: deliverableMarkdown || `# ${t("run:panel.compiling")}\n\n${t("run:panel.compiling_desc")}`,
     downloadUrl: `/api/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(workflowName)}/runs/${encodeURIComponent(runId)}/deliverable`,
     format: "md" as const,
   };
