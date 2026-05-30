@@ -859,6 +859,41 @@ def cmd_doctor(repo_root: Path | None = None) -> int:
     return 0 if ok else 1
 
 
+def _build_web_bundle() -> int:
+    """Build the Next.js static export and copy it into armance/web_dist.
+
+    Repo/dev only: needs Node + pnpm and the web/frontend sources. The
+    resulting bundle is what `armance web` serves same-origin.
+    """
+    import os
+    import shutil
+    import subprocess
+
+    repo_root = Path(__file__).resolve().parents[2]
+    frontend = repo_root / "web" / "frontend"
+    if not (frontend / "package.json").exists():
+        print("Cannot build UI: web/frontend not found (release wheels ship a "
+              "prebuilt bundle; --build is for repo checkouts).", file=sys.stderr)
+        return 1
+    env = {**os.environ, "ARMANCE_STATIC_EXPORT": "1"}
+    for cmd in (["pnpm", "install", "--frozen-lockfile"], ["pnpm", "build"]):
+        try:
+            subprocess.run(cmd, cwd=str(frontend), env=env, check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            print(f"UI build failed ({' '.join(cmd)}): {e}", file=sys.stderr)
+            return 1
+    out = frontend / "out"
+    dest = repo_root / "src" / "armance" / "web_dist"
+    if not (out / "index.html").exists():
+        print("UI build produced no out/index.html.", file=sys.stderr)
+        return 1
+    if dest.exists():
+        shutil.rmtree(dest)
+    shutil.copytree(out, dest)
+    print(f"UI bundle built → {dest}")
+    return 0
+
+
 def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -> int:
     """Start the Armance web UI (FastAPI backend + optional browser open)."""
     import argparse
@@ -872,7 +907,16 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
                             help="Alias for --bind (deprecated, use --bind)")
     web_parser.add_argument("--port", type=int, default=8000)
     web_parser.add_argument("--no-browser", action="store_true")
+    web_parser.add_argument(
+        "--build", action="store_true",
+        help="Rebuild the static UI bundle (needs Node + pnpm; dev/repo only).",
+    )
     web_args, _ = web_parser.parse_known_args(remaining or [])
+
+    if web_args.build:
+        rc = _build_web_bundle()
+        if rc != 0:
+            return rc
 
     # --host is a legacy alias for --bind
     bind = web_args.host or web_args.bind
@@ -911,18 +955,28 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
 
     import os
 
-    # Locate the web/ directory (sibling of src/ in the repo root).
-    web_dir = Path(__file__).parent.parent.parent / "web"
+    # The backend ships inside the armance package; serve it directly. The
+    # bundled frontend (armance/web_dist) is served same-origin by the app,
+    # so this single process is the whole UI + API.
+    from armance.web.backend import main as _web_main  # noqa: F401
+
+    if _web_main._resolve_static_dir() is None:
+        print(
+            "Note: no bundled UI found — running API only on "
+            f"http://{bind}:{web_args.port}. For the full UI, install a "
+            "release wheel (UI bundled) or run `pnpm dev` from web/frontend.",
+            file=sys.stderr,
+        )
+
     env = {**os.environ, "ARMANCE_ROOT": str(root)}
     try:
         subprocess.run(
             [
                 sys.executable, "-m", "uvicorn",
-                "backend.main:app",
+                "armance.web.backend.main:app",
                 "--host", bind,
                 "--port", str(web_args.port),
             ],
-            cwd=str(web_dir),
             env=env,
             check=True,
         )
