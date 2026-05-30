@@ -182,7 +182,7 @@
     }
   },
   "admin": {
-    "tabs": { "config": "Configuration", "secrets": "Secrets", "logs": "Journaux", "stats": "Statistiques", "agents": "Agents" },
+    "tabs": { "config": "Configuration", "secrets": "Secrets", "logs": "Journaux", "stats": "Statistiques", "agents": "Agents", "empreinte": "Empreinte" },
     "config": {
       "title": "Configuration",
       "save": "Sauvegarder",
