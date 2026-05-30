@@ -307,7 +307,6 @@ describe("<AdminPageContainer />", () => {
     default_model: "gpt-4o",
     budget_effort: "low",
     language: "en",
-    judge_model: "mona-judge",
     log_level: "info",
   };
 

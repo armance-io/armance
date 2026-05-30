@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from armance.core.models.agent import Agent
 from armance.platform.user import get_current_user
+from armance.service.tui_bridge import META_AGENTS
 from armance.storage.paths import agent_path
 from armance.web.backend.deps import get_app_state, get_web_session
 from armance.web.backend.state import AppState, WebSession
@@ -27,6 +28,19 @@ _PERSONA_ERROR = {"error": "persona_via_malik_only"}
 _WRITABLE_FIELDS = {"model", "reasoning"}
 
 
+def _agent_row(agent: Agent, *, staff: bool, display_name: str | None = None) -> dict[str, Any]:
+    return {
+        "name": display_name or agent.name,
+        "slug": agent.name,
+        "domain": agent.domain,
+        "role": agent.role or agent.domain or "",
+        "provider": agent.provider,
+        "model": agent.model,
+        "reasoning": agent.reasoning,
+        "staff": staff,
+    }
+
+
 @router.get("/projects/{pid}/sessions/{sid}/agents")
 async def list_agents(
     pid: str,
@@ -34,16 +48,25 @@ async def list_agents(
     _user: str = Depends(get_current_user),
     ws: WebSession = Depends(get_web_session),
 ) -> list[dict[str, Any]]:
+    # The 5 permanent staff (Armance/Malik/Kim/Mona/Serge) live as
+    # system-*.md files and are NOT in ctx.agents (which holds only the
+    # specialists Malik recruits). Surface staff first, then specialists.
     result: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for slug, first_name, _role in META_AGENTS:
+        path = agent_path(ws.ctx.armance_root, slug)
+        if not path.exists():
+            continue
+        try:
+            agent = Agent.load(path)
+        except Exception:  # noqa: BLE001 — skip an unreadable staff file
+            continue
+        result.append(_agent_row(agent, staff=True, display_name=first_name))
+        seen.add(agent.name)
     for agent in ws.ctx.agents:
-        result.append({
-            "name": agent.name,
-            "domain": agent.domain,
-            "role": agent.role or agent.domain or "",
-            "provider": agent.provider,
-            "model": agent.model,
-            "reasoning": agent.reasoning,
-        })
+        if agent.name in seen:
+            continue
+        result.append(_agent_row(agent, staff=False))
     return result
 
 
