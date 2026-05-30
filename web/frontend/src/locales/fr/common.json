@@ -173,10 +173,12 @@
     "tabs": { "agents": "Agents", "workflows": "Workflows", "library": "Bibliothèque", "deliverables": "Livrables" },
     "deliverables": {
       "empty": "Aucun livrable encore.",
-      "filter_workflow": "Workflow",
-      "filter_format": "Format",
+      "filter": {
+        "workflow": "Workflow",
+        "all_workflows": "Tous les workflows"
+      },
       "starred_first": "Étoilés en premier",
-      "star_aria": "Mettre {{name}} en favori"
+      "star_aria": "Mettre en favori"
     }
   },
   "admin": {

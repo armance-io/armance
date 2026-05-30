@@ -173,10 +173,12 @@
     "tabs": { "agents": "Agents", "workflows": "Workflows", "library": "Library", "deliverables": "Deliverables" },
     "deliverables": {
       "empty": "No deliverables yet.",
-      "filter_workflow": "Workflow",
-      "filter_format": "Format",
+      "filter": {
+        "workflow": "Workflow",
+        "all_workflows": "All workflows"
+      },
       "starred_first": "Starred first",
-      "star_aria": "Star {{name}}"
+      "star_aria": "Star deliverable"
     }
   },
   "admin": {
