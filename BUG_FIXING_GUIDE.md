@@ -44,18 +44,21 @@ injection or a Protocol callback instead.
 
 ### Rule 2 — No hard-coded user-facing strings
 
-Anything the user reads goes through:
+Anything the user reads goes through local translation mapping:
+- **CLI/Backend**:
+  ```python
+  from armance.nls import t
+  t("section.key", arg=value)
+  ```
+  Keys live in `src/armance/nls_catalogues/{en,fr}.yaml`.
+- **Web Frontend**:
+  Uses React `t("key")` from i18next.
+  Keys live in `web/frontend/src/locales/{en,fr}/common.json`.
 
-```python
-from armance.nls import t
-t("section.key", arg=value)
-```
-
-Keys live in `src/armance/nls_catalogues/{en,fr}.yaml`. If you add a new
-user-facing string:
-1. Add the key in **both** `en.yaml` and `fr.yaml`.
+If you add a new user-facing string:
+1. Add the key in **both** English and French translation files.
 2. Use `t("...")` in the call site.
-3. Logs and Python exceptions stay English — they're not user-facing.
+3. Logs and Python trace exceptions stay English — they're not user-facing.
 
 ### Rule 3 — Side effects through `[EXECUTE:/...]` tags
 
@@ -87,11 +90,13 @@ Especially for things that vary per user:
 
 ### Rule 5 — File size cap
 
-Target: ≤ 300 LOC per Python file. `service/handlers.py` is the open
-exception (chat shells couple to workflow engine; deferred split).
-If your patch grows a file past 300 LOC, **extract**. Pattern:
-`service/*_ops.py` — one file per concern (`library_ops`, `save_ops`,
-`role_ops`, `task_ops`). Keep imports minimal.
+Targets:
+- **CLI/Backend Python files**: ≤ 300 LOC per file.
+- **Frontend React component files**: ≤ 250 LOC per file.
+
+`service/handlers.py` is the open exception in the backend. If your patch grows a Python file past 300 LOC, or a React component past 250 LOC, **extract**. Patterns:
+- Backend: `service/*_ops.py` — one file per concern (`library_ops`, `save_ops`, `role_ops`, `task_ops`).
+- Frontend: Extract sub-components to their own files or move logical states to helper hooks under `src/lib/`.
 
 ### Rule 6 — `from __future__ import annotations` at top of every module
 
