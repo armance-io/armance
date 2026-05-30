@@ -35,6 +35,7 @@ EXCLUDE_PATHS=(
     "*/armance_web/*"
     "*/legacy*"
     "*/builtin_agents/*"      # legacy templates, replaced by service/agents/builtin/
+    "*/backend"               # web transport adapter: wire-format uses these strings by design
 )
 
 # Build grep exclude args

@@ -66,68 +66,105 @@ Plus the **specialists** Malik recruits per project (UX researchers, historians,
 
 ## Install
 
+Project home: **[armance.io](https://armance.io)** *(site coming soon)*.
+
 ### Prerequisites
 
 - Python ≥ 3.11
-- At least one LLM provider key (OpenRouter recommended; free tier works end to end)
+- At least one LLM provider key. **OpenRouter is the easiest start** — its
+  free tier runs Armance end to end with no spend.
 
-### Recommended — `uv tool` (isolated, fast)
-
-```bash
-uv tool install git+https://github.com/armance-io/armance.git
-```
-
-### Alternative — pipx
+### The one command
 
 ```bash
-pipx install git+https://github.com/armance-io/armance.git
+pip install armance
 ```
+
+That's it. The base install gives you the full CLI/TUI, RAG, three providers
+(OpenRouter, Gemini, custom OpenAI-compatible), PDF / DOCX / PPTX
+deliverables, and the **web UI** — no extras to choose.
+
+> Prefer an isolated tool install? `uv tool install armance` or
+> `pipx install armance` work identically.
+
+Verify:
+
+```bash
+armance --version
+armance doctor      # config, provider reachability, sqlite-vec, deliverables, ledger
+```
+
+> **Reaching Claude models:** Anthropic models are available through
+> **OpenRouter** on the base install (set `OPENROUTER_API_KEY`) — nothing
+> extra needed. The opt-in extra below is only for billing through a Claude
+> *subscription* login rather than a metered API key.
+
+#### One optional extra: the Claude subscription provider
+
+The `claude-code` provider lets you drive Claude through a Claude Pro/Max
+*subscription* via Anthropic's `claude-agent-sdk` (+~75 MB). It is opt-in:
+
+```bash
+pip install 'armance[claude]'
+```
+
+#### System libraries for PDF export (Linux only)
+
+PDF deliverables use WeasyPrint, which needs native libs on Linux
+(macOS bundles them):
+
+```bash
+sudo apt-get install libgobject-2.0-0 libcairo2 libpango-1.0-0
+```
+
+DOCX / PPTX / Markdown exports need nothing extra.
 
 ### Contributor / dev setup
 
 ```bash
 git clone https://github.com/armance-io/armance.git
 cd armance
-uv sync && uv pip install -e .
+uv sync && uv pip install -e '.[web]'
 ```
 
-Verify: `armance --version`
+---
 
-### Optional extras
+## Running the web client (UI)
+
+Armance V2 ships a Belle Époque web UI (Next.js 16 + React 19) on top of a
+FastAPI server. **One command runs both the API and the UI in a single
+process** — no Node, no second server:
 
 ```bash
-# Claude subscription provider (+75 MB)
-uv pip install 'armance[claude]'
-
-# PDF deliverables (Linux native libs for WeasyPrint)
-sudo apt-get install libgobject-2.0-0 libcairo2 libpango-1.0-0
+armance web                 # serves API + UI at http://127.0.0.1:8000, opens a browser
 ```
 
-### Health check
+Run it from a project directory (one that has — or will have — a `.armance/`
+folder, exactly like `armance run`). Options:
+
+| Flag | Effect |
+|---|---|
+| `--port 8000` | port (default `8000`) |
+| `--bind 0.0.0.0` | expose on the LAN (read-only for watchers; only the first client may write) |
+| `--no-browser` | don't auto-open a browser |
+
+Released wheels bundle the prebuilt UI, so `pip install armance && armance web`
+just works.
+
+### Frontend dev mode (contributors)
+
+For hot-reload iteration on the UI, run the two dev servers side by side:
 
 ```bash
-armance doctor
+armance web --no-browser            # API on :8000
+cd web/frontend && pnpm install && pnpm dev   # UI on :3000, proxies /api → :8000
 ```
 
-Reports: config validity, provider reachability, sqlite-vec availability, deliverable libs, ledger writability.
+To regenerate the bundled UI from a checkout (needs Node + pnpm):
 
-### Running the Web Client (UI)
-
-Armance V2 features a Belle Époque styled Web Client built with Next.js 16 (App Router) + React 19, backed by a FastAPI transport server.
-
-To start the FastAPI backend:
 ```bash
-armance web --port 8000
+armance web --build                 # builds web/frontend → src/armance/web_dist/
 ```
-This runs the REST and Event Stream backend on `http://127.0.0.1:8000` and automatically opens the user interface in your default browser.
-
-To start the Next.js frontend in development mode (for local iteration and hot reloading):
-```bash
-cd web/frontend
-pnpm install
-pnpm dev
-```
-Navigate to `http://localhost:3000` to interact with the responsive visual client.
 
 ---
 
@@ -315,8 +352,15 @@ Everything is **natural-language first**. Slash commands are aliases. *"Malik, r
 ## Tests
 
 ```bash
-uv run pytest tests/                       # unit + integration (no network)
-uv run python scripts/qa_live.py           # live OpenRouter free-model QA
+uv run pytest tests/                                       # core: unit + integration (no network)
+bash scripts/check_invariants.sh                           # layer + lifecycle invariants
+uv run python scripts/qa_live.py                           # live OpenRouter free-model QA
+
+# Web backend (ships in the package):
+cd web && uv run pytest ../src/armance/web/backend/tests/
+
+# Web frontend:
+cd web/frontend && pnpm typecheck && pnpm lint && pnpm test && pnpm e2e
 ```
 
 `qa_live.py` exercises the full user journey: greeting → context → recruit → dismiss → re-recruit → design → run → deliverable → RAG round-trip → language switch.

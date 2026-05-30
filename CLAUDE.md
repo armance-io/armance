@@ -17,8 +17,9 @@ state (sqlite-vec only for RAG retrieval). Four providers: `openrouter`,
 | Rules for fixing agents | [`BUG_FIXING_GUIDE.md`](BUG_FIXING_GUIDE.md) |
 | Vision & invariants | [`roadmap/01_vision.md`](roadmap/01_vision.md) |
 | Architecture & module map | [`roadmap/02_architecture.md`](roadmap/02_architecture.md) |
-| Web Backend (FastAPI routes) | `web/backend/routes/` |
+| Web Backend (FastAPI routes) | `src/armance/web/backend/routes/` |
 | Web Frontend (Next.js components) | `web/frontend/src/components/` |
+| How to launch the web UI | [`README.md` → Web Client](README.md#running-the-web-client-ui) |
 
 ## Code conventions
 
@@ -85,14 +86,16 @@ to every system prompt so all agents reply in the chosen language. Set at
 
 ### CLI / Core Tests
 ```bash
-uv run pytest tests/                 # offline suite (~900 tests)
+uv run pytest tests/                 # offline suite (~1050 tests)
 uv run python scripts/qa_live.py     # live OpenRouter free-model journey
+bash scripts/check_invariants.sh     # layer + lifecycle invariants (43 checks)
 ```
 
 ### Web Backend Tests
-Run from the `web/` directory:
+The backend ships inside the package at `src/armance/web/backend/`. Run its
+suite from the `web/` directory (its venv has the `[web]` extra wired):
 ```bash
-uv run pytest backend/tests/         # offline backend routes suite
+cd web && uv run pytest ../src/armance/web/backend/tests/   # offline routes suite (163)
 ```
 
 ### Web Frontend Tests

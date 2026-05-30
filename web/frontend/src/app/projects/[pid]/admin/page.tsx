@@ -1,30 +1,11 @@
-"use client";
+import AdminView from "./AdminView";
 
-import { use } from "react";
-import { useTranslation } from "react-i18next";
-import { AppShell } from "@/components/visual/AppShell";
-import { EmptyShell } from "@/components/visual/EmptyState/EmptyShell";
-import AdminPageContainer from "@/components/admin/AdminPageContainer";
-
-interface AdminPageProps {
-  params: Promise<{ pid: string }>;
+// Static export: emit a single shell. Real ids are read client-side from
+// the URL (see useRouteParams), so the sentinel value is never user-visible.
+export function generateStaticParams() {
+  return [{ pid: "_" }];
 }
 
-export default function AdminPage({ params }: AdminPageProps) {
-  const { pid } = use(params);
-  const { t } = useTranslation();
-
-  return (
-    <AppShell
-      sidebar={
-        <EmptyShell
-          title={t("visual:empty.shell.title")}
-          hint={t("visual:empty.shell.hint")}
-        />
-      }
-      t={t}
-    >
-      <AdminPageContainer pid={pid} t={t} />
-    </AppShell>
-  );
+export default function AdminPage() {
+  return <AdminView />;
 }

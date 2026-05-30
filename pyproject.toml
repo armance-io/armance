@@ -59,6 +59,12 @@
   claude = [
       "claude-agent-sdk>=0.1",
   ]
+  web = [
+      "fastapi>=0.115",
+      "uvicorn[standard]>=0.30",
+      "sse-starlette>=2.1",
+      "python-multipart>=0.0.12",
+  ]
 
   [project.urls]
   Homepage = "https://armance.io"
@@ -75,6 +81,14 @@
 
   [tool.hatch.build.targets.wheel]
   packages = ["src/armance"]
+  # The static frontend bundle (src/armance/web_dist/) is built by
+  # `armance web --build` (or CI) and is gitignored. `artifacts` lets the
+  # otherwise-ignored directory ship in the wheel when present; when absent
+  # (clean checkout, no UI build) the wheel is API-only and `armance web`
+  # falls back to API-only or the repo `out/` build.
+  artifacts = ["src/armance/web_dist/**/*", "src/armance/web_dist/*"]
+  # Backend test suite is not shipped to end users.
+  exclude = ["src/armance/web/backend/tests/**"]
 
   [tool.uv]
   dev-dependencies = [
