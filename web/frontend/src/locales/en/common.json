@@ -80,7 +80,7 @@
     "ask_alternative": "Ask for another perspective"
   },
   "render": {
-    "code": { "copy": "Copy", "copied": "Copied", "lang_aria": "Language: {{lang}}" },
+    "code": { "copy": "Copy", "copied": "Copied", "download": "Download", "downloaded": "Downloaded", "lang_aria": "Language: {{lang}}" },
     "mermaid": { "error_title": "Diagram not rendered", "error_hint": "Showing source instead." },
     "svg": { "error_title": "SVG rejected", "error_hint": "Removed for safety." },
     "image": { "lightbox_aria": "Open image", "close_aria": "Close" },

@@ -17,7 +17,7 @@ from armance.nls import set_language
 from armance.platform.events import LocalEventBus
 from armance.platform.user import get_current_user
 from armance.service.llm_service import TokenLedger, set_ledger
-from armance.service.session import start_or_resume, Session
+from armance.service.session import start_or_resume, Session, load_state, latest_session_id
 from armance.service.tui_bridge import make_loop_context, META_AGENTS
 
 from armance.web.backend.checkpoint import WebCheckpointHandler
@@ -39,55 +39,43 @@ def _check_initialised(armance_root: Path, pid: str) -> None:
         )
 
 
-@router.post("/sessions", status_code=201)
-async def create_session(
+def _load_web_session(
+    app_state: AppState,
+    armance_root: Path,
     pid: str,
-    request: Request,
-    user: str = Depends(get_current_user),
-    app_state: AppState = Depends(get_app_state),
-) -> dict:
-    """Create a new Armance session for project *pid*.
+    sid: str,
+    client_id: str | None = None,
+) -> WebSession:
+    """Loads a session from memory or disk into AppState."""
+    ws = app_state.get(sid)
+    if ws is not None:
+        return ws
 
-    V2: pid is always "default".  V3 wires real project isolation.
-    """
-    armance_root = app_state.armance_root
-    _check_initialised(armance_root, pid)
-
-    # Build a fresh session (same as CLI cmd_run, minus the TUI).
     try:
         cfg = load_config(armance_root.parent)
     except Exception as exc:
-        raise HTTPException(status_code=409, detail={"error": "not_initialised", "redirect": "/setup"}) from exc
+        raise HTTPException(
+            status_code=409,
+            detail={"error": "not_initialised", "redirect": "/setup"},
+        ) from exc
 
     ensure_armance_tree(armance_root.parent, cfg)
     set_language(cfg.language)
 
-    state = start_or_resume(armance_root, resume=False)
+    state = load_state(armance_root, sid)
     session = Session(state, armance_root)
 
     ledger_path = Path(state.ledger_path) if state.ledger_path else None
     ledger = TokenLedger(persist_path=ledger_path) if ledger_path else TokenLedger()
     set_ledger(ledger)
 
-    # Event bus: JSONL log + asyncio.Queue for SSE.
     log_path = armance_root / "sessions" / state.id / "events.log"
     bus = LocalEventBus(log_path=log_path)
 
     handler = WebCheckpointHandler(bus)
-    # C.6 / C.8 — wire the bus into the service-layer context so
-    # Malik can emit `agents_proposed` and SpecialistRunner can emit
-    # `agent_streaming_*` for the live frontend.
     ctx = make_loop_context(armance_root, cfg, state, session, ledger,
                             checkpoint_handler=handler,
                             event_bus=bus)
-
-    # The canonical sid comes from start_or_resume (Session.state.id).
-    # The platform registry is unused in V2 — it stays for V3 SaaS
-    # multi-project routing where sids will be minted by the registry.
-    sid = state.id
-
-    # Determine driver_client_id from the request cookie (for read-along guard).
-    client_id = request.cookies.get("armance_client_id", user)
 
     web_session = WebSession(
         sid=sid,
@@ -99,8 +87,65 @@ async def create_session(
         driver_client_id=client_id,
     )
     app_state.put(web_session)
+    return web_session
 
-    logger.info("session created sid=%s pid=%s user=%s", sid, pid, user)
+
+@router.post("/sessions", status_code=201)
+async def create_session(
+    pid: str,
+    request: Request,
+    user: str = Depends(get_current_user),
+    app_state: AppState = Depends(get_app_state),
+) -> dict:
+    """Create a new Armance session for project *pid*."""
+    armance_root = app_state.armance_root
+    _check_initialised(armance_root, pid)
+
+    try:
+        cfg = load_config(armance_root.parent)
+    except Exception as exc:
+        raise HTTPException(status_code=409, detail={"error": "not_initialised", "redirect": "/setup"}) from exc
+
+    ensure_armance_tree(armance_root.parent, cfg)
+    set_language(cfg.language)
+
+    state = start_or_resume(armance_root, resume=False)
+    client_id = request.cookies.get("armance_client_id", user)
+
+    _load_web_session(app_state, armance_root, pid, state.id, client_id=client_id)
+
+    logger.info("session created sid=%s pid=%s user=%s", state.id, pid, user)
+    return {"id": state.id, "project_id": pid}
+
+
+@router.get("/sessions/latest")
+async def get_latest_session(
+    pid: str,
+    request: Request,
+    user: str = Depends(get_current_user),
+    app_state: AppState = Depends(get_app_state),
+) -> dict:
+    """Return the latest session, auto-creating one if none exists."""
+    armance_root = app_state.armance_root
+    _check_initialised(armance_root, pid)
+
+    sid = latest_session_id(armance_root)
+    if not sid:
+        # Create a default session automatically just like POST /sessions
+        try:
+            cfg = load_config(armance_root.parent)
+        except Exception as exc:
+            raise HTTPException(status_code=409, detail={"error": "not_initialised", "redirect": "/setup"}) from exc
+
+        ensure_armance_tree(armance_root.parent, cfg)
+        set_language(cfg.language)
+        state = start_or_resume(armance_root, resume=False)
+        sid = state.id
+        logger.info("auto-created default session sid=%s for first launch", sid)
+
+    client_id = request.cookies.get("armance_client_id", user)
+    _load_web_session(app_state, armance_root, pid, sid, client_id=client_id)
+
     return {"id": sid, "project_id": pid}
 
 
@@ -112,8 +157,12 @@ async def get_session(
     app_state: AppState = Depends(get_app_state),
 ) -> dict:
     """Return session state, agent list, and language."""
-    ws = app_state.get(sid)
-    if ws is None:
+    armance_root = app_state.armance_root
+    _check_initialised(armance_root, pid)
+
+    try:
+        ws = _load_web_session(app_state, armance_root, pid, sid, client_id=user)
+    except Exception:
         raise HTTPException(status_code=404, detail="session_not_found")
 
     state = ws.session.state

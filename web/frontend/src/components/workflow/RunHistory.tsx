@@ -28,11 +28,11 @@ export interface RunHistoryProps {
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
-const STATUS_EMOJI: Record<RunStatus, string> = {
-  running: "⏳",
-  completed: "✅",
-  failed: "❌",
-  cancelled: "⏹",
+const STATUS_COLORS: Record<RunStatus, { bg: string; border: string; pulse?: boolean }> = {
+  running: { bg: "hsl(35, 30%, 60%)", border: "hsl(35, 30%, 50%)", pulse: true },
+  completed: { bg: "hsl(120, 15%, 55%)", border: "hsl(120, 15%, 45%)" },
+  failed: { bg: "hsl(0, 30%, 65%)", border: "hsl(0, 30%, 55%)" },
+  cancelled: { bg: "var(--ink-faint, #9c8e7e)", border: "rgba(42, 37, 32, 0.2)" },
 };
 
 function formatDuration(ms: number | null): string {
@@ -196,9 +196,14 @@ export const RunHistory: FC<RunHistoryProps> = ({
           background: var(--bg-paper-deep, #e8dfcd) !important;
           outline: none;
         }
+        @keyframes runhistory-pulse {
+          0% { opacity: 1; transform: scale(1); }
+          100% { opacity: 0.45; transform: scale(0.85); }
+        }
         @media (prefers-reduced-motion: reduce) {
           * {
             transition: none !important;
+            animation: none !important;
           }
         }
       `}</style>
@@ -259,12 +264,19 @@ export const RunHistory: FC<RunHistoryProps> = ({
               aria-label={`${t(`workflow:history.status.${run.status}`)} run ${run.run_id}`}
             >
               <span
-                style={{ fontSize: "14px", lineHeight: 1 }}
+                style={{
+                  display: "inline-block",
+                  width: "10px",
+                  height: "10px",
+                  borderRadius: "50%",
+                  backgroundColor: STATUS_COLORS[run.status].bg,
+                  border: `1px solid ${STATUS_COLORS[run.status].border}`,
+                  flexShrink: 0,
+                  animation: STATUS_COLORS[run.status].pulse ? "runhistory-pulse 1s infinite alternate" : "none",
+                }}
                 title={t(`workflow:history.status.${run.status}`)}
                 aria-hidden="true"
-              >
-                {STATUS_EMOJI[run.status]}
-              </span>
+              />
 
               <span
                 style={timeStyle}

@@ -137,6 +137,7 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
     borderRight: "1px solid var(--rule,#d6c8ad)",
     transition: motion ? "none" : "color 0.15s ease",
     padding: 0,
+    background: "var(--rule,#d6c8ad)",
   };
 
   const sidebarStyle: CSSProperties = {

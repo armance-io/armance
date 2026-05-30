@@ -98,16 +98,6 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
     letterSpacing: "0.02em",
   };
 
-  const spinnerStyle: CSSProperties = {
-    width: "12px",
-    height: "12px",
-    border: "1.5px solid var(--rule, #d6c8ad)",
-    borderTopColor: agentColour,
-    borderRadius: "999px",
-    animation: "msgbubble-spin 600ms linear infinite",
-    flexShrink: 0,
-  };
-
   const proseStyle: CSSProperties = {
     fontFamily: "var(--ff-sans, 'Inter', sans-serif)",
     fontSize: "14px",
@@ -176,15 +166,6 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
             <div style={headerStyle}>
               <span style={bulletStyle} aria-hidden="true" />
               <span style={nameStyle}>{agentName}</span>
-              {streaming && (
-                <>
-                  <span
-                    style={spinnerStyle}
-                    role="status"
-                    aria-label={t("chat:bubble.streaming_aria")}
-                  />
-                </>
-              )}
             </div>
           )}
           <div className="msg-bubble-prose" style={proseStyle}>

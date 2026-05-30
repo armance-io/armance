@@ -1,4 +1,4 @@
-import { type FC, type ReactNode, useMemo } from "react";
+import { type CSSProperties, type FC, type ReactNode, useMemo, useState } from "react";
 import { marked, type Tokens } from "marked";
 import { tokens } from "../_shared/armance-tokens";
 import { CodeBlock } from "./CodeBlock";
@@ -22,14 +22,82 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
   className,
   t,
 }) => {
+  const [copied, setCopied] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
+
   const blocks = useMemo(
     () => marked.lexer(markdown, { gfm: true }),
     [markdown],
   );
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(markdown);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* noop */
+    }
+  };
+
+  const handleDownload = () => {
+    try {
+      const blob = new Blob([markdown], { type: "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "document.md";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setDownloaded(true);
+      setTimeout(() => setDownloaded(false), 1500);
+    } catch {
+      /* noop */
+    }
+  };
+
+  const toolbarStyle: CSSProperties = {
+    display: "flex",
+    gap: 6,
+    justifyContent: "flex-end",
+    marginBottom: 12,
+    borderBottom: `1px solid ${tokens.ruleSoft}`,
+    paddingBottom: 6,
+  };
+
+  const btnStyle: CSSProperties = {
+    border: `1px solid ${tokens.rule}`,
+    background: "transparent",
+    color: tokens.inkSoft,
+    fontFamily: tokens.ffSans,
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: "0.08em",
+    padding: "2px 8px",
+    cursor: "pointer",
+    borderRadius: 2,
+    transition: "background 160ms ease, color 160ms ease",
+  };
+
+  const containerStyle: CSSProperties = {
+    color: tokens.ink,
+    display: "flex",
+    flexDirection: "column",
+  };
+
   return (
-    <div className={`prose ${className ?? ""}`} style={{ color: tokens.ink }}>
+    <div className={`prose ${className ?? ""}`} style={containerStyle}>
       <style>{PROSE_CSS}</style>
+      <div style={toolbarStyle} className="prose-toolbar">
+        <button type="button" style={btnStyle} onClick={handleCopy}>
+          {copied ? t("render:code.copied") : t("render:code.copy")}
+        </button>
+        <button type="button" style={btnStyle} onClick={handleDownload}>
+          {downloaded ? t("render:code.downloaded") : t("render:code.download")}
+        </button>
+      </div>
       {blocks.map((tok, i) => renderBlock(tok, i, t))}
     </div>
   );

@@ -42,20 +42,14 @@ export interface RunDetailProps {
   t: (key: string) => string;
 }
 
-/* ─── Helpers ────────────────────────────────────────────────────────────── */
-
-const STATUS_EMOJI: Record<RunStatus, string> = {
-  completed: "✅",
-  failed: "❌",
-  running: "⏳",
-  cancelled: "⏭",
-};
-
-const STATUS_COLOUR: Record<RunStatus, string> = {
-  completed: "var(--accent-deep, #4a3666)",
-  failed: "oklch(0.55 0.18 25)",
-  running: "oklch(0.65 0.15 85)",
-  cancelled: "var(--ink-soft, #5b5145)",
+const STATUS_GEMS: Record<string, { bg: string; border: string; pulse?: boolean }> = {
+  queued: { bg: "var(--ink-faint, #9c8e7e)", border: "rgba(42, 37, 32, 0.2)" },
+  working: { bg: "hsl(35, 30%, 60%)", border: "hsl(35, 30%, 50%)", pulse: true },
+  running: { bg: "hsl(35, 30%, 60%)", border: "hsl(35, 30%, 50%)", pulse: true },
+  completed: { bg: "hsl(120, 15%, 55%)", border: "hsl(120, 15%, 45%)" },
+  failed: { bg: "hsl(0, 30%, 65%)", border: "hsl(0, 30%, 55%)" },
+  cancelled: { bg: "var(--ink-faint, #9c8e7e)", border: "rgba(42, 37, 32, 0.2)" },
+  skipped: { bg: "var(--ink-faint, #9c8e7e)", border: "rgba(42, 37, 32, 0.2)" },
 };
 
 function fmtDuration(ms: number | null): string {
@@ -147,14 +141,6 @@ const StepRow: FC<{
     flexShrink: 0,
   };
 
-  const emojiStyle: CSSProperties = {
-    flexShrink: 0,
-    fontSize: "14px",
-    animation:
-      step.status === "running"
-        ? "rundetail-pulse 1.6s ease-in-out infinite"
-        : "none",
-  };
 
   const chevronStyle: CSSProperties = {
     flexShrink: 0,
@@ -199,9 +185,20 @@ const StepRow: FC<{
         >
           <path d="M6 4l4 4-4 4" />
         </svg>
-        <span style={emojiStyle} aria-hidden="true">
-          {STATUS_EMOJI[step.status]}
-        </span>
+        <span
+          style={{
+            display: "inline-block",
+            width: "10px",
+            height: "10px",
+            borderRadius: "50%",
+            backgroundColor: STATUS_GEMS[step.status]?.bg || "var(--ink-faint)",
+            border: `1px solid ${STATUS_GEMS[step.status]?.border || "transparent"}`,
+            flexShrink: 0,
+            animation: STATUS_GEMS[step.status]?.pulse ? "rundetail-pulse 1s infinite alternate" : "none",
+          }}
+          title={t(`runs:detail.status.${step.status}`)}
+          aria-hidden="true"
+        />
         <span style={idStyle}>{step.id}</span>
         <span style={roleStyle}>{step.role}</span>
         <span style={metaStyle}>{fmtDuration(step.duration_ms)}</span>
@@ -286,7 +283,7 @@ export const RunDetail: FC<RunDetailProps> = ({ run, onStepExpand, t }) => {
   };
 
   const statusStyle: CSSProperties = {
-    color: STATUS_COLOUR[run.status],
+    color: "var(--ink, #2a2520)",
     fontWeight: 500,
   };
 
@@ -323,8 +320,20 @@ export const RunDetail: FC<RunDetailProps> = ({ run, onStepExpand, t }) => {
           </span>
         </h2>
         <div style={metaRowStyle}>
-          <span style={statusStyle}>
-            {STATUS_EMOJI[run.status]}{" "}
+          <span style={{ ...statusStyle, display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <span
+              style={{
+                display: "inline-block",
+                width: "10px",
+                height: "10px",
+                borderRadius: "50%",
+                backgroundColor: STATUS_GEMS[run.status]?.bg || "var(--ink-faint)",
+                border: `1px solid ${STATUS_GEMS[run.status]?.border || "transparent"}`,
+                flexShrink: 0,
+                animation: STATUS_GEMS[run.status]?.pulse ? "rundetail-pulse 1s infinite alternate" : "none",
+              }}
+              aria-hidden="true"
+            />
             {t(`runs:detail.status.${run.status}`)}
           </span>
           <span>
