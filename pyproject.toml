@@ -79,6 +79,31 @@
   requires = ["hatchling>=1.20.0"]
   build-backend = "hatchling.build"
 
+  [tool.hatch.build.targets.sdist]
+  # Keep the sdist lean: ship sources + the built UI bundle, never the
+  # frontend toolchain (node_modules, out/, .next) which is huge and full of
+  # symlinks that break packing.
+  include = [
+      "src/armance",
+      "web/frontend/src",
+      "web/frontend/package.json",
+      "web/frontend/*.ts",
+      "web/frontend/*.mjs",
+      "web/frontend/*.json",
+      "scripts",
+      "*.md",
+      "pyproject.toml",
+      "uv.lock",
+      "LICENSE",
+  ]
+  exclude = [
+      "**/node_modules",
+      "**/out",
+      "**/.next",
+      "**/__pycache__",
+  ]
+  artifacts = ["src/armance/web_dist/**/*", "src/armance/web_dist/*"]
+
   [tool.hatch.build.targets.wheel]
   packages = ["src/armance"]
   # The static frontend bundle (src/armance/web_dist/) is built by
