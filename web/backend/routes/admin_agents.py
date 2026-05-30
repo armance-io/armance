@@ -13,13 +13,13 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-_SAFE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+$")
-
 from armance.core.models.agent import Agent
 from armance.platform.user import get_current_user
 from armance.storage.paths import agent_path
 from backend.deps import get_app_state, get_web_session
 from backend.state import AppState, WebSession
+
+_SAFE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 router = APIRouter()
 

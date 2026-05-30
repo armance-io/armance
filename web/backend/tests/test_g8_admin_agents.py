@@ -12,7 +12,7 @@ from __future__ import annotations
 import pytest
 from pathlib import Path
 from httpx import AsyncClient
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock
 
 from armance.core.models.agent import Agent
 
@@ -60,7 +60,6 @@ def session_with_agents(armance_root: Path, client: AsyncClient):
     os.environ["ARMANCE_ROOT"] = str(armance_root.parent)
     from backend.main import create_app
     app = create_app()
-    from httpx import AsyncClient as AC, ASGITransport
     app.state.app_state = AppState(armance_root=armance_root)
     app.state.app_state.put(ws)
     return app, ws
