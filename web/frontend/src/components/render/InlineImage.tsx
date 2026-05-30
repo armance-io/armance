@@ -10,6 +10,8 @@ export interface InlineImageProps {
 
 export const InlineImage: FC<InlineImageProps> = ({ src, alt, caption, t }) => {
   const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -20,13 +22,51 @@ export const InlineImage: FC<InlineImageProps> = ({ src, alt, caption, t }) => {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(src);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* noop */
+    }
+  };
+
+  const handleDownload = () => {
+    try {
+      const a = document.createElement("a");
+      a.href = src;
+      a.download = alt || "image";
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setDownloaded(true);
+      setTimeout(() => setDownloaded(false), 1500);
+    } catch {
+      /* noop */
+    }
+  };
+
   const thumb: CSSProperties = {
     maxWidth: "100%",
     border: `1px solid ${tokens.rule}`,
     borderRadius: 0,
-    margin: "20px 0",
+    margin: "20px 0 10px 0",
     cursor: "zoom-in",
     display: "block",
+  };
+
+  const btnStyle: CSSProperties = {
+    border: `1px solid ${tokens.rule}`,
+    background: "transparent",
+    color: tokens.inkSoft,
+    fontFamily: tokens.ffSans,
+    fontSize: 11,
+    padding: "3px 10px",
+    cursor: "pointer",
+    borderRadius: 999,
+    transition: "background 160ms ease, color 160ms ease",
   };
 
   const lightbox: CSSProperties = {
@@ -51,6 +91,14 @@ export const InlineImage: FC<InlineImageProps> = ({ src, alt, caption, t }) => {
           onClick={() => setOpen(true)}
           loading="lazy"
         />
+        <div style={{ display: "flex", gap: 6, marginBottom: caption ? 8 : 0 }}>
+          <button type="button" style={btnStyle} onClick={handleCopy}>
+            {copied ? t("render:code.copied") : t("render:code.copy")}
+          </button>
+          <button type="button" style={btnStyle} onClick={handleDownload}>
+            {downloaded ? t("render:code.downloaded") : t("render:code.download")}
+          </button>
+        </div>
         {caption && (
           <figcaption
             style={{

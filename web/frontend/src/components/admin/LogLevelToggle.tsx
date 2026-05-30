@@ -1,4 +1,4 @@
-import { type CSSProperties, type FC, useState } from "react";
+import { type CSSProperties, type FC, useState, useEffect } from "react";
 import { tokens } from "../_shared/armance-tokens";
 
 type Level = "INFO" | "DEBUG" | "WARN" | "ERROR";
@@ -14,6 +14,15 @@ const LEVELS: Level[] = ["DEBUG", "INFO", "WARN", "ERROR"];
 export const LogLevelToggle: FC<LogLevelToggleProps> = ({ current, onChange, t }) => {
   const [active, setActive] = useState<Level>(current);
   const [saving, setSaving] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  useEffect(() => {
+    if (!showConfirm) return;
+    const timer = setTimeout(() => {
+      setShowConfirm(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [showConfirm]);
 
   const wrap: CSSProperties = {
     display: "flex",
@@ -37,6 +46,7 @@ export const LogLevelToggle: FC<LogLevelToggleProps> = ({ current, onChange, t }
             try {
               await onChange(lvl);
               setActive(lvl);
+              setShowConfirm(true);
             } finally {
               setSaving(false);
             }
@@ -54,6 +64,60 @@ export const LogLevelToggle: FC<LogLevelToggleProps> = ({ current, onChange, t }
           {lvl}
         </button>
       ))}
+
+      {showConfirm && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setShowConfirm(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(42, 37, 32, 0.15)",
+            backdropFilter: "blur(2px)",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "var(--bg-paper-card, #faf6ef)",
+              border: "1px solid var(--rule, #d6c8ad)",
+              padding: "24px 32px",
+              borderRadius: "2px",
+              boxShadow: "0 12px 28px rgba(0,0,0,0.12)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "12px",
+              maxWidth: "90%",
+              width: "360px",
+              textAlign: "center",
+            }}
+          >
+            <span style={{ fontSize: "24px", color: "var(--accent, #6b4f8a)" }}>❦</span>
+            <h3 style={{
+              fontFamily: "var(--ff-serif, 'Instrument Serif', serif)",
+              fontSize: "20px",
+              margin: 0,
+              color: "var(--ink, #2a2520)",
+            }}>
+              {t("admin:logs.level_changed_title") || "Confirmation"}
+            </h3>
+            <p style={{
+              fontFamily: "var(--ff-sans, 'Inter', sans-serif)",
+              fontSize: "14px",
+              color: "var(--ink-soft, #5b5145)",
+              margin: 0,
+            }}>
+              {t("admin:logs.level_changed_desc")?.replace("{level}", active) || `Niveau de log mis à jour : ${active}`}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -80,7 +80,7 @@
     "ask_alternative": "Demander une autre vue"
   },
   "render": {
-    "code": { "copy": "Copier", "copied": "Copié", "lang_aria": "Langage : {{lang}}" },
+    "code": { "copy": "Copier", "copied": "Copié", "download": "Télécharger", "downloaded": "Téléchargé", "lang_aria": "Langage : {{lang}}" },
     "mermaid": { "error_title": "Diagramme non rendu", "error_hint": "Source affichée à la place." },
     "svg": { "error_title": "SVG rejeté", "error_hint": "Retiré pour des raisons de sécurité." },
     "image": { "lightbox_aria": "Ouvrir l'image", "close_aria": "Fermer" },

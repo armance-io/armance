@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Armance — Conversation & Audio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:ital,wght@0,300;0,400;0,500;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+/* ============================================================ TOKENS ============================================================ */
+:root {
+  --bg-paper:        #f4ede0;
+  --bg-paper-deep:   #e8dfcd;
+  --bg-paper-card:   #faf6ef;
+  --ink:             #2a2520;
+  --ink-soft:        #5b5145;
+  --ink-faint:       #9c8e7e;
+  --rule:            #d6c8ad;
+  --rule-soft:       #e8dfcd;
+  --accent:          #6b4f8a;
+  --accent-soft:     #b7a4c9;
+  --accent-deep:     #4a3666;
+  --danger:          #a44141;
+
+  --ff-serif: "Instrument Serif", "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --ff-sans:  "Inter", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --ff-mono:  "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --nav-h: 52px;
+  --sidebar-w: 240px;
+
+  --shadow-card: 0 2px 12px -4px rgba(42,37,32,0.10), 0 1px 3px -1px rgba(42,37,32,0.07);
+  --shadow-lift: 0 8px 32px -10px rgba(42,37,32,0.16), 0 2px 8px -3px rgba(42,37,32,0.08);
+}
+
+[data-theme="dark"] {
+  --bg-paper:        #1d1a17;
+  --bg-paper-deep:   #15120f;
+  --bg-paper-card:   #231f1b;
+  --ink:             #e9e0cd;
+  --ink-soft:        #b3a895;
+  --ink-faint:       #6e6152;
+  --rule:            #3a3328;
+  --rule-soft:       #2a2520;
+  --accent:          #b7a4c9;
+  --accent-soft:     #6b4f8a;
+  --accent-deep:     #d6c8ad;
+  --danger:          #c95a5a;
+
+  --shadow-card: 0 2px 12px -4px rgba(0,0,0,0.35), 0 1px 3px -1px rgba(0,0,0,0.25);
+  --shadow-lift: 0 8px 32px -10px rgba(0,0,0,0.50), 0 2px 8px -3px rgba(0,0,0,0.30);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: var(--ff-sans);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--bg-paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+p { margin: 0; }
+h1, h2, h3, h4 { margin: 0; font-weight: 400; }
+ul, ol { margin: 0; padding: 0; }
+li { list-style: none; }
+code { font-family: var(--ff-mono); }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--rule); border-radius: 999px; }
+
+/* ============================================================ NAV ============================================================ */
+.g-nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  height: var(--nav-h);
+  background: color-mix(in srgb, var(--bg-paper) 88%, transparent);
+  backdrop-filter: saturate(140%) blur(12px);
+  -webkit-backdrop-filter: saturate(140%) blur(12px);
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  padding: 0 20px 0 0;
+}
+.g-nav-brand {
+  display: flex;
+  align-items: center;
+  width: var(--sidebar-w);
+  padding: 0 20px;
+  border-right: 1px solid var(--rule);
+  height: 100%;
+}
+.g-nav-brand-name {
+  font-family: var(--ff-serif);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--ink);
+}
+.g-nav-brand-sep {
+  color: var(--rule);
+  margin: 0 8px;
+}
+.g-nav-brand-section {
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.g-nav-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.g-ctl {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--ink-soft);
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+.g-ctl:hover {
+  color: var(--ink);
+  border-color: var(--ink-soft);
+  background: var(--bg-paper-deep);
+}
+.g-version-pill {
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--rule);
+  color: var(--ink-faint);
+  background: var(--bg-paper-deep);
+}
+
+/* ============================================================ LAYOUT ============================================================ */
+.g-layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  padding-top: var(--nav-h);
+  min-height: 100vh;
+}
+
+.g-sidebar {
+  position: sticky;
+  top: var(--nav-h);
+  align-self: start;
+  height: calc(100vh - var(--nav-h));
+  overflow-y: auto;
+  border-right: 1px solid var(--rule);
+  background: var(--bg-paper-deep);
+  padding: 24px 0 48px;
+}
+.g-sidebar-group {
+  padding: 0 16px 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--rule);
+}
+.g-sidebar-group:last-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+.g-sidebar-group-title {
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 10px;
+  padding: 0 4px;
+}
+.g-sidebar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.g-sidebar-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  transition: color 0.15s, background 0.15s;
+  gap: 8px;
+}
+.g-sidebar-link:hover {
+  color: var(--ink);
+  background: var(--rule-soft);
+}
+.g-sidebar-link.is-active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  font-weight: 500;
+}
+.g-sidebar-badge {
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+  opacity: 0.65;
+  flex-shrink: 0;
+}
+
+.g-main {
+  padding: 52px 64px 120px;
+  min-width: 0;
+}
+
+.g-page-header {
+  margin-bottom: 64px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid var(--rule);
+}
+.g-page-title {
+  font-family: var(--ff-serif);
+  font-weight: 400;
+  font-size: 52px;
+  line-height: 1.04;
+  letter-spacing: -0.018em;
+  color: var(--ink);
+  margin-bottom: 16px;
+}
+.g-page-title em {
+  font-style: italic;
+  color: var(--ink-soft);
+}
+.g-page-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.g-page-meta-item + .g-page-meta-item::before {
+  content: "·";
+  margin-right: 20px;
+}
+
+.g-category-title {
+  font-family: var(--ff-serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-faint);
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.g-category-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+/* ============================================================ COMPONENTS ============================================================ */
+.g-component {
+  margin-bottom: 80px;
+  padding-bottom: 80px;
+  border-bottom: 1px solid var(--rule);
+  max-width: 800px;
+}
+.g-component:last-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+.g-component-header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.g-component-title {
+  font-family: var(--ff-serif);
+  font-weight: 400;
+  font-size: 38px;
+  line-height: 1.08;
+  color: var(--ink);
+}
+.g-component-path {
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  background: var(--bg-paper-deep);
+  padding: 3px 9px;
+  border-radius: 4px;
+  border: 1px solid var(--rule);
+  letter-spacing: 0.02em;
+}
+.g-component-desc {
+  font-family: var(--ff-serif);
+  font-style: italic;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  max-width: 52ch;
+  margin-bottom: 40px;
+  text-wrap: pretty;
+}
+
+.g-demo-label {
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.g-demo-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+.g-demo-canvas {
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-paper-card);
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-card);
+}
+.g-demo-canvas--dark {
+  background: #1d1a17;
+  border-color: #3a3328;
+}
+.g-demo-row {
+  padding: 20px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.g-demo-row + .g-demo-row {
+  border-top: 1px solid var(--rule);
+}
+.g-demo-canvas--dark .g-demo-row + .g-demo-row {
+  border-color: #3a3328;
+}
+.g-demo-row-label {
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 8px;
+  align-self: flex-start;
+}
+.g-demo-canvas--dark .g-demo-row-label {
+  color: #6e6152;
+}
+
+.g-props-wrap {
+  overflow-x: auto;
+  margin-bottom: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--rule);
+  box-shadow: var(--shadow-card);
+}
+.g-props-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.g-props-table thead th {
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--bg-paper-deep);
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+.g-props-table tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--rule-soft);
+  vertical-align: top;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+.g-props-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.td-name { font-family: var(--ff-mono); color: var(--accent); font-weight: 500; }
+.td-type { font-family: var(--ff-mono); color: var(--ink); font-size: 12px; }
+.td-default { font-family: var(--ff-mono); color: var(--ink-faint); font-size: 12px; }
+
+.g-code-block {
+  position: relative;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--bg-paper-deep);
+  padding: 16px 20px;
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-card);
+}
+.g-code-block pre {
+  margin: 0;
+  overflow-x: auto;
+}
+.g-code-block code {
+  font-family: var(--ff-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+.g-copy-btn {
+  position: absolute;
+  top: 12px; right: 12px;
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--rule);
+  background: var(--bg-paper-card);
+  color: var(--ink-soft);
+  transition: all 0.15s;
+}
+.g-copy-btn:hover {
+  color: var(--ink);
+  border-color: var(--ink-soft);
+  background: var(--bg-paper);
+}
+
+.g-notes {
+  margin: 0 0 28px 0;
+  padding-left: 20px;
+}
+.g-note {
+  font-family: var(--ff-serif);
+  font-style: italic;
+  font-size: 15px;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+  position: relative;
+}
+.g-note::before {
+  content: "❦";
+  color: var(--accent-soft);
+  font-size: 12px;
+  position: absolute;
+  left: -20px;
+  top: 1px;
+}
+
+/* Token syntax colors */
+.tok-kw { color: #8f5c38; font-weight: 500; }
+.tok-str { color: #5a7d5a; }
+.tok-tag { color: #6b4f8a; }
+.tok-attr { color: #b08a3a; }
+.tok-val { color: #2a2520; }
+[data-theme="dark"] .tok-kw { color: #cf9c77; }
+[data-theme="dark"] .tok-str { color: #9abfa2; }
+[data-theme="dark"] .tok-tag { color: #b7a4c9; }
+[data-theme="dark"] .tok-attr { color: #d6c8ad; }
+[data-theme="dark"] .tok-val { color: #e9e0cd; }
+
+/* Fleuron divider styles */
+.c-fleuron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+.c-fleuron__rule {
+  flex: 0 0 auto;
+  height: 0;
+  border-top: 1px solid var(--rule);
+}
+.c-fleuron__glyph {
+  flex: 0 0 auto;
+  font-family: var(--ff-serif);
+  line-height: 1;
+  color: var(--accent);
+  user-select: none;
+}
+.c-fleuron--sm               { gap: 14px; padding: 16px 0; }
+.c-fleuron--sm .c-fleuron__rule  { width: 56px; }
+.c-fleuron--sm .c-fleuron__glyph { font-size: 16px; }
+
+.c-fleuron--md               { gap: 18px; padding: 28px 0; }
+.c-fleuron--md .c-fleuron__rule  { width: 80px; }
+.c-fleuron--md .c-fleuron__glyph { font-size: 20px; }
+
+.c-fleuron--lg               { gap: 22px; padding: 44px 0; }
+.c-fleuron--lg .c-fleuron__rule  { width: 112px; }
+.c-fleuron--lg .c-fleuron__glyph { font-size: 28px; }
+
+.g-demo-canvas--dark .c-fleuron__rule  { border-color: #3a3328; }
+.g-demo-canvas--dark .c-fleuron__glyph { color: #b7a4c9; }
+
+
+/* MessageBubble styles */
+.msg-bubble-wrap { display: flex; flex-direction: column; gap: 16px; padding: 24px; }
+.msg-row { display: flex; gap: 12px; width: 100%; align-items: flex-start; }
+.msg-row--agent { justify-content: flex-start; }
+.msg-row--user { justify-content: flex-end; }
+.msg-avatar { width: 32px; height: 32px; border-radius: 999px; display: grid; place-items: center; font-family: var(--ff-serif); font-size: 16px; color: #fff; flex-shrink: 0; }
+.msg-bubble { max-width: 72%; padding: 12px 16px; border-radius: 6px; font-size: 14px; position: relative; }
+.msg-row--agent .msg-bubble { background: var(--bg-paper); border: 1px solid var(--rule); }
+.msg-row--user .msg-bubble { background: var(--bg-paper-deep); color: var(--ink); }
+.msg-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 12px; font-weight: 500; color: var(--ink-soft); }
+.msg-bullet { width: 8px; height: 8px; border-radius: 999px; }
+.msg-bullet--pulse { animation: bullet-pulse 1.4s ease-in-out infinite; }
+@keyframes bullet-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0.3; } }
+.msg-timestamp { font-family: var(--ff-mono); font-size: 10px; color: var(--ink-faint); margin-top: 6px; display: block; }
+.msg-prose p { margin: 0 0 10px 0; }
+.msg-prose p:last-child { margin-bottom: 0; }
+.msg-prose code { font-family: var(--ff-mono); font-size: 12px; background: var(--bg-paper-deep); color: var(--accent-deep); padding: 2px 6px; border-radius: 2px; }
+
+/* ChatInput styles */
+.ci-bar { padding: 16px 24px; border-top: 1px solid var(--rule); background: var(--bg-paper); position: relative; }
+.ci-busy { display: flex; align-items: center; gap: 8px; font-style: italic; font-size: 13px; color: var(--ink-soft); margin-bottom: 8px; }
+.ci-busy-dot { width: 6px; height: 6px; border-radius: 999px; animation: bullet-pulse 1.4s infinite; }
+.ci-textarea-wrap { display: flex; gap: 12px; align-items: flex-end; }
+.ci-textarea { flex: 1; min-height: 40px; max-height: 144px; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--rule); background: var(--bg-paper-card); font-family: var(--ff-sans); font-size: 14px; line-height: 24px; color: var(--ink); resize: none; overflow-y: auto; transition: border-color 0.2s; }
+.ci-textarea:focus { outline: none; border-color: var(--accent); }
+.ci-send-btn { width: 36px; height: 36px; border-radius: 999px; background: var(--rule); color: var(--bg-paper-card); display: grid; place-items: center; transition: all 0.2s; }
+.ci-send-btn.is-active { background: var(--accent); color: var(--bg-paper-card); }
+
+/* AgentTooltip styles */
+.at-trigger-container { padding: 40px; text-align: center; }
+.at-trigger { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; color: var(--accent); border-bottom: 1px dashed var(--accent); cursor: pointer; padding-bottom: 2px; position: relative; }
+.at-tooltip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); width: 280px; padding: 14px; background: var(--bg-paper); border: 1px solid var(--rule); box-shadow: var(--shadow-lift); display: flex; flex-direction: column; gap: 10px; text-align: left; opacity: 0; pointer-events: none; transition: opacity 0.16s ease; z-index: 10; }
+.at-trigger:hover .at-tooltip { opacity: 1; pointer-events: auto; }
+.at-top-row { display: flex; gap: 12px; align-items: center; }
+.at-avatar { width: 36px; height: 36px; border-radius: 999px; display: grid; place-items: center; font-family: var(--ff-serif); font-size: 18px; color: #fff; }
+.at-name { font-family: var(--ff-serif); font-size: 16px; color: var(--ink); }
+.at-role { font-family: var(--ff-mono); font-size: 10px; uppercase; letter-spacing: 0.1em; color: var(--ink-faint); }
+.at-model { font-family: var(--ff-mono); font-size: 11px; color: var(--ink-soft); border-top: 1px solid var(--rule-soft); padding-top: 6px; }
+.at-meta { display: flex; gap: 12px; font-family: var(--ff-mono); font-size: 11px; color: var(--ink-soft); }
+.at-persona { font-family: var(--ff-serif); font-style: italic; font-size: 13px; line-height: 1.45; color: var(--ink-soft); border-top: 1px solid var(--rule-soft); padding-top: 6px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* BottomSpinner styles */
+.bs-bar { height: 0; padding: 0; overflow: hidden; display: flex; align-items: center; gap: 8px; border-top: 0; background: transparent; transition: all 200ms ease; }
+.bs-bar.is-active { height: 32px; padding: 0 16px; border-top: 1px solid var(--rule); background: var(--bg-paper-deep); }
+.bs-avatar { width: 20px; height: 20px; border-radius: 999px; display: grid; place-items: center; font-family: var(--ff-serif); font-size: 11px; color: #fff; }
+.bs-dot { width: 6px; height: 6px; border-radius: 999px; animation: bullet-pulse 1.4s infinite; }
+.bs-label { font-style: italic; font-size: 12px; color: var(--ink-soft); }
+
+/* VoiceInput styles */
+.vi-row { display: flex; gap: 24px; align-items: center; padding: 24px; }
+.vi-btn { width: 36px; height: 36px; border-radius: 999px; border: 1px solid var(--rule); display: grid; place-items: center; color: var(--ink-soft); transition: all 0.2s; position: relative; }
+.vi-btn--recording { background: var(--accent); border-color: var(--accent); color: var(--bg-paper-card); animation: vi-pulse 1.4s infinite; }
+.vi-btn--error { border-color: var(--danger); color: var(--danger); animation: vi-shake 0.28s; }
+.vi-waveform { display: flex; gap: 2px; align-items: center; height: 16px; }
+.vi-bar { width: 2px; height: 4px; background: var(--accent); border-radius: 1px; }
+.vi-bar--anim { animation: vi-waveform-anim 0.8s ease-in-out infinite alternate; }
+.vi-bar--anim:nth-child(2) { animation-delay: 0.11s; }
+.vi-bar--anim:nth-child(3) { animation-delay: 0.22s; }
+.vi-bar--anim:nth-child(4) { animation-delay: 0.33s; }
+@keyframes vi-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 40%, transparent); } 100% { box-shadow: 0 0 0 8px transparent; } }
+@keyframes vi-shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-3px); } 40%, 80% { transform: translateX(3px); } }
+@keyframes vi-waveform-anim { 0% { height: 4px; } 100% { height: 16px; } }
+
+/* AudioReply styles */
+.ar-row { display: flex; gap: 16px; align-items: center; padding: 24px; }
+.ar-btn { width: 24px; height: 24px; border-radius: 999px; display: grid; place-items: center; cursor: pointer; position: relative; color: var(--accent); }
+.ar-btn span { display: inline-block; position: relative; top: -2px; left: 2px; }
+.ar-progress-svg { position: absolute; inset: -4px; width: 32px; height: 32px; transform: rotate(-90deg); }
+.ar-progress-track { fill: none; stroke: var(--rule); stroke-width: 1px; }
+.ar-progress-bar { fill: none; stroke: var(--accent); stroke-width: 1.5px; stroke-dasharray: 88; stroke-dashoffset: 88; transition: stroke-dashoffset 0.1s linear; }
+.ar-dot-pulse { width: 6px; height: 6px; border-radius: 999px; background: var(--accent); animation: bullet-pulse 1.2s infinite; }
+
+</style>
+</head>
+<body>
+
+<!-- ============================================================ NAV ============================================================ -->
+<header class="g-nav" role="banner">
+  <div class="g-nav-brand">
+    <span class="g-nav-brand-name">Armance</span>
+    <span class="g-nav-brand-sep">·</span>
+    <span class="g-nav-brand-section">Composants</span>
+  </div>
+  <div class="g-nav-right">
+    <span class="g-version-pill">React 19 · TS strict</span>
+    <button class="g-ctl" id="themeToggle" aria-label="Basculer le thème">☾</button>
+  </div>
+</header>
+
+<div class="g-layout">
+
+  
+  <aside class="g-sidebar" aria-label="Navigation des composants">
+    <!-- Pages de la Galerie -->
+    <div class="g-sidebar-group">
+      <p class="g-sidebar-group-title">Menu des Galeries</p>
+      <ul class="g-sidebar-list">
+        <li>
+          <a href="Component Gallery.html" class="g-sidebar-link ">
+            Structure & Visuels <span class="g-sidebar-badge">v1</span>
+          </a>
+        </li>
+        <li>
+          <a href="Gallery Chat.html" class="g-sidebar-link is-active">
+            Conversation & Audio <span class="g-sidebar-badge">v2</span>
+          </a>
+        </li>
+        <li>
+          <a href="Gallery Workflows.html" class="g-sidebar-link ">
+            Workflows & Graphes <span class="g-sidebar-badge">v2</span>
+          </a>
+        </li>
+        <li>
+          <a href="Gallery Rendus.html" class="g-sidebar-link ">
+            Rendus & Blocs <span class="g-sidebar-badge">v2</span>
+          </a>
+        </li>
+        <li>
+          <a href="Gallery Admin.html" class="g-sidebar-link ">
+            Administration <span class="g-sidebar-badge">v2</span>
+          </a>
+        </li>
+        <li>
+          <a href="Gallery Divers.html" class="g-sidebar-link ">
+            Divers & Panneaux <span class="g-sidebar-badge">v2</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+    
+    <!-- Composants de la page courante -->
+    <div class="g-sidebar-group">
+      <p class="g-sidebar-group-title">Composants de la page</p>
+      <ul class="g-sidebar-list">
+    
+        <li><a href="#message-bubble" class="g-sidebar-link">MessageBubble</a></li>
+        <li><a href="#chat-input" class="g-sidebar-link">ChatInput</a></li>
+        <li><a href="#agent-tooltip" class="g-sidebar-link">AgentTooltip</a></li>
+        <li><a href="#bottom-spinner" class="g-sidebar-link">BottomSpinner</a></li>
+        <li><a href="#voice-input" class="g-sidebar-link">VoiceInput</a></li>
+        <li><a href="#audio-reply" class="g-sidebar-link">AudioReply</a></li>
+        
+      </ul>
+    </div>
+  </aside>
+    
+
+  <!-- ============================================================ MAIN ============================================================ -->
+  <main class="g-main">
+    <!-- Page header -->
+    <header class="g-page-header">
+      <h1 class="g-page-title">Conversation & Audio</h1>
+      <div class="g-page-meta">
+        <span class="g-page-meta-item">armance.io</span>
+        <span class="g-page-meta-item">React 19</span>
+        <span class="g-page-meta-item">TypeScript strict</span>
+        <span class="g-page-meta-item">Tailwind v4</span>
+        <span class="g-page-meta-item">WCAG AA</span>
+      </div>
+    </header>
+
+    
+    <!-- ============================================================ MessageBubble -->
+    <article class="g-component" id="message-bubble">
+      <div class="g-component-header">
+        <h2 class="g-component-title">MessageBubble</h2>
+        <code class="g-component-path">chat/MessageBubble.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Affiche les bulles de messages de la conversation. Les messages de l'agent sont à gauche (fond crème avec bordure), les messages de l'utilisateur à droite (fond beige, sans bordure).
+      </p>
+
+      <p class="g-demo-label">Démo visuelle et interactive</p>
+      <div class="g-demo-canvas">
+        <div class="msg-bubble-wrap">
+          <!-- Bubble User -->
+          <div class="msg-row msg-row--user">
+            <div class="msg-bubble">
+              <div class="msg-prose">
+                <p>Peux-tu analyser la pertinence des hypothèses sur la fiscalité et m'écrire un court code d'exemple ?</p>
+              </div>
+              <span class="msg-timestamp">20:51 · Utilisateur</span>
+            </div>
+          </div>
+
+          <!-- Bubble Agent normal -->
+          <div class="msg-row msg-row--agent">
+            <div class="msg-avatar" style="background:#6b4f8a;">M</div>
+            <div class="msg-bubble">
+              <div class="msg-header">
+                <span class="msg-bullet" style="background:#6b4f8a;"></span>
+                <span>Mona</span>
+              </div>
+              <div class="msg-prose">
+                <p>Voici l'analyse demandée. Le modèle fiscal repose sur <code>taux_flat = 0.30</code>.</p>
+              </div>
+              <span class="msg-timestamp">20:51 · Mona · 23ms</span>
+            </div>
+          </div>
+
+          <!-- Bubble Agent en cours d'écriture (streaming) -->
+          <div class="msg-row msg-row--agent" id="streamBubble">
+            <div class="msg-avatar" style="background:#4a3666;">C</div>
+            <div class="msg-bubble">
+              <div class="msg-header">
+                <span class="msg-bullet msg-bullet--pulse" style="background:#b7a4c9;"></span>
+                <span>Colbert</span>
+              </div>
+              <div class="msg-prose" id="streamText">
+                <p>L'étude fiscale montre que...</p>
+              </div>
+              <span class="msg-timestamp">20:52 · Colbert · Écriture...</span>
+            </div>
+          </div>
+        </div>
+        
+        <div style="padding: 10px 24px; border-top: 1px solid var(--rule); display: flex; justify-content: flex-end;">
+          <button class="g-copy-btn" style="position:static;" id="btnToggleStream">Simuler l'écriture</button>
+        </div>
+      </div>
+
+      <p class="g-demo-label">Props</p>
+      <div class="g-props-wrap">
+        <table class="g-props-table">
+          <thead><tr><th>Prop</th><th>Type</th><th>Défaut</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td class="td-name">role</td><td class="td-type">"user" | "agent"</td><td class="td-default">—</td><td>Rôle du messager. Détermine le côté d'affichage.</td></tr>
+            <tr><td class="td-name">agentName</td><td class="td-type">string</td><td class="td-default">—</td><td>Nom de l'agent.</td></tr>
+            <tr><td class="td-name">agentPortraitSrc</td><td class="td-type">string</td><td class="td-default">undefined</td><td>URL optionnelle de la photo de portrait.</td></tr>
+            <tr><td class="td-name">agentColour</td><td class="td-type">string</td><td class="td-default">—</td><td>Couleur de marque associée à l'agent.</td></tr>
+            <tr><td class="td-name">markdown</td><td class="td-type">string</td><td class="td-default">—</td><td>Contenu textuel formaté en Markdown.</td></tr>
+            <tr><td class="td-name">timestamp</td><td class="td-type">string</td><td class="td-default">—</td><td>Horodatage.</td></tr>
+            <tr><td class="td-name">streaming</td><td class="td-type">boolean</td><td class="td-default">false</td><td>Si true, affiche l'indicateur d'écriture.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <!-- ============================================================ ChatInput -->
+    <article class="g-component" id="chat-input">
+      <div class="g-component-header">
+        <h2 class="g-component-title">ChatInput</h2>
+        <code class="g-component-path">chat/ChatInput.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Barre d'entrée collante permettant de saisir des messages. Propose une zone de saisie auto-grandissante et affiche l'indicateur d'occupation de l'agent actif.
+      </p>
+
+      <p class="g-demo-label">Démo interactive</p>
+      <div class="g-demo-canvas">
+        <div class="ci-bar">
+          <div class="ci-busy" id="demoInputBusy">
+            <span class="ci-busy-dot" style="background:#6b4f8a;"></span>
+            <span>Mona est en train d'analyser vos documents...</span>
+          </div>
+          <div class="ci-textarea-wrap">
+            <textarea class="ci-textarea" id="demoInputArea" placeholder="Poser une question à l'atelier..." rows="1"></textarea>
+            <button class="ci-send-btn" id="demoInputSendBtn" aria-label="Envoyer">
+              <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor"><path d="M1.72 14.5a.5.5 0 0 0 .74.45l12-6a.5.5 0 0 0 0-.9l-12-6a.5.5 0 0 0-.74.45l1.5 5.5 7.5.5-7.5.5-1.5 5.5z"/></svg>
+            </button>
+          </div>
+        </div>
+        <div style="padding: 10px 24px; border-top: 1px solid var(--rule); display: flex; gap: 10px; justify-content: flex-end;">
+          <button class="g-copy-btn" style="position:static;" id="btnToggleBusyInput">Toggle état "Agent Occupé"</button>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============================================================ AgentTooltip -->
+    <article class="g-component" id="agent-tooltip">
+      <div class="g-component-header">
+        <h2 class="g-component-title">AgentTooltip</h2>
+        <code class="g-component-path">chat/AgentTooltip.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Info-bulle au survol d'un nom d'agent affichant son profil, ses jetons consommés, son coût estimé et son tempérament (persona).
+      </p>
+
+      <p class="g-demo-label">Démo visuelle</p>
+      <div class="g-demo-canvas" style="overflow: visible;">
+        <div class="at-trigger-container">
+          <span class="at-trigger">
+            Survolez Mona l'archiviste
+            <div class="at-tooltip" style="opacity: 1; pointer-events: auto; bottom: calc(100% + 12px);">
+              <div class="at-top-row">
+                <div class="at-avatar" style="background:#6b4f8a;">M</div>
+                <div>
+                  <div class="at-name">Mona</div>
+                  <div class="at-role">Archiviste / Synthèse</div>
+                </div>
+              </div>
+              <div class="at-model">Google · Gemini Pro 1.5</div>
+              <div class="at-meta">
+                <span>In : 2.4M</span>
+                <span>Out : 640k</span>
+              </div>
+              <div class="at-meta" style="margin-top:-6px;">
+                <span>Coût : $14.2882</span>
+              </div>
+              <div class="at-persona">
+                Rigoureuse et calme. Se concentre uniquement sur les faits textuels issus des documents fournis.
+              </div>
+            </div>
+          </span>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============================================================ BottomSpinner -->
+    <article class="g-component" id="bottom-spinner">
+      <div class="g-component-header">
+        <h2 class="g-component-title">BottomSpinner</h2>
+        <code class="g-component-path">chat/BottomSpinner.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Indicateur très discret fixé en bas de la page signalant qu'un agent réfléchit à une réponse.
+      </p>
+
+      <p class="g-demo-label">Démo interactive</p>
+      <div class="g-demo-canvas">
+        <div style="padding: 24px;">
+          <div class="bs-bar is-active" id="demoSpinner">
+            <div class="bs-avatar" style="background:#6b4f8a;">M</div>
+            <span class="bs-dot" style="background:#6b4f8a;"></span>
+            <span class="bs-label">Mona est en train de rédiger...</span>
+          </div>
+        </div>
+        <div style="padding: 10px 24px; border-top: 1px solid var(--rule); display: flex; justify-content: flex-end;">
+          <button class="g-copy-btn" style="position:static;" id="btnToggleSpinner">Afficher/Masquer</button>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============================================================ VoiceInput -->
+    <article class="g-component" id="voice-input">
+      <div class="g-component-header">
+        <h2 class="g-component-title">VoiceInput</h2>
+        <code class="g-component-path">audio/VoiceInput.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Bouton d'entrée vocale permettant l'enregistrement audio direct (press-and-hold) avec simulation de l'onde sonore.
+      </p>
+
+      <p class="g-demo-label">Aperçus des différents états</p>
+      <div class="g-demo-canvas">
+        <div class="vi-row">
+          <div style="text-align:center;">
+            <div class="g-demo-row-label">Inactif (idle)</div>
+            <button class="vi-btn" aria-label="Microphone">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v3M8 22h8"/></svg>
+            </button>
+          </div>
+          
+          <div style="text-align:center;">
+            <div class="g-demo-row-label">Enregistrement</div>
+            <button class="vi-btn vi-btn--recording" aria-label="Enregistrement en cours">
+              <div style="width:10px; height:10px; background:#fff; border-radius:1px;"></div>
+            </button>
+          </div>
+
+          <div>
+            <div class="g-demo-row-label">Onde vocale active</div>
+            <div class="vi-waveform">
+              <div class="vi-bar vi-bar--anim"></div>
+              <div class="vi-bar vi-bar--anim" style="height:12px;"></div>
+              <div class="vi-bar vi-bar--anim" style="height:6px;"></div>
+              <div class="vi-bar vi-bar--anim" style="height:14px;"></div>
+            </div>
+          </div>
+
+          <div style="text-align:center;">
+            <div class="g-demo-row-label">Erreur de micro</div>
+            <button class="vi-btn vi-btn--error" aria-label="Erreur micro">
+              <span style="font-size:16px;">!</span>
+            </button>
+            <span style="display:block; font-family:var(--ff-mono); font-size:10px; color:var(--danger); margin-top:4px;">Erreur d'accès</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ============================================================ AudioReply -->
+    <article class="g-component" id="audio-reply">
+      <div class="g-component-header">
+        <h2 class="g-component-title">AudioReply</h2>
+        <code class="g-component-path">audio/AudioReply.tsx</code>
+      </div>
+      <p class="g-component-desc">
+        Lecteur audio compact permettant d'écouter les réponses lues par une synthèse vocale (Text-To-Speech). Gère le caching local IndexedDB.
+      </p>
+
+      <p class="g-demo-label">Lecteur interactif</p>
+      <div class="g-demo-canvas">
+        <div class="ar-row">
+          <div style="position:relative; width:32px; height:32px;">
+            <button class="ar-btn" id="demoAudioBtn" aria-label="Play">
+              <span id="demoAudioIcon">▶</span>
+            </button>
+            <svg class="ar-progress-svg">
+              <circle class="ar-progress-track" cx="16" cy="16" r="14"></circle>
+              <circle class="ar-progress-bar" id="demoAudioProgress" cx="16" cy="16" r="14"></circle>
+            </svg>
+          </div>
+          <div>
+            <span style="font-family:var(--ff-serif); font-size:14px; font-style:italic;">Synthèse vocale active · Voix de Mona (Gemini)</span>
+            <span style="display:block; font-family:var(--ff-mono); font-size:10px; color:var(--ink-faint);" id="demoAudioStatus">Prêt</span>
+          </div>
+        </div>
+      </div>
+    </article>
+    
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ── Theme toggle ── */
+  const html = document.documentElement;
+  const btn  = document.getElementById("themeToggle");
+
+  const saved = localStorage.getItem("armance-gallery-theme");
+  if (saved) {
+    html.dataset.theme = saved;
+    btn.textContent = saved === "dark" ? "☀︎" : "☾";
+  }
+
+  btn.addEventListener("click", function () {
+    const isDark = html.dataset.theme === "dark";
+    const next   = isDark ? "light" : "dark";
+    html.dataset.theme = next;
+    btn.textContent    = isDark ? "☾" : "☀︎";
+    localStorage.setItem("armance-gallery-theme", next);
+    window.dispatchEvent(new CustomEvent("armance-theme-change", { detail: next }));
+  });
+
+  /* ── Sidebar active state (IntersectionObserver) ── */
+  var links = Array.from(
+    document.querySelectorAll(".g-sidebar-link[href^='#']")
+  );
+
+  function setActive(id) {
+    links.forEach(function (a) {
+      var matches = a.getAttribute("href") === "#" + id;
+      a.classList.toggle("is-active", matches);
+    });
+  }
+
+  var targets = Array.from(document.querySelectorAll("[id]")).filter(function (t) {
+    return t.tagName.toLowerCase() === "article";
+  });
+  if (targets.length > 0) {
+    var io = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) setActive(e.target.id);
+        });
+      },
+      { rootMargin: "-20% 0px -72% 0px" }
+    );
+    targets.forEach(function (t) { io.observe(t); });
+  }
+
+  /* ── Copy code helper ── */
+  window.copyCode = function (btn) {
+    var pre  = btn.closest(".g-code-block").querySelector("pre");
+    var text = pre.textContent;
+    navigator.clipboard.writeText(text).then(function () {
+      btn.textContent = "Copié";
+      setTimeout(function () { btn.textContent = "Copier"; }, 2000);
+    });
+  };
+
+  
+  /* MessageBubble Stream simulation */
+  const words = "L'étude fiscale montre que la flat tax à 30% favorise fortement la ré-investissemet des bénéfices tout en maintenant une assiette stable pour l'impôt sur les sociétés.".split(" ");
+  let wordIdx = 4;
+  let streamInterval = null;
+  const streamText = document.getElementById("streamText");
+  const btnToggleStream = document.getElementById("btnToggleStream");
+
+  if(btnToggleStream && streamText) {
+    btnToggleStream.addEventListener("click", () => {
+      if(streamInterval) {
+        clearInterval(streamInterval);
+        streamInterval = null;
+        btnToggleStream.textContent = "Simuler l'écriture";
+        streamText.innerHTML = "<p>L'étude fiscale montre que...</p>";
+        wordIdx = 4;
+      } else {
+        btnToggleStream.textContent = "Arrêter la simulation";
+        streamText.innerHTML = "<p>L'étude fiscale montre que</p>";
+        streamInterval = setInterval(() => {
+          if (wordIdx < words.length) {
+            streamText.innerHTML = "<p>L'étude fiscale montre que " + words.slice(4, wordIdx + 1).join(" ") + " ...</p>";
+            wordIdx++;
+          } else {
+            clearInterval(streamInterval);
+            streamInterval = null;
+            btnToggleStream.textContent = "Réinitialiser";
+            streamText.innerHTML = "<p>L'étude fiscale montre que " + words.slice(4).join(" ") + "</p>";
+          }
+        }, 300);
+      }
+    });
+  }
+
+  /* ChatInput busy toggle */
+  const demoInputBusy = document.getElementById("demoInputBusy");
+  const btnToggleBusyInput = document.getElementById("btnToggleBusyInput");
+  if(btnToggleBusyInput && demoInputBusy) {
+    btnToggleBusyInput.addEventListener("click", () => {
+      const isVisible = demoInputBusy.style.display !== "none";
+      demoInputBusy.style.display = isVisible ? "none" : "flex";
+    });
+  }
+
+  /* ChatInput send active toggle */
+  const demoInputArea = document.getElementById("demoInputArea");
+  const demoInputSendBtn = document.getElementById("demoInputSendBtn");
+  if(demoInputArea && demoInputSendBtn) {
+    demoInputArea.addEventListener("input", () => {
+      if(demoInputArea.value.trim().length > 0) {
+        demoInputSendBtn.classList.add("is-active");
+      } else {
+        demoInputSendBtn.classList.remove("is-active");
+      }
+      // Auto-grow
+      demoInputArea.style.height = "auto";
+      demoInputArea.style.height = demoInputArea.scrollHeight + "px";
+    });
+  }
+
+  /* BottomSpinner toggle */
+  const demoSpinner = document.getElementById("demoSpinner");
+  const btnToggleSpinner = document.getElementById("btnToggleSpinner");
+  if(btnToggleSpinner && demoSpinner) {
+    btnToggleSpinner.addEventListener("click", () => {
+      demoSpinner.classList.toggle("is-active");
+    });
+  }
+
+  /* AudioReply play-progress simulation */
+  const demoAudioBtn = document.getElementById("demoAudioBtn");
+  const demoAudioIcon = document.getElementById("demoAudioIcon");
+  const demoAudioProgress = document.getElementById("demoAudioProgress");
+  const demoAudioStatus = document.getElementById("demoAudioStatus");
+  let audioPlaying = false;
+  let audioProgressInterval = null;
+  let audioOffset = 88; // Full circle length
+
+  if(demoAudioBtn && demoAudioProgress) {
+    demoAudioBtn.addEventListener("click", () => {
+      if(audioPlaying) {
+        // Pause
+        clearInterval(audioProgressInterval);
+        audioPlaying = false;
+        demoAudioIcon.textContent = "▶";
+        demoAudioStatus.textContent = "En pause";
+      } else {
+        // Play
+        audioPlaying = true;
+        demoAudioIcon.textContent = "■";
+        demoAudioStatus.textContent = "Lecture en cours...";
+        
+        if (audioOffset <= 0) {
+          audioOffset = 88;
+        }
+
+        audioProgressInterval = setInterval(() => {
+          audioOffset -= 2.2; // advance
+          if(audioOffset <= 0) {
+            clearInterval(audioProgressInterval);
+            audioPlaying = false;
+            demoAudioIcon.textContent = "▶";
+            demoAudioStatus.textContent = "Terminé (caché en cache locale)";
+            demoAudioProgress.style.strokeDashoffset = 88;
+            audioOffset = 88;
+          } else {
+            demoAudioProgress.style.strokeDashoffset = audioOffset;
+          }
+        }, 100);
+      }
+    });
+  }
+  
+}());
+</script>
+</body>
+</html>
