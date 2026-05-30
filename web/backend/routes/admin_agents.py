@@ -8,9 +8,12 @@ Model + reasoning can be updated; the file is written via Agent.save().
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
+
+_SAFE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 from armance.core.models.agent import Agent
 from armance.platform.user import get_current_user
@@ -54,6 +57,9 @@ async def patch_agent(
     ws: WebSession = Depends(get_web_session),
     app_state: AppState = Depends(get_app_state),
 ) -> dict[str, Any]:
+    if not _SAFE_NAME_RE.match(name):
+        raise HTTPException(status_code=400, detail="invalid_agent_name")
+
     if "persona" in patch:
         raise HTTPException(status_code=422, detail=_PERSONA_ERROR)
 
