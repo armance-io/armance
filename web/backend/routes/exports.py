@@ -37,12 +37,27 @@ async def download_export(
         raise HTTPException(status_code=404, detail="session_not_found")
 
     exports_root = ws.ctx.armance_root / "exports"
+    docs_root = ws.ctx.armance_root / "docs"
     
-    # Security: resolve and ensure the path doesn't escape exports_root.
+    # Security: resolve and ensure the path doesn't escape exports_root or docs_root.
     try:
-        file_path = (exports_root / filename).resolve()
-        if not file_path.is_relative_to(exports_root.resolve()):
-            raise ValueError()
+        if filename.startswith("docs/"):
+            subpath = filename[5:]
+            file_path = (docs_root / subpath).resolve()
+            if not file_path.is_relative_to(docs_root.resolve()):
+                raise ValueError()
+            rel_key = f"docs/{subpath}"
+        elif filename.startswith("exports/"):
+            subpath = filename[8:]
+            file_path = (exports_root / subpath).resolve()
+            if not file_path.is_relative_to(exports_root.resolve()):
+                raise ValueError()
+            rel_key = f"exports/{subpath}"
+        else:
+            file_path = (exports_root / filename).resolve()
+            if not file_path.is_relative_to(exports_root.resolve()):
+                raise ValueError()
+            rel_key = f"exports/{filename}"
     except ValueError:
         raise HTTPException(status_code=400, detail="invalid_path")
 
@@ -53,9 +68,6 @@ async def download_export(
 
     # Read bytes through the storage interface
     storage = LocalFilesystemStorage(root=ws.ctx.armance_root)
-    # The key is relative to armance_root.
-    # Note: `filename` might contain subdirectories, so we compute the relative key.
-    rel_key = f"exports/{file_path.relative_to(exports_root)}"
     
     try:
         data = await storage.read_bytes(rel_key)
