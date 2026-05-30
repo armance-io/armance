@@ -394,4 +394,125 @@ export async function deleteRun(
   );
 }
 
+// ---------------------------------------------------------------------------
+// Admin routes (G1–G9)
+// ---------------------------------------------------------------------------
+
+export type AdminConfig = Record<string, unknown>;
+
+export async function getAdminConfig(pid: string): Promise<AdminConfig> {
+  return api.get<AdminConfig>(`/projects/${pid}/admin/config`);
+}
+
+export async function patchAdminConfig(
+  pid: string,
+  patch: Partial<AdminConfig>,
+): Promise<AdminConfig> {
+  return api.patch<AdminConfig>(`/projects/${pid}/admin/config`, patch);
+}
+
+export interface SecretEntry {
+  name: string;
+  value: string;
+  set: boolean;
+}
+
+export async function getAdminSecrets(pid: string): Promise<SecretEntry[]> {
+  return api.get<SecretEntry[]>(`/projects/${pid}/admin/secrets`);
+}
+
+export async function putAdminSecret(
+  pid: string,
+  name: string,
+  value: string,
+): Promise<{ name: string; set: boolean }> {
+  return api.put<{ name: string; set: boolean }>(
+    `/projects/${pid}/admin/secrets/${encodeURIComponent(name)}`,
+    { value },
+  );
+}
+
+export async function deleteAdminSecret(
+  pid: string,
+  name: string,
+): Promise<{ deleted: boolean }> {
+  return api.del<{ deleted: boolean }>(
+    `/projects/${pid}/admin/secrets/${encodeURIComponent(name)}`,
+  );
+}
+
+export interface LogLine {
+  event: string;
+  agent: string;
+  timestamp: string;
+  [key: string]: unknown;
+}
+
+export interface LogsResponse {
+  lines: LogLine[];
+  total: number;
+  cursor: string | null;
+}
+
+export async function getAdminLogs(
+  pid: string,
+  params?: { agent?: string; limit?: number; cursor?: string },
+): Promise<LogsResponse> {
+  const qs = new URLSearchParams();
+  if (params?.agent) qs.set("agent", params.agent);
+  if (params?.limit !== undefined) qs.set("limit", String(params.limit));
+  if (params?.cursor) qs.set("cursor", params.cursor);
+  const query = qs.toString() ? `?${qs}` : "";
+  return api.get<LogsResponse>(`/projects/${pid}/admin/logs${query}`);
+}
+
+export async function patchLogLevel(
+  pid: string,
+  level: "INFO" | "DEBUG" | "WARN" | "ERROR",
+): Promise<{ level: string }> {
+  return api.patch<{ level: string }>(`/projects/${pid}/admin/log-level`, { level });
+}
+
+export interface AgentStats {
+  tokens_in: number;
+  tokens_out: number;
+  cost_usd: number;
+  msg_count: number;
+  avg_latency_ms: number;
+}
+
+export interface StatsResponse {
+  agents: Record<string, AgentStats>;
+  global: Omit<AgentStats, "avg_latency_ms">;
+}
+
+export async function getAdminStats(pid: string): Promise<StatsResponse> {
+  return api.get<StatsResponse>(`/projects/${pid}/admin/stats`);
+}
+
+export interface AdminAgent {
+  name: string;
+  domain: string;
+  role: string;
+  provider: string;
+  model: string;
+  reasoning: string | null;
+}
+
+export async function getAdminAgents(pid: string, sid: string): Promise<AdminAgent[]> {
+  return api.get<AdminAgent[]>(`/projects/${pid}/sessions/${sid}/agents`);
+}
+
+export async function patchAdminAgent(
+  pid: string,
+  sid: string,
+  name: string,
+  patch: { model?: string; reasoning?: string | null },
+): Promise<{ name: string; model: string; reasoning: string | null }> {
+  return api.patch<{ name: string; model: string; reasoning: string | null }>(
+    `/projects/${pid}/sessions/${sid}/agents/${encodeURIComponent(name)}`,
+    patch,
+  );
+}
+
 

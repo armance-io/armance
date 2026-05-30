@@ -184,7 +184,7 @@
     "config": { "title": "Configuration", "save": "Sauvegarder" },
     "secrets": { "title": "Secrets", "masked": "•••• {{last4}}", "edit": "Modifier", "delete": "Supprimer" },
     "logs": { "title": "Journaux", "level": "Niveau", "search": "Rechercher" },
-    "stats": { "title": "Statistiques", "tokens_in": "Tokens entrants", "tokens_out": "Tokens sortants", "cost": "Coût", "messages": "Messages" },
+    "stats": { "title": "Statistiques", "tokens_in": "Tokens entrants", "tokens_out": "Tokens sortants", "cost": "Coût", "messages": "Messages", "per_agent": "Par agent", "top5_cost": "Top 5 par coût" },
     "agents": { "title": "Agents", "model": "Modèle", "reasoning": "Effort de raisonnement" }
   },
   "audio": {
