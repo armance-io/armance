@@ -213,7 +213,9 @@
       "language": "Language",
       "judge_model": "Judge model",
       "log_level": "Log level",
-      "err": { "required": "Required" }
+      "err": { "required": "Required" },
+      "providers": "Configured Providers",
+      "default": "Default"
     },
     "secrets": {
       "title": "Secrets",

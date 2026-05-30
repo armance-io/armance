@@ -6,26 +6,22 @@ export interface ConfigValues {
   default_model: string;
   budget_effort: "free-first" | "low" | "medium" | "high";
   language: string;
-  judge_model: string;
-  log_level: "debug" | "info" | "warn" | "error";
+  providers?: Array<{ name: string; base_url?: string | null }>;
 }
 
 export interface ConfigFormProps {
   values: ConfigValues;
   modelOptions: string[];
-  judgeModelOptions: string[];
   languageOptions: string[];
   onSave: (values: ConfigValues) => Promise<void>;
   t: (key: string) => string;
 }
 
 const BUDGETS = ["free-first", "low", "medium", "high"] as const;
-const LOG_LEVELS = ["debug", "info", "warn", "error"] as const;
 
 export const ConfigForm: FC<ConfigFormProps> = ({
   values,
   modelOptions,
-  judgeModelOptions,
   languageOptions,
   onSave,
   t,
@@ -40,7 +36,6 @@ export const ConfigForm: FC<ConfigFormProps> = ({
   const validate = () => {
     const e: Partial<Record<keyof ConfigValues, string>> = {};
     if (!draft.default_model) e.default_model = t("admin:config.err.required");
-    if (!draft.judge_model) e.judge_model = t("admin:config.err.required");
     if (!draft.language) e.language = t("admin:config.err.required");
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -115,6 +110,57 @@ export const ConfigForm: FC<ConfigFormProps> = ({
         <div style={readonlyVal}>{draft.default_provider || "—"}</div>
       </div>
 
+      {/* Configured Providers Section */}
+      <div style={row}>
+        <label style={label}>{t("admin:config.providers") || "Configured Providers"}</label>
+        <div style={{ display: "grid", gap: 10 }}>
+          {draft.providers && draft.providers.length > 0 ? (
+            draft.providers.map((prov) => {
+              const isDefault = prov.name === draft.default_provider;
+              return (
+                <div
+                  key={prov.name}
+                  style={{
+                    ...readonlyVal,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "12px 16px",
+                    border: isDefault ? `1px solid var(--accent, #6b4f8a)` : `1px solid ${tokens.rule}`,
+                    background: isDefault ? "color-mix(in srgb, var(--accent, #6b4f8a) 4%, var(--bg-paper-card))" : tokens.bgPaperDeep,
+                  }}
+                >
+                  <div>
+                    <span style={{ fontWeight: 600, fontFamily: tokens.ffSans, color: tokens.ink }}>{prov.name}</span>
+                    {prov.base_url && (
+                      <span style={{ fontSize: 11, marginLeft: 8, color: tokens.inkSoft, fontFamily: tokens.ffMono }}>
+                        ({prov.base_url})
+                      </span>
+                    )}
+                  </div>
+                  {isDefault && (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        color: "var(--accent, #6b4f8a)",
+                        fontWeight: 600,
+                        fontFamily: tokens.ffMono,
+                      }}
+                    >
+                      {t("admin:config.default") || "Default"}
+                    </span>
+                  )}
+                </div>
+              );
+            })
+          ) : (
+            <div style={readonlyVal}>—</div>
+          )}
+        </div>
+      </div>
+
       <div style={row}>
         <label style={label}>{t("admin:config.default_model")}</label>
         <select
@@ -157,36 +203,6 @@ export const ConfigForm: FC<ConfigFormProps> = ({
           ))}
         </select>
         {errors.language && <span style={errStyle}>{errors.language}</span>}
-      </div>
-
-      <div style={row}>
-        <label style={label}>{t("admin:config.judge_model")}</label>
-        <select
-          style={inputBase}
-          value={draft.judge_model}
-          onChange={(e) => set("judge_model", e.target.value)}
-        >
-          <option value="">—</option>
-          {judgeModelOptions.map((m) => (
-            <option key={m}>{m}</option>
-          ))}
-        </select>
-        {errors.judge_model && <span style={errStyle}>{errors.judge_model}</span>}
-      </div>
-
-      <div style={row}>
-        <label style={label}>{t("admin:config.log_level")}</label>
-        <div style={{ display: "flex", gap: 8 }}>
-          {LOG_LEVELS.map((lv) => (
-            <Chip
-              key={lv}
-              active={draft.log_level === lv}
-              onClick={() => set("log_level", lv)}
-              label={lv}
-              mono
-            />
-          ))}
-        </div>
       </div>
 
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 24 }}>

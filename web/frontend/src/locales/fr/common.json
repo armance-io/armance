@@ -213,7 +213,9 @@
       "language": "Langue",
       "judge_model": "Modèle juge",
       "log_level": "Niveau de journalisation",
-      "err": { "required": "Requis" }
+      "err": { "required": "Requis" },
+      "providers": "Fournisseurs configurés",
+      "default": "Par défaut"
     },
     "secrets": {
       "title": "Secrets",

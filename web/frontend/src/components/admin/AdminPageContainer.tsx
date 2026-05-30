@@ -7,6 +7,7 @@ import {
   useEffect,
   useCallback,
 } from "react";
+import { useLatestSession } from "@/lib/useLatestSession";
 import { tokens } from "../_shared/armance-tokens";
 import { ConfigForm, type ConfigValues } from "./ConfigForm";
 import { SecretsList, type SecretEntry } from "./SecretsList";
@@ -39,6 +40,7 @@ interface AdminPageContainerProps {
 }
 
 export const AdminPageContainer: FC<AdminPageContainerProps> = ({ pid, t }) => {
+  const { sid } = useLatestSession();
   const [activeTab, setActiveTab] = useState<Tab>("config");
 
   const outer: CSSProperties = {
@@ -88,7 +90,7 @@ export const AdminPageContainer: FC<AdminPageContainerProps> = ({ pid, t }) => {
         {activeTab === "secrets" && <SecretsTab pid={pid} t={t} />}
         {activeTab === "logs" && <LogsTab pid={pid} t={t} />}
         {activeTab === "stats" && <StatsTab pid={pid} t={t} />}
-        {activeTab === "agents" && <AgentsTab pid={pid} t={t} />}
+        {activeTab === "agents" && <AgentsTab pid={pid} sid={sid} t={t} />}
         {activeTab === "empreinte" && <EmpreinteTab pid={pid} t={t} />}
       </div>
     </div>
@@ -114,8 +116,7 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
         default_model: String(raw.default_model ?? ""),
         budget_effort: (raw.budget_effort as ConfigValues["budget_effort"]) ?? "free-first",
         language: String(raw.language ?? "en"),
-        judge_model: String(raw.judge_model ?? ""),
-        log_level: (raw.log_level as ConfigValues["log_level"]) ?? "info",
+        providers: raw.providers ?? [],
       });
     });
   }, [pid]);
@@ -127,15 +128,14 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
       default_model: String(updated.default_model ?? ""),
       budget_effort: (updated.budget_effort as ConfigValues["budget_effort"]) ?? "free-first",
       language: String(updated.language ?? "en"),
-      judge_model: String(updated.judge_model ?? ""),
-      log_level: (updated.log_level as ConfigValues["log_level"]) ?? "info",
+      providers: updated.providers ?? [],
     });
   };
 
   if (!cfg) return null;
   return (
     <div data-testid="config-form">
-      <ConfigForm values={cfg} modelOptions={[]} judgeModelOptions={[]} languageOptions={["en", "fr"]} onSave={onSave} t={t} />
+      <ConfigForm values={cfg} modelOptions={[]} languageOptions={["en", "fr"]} onSave={onSave} t={t} />
     </div>
   );
 };
@@ -320,12 +320,14 @@ const StatsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => 
 // Agents tab
 // ---------------------------------------------------------------------------
 
-const AgentsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
+const AgentsTab: FC<{ pid: string; sid: string | null; t: (k: string) => string }> = ({ pid, sid, t }) => {
   const [agentRecords, setAgentRecords] = useState<AgentRecord[]>([]);
   const [providers, setProviders] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const sid = "default";
+    if (!sid) return;
+    setLoading(true);
     void Promise.all([getAdminAgents(pid, sid), getProviders()]).then(
       ([agts, prov]) => {
         setAgentRecords(
@@ -343,15 +345,29 @@ const AgentsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
         );
         setProviders(Object.keys(prov.providers ?? {}));
       },
-    );
-  }, [pid]);
+    ).catch(console.error).finally(() => setLoading(false));
+  }, [pid, sid]);
 
   const onSave = async (agent: AgentRecord) => {
-    await patchAdminAgent(pid, "default", agent.name, {
+    if (!sid) return;
+    await patchAdminAgent(pid, sid, agent.name, {
       model: agent.model,
       reasoning: agent.reasoning ?? null,
     });
   };
+
+  if (!sid) {
+    return (
+      <div style={{ padding: 40, textAlign: "center", color: tokens.inkSoft, fontFamily: tokens.ffSans }}>
+        <p style={{ fontSize: 16, marginBottom: 12, fontWeight: 500 }}>{t("visual:empty.session.title")}</p>
+        <p style={{ fontSize: 13 }}>{t("visual:empty.session.hint")}</p>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return <div style={{ padding: 40, color: tokens.inkSoft, fontFamily: tokens.ffSans }}>{t("app:loading")}</div>;
+  }
 
   return (
     <div data-testid="agent-editor">

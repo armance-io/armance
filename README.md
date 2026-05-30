@@ -329,11 +329,10 @@ All non-secret settings live in `.armance/config.yaml`. API keys live in `.arman
 | `language` | *(chosen at init)* | `en` / `fr` / `es` / `de` / `zh` / `ja`. All agents reply in this language. |
 | `embedding_provider` | *(chosen at init)* | Provider used for RAG. Leave blank to disable. |
 | `embedding_model` | *(chosen at init)* | Embedding model id. Must match `embedding_provider`. |
-| `judge_provider` | `openrouter` | Provider used for Mona's synthesis / Serge's stress-test. |
-| `judge_model` | `""` | Empty = use `default_model`. |
-| `judge_reasoning` | `null` | `low` / `medium` / `high` / `null`. |
 | `log_level` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`. |
 | `prices` | `{}` | Override per-model USD prices. Example: `prices: {my-model: {input_per_mtok: 1.0, output_per_mtok: 5.0}}`. |
+
+*Le modèle de Mona = `default_model` ; ajustez-le par agent via Malik si besoin.*
 
 #### `.armance/.env`
 
@@ -346,7 +345,6 @@ All non-secret settings live in `.armance/config.yaml`. API keys live in `.arman
 | `ANTHROPIC_API_KEY` | claude-code | Used for live model discovery via `/v1/models`. |
 | `CUSTOM_OPENAI_API_KEY` | custom-openai | Custom endpoint API key. |
 | `CUSTOM_OPENAI_BASE_URL` | custom-openai | e.g. `http://localhost:11434/v1` for Ollama. |
-| `ARMANCE_JUDGE_REASONING` | all | Override judge reasoning effort at runtime. |
 
 Shell values override `.env` values.
 

@@ -29,7 +29,9 @@
         "low": "低",
         "medium": "中",
         "high": "高"
-      }
+      },
+      "providers": "已配置的提供商",
+      "default": "默认"
     },
     "logs": {
       "level_changed_title": "日志级别已更新",

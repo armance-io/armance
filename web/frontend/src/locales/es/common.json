@@ -29,7 +29,9 @@
         "low": "Bajo",
         "medium": "Medio",
         "high": "Alto"
-      }
+      },
+      "providers": "Proveedores configurados",
+      "default": "Por defecto"
     },
     "logs": {
       "level_changed_title": "Nivel de registro actualizado",
