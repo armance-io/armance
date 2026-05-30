@@ -86,6 +86,12 @@ deliverables, and the **web UI** — no extras to choose.
 
 > Prefer an isolated tool install? `uv tool install armance` or
 > `pipx install armance` work identically.
+>
+> **Installing from git** (`pip install git+https://github.com/armance-io/armance.git`)
+> ships the CLI but **not** the prebuilt web UI — the bundle is a build
+> artifact, not tracked in git. From a git install, run `armance web --build`
+> once (needs Node + pnpm) to generate it, or use a release wheel from PyPI
+> where the UI is already bundled.
 
 Verify:
 

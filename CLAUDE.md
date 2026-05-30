@@ -19,6 +19,7 @@ state (sqlite-vec only for RAG retrieval). Four providers: `openrouter`,
 | Architecture & module map | [`roadmap/02_architecture.md`](roadmap/02_architecture.md) |
 | Web Backend (FastAPI routes) | `src/armance/web/backend/routes/` |
 | Web Frontend (Next.js components) | `web/frontend/src/components/` |
+| Web dev loop (build web_dist, test locally) | [`web/DEVELOPMENT.md`](web/DEVELOPMENT.md) |
 | How to launch the web UI | [`README.md` → Web Client](README.md#running-the-web-client-ui) |
 
 ## Code conventions
