@@ -180,12 +180,48 @@
     }
   },
   "admin": {
-    "tabs": { "config": "Configuration", "secrets": "Secrets", "logs": "Logs", "stats": "Statistiques", "agents": "Agents" },
-    "config": { "title": "Configuration", "save": "Sauvegarder" },
-    "secrets": { "title": "Secrets", "masked": "•••• {{last4}}", "edit": "Modifier", "delete": "Supprimer" },
-    "logs": { "title": "Journaux", "level": "Niveau", "search": "Rechercher" },
+    "tabs": { "config": "Configuration", "secrets": "Secrets", "logs": "Journaux", "stats": "Statistiques", "agents": "Agents" },
+    "config": {
+      "title": "Configuration",
+      "save": "Sauvegarder",
+      "saving": "Sauvegarde…",
+      "default_provider": "Fournisseur par défaut",
+      "default_model": "Modèle par défaut",
+      "budget_effort": "Effort budgétaire",
+      "language": "Langue",
+      "judge_model": "Modèle juge",
+      "log_level": "Niveau de journalisation",
+      "err": { "required": "Requis" }
+    },
+    "secrets": {
+      "title": "Secrets",
+      "masked": "•••• {{last4}}",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "empty": "Aucun secret configuré.",
+      "col": { "key": "Clé", "value": "Valeur", "actions": "Actions" },
+      "action": { "edit": "Modifier", "delete": "Supprimer", "reveal": "Révéler", "save": "Sauvegarder", "cancel": "Annuler" },
+      "confirm_delete": "Supprimer ce secret ?"
+    },
+    "logs": {
+      "title": "Journaux",
+      "level": "Niveau",
+      "search": "Rechercher",
+      "empty": "Aucune entrée de journal.",
+      "loading_more": "Chargement…",
+      "filter": { "agent": "Agent", "all_agents": "Tous les agents", "from": "De", "to": "À", "search": "Rechercher" }
+    },
     "stats": { "title": "Statistiques", "tokens_in": "Tokens entrants", "tokens_out": "Tokens sortants", "cost": "Coût", "messages": "Messages", "per_agent": "Par agent", "top5_cost": "Top 5 par coût" },
-    "agents": { "title": "Agents", "model": "Modèle", "reasoning": "Effort de raisonnement" }
+    "agents": {
+      "title": "Agents",
+      "model": "Modèle",
+      "reasoning": "Effort de raisonnement",
+      "provider": "Fournisseur",
+      "persona": "Personnalité",
+      "persona_hint": "Modifiez la personnalité via le chat Malik.",
+      "save": "Sauvegarder",
+      "saving": "Sauvegarde…"
+    }
   },
   "audio": {
     "voice": { "idle_aria": "Maintenez pour parler", "recording": "Enregistrement…", "error": "Échec de l'enregistrement" },
