@@ -872,8 +872,20 @@ def _build_web_bundle() -> int:
     repo_root = Path(__file__).resolve().parents[2]
     frontend = repo_root / "web" / "frontend"
     if not (frontend / "package.json").exists():
-        print("Cannot build UI: web/frontend not found (release wheels ship a "
-              "prebuilt bundle; --build is for repo checkouts).", file=sys.stderr)
+        print(
+            "Cannot build the UI: frontend sources (web/frontend) are not "
+            "present in this install.\n\n"
+            "  --build only works from a repo checkout, not from "
+            "`uv tool install`/`pipx`/`pip install` (those ship code, not the\n"
+            "  frontend toolchain). To get the UI either:\n"
+            "    • install a release wheel — the UI is already bundled:\n"
+            "        pip install armance\n"
+            "    • or build from a clone:\n"
+            "        git clone https://github.com/armance-io/armance.git\n"
+            "        cd armance && uv sync && uv pip install -e '.[web]'\n"
+            "        uv run armance web --build",
+            file=sys.stderr,
+        )
         return 1
     env = {**os.environ, "ARMANCE_STATIC_EXPORT": "1"}
     for cmd in (["pnpm", "install", "--frozen-lockfile"], ["pnpm", "build"]):
@@ -962,9 +974,10 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
 
     if _web_main._resolve_static_dir() is None:
         print(
-            "Note: no bundled UI found — running API only on "
-            f"http://{bind}:{web_args.port}. For the full UI, install a "
-            "release wheel (UI bundled) or run `pnpm dev` from web/frontend.",
+            f"Note: no bundled UI found — running API only on http://{bind}:{web_args.port}.\n"
+            "  The web UI is a build artifact, not shipped in git installs. To get it:\n"
+            "    • pip install a release wheel (UI bundled), then `armance web`; or\n"
+            "    • from a repo clone: `uv run armance web --build` (needs Node + pnpm).",
             file=sys.stderr,
         )
 
