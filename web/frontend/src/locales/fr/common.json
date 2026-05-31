@@ -90,7 +90,15 @@
       "download_label": "Télécharger",
       "download_aria": "Télécharger ce livrable",
       "opened_from": "Ouvert depuis : {{path}}"
-    }
+    },
+    "toast": {
+      "imported": "Document importé",
+      "indexing": "Indexation lancée…",
+      "indexing_all": "Indexation de tous les documents…",
+      "loading": "Chargement en contexte…"
+    },
+    "feuillets_count": "{n} feuillets",
+    "feuillets_total_aria": "Total des feuillets indexés"
   },
   "chat": {
     "input": {

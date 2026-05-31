@@ -10,6 +10,7 @@ import {
   submitTurn,
 } from "@/lib/api";
 import { LibraryPane } from "./LibraryPane";
+import { useToast } from "@/components/_shared/Toast";
 
 export interface LibraryPaneContainerProps {
   pid: string;
@@ -21,6 +22,7 @@ export const LibraryPaneContainer: FC<LibraryPaneContainerProps> = ({
   sid,
 }) => {
   const { t } = useTranslation();
+  const { toast } = useToast();
 
   const {
     data,
@@ -33,9 +35,17 @@ export const LibraryPaneContainer: FC<LibraryPaneContainerProps> = ({
   });
 
   const docs = data?.docs ?? [];
+  const totalFeuillets = data?.total_feuillets ?? 0;
+
+  // Indexing runs asynchronously (agent turn), so poll a few times to catch
+  // the status flip pending→indexed without forcing a manual refresh.
+  const refetchSoon = () => {
+    [800, 2000, 4000, 7000].forEach((ms) => setTimeout(() => refetch(), ms));
+  };
 
   const onImport = async (file: File) => {
     await importDoc(pid, sid, file, false);
+    toast(t("library:toast.imported"), "success");
     refetch();
   };
 
@@ -46,27 +56,30 @@ export const LibraryPaneContainer: FC<LibraryPaneContainerProps> = ({
 
   const onIndex = async (name: string) => {
     await submitTurn(pid, sid, `/library-index ${name}`);
-    refetch();
+    toast(t("library:toast.indexing"), "info");
+    refetchSoon();
   };
 
   const onLoad = async (name: string) => {
     await submitTurn(pid, sid, `/library-load ${name}`);
-    refetch();
+    toast(t("library:toast.loading"), "info");
+    refetchSoon();
   };
 
   const onUnload = async (name: string) => {
     await submitTurn(pid, sid, `/library-unload ${name}`);
-    refetch();
+    refetchSoon();
   };
 
   const onUnindex = async (name: string) => {
     await submitTurn(pid, sid, `/library-unindex ${name}`);
-    refetch();
+    refetchSoon();
   };
 
   const onIndexAll = async () => {
     await submitTurn(pid, sid, `/library-index`);
-    refetch();
+    toast(t("library:toast.indexing_all"), "info");
+    refetchSoon();
   };
 
   if (isLoading) {
@@ -88,6 +101,7 @@ export const LibraryPaneContainer: FC<LibraryPaneContainerProps> = ({
   return (
     <LibraryPane
       docs={docs}
+      totalFeuillets={totalFeuillets}
       onImport={onImport}
       onDelete={onDelete}
       onIndex={onIndex}

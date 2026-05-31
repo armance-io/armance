@@ -123,7 +123,10 @@ describe("LibraryPaneContainer", () => {
       expect(api.submitTurn).toHaveBeenCalledWith("default", "session-1", "/library-index");
     });
 
-    // Verify refetching was triggered
-    expect(api.getLibrary).toHaveBeenCalledTimes(8); // 1 initial + 7 after callback executions
+    // Refetching is triggered after callbacks (import/delete refetch
+    // immediately; index/load defer + poll), so it is called more than once.
+    await waitFor(() => {
+      expect((api.getLibrary as unknown as { mock: { calls: unknown[] } }).mock.calls.length).toBeGreaterThan(1);
+    });
   });
 });

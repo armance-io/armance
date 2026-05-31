@@ -116,5 +116,15 @@
     "error": {
       "turn_failed": "応答に失敗しました。もう一度お試しください。"
     }
+  },
+  "library": {
+    "toast": {
+      "imported": "ドキュメントをインポートしました",
+      "indexing": "インデックス作成を開始…",
+      "indexing_all": "すべてのドキュメントをインデックス中…",
+      "loading": "コンテキストに読み込み中…"
+    },
+    "feuillets_count": "{n} スリップ",
+    "feuillets_total_aria": "インデックス済みスリップ総数"
   }
 }

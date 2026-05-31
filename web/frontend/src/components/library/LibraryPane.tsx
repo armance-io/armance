@@ -11,6 +11,8 @@ import { type Doc, type DocFormat, type DocStatus } from "@/lib/api";
 
 export interface LibraryPaneProps {
   docs: Doc[];
+  /** Total indexed slips (feuillets) across all sources. */
+  totalFeuillets?: number;
   onImport:   (file: File)    => Promise<void>;
   onIndexAll: ()              => Promise<void>;
   onIndex:    (name: string)  => Promise<void>;
@@ -54,7 +56,7 @@ function fmtSize(b: number): string {
  * docs exist) · "Importer" (opens system file picker).
  */
 export const LibraryPane: FC<LibraryPaneProps> = ({
-  docs, onImport, onIndexAll, onIndex, onLoad, onUnload, onUnindex, onDelete, t,
+  docs, totalFeuillets = 0, onImport, onIndexAll, onIndex, onLoad, onUnload, onUnindex, onDelete, t,
 }) => {
   const [search,  setSearch]  = useState("");
   const [fmts,    setFmts]    = useState<Set<DocFormat>>(new Set());
@@ -157,6 +159,15 @@ export const LibraryPane: FC<LibraryPaneProps> = ({
           {t("library:toolbar.import")}
         </button>
 
+        {/* BUG-01: total indexed feuillets across all sources */}
+        <span
+          data-testid="feuillet-total"
+          title={t("library:feuillets_total_aria")}
+          style={{ marginLeft: "auto", fontFamily: MONO, fontSize: "11px", color: "var(--ink-faint,#9c8e7e)" }}
+        >
+          {t("library:feuillets_count").replace("{n}", String(totalFeuillets))}
+        </span>
+
         <input ref={fileRef} type="file" accept=".pdf,.docx,.md,.txt"
           style={{ display: "none" }} onChange={handleFile} />
       </div>
@@ -213,6 +224,23 @@ export const LibraryPane: FC<LibraryPaneProps> = ({
                 <span style={{ fontFamily: MONO, fontSize: "10px", color: SFT, flexShrink: 0 }}>
                   {fmtSize(doc.size_bytes)}
                 </span>
+
+                {/* Feuillet count (indexed docs) */}
+                {doc.feuillets ? (
+                  <span style={{ fontFamily: MONO, fontSize: "10px", color: "var(--accent,#6b4f8a)", flexShrink: 0 }}
+                    title={t("library:feuillets_total_aria")}>
+                    {t("library:feuillets_count").replace("{n}", String(doc.feuillets))}
+                  </span>
+                ) : null}
+
+                {/* Busy indicator while an action runs */}
+                {b && (
+                  <span aria-hidden="true" style={{
+                    width: "10px", height: "10px", borderRadius: "999px", flexShrink: 0,
+                    border: `2px solid var(--accent-soft,#b7a4c9)`, borderTopColor: "var(--accent,#6b4f8a)",
+                    animation: "armance-spin 0.7s linear infinite",
+                  }} />
+                )}
 
                 {/* Actions */}
                 <div style={{ display: "flex", gap: "4px", flexShrink: 0, marginLeft: "4px" }}>

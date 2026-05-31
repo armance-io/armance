@@ -116,5 +116,15 @@
     "error": {
       "turn_failed": "La respuesta falló. Por favor, inténtelo de nuevo."
     }
+  },
+  "library": {
+    "toast": {
+      "imported": "Documento importado",
+      "indexing": "Indexación iniciada…",
+      "indexing_all": "Indexando todos los documentos…",
+      "loading": "Cargando en contexto…"
+    },
+    "feuillets_count": "{n} fragmentos",
+    "feuillets_total_aria": "Total de fragmentos indexados"
   }
 }
