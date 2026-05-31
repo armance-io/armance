@@ -106,6 +106,17 @@
     "empty": {
       "title": "尚未设计工作流。",
       "hint": "在聊天中让 Kim 设计一个。"
+    },
+    "picker": {
+      "quick_title": "快速视角",
+      "quick_desc": "使用关键基准快速验证主要假设。",
+      "deep_title": "彻底的、经过质疑的分析",
+      "deep_desc": "通过结构化辩论严格评估并质疑所有论断。",
+      "mode_interactive": "交互式",
+      "mode_autonomous": "自主",
+      "hint_interactive": "Mona 将在关键决策节点征求你的意见。",
+      "hint_autonomous": "Mona 以自主检查点运行以交付综合结论。",
+      "launch": "启动"
     }
   },
   "chat": {

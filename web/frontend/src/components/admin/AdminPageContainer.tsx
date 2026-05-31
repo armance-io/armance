@@ -44,11 +44,13 @@ export const AdminPageContainer: FC<AdminPageContainerProps> = ({ pid, t }) => {
   const { sid } = useLatestSession();
   const [activeTab, setActiveTab] = useState<Tab>("config");
 
+  // BUG-06: uniform tab content rhythm via shared tokens (not magic numbers).
   const outer: CSSProperties = {
     fontFamily: tokens.ffSans,
     color: tokens.ink,
-    padding: "32px 40px",
+    padding: `${tokens.tabPadY} ${tokens.tabPadX}`,
     maxWidth: 900,
+    marginInline: "auto",
   };
 
   const tabBar: CSSProperties = {

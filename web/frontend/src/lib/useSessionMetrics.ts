@@ -29,7 +29,7 @@ export function useSessionMetrics(pid: string | undefined): SessionMetrics {
         getFootprint(pid as string, "session").catch(() => null),
       ]);
       const g = stats?.global;
-      const buckets = footprint ? Object.values(footprint.by_session) : [];
+      const buckets = footprint?.by_session ? Object.values(footprint.by_session) : [];
       const gco2e = buckets.reduce((s, b) => s + (b.gco2e ?? 0), 0);
       const waterMl = buckets.reduce((s, b) => s + (b.water_ml ?? 0), 0);
       const hasEstimate = buckets.some((b) => b.has_estimate);

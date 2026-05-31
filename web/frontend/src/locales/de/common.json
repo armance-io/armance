@@ -106,6 +106,17 @@
     "empty": {
       "title": "Noch kein Workflow entworfen.",
       "hint": "Bitten Sie Kim, einen im Chat zu entwerfen."
+    },
+    "picker": {
+      "quick_title": "Eine schnelle Perspektive",
+      "quick_desc": "Schnelle Prüfung der Hauptannahmen anhand wichtiger Kennzahlen.",
+      "deep_title": "Eine gründliche, hinterfragte Analyse",
+      "deep_desc": "Strenge Bewertung, die jede Behauptung durch strukturierte Debatte hinterfragt.",
+      "mode_interactive": "interaktiv",
+      "mode_autonomous": "autonom",
+      "hint_interactive": "Mona bittet an wichtigen Entscheidungsschwellen um Ihre Anleitung.",
+      "hint_autonomous": "Mona betreibt autonome Kontrollpunkte, um die Synthese zu liefern.",
+      "launch": "Starten"
     }
   },
   "chat": {
