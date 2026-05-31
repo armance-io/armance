@@ -373,7 +373,7 @@ const AgentsTab: FC<{ pid: string; sid: string | null; t: (k: string) => string 
             id: a.slug ?? a.name,
             name: a.name,
             role: a.role,
-            persona: "",
+            persona: a.persona ?? "",
             portraitUrl: "",
             provider: a.provider,
             model: a.model,

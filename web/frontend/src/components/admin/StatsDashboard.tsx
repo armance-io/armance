@@ -1,5 +1,6 @@
 import { type CSSProperties, type FC, useMemo } from "react";
 import { tokens } from "../_shared/armance-tokens";
+import { displayAgentName } from "@/lib/agentNames";
 
 export interface AgentStat {
   agent: string;
@@ -122,9 +123,9 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
                   paddingBottom: 6,
                 }}
               >
-                <span style={{ fontFamily: tokens.ffSerif, fontSize: 18 }}>{a.agent}</span>
+                <span style={{ fontFamily: tokens.ffSerif, fontSize: 18 }}>{displayAgentName(a.agent)}</span>
                 <span style={{ color: tokens.inkSoft, fontFamily: tokens.ffMono, fontSize: 12 }}>
-                  {a.messages} messages
+                  {a.messages} {t("admin:stats.messages")}
                 </span>
               </div>
 
@@ -139,7 +140,7 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
               >
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <span style={{ fontSize: 11, color: tokens.inkSoft, textTransform: "uppercase", fontFamily: tokens.ffMono }}>
-                    🌱 Empreinte Carbone
+                    🌱 {t("admin:stats.carbon")}
                   </span>
                   <span style={{ fontSize: 15, fontWeight: 600, color: tokens.ink }}>
                     {a.has_estimate ? "~" : ""}{a.gco2e?.toFixed(1) ?? "0.0"} gCO₂e
@@ -147,7 +148,7 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <span style={{ fontSize: 11, color: tokens.inkSoft, textTransform: "uppercase", fontFamily: tokens.ffMono }}>
-                    💧 Consommation Eau
+                    💧 {t("admin:stats.water")}
                   </span>
                   <span style={{ fontSize: 15, fontWeight: 600, color: tokens.ink }}>
                     {Math.round(a.water_ml ?? 0)} mL
@@ -172,7 +173,7 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
                   <span>↑{fmt(a.tokens_in)} · ↓{fmt(a.tokens_out)}</span>
                 </div>
                 <div>
-                  <span style={{ fontFamily: tokens.ffMono }}>Coût: </span>
+                  <span style={{ fontFamily: tokens.ffMono }}>{t("admin:stats.cost")}: </span>
                   <span style={{ fontWeight: 600, color: tokens.accent }}>
                     {a.cost.toFixed(4)} {currency}
                   </span>
@@ -200,7 +201,7 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
               <span style={{ fontFamily: tokens.ffSerif, fontSize: 22, color: tokens.accent }}>
                 {i + 1}
               </span>
-              <span>{a.agent}</span>
+              <span>{displayAgentName(a.agent)}</span>
               <span style={{ fontFamily: tokens.ffMono, fontSize: 13, color: tokens.ink }}>
                 {a.cost.toFixed(4)} {currency}
               </span>

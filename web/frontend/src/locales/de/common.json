@@ -62,6 +62,32 @@
     "logs": {
       "level_changed_title": "Protokollebene aktualisiert",
       "level_changed_desc": "Die Protokollebene wurde in {level} geändert."
+    },
+    "stats": {
+      "messages": "Nachrichten",
+      "carbon": "CO₂-Fußabdruck",
+      "water": "Wasserverbrauch",
+      "cost": "Kosten"
+    },
+    "footprint": {
+      "error": "Fehler beim Laden des Fußabdrucks.",
+      "no_data": "Noch keine Fußabdruckdaten — führen Sie eine Beratung durch, um sie zu füllen.",
+      "method": "Schätzmethode",
+      "method_body": "Die Umweltwirkung wird mit der EcoLogits-Methodik (ÖKO-Bilanz ISO 14044) berechnet, unter Berücksichtigung der Nutzungsphase (GPU, Rechenzentrums-PUE) und der grauen Energie der Hardwareherstellung.",
+      "estimate": "Schätzung",
+      "measured": "Messung",
+      "zone_label": "CO₂-Intensitätszone",
+      "col": {
+        "agent": "Agent",
+        "calls": "Aufrufe",
+        "co2e": "CO₂e",
+        "water": "Wasser",
+        "type": "Typ"
+      },
+      "zone": {
+        "wor": "Welt — globale durchschnittliche CO₂-Intensität",
+        "unknown": "Unbekannte Zone"
+      }
     }
   },
   "workflow": {

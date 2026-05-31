@@ -518,6 +518,7 @@ export interface AdminAgent {
   provider: string;
   model: string;
   reasoning: string | null;
+  persona?: string;
   staff?: boolean;
 }
 

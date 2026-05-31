@@ -62,6 +62,32 @@
     "logs": {
       "level_changed_title": "ログレベルが更新されました",
       "level_changed_desc": "ログレベルが {level} に変更されました。"
+    },
+    "stats": {
+      "messages": "メッセージ",
+      "carbon": "カーボンフットプリント",
+      "water": "水使用量",
+      "cost": "コスト"
+    },
+    "footprint": {
+      "error": "フットプリントの読み込みエラー。",
+      "no_data": "フットプリントデータはまだありません — 審議を実行して取得してください。",
+      "method": "推定方法",
+      "method_body": "環境負荷は EcoLogits 手法（ISO 14044 LCA）で計算され、使用段階（GPU、データセンター PUE）とハードウェア製造の内包的影響を考慮します。",
+      "estimate": "推定",
+      "measured": "実測",
+      "zone_label": "炭素強度ゾーン",
+      "col": {
+        "agent": "エージェント",
+        "calls": "呼び出し",
+        "co2e": "CO₂e",
+        "water": "水",
+        "type": "種別"
+      },
+      "zone": {
+        "wor": "世界 — 全球平均炭素強度",
+        "unknown": "不明なゾーン"
+      }
     }
   },
   "workflow": {

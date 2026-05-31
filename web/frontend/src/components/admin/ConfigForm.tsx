@@ -1,5 +1,6 @@
 import { type CSSProperties, type FC, useState } from "react";
 import { tokens } from "../_shared/armance-tokens";
+import { providerLabel } from "@/lib/providerLabels";
 
 export interface ConfigValues {
   default_provider: string;
@@ -107,7 +108,7 @@ export const ConfigForm: FC<ConfigFormProps> = ({
 
       <div style={row}>
         <label style={label}>{t("admin:config.default_provider")}</label>
-        <div style={readonlyVal}>{draft.default_provider || "—"}</div>
+        <div style={readonlyVal}>{draft.default_provider ? providerLabel(draft.default_provider) : "—"}</div>
       </div>
 
       {/* Configured Providers Section */}
@@ -131,7 +132,7 @@ export const ConfigForm: FC<ConfigFormProps> = ({
                   }}
                 >
                   <div>
-                    <span style={{ fontWeight: 600, fontFamily: tokens.ffSans, color: tokens.ink }}>{prov.name}</span>
+                    <span style={{ fontWeight: 600, fontFamily: tokens.ffSans, color: tokens.ink }}>{providerLabel(prov.name)}</span>
                     {prov.base_url && (
                       <span style={{ fontSize: 11, marginLeft: 8, color: tokens.inkSoft, fontFamily: tokens.ffMono }}>
                         ({prov.base_url})

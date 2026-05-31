@@ -62,6 +62,32 @@
     "logs": {
       "level_changed_title": "日志级别已更新",
       "level_changed_desc": "日志级别已更改为 {level}。"
+    },
+    "stats": {
+      "messages": "条消息",
+      "carbon": "碳足迹",
+      "water": "用水量",
+      "cost": "成本"
+    },
+    "footprint": {
+      "error": "加载足迹数据出错。",
+      "no_data": "暂无足迹数据 — 运行一次审议以填充。",
+      "method": "估算方法",
+      "method_body": "环境影响采用 EcoLogits 方法（ISO 14044 生命周期评估）计算，涵盖使用阶段（GPU、数据中心 PUE）以及硬件制造的隐含影响。",
+      "estimate": "估算",
+      "measured": "实测",
+      "zone_label": "碳强度区域",
+      "col": {
+        "agent": "智能体",
+        "calls": "调用",
+        "co2e": "CO₂e",
+        "water": "水",
+        "type": "类型"
+      },
+      "zone": {
+        "wor": "全球 — 全球平均碳强度",
+        "unknown": "未知区域"
+      }
     }
   },
   "workflow": {

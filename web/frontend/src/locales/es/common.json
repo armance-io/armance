@@ -62,6 +62,32 @@
     "logs": {
       "level_changed_title": "Nivel de registro actualizado",
       "level_changed_desc": "El nivel de registro se ha cambiado a {level}."
+    },
+    "stats": {
+      "messages": "mensajes",
+      "carbon": "Huella de carbono",
+      "water": "Uso de agua",
+      "cost": "Coste"
+    },
+    "footprint": {
+      "error": "Error al cargar la huella.",
+      "no_data": "Aún no hay datos de huella — ejecuta una deliberación para llenarlos.",
+      "method": "Método de estimación",
+      "method_body": "El impacto ambiental se calcula con la metodología EcoLogits (ACV ISO 14044), considerando la fase de uso (GPU, PUE de centros de datos) y el impacto incorporado de la fabricación del hardware.",
+      "estimate": "Estimación",
+      "measured": "Medición real",
+      "zone_label": "Zona de intensidad de carbono",
+      "col": {
+        "agent": "Agente",
+        "calls": "Llamadas",
+        "co2e": "CO₂e",
+        "water": "Agua",
+        "type": "Tipo"
+      },
+      "zone": {
+        "wor": "Mundo — intensidad de carbono media global",
+        "unknown": "Zona desconocida"
+      }
     }
   },
   "workflow": {

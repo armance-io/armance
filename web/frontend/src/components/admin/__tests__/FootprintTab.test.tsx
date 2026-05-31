@@ -37,7 +37,8 @@ describe("<FootprintTab />", () => {
     expect(screen.getByText("2")).toBeDefined();
     expect(screen.getByText("~24.5 gCO₂e")).toBeDefined();
     expect(screen.getByText("120 mL")).toBeDefined();
-    expect(screen.getByText("Estimation")).toBeDefined();
+    // Type badge label is i18n-driven (identity t → key).
+    expect(screen.getByText("admin:footprint.estimate")).toBeDefined();
   });
 
   it("toggles the Méthode provenance expander panel on click", () => {
@@ -54,15 +55,14 @@ describe("<FootprintTab />", () => {
     // Expander should be closed initially
     expect(screen.queryByTestId("methode-panel")).toBeNull();
 
-    // Click expander button
-    const btn = screen.getByRole("button", { name: /méthode/i });
+    // Click expander button (label is i18n-driven → the key under identity t)
+    const btn = screen.getByRole("button", { name: /admin:footprint\.method/i });
     fireEvent.click(btn);
 
-    // Expander should be open and contain critical methodology citations
+    // Expander open: method body key rendered + the configured zone shown
     const panel = screen.getByTestId("methode-panel");
     expect(panel).toBeDefined();
-    expect(panel.textContent).toContain("EcoLogits");
-    expect(panel.textContent).toContain("ISO 14044");
+    expect(panel.textContent).toContain("admin:footprint.method_body");
     expect(panel.textContent).toContain("FRA");
 
     // Click again to close
