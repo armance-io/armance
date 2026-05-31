@@ -61,7 +61,8 @@
     },
     "logs": {
       "level_changed_title": "ログレベルが更新されました",
-      "level_changed_desc": "ログレベルが {level} に変更されました。"
+      "level_changed_desc": "ログレベルが {level} に変更されました。",
+      "live": "ライブ"
     },
     "stats": {
       "messages": "メッセージ",

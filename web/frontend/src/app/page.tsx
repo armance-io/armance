@@ -17,7 +17,8 @@ export default function HomePage() {
       })
       .then((data) => {
         if (data && data.id) {
-          window.location.replace(`/projects/default/sessions/${data.id}/library`);
+          // BUG-14: land on the conversation (Current Session), not Library.
+          window.location.replace(`/projects/default/sessions/${data.id}`);
         } else {
           setLoading(false);
         }
@@ -40,7 +41,7 @@ export default function HomePage() {
         fontFamily: "var(--ff-sans, sans-serif)",
         fontSize: "14px",
       }}>
-        Chargement...
+        {t("app:loading")}
       </div>
     );
   }

@@ -956,14 +956,32 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
 
     if not web_args.no_browser:
         import threading
-        import webbrowser
         import time
+        import urllib.error
+        import urllib.request
+        import webbrowser
 
-        def _open() -> None:
-            time.sleep(1.5)
-            webbrowser.open(f"http://127.0.0.1:{web_args.port}")
+        url = f"http://127.0.0.1:{web_args.port}/"
 
-        threading.Thread(target=_open, daemon=True).start()
+        def _open_when_ready() -> None:
+            # BUG-15: wait until the server actually answers before opening the
+            # browser, so the first load never shows a connection error.
+            deadline = time.time() + 15.0
+            while time.time() < deadline:
+                try:
+                    with urllib.request.urlopen(url, timeout=1) as resp:
+                        if resp.status == 200:
+                            webbrowser.open(url)
+                            return
+                except (urllib.error.URLError, OSError):
+                    pass
+                time.sleep(0.2)
+            print(
+                f"web server did not become ready within 15s — open {url} manually.",
+                file=sys.stderr,
+            )
+
+        threading.Thread(target=_open_when_ready, daemon=True).start()
 
     import os
 

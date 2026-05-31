@@ -385,7 +385,8 @@
         "search": "Rechercher"
       },
       "level_changed_title": "Niveau de log mis à jour",
-      "level_changed_desc": "Le niveau de log a été changé en {level}."
+      "level_changed_desc": "Le niveau de log a été changé en {level}.",
+      "live": "En direct"
     },
     "stats": {
       "title": "Statistiques",

@@ -61,7 +61,8 @@
     },
     "logs": {
       "level_changed_title": "Protokollebene aktualisiert",
-      "level_changed_desc": "Die Protokollebene wurde in {level} geändert."
+      "level_changed_desc": "Die Protokollebene wurde in {level} geändert.",
+      "live": "Live"
     },
     "stats": {
       "messages": "Nachrichten",
