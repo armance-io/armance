@@ -61,5 +61,14 @@
       "title": "No hay workflow diseñado.",
       "hint": "Pide a Kim que diseñe uno desde el chat."
     }
+  },
+  "chat": {
+    "agents": {
+      "label": "Hablando con",
+      "switch_aria": "Cambiar a"
+    },
+    "error": {
+      "turn_failed": "La respuesta falló. Por favor, inténtelo de nuevo."
+    }
   }
 }
