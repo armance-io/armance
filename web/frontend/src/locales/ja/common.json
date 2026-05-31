@@ -11,6 +11,12 @@
         "title": "データがありません",
         "hint": "統計データを収集するには討議を開始してください。"
       }
+    },
+    "metrics": {
+      "co2e_aria": "カーボンフットプリント (gCO₂e)",
+      "water_aria": "ウォーターフットプリント (mL)",
+      "tokens_in_aria": "入力トークン",
+      "tokens_out_aria": "出力トークン"
     }
   },
   "checkpoint": {
@@ -26,7 +32,20 @@
     },
     "tabs": {
       "session_active": "現在のセッション",
-      "settings": "設定"
+      "settings": "設定",
+      "workflows": "ワークフロー"
+    },
+    "section": {
+      "staff": "チーム",
+      "library": "ライブラリ"
+    },
+    "staff": {
+      "empty": "専門家はまだいません",
+      "mention_hint": "メッセージにメンションを挿入"
+    },
+    "library": {
+      "docs": "ドキュメント",
+      "feuillets": "スリップ"
     }
   },
   "admin": {

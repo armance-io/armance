@@ -164,13 +164,20 @@ export interface Doc {
   format: DocFormat;
   status: DocStatus;
   size_bytes: number;
+  feuillets?: number;
+}
+
+export interface LibraryResponse {
+  docs: Doc[];
+  total_feuillets: number;
+  doc_count: number;
 }
 
 export async function getLibrary(
   pid: string,
   sid: string,
-): Promise<{ docs: Doc[] }> {
-  return api.get<{ docs: Doc[] }>(`/projects/${pid}/sessions/${sid}/library`);
+): Promise<LibraryResponse> {
+  return api.get<LibraryResponse>(`/projects/${pid}/sessions/${sid}/library`);
 }
 
 export async function importDoc(

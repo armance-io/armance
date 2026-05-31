@@ -1,13 +1,19 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { ThemeProvider } from "@/lib/theme";
 import { I18nBootstrap } from "@/components/visual/I18nBootstrap";
 import { QueryProvider } from "@/components/visual/QueryProvider";
+import { ToastProvider } from "@/components/_shared/Toast";
 
 export const metadata: Metadata = {
   title: "Armance",
   description: "A house of minds, deliberating with you.",
+};
+
+// Separate viewport export (Next 16 requirement) — also the seam for PWA
+// theming in V3.
+export const viewport: Viewport = {
   themeColor: "#6b4f8a",
 };
 
@@ -25,7 +31,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <QueryProvider>
           <ThemeProvider>
-            <I18nBootstrap>{children}</I18nBootstrap>
+            <ToastProvider>
+              <I18nBootstrap>{children}</I18nBootstrap>
+            </ToastProvider>
           </ThemeProvider>
         </QueryProvider>
       </body>

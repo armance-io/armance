@@ -11,6 +11,12 @@
         "title": "No hay datos aún",
         "hint": "Inicie una deliberación para recopilar estadísticas."
       }
+    },
+    "metrics": {
+      "co2e_aria": "Huella de carbono (gCO₂e)",
+      "water_aria": "Huella hídrica (mL)",
+      "tokens_in_aria": "Tokens de entrada",
+      "tokens_out_aria": "Tokens de salida"
     }
   },
   "checkpoint": {
@@ -26,7 +32,20 @@
     },
     "tabs": {
       "session_active": "Sesión activa",
-      "settings": "Ajustes"
+      "settings": "Ajustes",
+      "workflows": "Flujos"
+    },
+    "section": {
+      "staff": "Equipo",
+      "library": "Biblioteca"
+    },
+    "staff": {
+      "empty": "Aún no hay especialistas",
+      "mention_hint": "Insertar una mención en tu mensaje"
+    },
+    "library": {
+      "docs": "Documentos",
+      "feuillets": "Fragmentos"
     }
   },
   "admin": {

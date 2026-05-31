@@ -9,6 +9,7 @@ import {
 
 import { ThemeToggle } from "./ThemeToggle";
 import { SidebarNav } from "./SidebarNav";
+import { HeaderMetrics } from "./HeaderMetrics";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -133,14 +134,17 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
     position: "sticky", top: 0, zIndex: 50,
   };
 
+  // BUG-07: no border, same background as the header; the only separation is
+  // a thin vertical rule on the right. A subtle ink shift signals hover.
   const toggleStyle: CSSProperties = {
     width: `${HEADER_H}px`, height: `${HEADER_H}px`,
     flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-    color: "var(--ink-soft,#5b5145)",
+    color: toggleHover ? "var(--ink,#2a2520)" : "var(--ink-soft,#5b5145)",
+    border: "none",
     borderRight: "1px solid var(--rule,#d6c8ad)",
-    transition: motion ? "none" : "background 0.15s ease, color 0.15s ease",
+    transition: motion ? "none" : "color 0.15s ease",
     padding: 0,
-    background: toggleHover ? "var(--bg-paper-deep, #e8dfcd)" : "var(--rule,#d6c8ad)",
+    background: "var(--bg-paper-deep,#e8dfcd)",
     cursor: "pointer",
     outline: "none",
   };
@@ -176,12 +180,13 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
     padding: "32px",
   };
 
+  // BUG-09: compact footer — one line, minimal vertical padding.
   const footerStyle: CSSProperties = {
     borderTop: "1px solid var(--rule,#d6c8ad)",
-    padding: "28px 24px",
+    padding: "8px 24px",
     background: "var(--bg-paper-deep,#e8dfcd)",
-    display: "flex", flexDirection: "column",
-    alignItems: "center", gap: "6px",
+    display: "flex",
+    alignItems: "center", justifyContent: "center", gap: "10px",
   };
 
   const inlineSerif  = { fontFamily: "var(--ff-serif,'Instrument Serif',serif)" } as const;
@@ -204,12 +209,18 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
         <div style={{ display: "flex", alignItems: "baseline", marginLeft: "20px" }}>
           <span style={{ ...inlineSerif, fontStyle: "italic", fontSize: "18px", color: "var(--ink,#2a2520)" }}>Armance</span>
           <span style={{ color: "var(--rule,#d6c8ad)", margin: "0 8px" }}>·</span>
-          <span style={{ ...inlineMono, fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint,#9c8e7e)" }}>
+          <a
+            href="https://armance.io"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ ...inlineMono, fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint,#9c8e7e)", textDecoration: "none" }}
+          >
             {t("visual:shell.brand_domain")}
-          </span>
+          </a>
         </div>
 
-        <div style={{ marginLeft: "auto" }}>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "20px" }}>
+          <HeaderMetrics t={t} />
           <ThemeToggle t={t} />
         </div>
       </header>
@@ -241,13 +252,14 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
       </div>
 
       <footer style={footerStyle}>
-        <span style={{ ...inlineSerif, fontSize: "16px", color: "var(--accent,#6b4f8a)", lineHeight: 1 }} aria-hidden="true">❦</span>
-        <p style={{ fontFamily: "var(--ff-sans,sans-serif)", fontSize: "13px", color: "var(--ink-soft,#5b5145)", margin: 0, textAlign: "center" }}>
+        <span style={{ ...inlineSerif, fontSize: "13px", color: "var(--accent,#6b4f8a)", lineHeight: 1 }} aria-hidden="true">❦</span>
+        <span style={{ fontFamily: "var(--ff-sans,sans-serif)", fontSize: "12px", color: "var(--ink-soft,#5b5145)" }}>
           {t("visual:shell.footer_motto")}
-        </p>
-        <p style={{ ...inlineMono, fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint,#9c8e7e)", margin: 0 }}>
+        </span>
+        <span style={{ color: "var(--rule,#d6c8ad)" }} aria-hidden="true">·</span>
+        <span style={{ ...inlineMono, fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint,#9c8e7e)" }}>
           {t("visual:shell.footer_line")}
-        </p>
+        </span>
       </footer>
 
     </div>

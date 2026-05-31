@@ -57,8 +57,14 @@ async def library_status(
         read_set = set()
 
     db_names: set[str] = {d["name"] for d in status.get("docs_in_db", [])}
+    # Per-doc feuillet (chunk) counts from the vector DB, keyed by source name.
+    chunks_by_doc: dict[str, int] = {
+        d.get("source", ""): int(d.get("chunks", 0))
+        for d in status.get("docs_in_db", [])
+    }
 
     docs = []
+    total_feuillets = 0
     for d in status.get("docs_on_disk", []):
         name: str = d["name"]
         ext = "." + name.rsplit(".", 1)[-1].lower() if "." in name else ""
@@ -70,11 +76,19 @@ async def library_status(
         else:
             doc_status = "pending"
         size_bytes = int(d.get("size_kb", 0) * 1024)
+        feuillets = chunks_by_doc.get(name, 0)
+        total_feuillets += feuillets
         docs.append({
             "name": name,
             "format": fmt,
             "status": doc_status,
             "size_bytes": size_bytes,
+            "feuillets": feuillets,
         })
 
-    return {"docs": docs, "library": status}
+    return {
+        "docs": docs,
+        "total_feuillets": total_feuillets,
+        "doc_count": len(docs),
+        "library": status,
+    }

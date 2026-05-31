@@ -1,28 +1,56 @@
 "use client";
 
-import { type CSSProperties, type FC } from "react";
+import { type CSSProperties, type FC, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useLatestSession } from "@/lib/useLatestSession";
+import { getAdminAgents, getLibrary } from "@/lib/api";
+import { emitMention } from "@/lib/mentionBus";
+import { tokens } from "../_shared/armance-tokens";
 
 export interface SidebarNavProps {
   t: (key: string) => string;
 }
 
+const KEY_STAFF = "armance.sidebar.staff-open";
+const KEY_LIB = "armance.sidebar.library-open";
+
+function usePersistedOpen(key: string, fallback: boolean): [boolean, () => void] {
+  const [open, setOpen] = useState(fallback);
+  useEffect(() => {
+    const v = localStorage.getItem(key);
+    if (v != null) setOpen(v === "true");
+  }, [key]);
+  const toggle = () => setOpen((p) => {
+    localStorage.setItem(key, String(!p));
+    return !p;
+  });
+  return [open, toggle];
+}
+
 export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
   const { pid, sid } = useLatestSession();
-
   const pathname = typeof window !== "undefined" ? window.location.pathname : "";
 
-  // Helper to check if a navigation item is active
+  const [staffOpen, toggleStaff] = usePersistedOpen(KEY_STAFF, true);
+  const [libOpen, toggleLib] = usePersistedOpen(KEY_LIB, true);
+
+  const { data: agents = [] } = useQuery({
+    queryKey: ["sidebar-agents", pid, sid],
+    enabled: Boolean(pid && sid),
+    queryFn: () => getAdminAgents(pid, sid as string).catch(() => []),
+  });
+
+  const { data: library } = useQuery({
+    queryKey: ["sidebar-library", pid, sid],
+    enabled: Boolean(pid && sid),
+    refetchInterval: 4000,
+    queryFn: () => getLibrary(pid, sid as string).catch(() => null),
+  });
+
   const isTabActive = (tab: string): boolean => {
-    if (tab === "session") {
-      // active when on the session root (not a sub-page)
-      return (
-        /\/sessions\/[^/]+$/.test(pathname) &&
-        !pathname.includes("/workflows") &&
-        !pathname.includes("/library") &&
-        !pathname.includes("/deliverables")
-      );
-    }
+    if (tab === "session")
+      return /\/sessions\/[^/]+$/.test(pathname) &&
+        !/(workflows|library|deliverables)/.test(pathname);
     if (tab === "workflows") return pathname.includes("/workflows");
     if (tab === "library") return pathname.includes("/library");
     if (tab === "deliverables") return pathname.includes("/deliverables");
@@ -31,90 +59,102 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
   };
 
   /* ── Styles ── */
-  const sectionHeaderStyle: CSSProperties = {
-    fontFamily: "var(--ff-mono, monospace)",
-    fontSize: "9px",
-    letterSpacing: "0.14em",
-    textTransform: "uppercase",
-    color: "var(--ink-faint, #9c8e7e)",
-    padding: "16px 20px 6px",
-    fontWeight: 600,
-    userSelect: "none",
+  const sectionHeader: CSSProperties = {
+    fontFamily: tokens.ffMono, fontSize: "9px", letterSpacing: "0.14em",
+    textTransform: "uppercase", color: tokens.inkFaint,
+    padding: "16px 20px 6px", fontWeight: 600, userSelect: "none",
   };
-
-  const navContainerStyle: CSSProperties = {
-    display: "flex",
-    flexDirection: "column",
-    gap: "2px",
-    padding: "0 12px",
+  const collapsibleHeader: CSSProperties = {
+    ...sectionHeader, display: "flex", alignItems: "center",
+    justifyContent: "space-between", cursor: "pointer", background: "none",
+    border: "none", width: "100%", textAlign: "left",
   };
-
-  const linkStyle = (active: boolean): CSSProperties => ({
-    display: "block",
-    padding: "8px 12px",
-    borderRadius: "2px",
-    fontSize: "13px",
-    fontFamily: "var(--ff-sans, sans-serif)",
-    color: active ? "var(--accent, #6b4f8a)" : "var(--ink-soft, #5b5145)",
-    background: active ? "color-mix(in srgb, var(--accent, #6b4f8a) 8%, transparent)" : "transparent",
-    textDecoration: "none",
-    fontWeight: active ? 500 : 400,
-    transition: "background 120ms ease, color 120ms ease",
-    cursor: "pointer",
+  const navContainer: CSSProperties = {
+    display: "flex", flexDirection: "column", gap: "2px", padding: "0 12px",
+  };
+  const link = (active: boolean): CSSProperties => ({
+    display: "block", padding: "8px 12px", borderRadius: tokens.radiusSm,
+    fontSize: "13px", fontFamily: tokens.ffSans,
+    color: active ? tokens.accent : tokens.inkSoft,
+    background: active ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent",
+    textDecoration: "none", fontWeight: active ? 500 : 400,
+    transition: "background 120ms ease, color 120ms ease", cursor: "pointer",
   });
+  const sessionPath = (suffix = "") => `/projects/${pid}/sessions/${sid || "_"}${suffix}`;
 
-  const getSessionLink = () => {
-    return `/projects/${pid}/sessions/${sid || "_"}`;
-  };
-
-  const getLibraryLink = () => {
-    return `/projects/${pid}/sessions/${sid || "_"}/library`;
-  };
-
-  const getDeliverablesLink = () => {
-    return `/projects/${pid}/sessions/${sid || "_"}/deliverables`;
-  };
-
-  const getAdminLink = () => {
-    return `/projects/${pid}/admin`;
-  };
+  const navLink = (tab: string, suffix: string, label: string) => (
+    <a
+      href={sid ? sessionPath(suffix) : "#"}
+      style={link(isTabActive(tab))}
+      onClick={(e) => { if (!sid) e.preventDefault(); }}
+    >
+      {label}
+    </a>
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-      <p style={sectionHeaderStyle}>{t("sidebar:nav_section.workspace")}</p>
-      <nav style={navContainerStyle}>
-        <a
-          href={sid ? getSessionLink() : "#"}
-          style={linkStyle(isTabActive("session"))}
-          onClick={(e) => {
-            if (!sid) e.preventDefault();
-          }}
-        >
-          {t("sidebar:tabs.session_active")}
-        </a>
-        <a
-          href={sid ? getLibraryLink() : "#"}
-          style={linkStyle(isTabActive("library"))}
-          onClick={(e) => {
-            if (!sid) e.preventDefault();
-          }}
-        >
-          {t("sidebar:tabs.library")}
-        </a>
-        <a
-          href={sid ? getDeliverablesLink() : "#"}
-          style={linkStyle(isTabActive("deliverables"))}
-          onClick={(e) => {
-            if (!sid) e.preventDefault();
-          }}
-        >
-          {t("sidebar:tabs.deliverables")}
-        </a>
+      {/* Workspace nav */}
+      <p style={sectionHeader}>{t("sidebar:nav_section.workspace")}</p>
+      <nav style={navContainer}>
+        {navLink("session", "", t("sidebar:tabs.session_active"))}
+        {navLink("workflows", "/workflows/_", t("sidebar:tabs.workflows"))}
+        {navLink("library", "/library", t("sidebar:tabs.library"))}
+        {navLink("deliverables", "/deliverables", t("sidebar:tabs.deliverables"))}
       </nav>
 
-      <p style={sectionHeaderStyle}>{t("sidebar:nav_section.account")}</p>
-      <nav style={navContainerStyle}>
-        <a href={getAdminLink()} style={linkStyle(isTabActive("admin"))}>
+      {/* Staff / Roles — click injects @Agent into the chat input */}
+      <button style={collapsibleHeader} onClick={toggleStaff} aria-expanded={staffOpen}>
+        <span>{t("sidebar:section.staff")}</span>
+        <span aria-hidden="true">{staffOpen ? "▾" : "▸"}</span>
+      </button>
+      {staffOpen && (
+        <nav style={navContainer}>
+          {agents.length === 0 && (
+            <span style={{ ...link(false), color: tokens.inkFaint, fontStyle: "italic", cursor: "default" }}>
+              {t("sidebar:staff.empty")}
+            </span>
+          )}
+          {agents.map((a) => (
+            <button
+              key={a.slug ?? a.name}
+              style={{ ...link(false), display: "flex", justifyContent: "space-between", gap: 8, background: "none", border: "none" }}
+              onClick={() => emitMention(a.name)}
+              title={t("sidebar:staff.mention_hint")}
+            >
+              <span>{a.name}</span>
+              <span style={{ color: tokens.inkFaint, fontSize: 11 }}>{a.role}</span>
+            </button>
+          ))}
+        </nav>
+      )}
+
+      {/* Library — docs + feuillet counts */}
+      <button style={collapsibleHeader} onClick={toggleLib} aria-expanded={libOpen}>
+        <span>{t("sidebar:section.library")}</span>
+        <span aria-hidden="true">{libOpen ? "▾" : "▸"}</span>
+      </button>
+      {libOpen && (
+        <div style={{ ...navContainer, gap: 4 }}>
+          <a href={sid ? sessionPath("/library") : "#"} style={{ ...link(false), display: "flex", justifyContent: "space-between" }}>
+            <span>{t("sidebar:library.docs")}</span>
+            <span style={{ color: tokens.inkFaint, fontFamily: tokens.ffMono, fontSize: 11 }}>
+              {library?.doc_count ?? 0}
+            </span>
+          </a>
+          <div style={{ ...link(false), display: "flex", justifyContent: "space-between", cursor: "default" }}>
+            <span>{t("sidebar:library.feuillets")}</span>
+            <span style={{ color: tokens.inkFaint, fontFamily: tokens.ffMono, fontSize: 11 }}>
+              {library?.total_feuillets ?? 0}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Account */}
+      <p style={sectionHeader}>{t("sidebar:nav_section.account")}</p>
+      <nav style={navContainer}>
+        <a href={`/projects/${pid}/admin`} style={link(isTabActive("admin"))}>
           {t("sidebar:tabs.settings")}
         </a>
       </nav>

@@ -51,6 +51,12 @@
         "title": "Aucune donnée pour l'instant",
         "hint": "Lancez une délibération pour recueillir des statistiques."
       }
+    },
+    "metrics": {
+      "co2e_aria": "Empreinte carbone (gCO₂e)",
+      "water_aria": "Empreinte eau (mL)",
+      "tokens_in_aria": "Jetons entrants",
+      "tokens_out_aria": "Jetons sortants"
     }
   },
   "library": {
@@ -298,6 +304,18 @@
       },
       "starred_first": "Étoilés en premier",
       "star_aria": "Mettre en favori"
+    },
+    "section": {
+      "staff": "Équipe",
+      "library": "Bibliothèque"
+    },
+    "staff": {
+      "empty": "Aucun spécialiste pour l'instant",
+      "mention_hint": "Insérer une mention dans votre message"
+    },
+    "library": {
+      "docs": "Documents",
+      "feuillets": "Feuillets"
     }
   },
   "admin": {
