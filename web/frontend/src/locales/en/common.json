@@ -392,9 +392,11 @@
       "tokens_in": "Tokens in",
       "tokens_out": "Tokens out",
       "cost": "Cost",
-      "messages": "Messages",
+      "messages": "messages",
       "per_agent": "Per agent",
-      "top5_cost": "Top 5 by cost"
+      "top5_cost": "Top 5 by cost",
+      "carbon": "Carbon footprint",
+      "water": "Water use"
     },
     "agents": {
       "title": "Agents",
@@ -405,6 +407,26 @@
       "persona_hint": "Edit persona via Malik chat.",
       "save": "Save",
       "saving": "Saving…"
+    },
+    "footprint": {
+      "error": "Error loading footprint stats.",
+      "no_data": "No footprint data yet — run a deliberation to populate it.",
+      "method": "Estimation method",
+      "method_body": "Environmental impact is computed with the EcoLogits methodology (ISO 14044 LCA), accounting for the usage phase (GPU, data-centre PUE) and the embodied impact of hardware manufacturing.",
+      "estimate": "Estimate",
+      "measured": "Measured",
+      "zone_label": "Carbon-intensity zone",
+      "col": {
+        "agent": "Agent",
+        "calls": "Calls",
+        "co2e": "CO₂e",
+        "water": "Water",
+        "type": "Type"
+      },
+      "zone": {
+        "wor": "World — global average carbon intensity",
+        "unknown": "Unknown zone"
+      }
     }
   },
   "audio": {

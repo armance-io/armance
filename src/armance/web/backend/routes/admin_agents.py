@@ -28,15 +28,40 @@ _PERSONA_ERROR = {"error": "persona_via_malik_only"}
 _WRITABLE_FIELDS = {"model", "reasoning"}
 
 
-def _agent_row(agent: Agent, *, staff: bool, display_name: str | None = None) -> dict[str, Any]:
+def _persona_text(agent: Agent) -> str:
+    """Best-effort human-readable persona for display (read-only in the web)."""
+    p = agent.persona
+    if p is None:
+        return ""
+    for attr in ("summary", "description", "text", "bio"):
+        val = getattr(p, attr, None)
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+    # Persona may be a plain string in older definitions.
+    if isinstance(p, str):
+        return p.strip()
+    return ""
+
+
+def _agent_row(
+    agent: Agent,
+    *,
+    staff: bool,
+    default_provider: str,
+    default_model: str,
+    display_name: str | None = None,
+) -> dict[str, Any]:
+    # Staff files often leave provider/model blank to inherit the project
+    # defaults at runtime; surface the effective values, never a blank "-".
     return {
         "name": display_name or agent.name,
         "slug": agent.name,
         "domain": agent.domain,
         "role": agent.role or agent.domain or "",
-        "provider": agent.provider,
-        "model": agent.model,
+        "provider": agent.provider or default_provider,
+        "model": agent.model or default_model,
         "reasoning": agent.reasoning,
+        "persona": _persona_text(agent),
         "staff": staff,
     }
 
@@ -51,6 +76,9 @@ async def list_agents(
     # The 5 permanent staff (Armance/Malik/Kim/Mona/Serge) live as
     # system-*.md files and are NOT in ctx.agents (which holds only the
     # specialists Malik recruits). Surface staff first, then specialists.
+    cfg = ws.ctx.cfg
+    dp = getattr(cfg, "default_provider", "") or ""
+    dm = getattr(cfg, "default_model", "") or ""
     result: list[dict[str, Any]] = []
     seen: set[str] = set()
     for slug, first_name, _role in META_AGENTS:
@@ -61,12 +89,12 @@ async def list_agents(
             agent = Agent.load(path)
         except Exception:  # noqa: BLE001 — skip an unreadable staff file
             continue
-        result.append(_agent_row(agent, staff=True, display_name=first_name))
+        result.append(_agent_row(agent, staff=True, default_provider=dp, default_model=dm, display_name=first_name))
         seen.add(agent.name)
     for agent in ws.ctx.agents:
         if agent.name in seen:
             continue
-        result.append(_agent_row(agent, staff=False))
+        result.append(_agent_row(agent, staff=False, default_provider=dp, default_model=dm))
     return result
 
 

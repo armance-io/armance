@@ -392,9 +392,11 @@
       "tokens_in": "Tokens entrants",
       "tokens_out": "Tokens sortants",
       "cost": "Coût",
-      "messages": "Messages",
+      "messages": "messages",
       "per_agent": "Par agent",
-      "top5_cost": "Top 5 par coût"
+      "top5_cost": "Top 5 par coût",
+      "carbon": "Empreinte carbone",
+      "water": "Consommation d'eau"
     },
     "agents": {
       "title": "Agents",
@@ -405,6 +407,26 @@
       "persona_hint": "Modifiez la personnalité via le chat Malik.",
       "save": "Sauvegarder",
       "saving": "Sauvegarde…"
+    },
+    "footprint": {
+      "error": "Erreur de chargement de l'empreinte.",
+      "no_data": "Aucune donnée d'empreinte pour l'instant — lancez une délibération pour la renseigner.",
+      "method": "Méthode d'estimation",
+      "method_body": "L'impact environnemental est calculé avec la méthodologie EcoLogits (ACV ISO 14044), prenant en compte la phase d'usage (GPU, PUE des centres de données) et l'impact incorporé de la fabrication du matériel.",
+      "estimate": "Estimation",
+      "measured": "Mesure réelle",
+      "zone_label": "Zone d'intensité carbone",
+      "col": {
+        "agent": "Agent",
+        "calls": "Requêtes",
+        "co2e": "CO₂e",
+        "water": "Eau",
+        "type": "Type"
+      },
+      "zone": {
+        "wor": "Monde — intensité carbone moyenne mondiale",
+        "unknown": "Zone inconnue"
+      }
     }
   },
   "audio": {

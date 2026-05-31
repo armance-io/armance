@@ -51,7 +51,8 @@ describe("<ConfigForm />", () => {
     );
 
     expect(screen.getByText("admin:config.title")).toBeDefined();
-    expect(screen.getAllByText("openrouter").length).toBeGreaterThan(0);
+    // Provider id is shown via providerLabel (openrouter → "OpenRouter").
+    expect(screen.getAllByText("OpenRouter").length).toBeGreaterThan(0);
     expect(screen.getByDisplayValue("gpt-4o")).toBeDefined();
     expect(screen.getByDisplayValue("en")).toBeDefined();
   });
