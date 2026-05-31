@@ -56,6 +56,10 @@
         "cancelled": "⊘",
         "canceled": "⊘"
       }
+    },
+    "empty": {
+      "title": "No hay workflow diseñado.",
+      "hint": "Pide a Kim que diseñe uno desde el chat."
     }
   }
 }

@@ -151,6 +151,22 @@ test.describe("Workflow Assembly & Transition E2E (D-WIRE.8)", () => {
       }
     );
 
+    // Mock workflows list so the DepthPicker renders (workflow exists)
+    await page.route(
+      "**/api/projects/*/sessions/*/workflows",
+      async (route) => {
+        if (route.request().method() === "GET" && !route.request().url().match(/\/workflows\/[^/]+\//)) {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({ workflows: [{ name: "my-workflow", scope: "", step_count: 1 }] }),
+          });
+        } else {
+          await route.continue();
+        }
+      }
+    );
+
     // 2. Navigate to workflow launcher screen
     await page.goto("/projects/default/sessions/session-1/workflows/my-workflow");
 

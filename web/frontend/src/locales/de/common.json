@@ -56,6 +56,10 @@
         "cancelled": "⊘",
         "canceled": "⊘"
       }
+    },
+    "empty": {
+      "title": "Noch kein Workflow entworfen.",
+      "hint": "Bitten Sie Kim, einen im Chat zu entwerfen."
     }
   }
 }

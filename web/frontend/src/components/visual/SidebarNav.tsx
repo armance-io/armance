@@ -14,6 +14,15 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
 
   // Helper to check if a navigation item is active
   const isTabActive = (tab: string): boolean => {
+    if (tab === "session") {
+      // active when on the session root (not a sub-page)
+      return (
+        /\/sessions\/[^/]+$/.test(pathname) &&
+        !pathname.includes("/workflows") &&
+        !pathname.includes("/library") &&
+        !pathname.includes("/deliverables")
+      );
+    }
     if (tab === "workflows") return pathname.includes("/workflows");
     if (tab === "library") return pathname.includes("/library");
     if (tab === "deliverables") return pathname.includes("/deliverables");
@@ -54,8 +63,8 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
     cursor: "pointer",
   });
 
-  const getWorkflowLink = () => {
-    return `/projects/${pid}/sessions/${sid || "_"}/workflows/session_decision`;
+  const getSessionLink = () => {
+    return `/projects/${pid}/sessions/${sid || "_"}`;
   };
 
   const getLibraryLink = () => {
@@ -75,8 +84,8 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
       <p style={sectionHeaderStyle}>{t("sidebar:nav_section.workspace")}</p>
       <nav style={navContainerStyle}>
         <a
-          href={sid ? getWorkflowLink() : "#"}
-          style={linkStyle(isTabActive("workflows"))}
+          href={sid ? getSessionLink() : "#"}
+          style={linkStyle(isTabActive("session"))}
           onClick={(e) => {
             if (!sid) e.preventDefault();
           }}

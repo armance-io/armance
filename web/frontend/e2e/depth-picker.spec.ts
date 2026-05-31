@@ -4,6 +4,22 @@ test.describe("DepthPicker Workflow Launch E2E", () => {
   test("toggles launch configuration options and successfully submits run request", async ({ page }) => {
     let requestBody: any = null;
 
+    // Mock workflows list so the DepthPicker renders (workflow exists)
+    await page.route(
+      "**/api/projects/*/sessions/*/workflows",
+      async (route) => {
+        if (route.request().method() === "GET" && !route.request().url().includes("/run")) {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({ workflows: [{ name: "my-workflow", scope: "", step_count: 1 }] }),
+          });
+        } else {
+          await route.continue();
+        }
+      }
+    );
+
     // Intercept launch POST request
     await page.route(
       "**/api/projects/*/sessions/*/workflows/*/run",

@@ -9,7 +9,7 @@ import { WorkflowGraphContainer } from "@/components/workflow/WorkflowGraphConta
 import { InterruptButtonContainer } from "@/components/workflow/InterruptButtonContainer";
 import { RunHistoryContainer } from "@/components/workflow/RunHistoryContainer";
 import { LivePanelContainer } from "@/components/run/LivePanelContainer";
-import { launchWorkflow, getActiveWorkflow } from "@/lib/api";
+import { launchWorkflow, getActiveWorkflow, listWorkflows } from "@/lib/api";
 import { useRouteParams } from "@/lib/routeParams";
 
 export default function WorkflowView() {
@@ -26,6 +26,17 @@ export default function WorkflowView() {
     refetchInterval: 2000,
     enabled: Boolean(pid && sid),
   });
+
+  // 2. Check if this workflow actually exists on disk
+  const { data: workflowsData, isFetched: workflowsFetched } = useQuery({
+    queryKey: ["workflows", pid, sid],
+    queryFn: () => listWorkflows(pid, sid).catch(() => ({ workflows: [] })),
+    enabled: Boolean(pid && sid),
+  });
+  // Only hide the launcher once we have a confirmed empty list (not during loading)
+  const workflowExists =
+    !workflowsFetched ||
+    (workflowsData?.workflows ?? []).some((w) => w.name === workflowName);
 
   const activeRunId = activeData?.active?.run_id;
 
@@ -119,7 +130,7 @@ export default function WorkflowView() {
               workflowName={workflowName}
               runId={activeRunId}
             />
-          ) : (
+          ) : workflowExists ? (
             <div style={{ flex: 1, overflow: "auto" }}>
               <DepthPicker
                 workflowName={workflowName}
@@ -140,6 +151,38 @@ export default function WorkflowView() {
                   {status}
                 </div>
               )}
+            </div>
+          ) : (
+            <div
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "32px",
+                gap: "12px",
+                textAlign: "center",
+              }}
+              data-testid="no-workflow-state"
+            >
+              <div style={{
+                fontFamily: "var(--ff-serif, 'Instrument Serif', serif)",
+                fontSize: "16px",
+                color: "var(--ink, #2a2520)",
+                fontWeight: 500,
+              }}>
+                {t("workflow:empty.title")}
+              </div>
+              <div style={{
+                fontFamily: "var(--ff-sans, sans-serif)",
+                fontSize: "13px",
+                color: "var(--ink-soft, #5b5145)",
+                maxWidth: "260px",
+                lineHeight: 1.5,
+              }}>
+                {t("workflow:empty.hint")}
+              </div>
             </div>
           )}
         </div>
