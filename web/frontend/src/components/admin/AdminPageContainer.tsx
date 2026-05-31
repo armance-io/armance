@@ -7,6 +7,7 @@ import {
   useEffect,
   useCallback,
 } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useLatestSession } from "@/lib/useLatestSession";
 import { tokens } from "../_shared/armance-tokens";
 import { ConfigForm, type ConfigValues } from "./ConfigForm";
@@ -243,55 +244,73 @@ const SecretsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =
 // Logs tab
 // ---------------------------------------------------------------------------
 
+function logLineToEntry(l: import("@/lib/api").LogLine, id: string): LogEntry {
+  return {
+    id,
+    ts: l.timestamp || "",
+    agent: l.agent || "System",
+    level: "info" as LogEntry["level"],
+    message: l.event
+      ? `${String(l.event).toUpperCase()} — ${l.tokens_in ?? 0} In / ${l.tokens_out ?? 0} Out ($${(l.cost_usd ?? 0).toFixed(4)})`
+      : JSON.stringify(l),
+    payload: l,
+  };
+}
+
 const LogsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
-  const [entries, setEntries] = useState<LogEntry[]>([]);
+  const [extra, setExtra] = useState<LogEntry[]>([]);
   const [cursor, setCursor] = useState<string | null>(null);
   const [logLevel, setLogLevel] = useState<"INFO" | "DEBUG" | "WARN" | "ERROR">("INFO");
 
+  // BUG-11: live tail — poll the first page every 2s so new logs appear
+  // without a manual refresh.
+  const { data: head } = useQuery({
+    queryKey: ["admin-logs", pid],
+    queryFn: () => getAdminLogs(pid, { limit: 50 }),
+    refetchInterval: 2000,
+  });
+
   useEffect(() => {
-    void getAdminLogs(pid, { limit: 50 }).then((res) => {
-      setEntries(
-        res.lines.map((l, i) => ({
-          id: String(i),
-          ts: l.timestamp || "",
-          agent: l.agent || "System",
-          level: "info" as LogEntry["level"],
-          message: l.event
-            ? `${String(l.event).toUpperCase()} — ${l.tokens_in ?? 0} In / ${l.tokens_out ?? 0} Out ($${(l.cost_usd ?? 0).toFixed(4)})`
-            : JSON.stringify(l),
-          payload: l,
-        })),
-      );
-      setCursor(res.cursor);
-    });
-  }, [pid]);
+    setCursor(head?.cursor ?? null);
+    setExtra([]); // older pages reset when the live head refreshes
+  }, [head?.cursor]);
+
+  const headEntries = (head?.lines ?? []).map((l, i) => logLineToEntry(l, `head-${i}`));
+  const entries = [...headEntries, ...extra];
 
   const loadMore = async () => {
     if (!cursor) return;
     const res = await getAdminLogs(pid, { limit: 50, cursor });
-    setEntries((prev) => [
-      ...prev,
-      ...res.lines.map((l, i) => ({
-        id: `more-${i}`,
-        ts: l.timestamp || "",
-        agent: l.agent || "System",
-        level: "info" as LogEntry["level"],
-        message: l.event
-          ? `${String(l.event).toUpperCase()} — ${l.tokens_in ?? 0} In / ${l.tokens_out ?? 0} Out ($${(l.cost_usd ?? 0).toFixed(4)})`
-          : JSON.stringify(l),
-        payload: l,
-      })),
-    ]);
+    setExtra((prev) => [...prev, ...res.lines.map((l, i) => logLineToEntry(l, `more-${prev.length + i}`))]);
     setCursor(res.cursor);
   };
 
   return (
     <div data-testid="log-viewer">
-      <LogLevelToggle
-        current={logLevel}
-        onChange={async (lvl) => { await patchLogLevel(pid, lvl); setLogLevel(lvl); }}
-        t={t}
-      />
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <LogLevelToggle
+          current={logLevel}
+          onChange={async (lvl) => { await patchLogLevel(pid, lvl); setLogLevel(lvl); }}
+          t={t}
+        />
+        <span
+          data-testid="logs-live-badge"
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            fontFamily: tokens.ffMono, fontSize: 11, color: tokens.inkSoft,
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              width: 7, height: 7, borderRadius: "50%",
+              background: "var(--accent, #6b4f8a)",
+              animation: "armance-toast-in 1.2s ease-in-out infinite alternate",
+            }}
+          />
+          {t("admin:logs.live")}
+        </span>
+      </div>
       <LogViewer entries={entries} agents={[]} loadMore={loadMore} hasMore={cursor !== null} t={t} />
     </div>
   );

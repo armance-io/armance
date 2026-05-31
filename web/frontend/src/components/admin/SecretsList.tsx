@@ -127,6 +127,11 @@ export const SecretsList: FC<SecretsListProps> = ({
                   fontFamily: tokens.ffMono,
                   fontSize: 13,
                   color: tokens.inkSoft,
+                  textAlign: "left",
+                  justifySelf: "start",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
               >
                 {loadingReveal === s.key ? "…" : displayedValue}

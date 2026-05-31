@@ -61,7 +61,8 @@
     },
     "logs": {
       "level_changed_title": "Nivel de registro actualizado",
-      "level_changed_desc": "El nivel de registro se ha cambiado a {level}."
+      "level_changed_desc": "El nivel de registro se ha cambiado a {level}.",
+      "live": "En vivo"
     },
     "stats": {
       "messages": "mensajes",

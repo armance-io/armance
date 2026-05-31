@@ -61,7 +61,8 @@
     },
     "logs": {
       "level_changed_title": "日志级别已更新",
-      "level_changed_desc": "日志级别已更改为 {level}。"
+      "level_changed_desc": "日志级别已更改为 {level}。",
+      "live": "实时"
     },
     "stats": {
       "messages": "条消息",

@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render as rtlRender, screen, fireEvent, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { type ReactElement } from "react";
+
+// LogsTab/StatsTab/etc. use react-query; provide a client for every render.
+function render(ui: ReactElement) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return rtlRender(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
 import { ConfigForm, type ConfigValues } from "../ConfigForm";
 import { SecretsList, type SecretEntry } from "../SecretsList";
 import { AgentEditor, type AgentRecord } from "../AgentEditor";
