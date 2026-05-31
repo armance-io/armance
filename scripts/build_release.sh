@@ -36,11 +36,14 @@ uv build
 
 echo "==> Verifying the UI shipped in the wheel"
 WHEEL="$(ls dist/*.whl)"
-WHEEL_LIST="$(unzip -l "$WHEEL")"
-if ! printf '%s\n' "$WHEEL_LIST" | grep -q "armance/web_dist/index.html"; then
+WHEEL_TMPLIST="$(mktemp)"
+unzip -l "$WHEEL" > "$WHEEL_TMPLIST" || true
+if ! grep -q "armance/web_dist/index.html" "$WHEEL_TMPLIST"; then
   echo "ERROR: web_dist/index.html missing from $WHEEL" >&2
+  rm -f "$WHEEL_TMPLIST"
   exit 1
 fi
-UI_FILES="$(printf '%s\n' "$WHEEL_LIST" | grep -c "armance/web_dist/")"
+UI_FILES="$(grep -c "armance/web_dist/" "$WHEEL_TMPLIST")"
+rm -f "$WHEEL_TMPLIST"
 echo "    OK — $UI_FILES UI files bundled in $WHEEL"
 echo "==> Release artifacts ready in dist/"

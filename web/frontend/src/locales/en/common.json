@@ -259,6 +259,10 @@
       "confirm_title": "Interrupt this run?",
       "confirm_no": "Keep running",
       "confirm_yes": "Interrupt"
+    },
+    "empty": {
+      "title": "No workflow designed yet.",
+      "hint": "Ask Kim to design one by typing your request in the chat."
     }
   },
   "hypotheses": {

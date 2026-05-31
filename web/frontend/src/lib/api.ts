@@ -259,11 +259,19 @@ export async function loadStep(
   return res.text();
 }
 
+export interface WorkflowSummary {
+  name: string;
+  scope: string;
+  step_count: number;
+}
+
 export async function listWorkflows(
-  _pid: string,
-  _sid: string,
-): Promise<never> {
-  throw new Error("NotImplemented");
+  pid: string,
+  sid: string,
+): Promise<{ workflows: WorkflowSummary[] }> {
+  return api.get<{ workflows: WorkflowSummary[] }>(
+    `/projects/${pid}/sessions/${sid}/workflows`,
+  );
 }
 
 export interface Workflow {

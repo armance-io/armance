@@ -259,6 +259,10 @@
       "confirm_title": "Interrompre cette exécution ?",
       "confirm_no": "Continuer",
       "confirm_yes": "Interrompre"
+    },
+    "empty": {
+      "title": "Aucun workflow conçu.",
+      "hint": "Demandez à Kim d'en concevoir un via le chat."
     }
   },
   "hypotheses": {

@@ -10,6 +10,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 
 from armance.platform.user import get_current_user
+from armance.storage.library_state import effective_read_set
 from armance.storage.rag_status import get_rag_status
 
 from armance.web.backend.deps import get_app_state
@@ -18,6 +19,15 @@ from armance.web.backend.state import AppState
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/projects/{pid}/sessions/{sid}", tags=["library"])
+
+_EXT_TO_FORMAT = {
+    ".pdf": "pdf",
+    ".docx": "docx",
+    ".doc": "docx",
+    ".md": "md",
+    ".txt": "txt",
+    ".text": "txt",
+}
 
 
 @router.get("/library")
@@ -38,4 +48,33 @@ async def library_status(
         logger.warning("library_status failed sid=%s: %s", sid, exc)
         status = {}
 
-    return {"library": status}
+    try:
+        read_set = effective_read_set(
+            ws.ctx.armance_root,
+            ws.ctx.session.metadata if ws.ctx.session else {},
+        )
+    except Exception:
+        read_set = set()
+
+    db_names: set[str] = {d["name"] for d in status.get("docs_in_db", [])}
+
+    docs = []
+    for d in status.get("docs_on_disk", []):
+        name: str = d["name"]
+        ext = "." + name.rsplit(".", 1)[-1].lower() if "." in name else ""
+        fmt = _EXT_TO_FORMAT.get(ext, "txt")
+        if name in read_set:
+            doc_status = "loaded"
+        elif name in db_names or d.get("in_db"):
+            doc_status = "indexed"
+        else:
+            doc_status = "pending"
+        size_bytes = int(d.get("size_kb", 0) * 1024)
+        docs.append({
+            "name": name,
+            "format": fmt,
+            "status": doc_status,
+            "size_bytes": size_bytes,
+        })
+
+    return {"docs": docs, "library": status}
