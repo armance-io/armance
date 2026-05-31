@@ -11,6 +11,12 @@
         "title": "暂无数据",
         "hint": "启动审议以收集统计数据。"
       }
+    },
+    "metrics": {
+      "co2e_aria": "碳足迹 (gCO₂e)",
+      "water_aria": "水足迹 (mL)",
+      "tokens_in_aria": "输入令牌",
+      "tokens_out_aria": "输出令牌"
     }
   },
   "checkpoint": {
@@ -26,7 +32,20 @@
     },
     "tabs": {
       "session_active": "当前会话",
-      "settings": "设置"
+      "settings": "设置",
+      "workflows": "工作流"
+    },
+    "section": {
+      "staff": "团队",
+      "library": "文库"
+    },
+    "staff": {
+      "empty": "暂无专家",
+      "mention_hint": "在消息中插入提及"
+    },
+    "library": {
+      "docs": "文档",
+      "feuillets": "片段"
     }
   },
   "admin": {

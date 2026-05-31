@@ -1,6 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, act } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { type ReactNode } from "react";
 import { AppShell } from "../AppShell";
+
+// SidebarNav reads the route via next/navigation; HeaderMetrics + SidebarNav
+// query the API. Provide a pathname + a QueryClient so AppShell renders.
+vi.mock("next/navigation", () => ({ usePathname: () => "/projects/default/sessions/s1" }));
+
+function renderShell(ui: ReactNode) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+}
 
 function installStorage(): void {
   const store: Record<string, string> = {};
@@ -51,7 +62,7 @@ describe("AppShell", () => {
   const mockT = (key: string) => key;
 
   it("renders brand, sidebar, children, and footer", () => {
-    render(
+    renderShell(
       <AppShell
         sidebar={<div data-testid="sidebar">Sidebar Content</div>}
         t={mockT}
@@ -69,7 +80,7 @@ describe("AppShell", () => {
   });
 
   it("collapses and expands sidebar on button click", async () => {
-    render(
+    renderShell(
       <AppShell
         sidebar={<div data-testid="sidebar">Sidebar Content</div>}
         t={mockT}

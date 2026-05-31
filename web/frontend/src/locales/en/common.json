@@ -51,6 +51,12 @@
         "title": "No data yet",
         "hint": "Launch a deliberation to gather statistics."
       }
+    },
+    "metrics": {
+      "co2e_aria": "Carbon footprint (gCO₂e)",
+      "water_aria": "Water footprint (mL)",
+      "tokens_in_aria": "Tokens in",
+      "tokens_out_aria": "Tokens out"
     }
   },
   "library": {
@@ -298,6 +304,18 @@
       },
       "starred_first": "Starred first",
       "star_aria": "Star deliverable"
+    },
+    "section": {
+      "staff": "Staff",
+      "library": "Library"
+    },
+    "staff": {
+      "empty": "No specialists yet",
+      "mention_hint": "Insert a mention in your message"
+    },
+    "library": {
+      "docs": "Documents",
+      "feuillets": "Slips"
     }
   },
   "admin": {

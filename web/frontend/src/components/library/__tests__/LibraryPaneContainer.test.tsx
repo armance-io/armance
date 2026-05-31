@@ -71,7 +71,7 @@ describe("LibraryPaneContainer", () => {
 
   it("triggers api wrappers and refetches when callbacks are executed", async () => {
     const mockDocs = [{ name: "test.pdf", format: "pdf" as const, status: "pending" as const, size_bytes: 1024 }];
-    vi.mocked(api.getLibrary).mockResolvedValue({ docs: mockDocs });
+    vi.mocked(api.getLibrary).mockResolvedValue({ docs: mockDocs, total_feuillets: 0, doc_count: mockDocs.length });
     vi.mocked(api.importDoc).mockResolvedValue({ imported: "test.txt" });
     vi.mocked(api.deleteDoc).mockResolvedValue({ deleted: "test.pdf" });
     vi.mocked(api.submitTurn).mockResolvedValue({ ack: true });

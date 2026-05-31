@@ -8,6 +8,7 @@ import {
   type KeyboardEvent,
   type ChangeEvent,
 } from "react";
+import { onMention } from "@/lib/mentionBus";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -65,6 +66,17 @@ export const ChatInput: FC<ChatInputProps> = ({
     setValue(e.target.value);
   }, []);
 
+  /* Sidebar Staff click → inject `@Agent ` and focus, no navigation. */
+  useEffect(() => {
+    return onMention((mention) => {
+      setValue((prev) => {
+        const sep = prev && !prev.endsWith(" ") ? " " : "";
+        return `${prev}${sep}${mention}`;
+      });
+      textareaRef.current?.focus();
+    });
+  }, []);
+
   /* ── Styles ── */
 
   const rootStyle: CSSProperties = {
@@ -95,9 +107,11 @@ export const ChatInput: FC<ChatInputProps> = ({
     flexShrink: 0,
   };
 
+  // BUG-08: send button vertically centred with the input; wrapper background
+  // matches the page (rootStyle uses --bg-paper), no contrasting box.
   const inputRowStyle: CSSProperties = {
     display: "flex",
-    alignItems: "flex-end",
+    alignItems: "center",
     gap: "10px",
     padding: "10px 16px 14px",
   };

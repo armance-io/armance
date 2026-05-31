@@ -11,6 +11,12 @@
         "title": "Noch keine Daten",
         "hint": "Starten Sie eine Beratung, um Statistiken zu sammeln."
       }
+    },
+    "metrics": {
+      "co2e_aria": "CO₂-Fußabdruck (gCO₂e)",
+      "water_aria": "Wasser-Fußabdruck (mL)",
+      "tokens_in_aria": "Eingangs-Tokens",
+      "tokens_out_aria": "Ausgangs-Tokens"
     }
   },
   "checkpoint": {
@@ -26,7 +32,20 @@
     },
     "tabs": {
       "session_active": "Aktive Sitzung",
-      "settings": "Einstellungen"
+      "settings": "Einstellungen",
+      "workflows": "Workflows"
+    },
+    "section": {
+      "staff": "Team",
+      "library": "Bibliothek"
+    },
+    "staff": {
+      "empty": "Noch keine Spezialisten",
+      "mention_hint": "Erwähnung in Ihre Nachricht einfügen"
+    },
+    "library": {
+      "docs": "Dokumente",
+      "feuillets": "Abschnitte"
     }
   },
   "admin": {
