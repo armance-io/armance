@@ -103,6 +103,13 @@
     },
     "bottom": {
       "thinking": "{{name}} is thinking…"
+    },
+    "agents": {
+      "label": "Talking to",
+      "switch_aria": "Switch to"
+    },
+    "error": {
+      "turn_failed": "The response failed. Please try again."
     }
   },
   "checkpoint": {

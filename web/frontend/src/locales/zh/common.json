@@ -61,5 +61,14 @@
       "title": "尚未设计工作流。",
       "hint": "在聊天中让 Kim 设计一个。"
     }
+  },
+  "chat": {
+    "agents": {
+      "label": "对话对象",
+      "switch_aria": "切换到"
+    },
+    "error": {
+      "turn_failed": "响应失败，请重试。"
+    }
   }
 }

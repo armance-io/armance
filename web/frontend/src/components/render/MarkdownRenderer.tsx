@@ -1,4 +1,4 @@
-import { type CSSProperties, type FC, type ReactNode, useMemo, useState } from "react";
+import { type CSSProperties, type FC, type ReactNode, useMemo, useState, useCallback } from "react";
 import { marked, type Tokens } from "marked";
 import { tokens } from "../_shared/armance-tokens";
 import { CodeBlock } from "./CodeBlock";
@@ -23,14 +23,13 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
   t,
 }) => {
   const [copied, setCopied] = useState(false);
-  const [downloaded, setDownloaded] = useState(false);
 
   const blocks = useMemo(
     () => marked.lexer(markdown, { gfm: true }),
     [markdown],
   );
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(markdown);
       setCopied(true);
@@ -38,48 +37,7 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     } catch {
       /* noop */
     }
-  };
-
-  const handleDownload = () => {
-    try {
-      const blob = new Blob([markdown], { type: "text/markdown" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "document.md";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      setDownloaded(true);
-      setTimeout(() => setDownloaded(false), 1500);
-    } catch {
-      /* noop */
-    }
-  };
-
-  const toolbarStyle: CSSProperties = {
-    display: "flex",
-    gap: 6,
-    justifyContent: "flex-end",
-    marginBottom: 12,
-    borderBottom: `1px solid ${tokens.ruleSoft}`,
-    paddingBottom: 6,
-  };
-
-  const btnStyle: CSSProperties = {
-    border: `1px solid ${tokens.rule}`,
-    background: "transparent",
-    color: tokens.inkSoft,
-    fontFamily: tokens.ffSans,
-    fontSize: 10,
-    textTransform: "uppercase",
-    letterSpacing: "0.08em",
-    padding: "2px 8px",
-    cursor: "pointer",
-    borderRadius: 2,
-    transition: "background 160ms ease, color 160ms ease",
-  };
+  }, [markdown]);
 
   const containerStyle: CSSProperties = {
     color: tokens.ink,
@@ -87,18 +45,47 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     flexDirection: "column",
   };
 
+  const copyBtnStyle: CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 6,
+    alignSelf: "flex-end",
+    border: "none",
+    background: "transparent",
+    color: copied ? tokens.accent : tokens.inkFaint,
+    fontFamily: tokens.ffMono,
+    fontSize: 10,
+    cursor: "pointer",
+    padding: "2px 4px",
+    borderRadius: 2,
+    transition: "color 160ms ease",
+    opacity: 0.7,
+  };
+
   return (
     <div className={`prose ${className ?? ""}`} style={containerStyle}>
       <style>{PROSE_CSS}</style>
-      <div style={toolbarStyle} className="prose-toolbar">
-        <button type="button" style={btnStyle} onClick={handleCopy}>
-          {copied ? t("render:code.copied") : t("render:code.copy")}
-        </button>
-        <button type="button" style={btnStyle} onClick={handleDownload}>
-          {downloaded ? t("render:code.downloaded") : t("render:code.download")}
-        </button>
-      </div>
       {blocks.map((tok, i) => renderBlock(tok, i, t))}
+      <button
+        type="button"
+        style={copyBtnStyle}
+        onClick={() => { void handleCopy(); }}
+        aria-label={t("render:code.copy")}
+        title={copied ? t("render:code.copied") : t("render:code.copy")}
+        className="prose-copy-btn"
+      >
+        {copied ? (
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="2 8 6 12 14 4" />
+          </svg>
+        ) : (
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <rect x="5" y="2" width="9" height="11" rx="1" />
+            <path d="M11 2V1a1 1 0 0 0-1-1H2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h1" />
+          </svg>
+        )}
+      </button>
     </div>
   );
 };

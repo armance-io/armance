@@ -103,6 +103,13 @@
     },
     "bottom": {
       "thinking": "{{name}} réfléchit…"
+    },
+    "agents": {
+      "label": "Interlocuteur",
+      "switch_aria": "Basculer vers"
+    },
+    "error": {
+      "turn_failed": "La réponse a échoué. Veuillez réessayer."
     }
   },
   "checkpoint": {
