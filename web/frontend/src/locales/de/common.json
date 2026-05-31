@@ -116,5 +116,15 @@
     "error": {
       "turn_failed": "Antwort fehlgeschlagen. Bitte erneut versuchen."
     }
+  },
+  "library": {
+    "toast": {
+      "imported": "Dokument importiert",
+      "indexing": "Indizierung gestartet…",
+      "indexing_all": "Alle Dokumente werden indiziert…",
+      "loading": "Wird in den Kontext geladen…"
+    },
+    "feuillets_count": "{n} Abschnitte",
+    "feuillets_total_aria": "Indizierte Abschnitte gesamt"
   }
 }

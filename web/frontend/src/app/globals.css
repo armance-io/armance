@@ -77,6 +77,10 @@ a:hover { color: var(--accent-deep); }
   to   { opacity: 1; transform: scale(1); }
 }
 
+@keyframes armance-spin {
+  to { transform: rotate(360deg); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }

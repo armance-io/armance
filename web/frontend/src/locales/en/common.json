@@ -90,7 +90,15 @@
       "download_label": "Download",
       "download_aria": "Download this deliverable",
       "opened_from": "Opened from: {{path}}"
-    }
+    },
+    "toast": {
+      "imported": "Document imported",
+      "indexing": "Indexing started…",
+      "indexing_all": "Indexing all documents…",
+      "loading": "Loading into context…"
+    },
+    "feuillets_count": "{n} slips",
+    "feuillets_total_aria": "Total indexed slips"
   },
   "chat": {
     "input": {

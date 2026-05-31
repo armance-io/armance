@@ -116,5 +116,15 @@
     "error": {
       "turn_failed": "响应失败，请重试。"
     }
+  },
+  "library": {
+    "toast": {
+      "imported": "文档已导入",
+      "indexing": "已开始索引…",
+      "indexing_all": "正在索引所有文档…",
+      "loading": "正在加载到上下文…"
+    },
+    "feuillets_count": "{n} 个片段",
+    "feuillets_total_aria": "已索引片段总数"
   }
 }
