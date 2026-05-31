@@ -174,10 +174,11 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
     marginLeft: "-1px", zIndex: 1,
   };
 
+  // No padding here — each page owns its content rhythm (TabContent / the
+  // admin outer / full-bleed chat) so every surface starts at the same offset.
   const mainStyle: CSSProperties = {
     flex: 1, overflowY: "auto",
     background: "var(--bg-paper-deep,#e8dfcd)",
-    padding: "32px",
   };
 
   // BUG-09: compact footer — one line, minimal vertical padding.

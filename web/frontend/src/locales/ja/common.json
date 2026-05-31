@@ -106,6 +106,17 @@
     "empty": {
       "title": "ワークフローが未設計です。",
       "hint": "チャットで Kim にデザインを依頼してください。"
+    },
+    "picker": {
+      "quick_title": "迅速な視点",
+      "quick_desc": "主要な前提を主要指標で迅速に検証します。",
+      "deep_title": "徹底的で精査された分析",
+      "deep_desc": "構造化された議論を通じてすべての主張を精査する厳密な評価。",
+      "mode_interactive": "対話的",
+      "mode_autonomous": "自律",
+      "hint_interactive": "Mona は重要な意思決定の節目であなたの指示を求めます。",
+      "hint_autonomous": "Mona は自律的なチェックポイントで統合を提供します。",
+      "launch": "開始"
     }
   },
   "chat": {

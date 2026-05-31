@@ -237,12 +237,12 @@
     "picker": {
       "quick": "Un avis rapide",
       "deep": "Une analyse approfondie, challengée",
-      "quick_title": "Un regard rapide",
-      "quick_desc": "Une passe, rapide. Idéal pour une première lecture.",
+      "quick_title": "Une perspective rapide",
+      "quick_desc": "Vérification rapide des hypothèses principales à l'aide d'indicateurs clés.",
       "deep_title": "Une analyse approfondie et contradictoire",
-      "deep_desc": "Plusieurs tours, mis à l'épreuve. Plus lent, plus fin.",
-      "hint_interactive": "Une confirmation vous est demandée aux étapes clés.",
-      "hint_autonomous": "S'exécute de bout en bout sans interruption.",
+      "deep_desc": "Évaluation rigoureuse remettant en cause chaque assertion par un débat structuré.",
+      "hint_interactive": "Mona sollicitera votre avis aux seuils de décision clés.",
+      "hint_autonomous": "Mona gère des points de contrôle autonomes pour livrer la synthèse.",
       "mode_interactive": "interactif",
       "mode_autonomous": "autonome",
       "launch": "Lancer"

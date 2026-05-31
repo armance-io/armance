@@ -40,20 +40,6 @@ export default function WorkflowView() {
 
   const activeRunId = activeData?.active?.run_id;
 
-  // Custom translation function to handle missing keys in V2 scaffold safely
-  const customT = (key: string): string => {
-    if (key === "workflow:picker.quick_title") return "A quick perspective";
-    if (key === "workflow:picker.quick_desc") return "Rapid verification of primary assumptions using key benchmarks.";
-    if (key === "workflow:picker.deep_title") return "A thorough, challenged analysis";
-    if (key === "workflow:picker.deep_desc") return "Rigorous evaluation challenging all assertions through structural debate.";
-    if (key === "workflow:picker.mode_interactive") return "interactive";
-    if (key === "workflow:picker.mode_autonomous") return "autonomous";
-    if (key === "workflow:picker.hint_interactive") return "Mona will ask for your guidance at key decision thresholds.";
-    if (key === "workflow:picker.hint_autonomous") return "Mona operates autonomous checkpoints to deliver the synthesis.";
-    if (key === "workflow:picker.launch") return "Launch";
-    return t(key);
-  };
-
   const handleLaunch = async (
     mode: "interactive" | "autonomous",
     depth: "quick" | "deep"
@@ -135,7 +121,7 @@ export default function WorkflowView() {
               <DepthPicker
                 workflowName={workflowName}
                 onLaunch={handleLaunch}
-                t={customT}
+                t={t}
               />
               {status && (
                 <div

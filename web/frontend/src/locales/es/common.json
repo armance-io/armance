@@ -106,6 +106,17 @@
     "empty": {
       "title": "No hay workflow diseñado.",
       "hint": "Pide a Kim que diseñe uno desde el chat."
+    },
+    "picker": {
+      "quick_title": "Una perspectiva rápida",
+      "quick_desc": "Verificación rápida de las hipótesis principales con indicadores clave.",
+      "deep_title": "Un análisis exhaustivo y cuestionado",
+      "deep_desc": "Evaluación rigurosa que cuestiona cada afirmación mediante un debate estructurado.",
+      "mode_interactive": "interactivo",
+      "mode_autonomous": "autónomo",
+      "hint_interactive": "Mona pedirá tu orientación en los umbrales de decisión clave.",
+      "hint_autonomous": "Mona gestiona puntos de control autónomos para entregar la síntesis.",
+      "launch": "Lanzar"
     }
   },
   "chat": {
