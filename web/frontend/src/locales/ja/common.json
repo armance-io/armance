@@ -122,6 +122,14 @@
       "hint_interactive": "Mona は重要な意思決定の節目であなたの指示を求めます。",
       "hint_autonomous": "Mona は自律的なチェックポイントで統合を提供します。",
       "launch": "開始"
+    },
+    "runs": {
+      "title": "過去の実行"
+    },
+    "launch": {
+      "started": "実行を開始: {id}",
+      "error": "実行を開始できませんでした。",
+      "in_progress": "開始中…"
     }
   },
   "chat": {

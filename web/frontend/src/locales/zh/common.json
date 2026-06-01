@@ -122,6 +122,14 @@
       "hint_interactive": "Mona 将在关键决策节点征求你的意见。",
       "hint_autonomous": "Mona 以自主检查点运行以交付综合结论。",
       "launch": "启动"
+    },
+    "runs": {
+      "title": "历史运行"
+    },
+    "launch": {
+      "started": "已启动运行：{id}",
+      "error": "无法启动运行。",
+      "in_progress": "启动中…"
     }
   },
   "chat": {

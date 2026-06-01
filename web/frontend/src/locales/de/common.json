@@ -122,6 +122,14 @@
       "hint_interactive": "Mona bittet an wichtigen Entscheidungsschwellen um Ihre Anleitung.",
       "hint_autonomous": "Mona betreibt autonome Kontrollpunkte, um die Synthese zu liefern.",
       "launch": "Starten"
+    },
+    "runs": {
+      "title": "Frühere Läufe"
+    },
+    "launch": {
+      "started": "Lauf gestartet: {id}",
+      "error": "Lauf konnte nicht gestartet werden.",
+      "in_progress": "Wird gestartet…"
     }
   },
   "chat": {

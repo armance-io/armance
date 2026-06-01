@@ -292,6 +292,14 @@
     "empty": {
       "title": "No workflow designed yet.",
       "hint": "Ask Kim to design one by typing your request in the chat."
+    },
+    "runs": {
+      "title": "Past runs"
+    },
+    "launch": {
+      "started": "Run launched: {id}",
+      "error": "Could not launch the run.",
+      "in_progress": "Launching…"
     }
   },
   "hypotheses": {
