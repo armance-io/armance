@@ -131,17 +131,16 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
   const copyBtnStyle: CSSProperties = {
     display: "flex",
     alignItems: "center",
-    gap: "4px",
-    padding: "2px 7px",
-    border: "1px solid var(--rule, #d6c8ad)",
-    borderRadius: "3px",
-    background: copied ? "color-mix(in srgb, var(--accent) 10%, transparent)" : "transparent",
+    justifyContent: "center",
+    width: "22px",
+    height: "22px",
+    padding: 0,
+    border: "none",
+    borderRadius: "4px",
+    background: "transparent",
     color: copied ? "var(--accent, #6b4f8a)" : "var(--ink-faint, #9c8e7e)",
-    fontFamily: "var(--ff-mono, monospace)",
-    fontSize: "10px",
-    letterSpacing: "0.06em",
     cursor: "pointer",
-    transition: "all 0.15s ease",
+    transition: "color 0.15s ease, background 0.15s ease",
     flexShrink: 0,
   };
 
@@ -170,7 +169,7 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
         .msg-bubble-prose a { color: var(--accent, #6b4f8a); text-decoration: underline; }
         .msg-bubble-prose ul, .msg-bubble-prose ol { margin: 4px 0 8px; padding-left: 20px; }
         .msg-bubble-prose li { margin: 2px 0; }
-        .prose-copy-btn:hover { border-color: var(--accent-soft, #b7a4c9) !important; color: var(--accent, #6b4f8a) !important; }
+        .prose-copy-btn:hover { background: var(--bg-paper-deep, #e8dfcd) !important; color: var(--accent, #6b4f8a) !important; }
         @media (prefers-reduced-motion: reduce) {
           * { animation: none !important; }
         }
@@ -217,20 +216,14 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
                 title={copied ? t("chat:copy.done") : t("chat:copy.label")}
               >
                 {copied ? (
-                  <>
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <path d="M1.5 5.5l2 2 5-5" />
-                    </svg>
-                    {t("chat:copy.done")}
-                  </>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M2.5 7.5l3 3 6-7" />
+                  </svg>
                 ) : (
-                  <>
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <rect x="3.5" y="1" width="5.5" height="6.5" rx="1" />
-                      <rect x="1" y="3.5" width="5.5" height="6.5" rx="1" />
-                    </svg>
-                    {t("chat:copy.label")}
-                  </>
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="4.5" y="1.5" width="8" height="9" rx="1.5" />
+                    <rect x="1.5" y="4.5" width="8" height="9" rx="1.5" />
+                  </svg>
                 )}
               </button>
             )}

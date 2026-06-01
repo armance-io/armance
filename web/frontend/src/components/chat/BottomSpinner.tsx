@@ -1,4 +1,5 @@
 import { type CSSProperties, type FC } from "react";
+import { PulseDot } from "@/components/_shared/PulseDot";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -49,15 +50,6 @@ export const BottomSpinner: FC<BottomSpinnerProps> = ({ busy, t }) => {
     color: "oklch(0.97 0.012 82)",
   };
 
-  const dotStyle: CSSProperties = {
-    width: "6px",
-    height: "6px",
-    borderRadius: "999px",
-    background: busy?.colour ?? "var(--accent, #6b4f8a)",
-    flexShrink: 0,
-    animation: "bottomspin-pulse 1.4s ease-in-out infinite",
-  };
-
   const labelStyle: CSSProperties = {
     fontFamily: "var(--ff-sans, 'Inter', sans-serif)",
     fontStyle: "italic",
@@ -69,33 +61,11 @@ export const BottomSpinner: FC<BottomSpinnerProps> = ({ busy, t }) => {
   };
 
   if (!isActive) {
-    return (
-      <div style={rootStyle} aria-hidden="true">
-        <style>{`
-          @keyframes bottomspin-pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-          }
-          @media (prefers-reduced-motion: reduce) {
-            * { animation: none !important; transition: none !important; }
-          }
-        `}</style>
-      </div>
-    );
+    return <div style={rootStyle} aria-hidden="true" />;
   }
 
   return (
     <div style={rootStyle} role="status" aria-live="polite">
-      <style>{`
-        @keyframes bottomspin-pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.3; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          * { animation: none !important; transition: none !important; }
-        }
-      `}</style>
-
       <div style={portraitStyle} aria-hidden="true">
         {busy.portraitSrc ? (
           <img
@@ -111,7 +81,7 @@ export const BottomSpinner: FC<BottomSpinnerProps> = ({ busy, t }) => {
           busy.name.charAt(0).toUpperCase()
         )}
       </div>
-      <span style={dotStyle} aria-hidden="true" />
+      <PulseDot color={busy.colour} />
       <span style={labelStyle}>
         {t("chat:bottom.thinking").replace("{name}", busy.name)}
       </span>
