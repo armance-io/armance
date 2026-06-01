@@ -8,7 +8,7 @@ import { submitTurn, getSession, getMessages } from "@/lib/api";
 import { useEventStream, type SseEvent } from "@/lib/sse";
 import { assignAgentColour } from "@/lib/agent_colours";
 import { displayAgentName } from "@/lib/agentNames";
-import { onAgentSwitch, setCurrentAgent as publishCurrentAgent } from "@/lib/agentBus";
+import { onAgentSwitch, setCurrentAgent as publishCurrentAgent, setBusyAgent } from "@/lib/agentBus";
 import { lockSession } from "@/lib/sessionBus";
 import { BottomSpinner } from "./BottomSpinner";
 import { ChatInput } from "./ChatInput";
@@ -106,56 +106,26 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
-  // ID of the in-progress streaming message, if any.
-  const streamingIdRef = useRef<string | null>(null);
-
   const handleEvent = useCallback((evt: SseEvent) => {
     const attrs = (evt.data["attributes"] as Record<string, unknown> | undefined) ?? {};
 
+    // Thinking is shown ONLY by the BottomSpinner (outside the input). No
+    // placeholder MessageBubble, no in-input busy bar — the full reply lands
+    // on turn.completed.
     if (evt.name === "agent.streaming.started") {
       const agent = String(attrs["agent_name"] ?? "Armance");
       setBusy({ name: agent, colour: assignAgentColour(agent) });
-      // Create a live streaming placeholder message.
-      const id = nextId();
-      streamingIdRef.current = id;
-      setMessages((prev) => [
-        ...prev,
-        {
-          id,
-          role: "agent" as const,
-          agentName: displayAgentName(agent),
-          agentColour: assignAgentColour(agent),
-          markdown: "",
-          timestamp: new Date().toISOString(),
-          streaming: true,
-        },
-      ]);
+      setBusyAgent(displayAgentName(agent)); // sidebar disc pulse
       return;
     }
 
     if (evt.name === "agent.streaming") {
-      const partial = String(attrs["partial_text"] ?? "");
-      const streamId = streamingIdRef.current;
-      if (streamId && partial) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === streamId ? { ...m, markdown: partial } : m,
-          ),
-        );
-      }
-      return;
+      return; // partial chunks ignored; no live placeholder bubble
     }
 
     if (evt.name === "agent.streaming.end") {
-      // Mark the streaming message as done; turn.completed will replace it.
-      const streamId = streamingIdRef.current;
-      if (streamId) {
-        setMessages((prev) =>
-          prev.map((m) => (m.id === streamId ? { ...m, streaming: false } : m)),
-        );
-        streamingIdRef.current = null;
-      }
       setBusy(null);
+      setBusyAgent(null);
       return;
     }
 
@@ -170,65 +140,42 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
         publishCurrentAgent(next);
         return next;
       });
-      // Replace or append: if a streaming placeholder exists, update it with
-      // the authoritative full reply; otherwise append a new message.
-      const streamId = streamingIdRef.current;
-      streamingIdRef.current = null;
-      setMessages((prev) => {
-        if (streamId && prev.some((m) => m.id === streamId)) {
-          return prev.map((m) =>
-            m.id === streamId
-              ? {
-                  ...m,
-                  markdown: reply,
-                  streaming: false,
-                  agentName: displayAgentName(agent),
-                  agentColour: assignAgentColour(agent),
-                }
-              : m,
-          );
-        }
-        return [
-          ...prev,
-          {
-            id: nextId(),
-            role: "agent" as const,
-            agentName: displayAgentName(agent),
-            agentColour: assignAgentColour(agent),
-            markdown: reply,
-            timestamp: new Date().toISOString(),
-            streaming: false,
-          },
-        ];
-      });
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: nextId(),
+          role: "agent" as const,
+          agentName: displayAgentName(agent),
+          agentColour: assignAgentColour(agent),
+          markdown: reply,
+          timestamp: new Date().toISOString(),
+          streaming: false,
+        },
+      ]);
       setBusy(null);
+      setBusyAgent(null);
       setSending(false);
       return;
     }
 
     if (evt.name === "turn.error") {
       const err = String(attrs["error"] ?? t("chat:error.turn_failed"));
-      // Remove any partial streaming placeholder on error.
-      const streamId = streamingIdRef.current;
-      streamingIdRef.current = null;
       setBusy(null);
+      setBusyAgent(null);
       setSending(false);
-      setMessages((prev) => {
-        const filtered = streamId ? prev.filter((m) => m.id !== streamId) : prev;
-        return [
-          ...filtered,
-          {
-            id: nextId(),
-            role: "agent" as const,
-            agentName: "system",
-            agentColour: "var(--danger, #a44141)",
-            markdown: `⚠ ${err}`,
-            timestamp: new Date().toISOString(),
-            streaming: false,
-            isError: true,
-          },
-        ];
-      });
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: nextId(),
+          role: "agent" as const,
+          agentName: "system",
+          agentColour: "var(--danger, #a44141)",
+          markdown: `⚠ ${err}`,
+          timestamp: new Date().toISOString(),
+          streaming: false,
+          isError: true,
+        },
+      ]);
     }
   }, [nextId, t, agents]);
 
@@ -343,9 +290,6 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
       <ChatInput
         placeholder={t("chat:input.placeholder")}
         disabled={sending}
-        {...(busy !== null
-          ? { busyAgentName: busy.name, busyAgentColour: busy.colour }
-          : {})}
         onSubmit={(text) => {
           void onSubmit(text);
         }}

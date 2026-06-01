@@ -71,10 +71,11 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
   };
 
   const bubbleStyle: CSSProperties = {
+    // User bubbles sit on a darker paper for clear sender contrast.
     background: isAgent
       ? "var(--bg-paper-card, #faf6ef)"
-      : "var(--bg-paper-deep, #e8dfcd)",
-    border: `1px solid ${isAgent ? "var(--rule, #d6c8ad)" : "var(--rule-soft, #e8dfcd)"}`,
+      : "color-mix(in srgb, var(--accent) 7%, var(--bg-paper-deep, #e8dfcd))",
+    border: `1px solid ${isAgent ? "var(--rule, #d6c8ad)" : "var(--rule, #d6c8ad)"}`,
     borderRadius: "6px",
     padding: "12px 16px",
     minWidth: 0,
