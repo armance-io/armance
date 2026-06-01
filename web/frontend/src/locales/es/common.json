@@ -140,5 +140,13 @@
     },
     "feuillets_count": "{n} fragmentos",
     "feuillets_total_aria": "Total de fragmentos indexados"
+  },
+  "session": {
+    "selector": {
+      "title": "Sesiones (más recientes primero)",
+      "empty": "Sin sesiones anteriores",
+      "summary": "{turns} turnos · ~{tokens} tk",
+      "locked_aria": "Sesión activa (bloqueada tras el primer mensaje)"
+    }
   }
 }

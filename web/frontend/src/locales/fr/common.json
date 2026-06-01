@@ -460,5 +460,13 @@
     "step_budget": "Choisissez un budget",
     "step_language": "Choisissez une langue",
     "continue": "Continuer"
+  },
+  "session": {
+    "selector": {
+      "title": "Sessions (plus récentes d'abord)",
+      "empty": "Aucune session précédente",
+      "summary": "{turns} tours · ~{tokens} jetons",
+      "locked_aria": "Session active (verrouillée après le premier message)"
+    }
   }
 }

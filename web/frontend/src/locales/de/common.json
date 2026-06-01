@@ -140,5 +140,13 @@
     },
     "feuillets_count": "{n} Abschnitte",
     "feuillets_total_aria": "Indizierte Abschnitte gesamt"
+  },
+  "session": {
+    "selector": {
+      "title": "Sitzungen (neueste zuerst)",
+      "empty": "Keine früheren Sitzungen",
+      "summary": "{turns} Runden · ~{tokens} tk",
+      "locked_aria": "Aktive Sitzung (nach erster Nachricht gesperrt)"
+    }
   }
 }

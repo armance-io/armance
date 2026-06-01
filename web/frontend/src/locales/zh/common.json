@@ -140,5 +140,13 @@
     },
     "feuillets_count": "{n} 个片段",
     "feuillets_total_aria": "已索引片段总数"
+  },
+  "session": {
+    "selector": {
+      "title": "会话（最新优先）",
+      "empty": "没有以往会话",
+      "summary": "{turns} 轮 · ~{tokens} tk",
+      "locked_aria": "当前会话（首条消息后锁定）"
+    }
   }
 }

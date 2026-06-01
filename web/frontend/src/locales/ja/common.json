@@ -140,5 +140,13 @@
     },
     "feuillets_count": "{n} スリップ",
     "feuillets_total_aria": "インデックス済みスリップ総数"
+  },
+  "session": {
+    "selector": {
+      "title": "セッション（新しい順）",
+      "empty": "以前のセッションはありません",
+      "summary": "{turns} ターン · ~{tokens} tk",
+      "locked_aria": "アクティブなセッション（最初のメッセージ後にロック）"
+    }
   }
 }
