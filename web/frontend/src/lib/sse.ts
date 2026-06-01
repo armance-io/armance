@@ -11,9 +11,9 @@ export interface SseEvent {
 const SSE_EVENT_NAMES = [
   "turn.completed",
   "turn.error",
-  "agent_streaming_started",
-  "agent_streaming",
-  "agent_streaming_end",
+  "agent.streaming.started",
+  "agent.streaming",
+  "agent.streaming.end",
   "checkpoint.requested",
   "checkpoint.resolved",
   "workflow.step_started",

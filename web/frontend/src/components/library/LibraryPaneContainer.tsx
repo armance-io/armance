@@ -36,6 +36,7 @@ export const LibraryPaneContainer: FC<LibraryPaneContainerProps> = ({
 
   const docs = data?.docs ?? [];
   const totalFeuillets = data?.total_feuillets ?? 0;
+  const embeddingAvailable = Boolean(data?.embedding_model);
 
   // Indexing runs asynchronously (agent turn), so poll a few times to catch
   // the status flip pending→indexed without forcing a manual refresh.
@@ -102,6 +103,7 @@ export const LibraryPaneContainer: FC<LibraryPaneContainerProps> = ({
     <LibraryPane
       docs={docs}
       totalFeuillets={totalFeuillets}
+      embeddingAvailable={embeddingAvailable}
       onImport={onImport}
       onDelete={onDelete}
       onIndex={onIndex}

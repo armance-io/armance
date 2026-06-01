@@ -99,7 +99,8 @@
       "loading": "Chargement en contexte…"
     },
     "feuillets_count": "{n} feuillets",
-    "feuillets_total_aria": "Total des feuillets indexés"
+    "feuillets_total_aria": "Total des feuillets indexés",
+    "no_embedding_tooltip": "Configurez un modèle d'embedding pour activer l'indexation (Admin → Config)"
   },
   "chat": {
     "input": {
@@ -126,6 +127,11 @@
     },
     "error": {
       "turn_failed": "La réponse a échoué. Veuillez réessayer."
+    },
+    "copy": {
+      "label": "copier",
+      "done": "copié",
+      "aria": "Copier le message dans le presse-papiers"
     }
   },
   "checkpoint": {

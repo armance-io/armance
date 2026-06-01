@@ -1,11 +1,14 @@
-"""C.8 — Bridge token-stream callbacks to web agent_streaming events.
+"""C.8 — Bridge token-stream callbacks to web agent.streaming events.
 
 Wraps the existing `on_token(str)` callback used by SpecialistRunner +
 meta-agent chat shells. Emits:
 
-  agent_streaming_started   { agent_name }
-  agent_streaming            { agent_name }   (throttled per `min_interval`)
-  agent_streaming_end        { agent_name }
+  agent.streaming.started   { agent_name }
+  agent.streaming           { agent_name, partial_text }  (throttled)
+  agent.streaming.end       { agent_name }
+
+Names follow the <component>.<action>[.<detail>] convention required by
+armance.core.models.event.Event.
 
 When no event_bus is wired (TUI path), the emitter is a no-op.
 
@@ -54,11 +57,11 @@ class AgentStreamingEmitter:
             return
         try:
             await self._bus.emit(
-                "agent_streaming_started",
+                "agent.streaming.started",
                 attributes={"agent_name": self._agent},
             )
         except Exception:
-            logger.exception("agent_streaming_started emit failed")
+            logger.exception("agent.streaming.started emit failed")
 
     async def on_token(self, chunk: str) -> None:
         if self._bus is None:
@@ -72,22 +75,22 @@ class AgentStreamingEmitter:
         snapshot = self._accumulated
         try:
             await self._bus.emit(
-                "agent_streaming",
+                "agent.streaming",
                 attributes={"agent_name": self._agent, "partial_text": snapshot},
             )
         except Exception:
-            logger.exception("agent_streaming emit failed")
+            logger.exception("agent.streaming emit failed")
 
     async def end(self) -> None:
         if self._bus is None:
             return
         try:
             await self._bus.emit(
-                "agent_streaming_end",
+                "agent.streaming.end",
                 attributes={"agent_name": self._agent},
             )
         except Exception:
-            logger.exception("agent_streaming_end emit failed")
+            logger.exception("agent.streaming.end emit failed")
 
 
 def bridge_on_token(

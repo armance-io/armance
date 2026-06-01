@@ -112,7 +112,7 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
   const handleEvent = useCallback((evt: SseEvent) => {
     const attrs = (evt.data["attributes"] as Record<string, unknown> | undefined) ?? {};
 
-    if (evt.name === "agent_streaming_started") {
+    if (evt.name === "agent.streaming.started") {
       const agent = String(attrs["agent_name"] ?? "Armance");
       setBusy({ name: agent, colour: assignAgentColour(agent) });
       // Create a live streaming placeholder message.
@@ -133,7 +133,7 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
       return;
     }
 
-    if (evt.name === "agent_streaming") {
+    if (evt.name === "agent.streaming") {
       const partial = String(attrs["partial_text"] ?? "");
       const streamId = streamingIdRef.current;
       if (streamId && partial) {
@@ -146,7 +146,7 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
       return;
     }
 
-    if (evt.name === "agent_streaming_end") {
+    if (evt.name === "agent.streaming.end") {
       // Mark the streaming message as done; turn.completed will replace it.
       const streamId = streamingIdRef.current;
       if (streamId) {
@@ -322,9 +322,10 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
   );
 
   return (
-    <section style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, paddingLeft: 8 }}>
+    <section style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
       {/* R4: no "Talking to" banner — agent selection lives in the sidebar. */}
-      <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 0" }}>
+      {/* paddingLeft only on the scroll area — ChatInput stays flush with the sidebar border. */}
+      <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 0", paddingLeft: 8 }}>
         {messages.map((m) => (
           <MessageBubble
             key={m.id}

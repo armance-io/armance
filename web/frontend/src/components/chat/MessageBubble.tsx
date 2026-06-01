@@ -1,4 +1,4 @@
-import { type CSSProperties, type FC } from "react";
+import { type CSSProperties, type FC, useCallback, useState } from "react";
 
 import { MarkdownRenderer } from "@/components/render/MarkdownRenderer";
 
@@ -28,6 +28,14 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
   t,
 }) => {
   const isAgent = role === "agent";
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    void navigator.clipboard.writeText(markdown).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    });
+  }, [markdown]);
 
   /* ── Styles ── */
 
@@ -64,9 +72,9 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
 
   const bubbleStyle: CSSProperties = {
     background: isAgent
-      ? "var(--bg-paper, #f4ede0)"
+      ? "var(--bg-paper-card, #faf6ef)"
       : "var(--bg-paper-deep, #e8dfcd)",
-    border: isAgent ? "1px solid var(--rule, #d6c8ad)" : "none",
+    border: `1px solid ${isAgent ? "var(--rule, #d6c8ad)" : "var(--rule-soft, #e8dfcd)"}`,
     borderRadius: "6px",
     padding: "12px 16px",
     minWidth: 0,
@@ -105,11 +113,35 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
     color: "var(--ink, #2a2520)",
   };
 
+  const footerStyle: CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: "8px",
+    marginTop: "6px",
+  };
+
   const timeStyle: CSSProperties = {
     fontFamily: "var(--ff-mono, 'JetBrains Mono', monospace)",
     fontSize: "10px",
     color: "var(--ink-faint, #9c8e7e)",
-    marginTop: "6px",
+  };
+
+  const copyBtnStyle: CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: "4px",
+    padding: "2px 7px",
+    border: "1px solid var(--rule, #d6c8ad)",
+    borderRadius: "3px",
+    background: copied ? "color-mix(in srgb, var(--accent) 10%, transparent)" : "transparent",
+    color: copied ? "var(--accent, #6b4f8a)" : "var(--ink-faint, #9c8e7e)",
+    fontFamily: "var(--ff-mono, monospace)",
+    fontSize: "10px",
+    letterSpacing: "0.06em",
+    cursor: "pointer",
+    transition: "all 0.15s ease",
+    flexShrink: 0,
   };
 
   return (
@@ -137,6 +169,7 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
         .msg-bubble-prose a { color: var(--accent, #6b4f8a); text-decoration: underline; }
         .msg-bubble-prose ul, .msg-bubble-prose ol { margin: 4px 0 8px; padding-left: 20px; }
         .msg-bubble-prose li { margin: 2px 0; }
+        .prose-copy-btn:hover { border-color: var(--accent-soft, #b7a4c9) !important; color: var(--accent, #6b4f8a) !important; }
         @media (prefers-reduced-motion: reduce) {
           * { animation: none !important; }
         }
@@ -171,7 +204,36 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
           <div className="msg-bubble-prose" style={proseStyle}>
             <MarkdownRenderer markdown={markdown} t={t} />
           </div>
-          <div style={timeStyle}>{timestamp}</div>
+          <div style={footerStyle}>
+            <span style={timeStyle}>{timestamp}</span>
+            {markdown && !streaming && (
+              <button
+                type="button"
+                className="prose-copy-btn"
+                style={copyBtnStyle}
+                onClick={handleCopy}
+                aria-label={t("chat:copy.aria")}
+                title={copied ? t("chat:copy.done") : t("chat:copy.label")}
+              >
+                {copied ? (
+                  <>
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M1.5 5.5l2 2 5-5" />
+                    </svg>
+                    {t("chat:copy.done")}
+                  </>
+                ) : (
+                  <>
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <rect x="3.5" y="1" width="5.5" height="6.5" rx="1" />
+                      <rect x="1" y="3.5" width="5.5" height="6.5" rx="1" />
+                    </svg>
+                    {t("chat:copy.label")}
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
