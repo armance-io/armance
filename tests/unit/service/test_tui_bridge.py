@@ -40,30 +40,30 @@ def test_agent_label_user_agent():
 
 
 def test_agent_label_system_context():
-    """System context persona: 'Armance · host'."""
+    """System context persona: 'Armance · weaver'."""
     label, role = agent_label("system-context", [])
-    assert label == "Armance · host"
+    assert label == "Armance · weaver"
     assert role == "agent"
 
 
 def test_agent_label_system_hr():
-    """System HR persona: 'Malik · recruiter'."""
+    """System HR persona: 'Malik · scout'."""
     label, role = agent_label("system-hr", [])
-    assert label == "Malik · recruiter"
+    assert label == "Malik · scout"
     assert role == "agent"
 
 
 def test_agent_label_orchestrator():
-    """Workflow creator persona: 'Kim · operator'."""
+    """Workflow creator persona: 'Kim · conductor'."""
     label, role = agent_label("system-orchestrator", [])
-    assert label == "Kim · operator"
+    assert label == "Kim · conductor"
     assert role == "agent"
 
 
 def test_agent_label_judge():
-    """Judge persona: 'Mona · vice-president'."""
+    """Judge persona: 'Mona · distiller'."""
     label, role = agent_label("system-judge", [])
-    assert label == "Mona · vice-president"
+    assert label == "Mona · distiller"
     assert role == "agent"
 
 

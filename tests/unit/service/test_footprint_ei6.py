@@ -95,6 +95,22 @@ class TestFormatTokenSubtitle:
         result = format_token_subtitle(snap, show_water=False)
         assert "🌱" in result
 
+    def test_mixed_known_and_unknown_flags_partial(self) -> None:
+        # Some calls had a footprint (gco2e>0) and some did not (has_unknown).
+        # The summed chip must still carry a ``?`` so the user sees the total
+        # is incomplete rather than a clean, complete-looking number.
+        snap = self._snap_with_gco2e(0.42, has_unknown=True)
+        result = format_token_subtitle(snap, show_water=False)
+        assert "🌱" in result
+        assert "0.42" in result or "4.2e-01" in result
+        assert "?" in result
+
+    def test_mixed_unknown_suppresses_water(self) -> None:
+        # Water total is also partial when any entry is unknown — don't show it.
+        snap = self._snap_with_gco2e(0.42, water_ml=5.0, has_unknown=True)
+        result = format_token_subtitle(snap, show_water=True)
+        assert "💧" not in result
+
 
 # ---------------------------------------------------------------------------
 # snapshot() estimate/unknown flags
