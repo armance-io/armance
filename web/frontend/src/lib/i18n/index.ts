@@ -22,6 +22,7 @@ const NAMESPACES = [
   "admin",
   "audio",
   "setup",
+  "session",
 ] as const;
 
 export type Namespace = typeof NAMESPACES[number];

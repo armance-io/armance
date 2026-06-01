@@ -72,6 +72,20 @@ export async function createSession(pid: string = "default"): Promise<SessionCre
   return api.post<SessionCreated>(`/projects/${pid}/sessions`);
 }
 
+export interface SessionSummary {
+  id: string;
+  created_at: string | null;
+  updated_at: string | null;
+  parent_id: string | null;
+  turns: number;
+  est_tokens: number;
+}
+
+export async function listSessions(pid: string): Promise<SessionSummary[]> {
+  const res = await api.get<{ sessions: SessionSummary[] }>(`/projects/${pid}/sessions`);
+  return res.sessions;
+}
+
 export async function getSession(pid: string, sid: string): Promise<SessionState> {
   return api.get<SessionState>(`/projects/${pid}/sessions/${sid}`);
 }

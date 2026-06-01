@@ -18,7 +18,7 @@ from armance.nls import set_language
 from armance.platform.events import LocalEventBus
 from armance.platform.user import get_current_user
 from armance.service.llm_service import TokenLedger, set_ledger
-from armance.service.session import start_or_resume, Session, load_state, latest_session_id
+from armance.service.session import start_or_resume, Session, load_state, latest_session_id, list_sessions
 from armance.service.tui_bridge import make_loop_context, META_AGENTS
 
 from armance.web.backend.checkpoint import WebCheckpointHandler
@@ -141,6 +141,24 @@ async def create_session(
 
     logger.info("session created sid=%s pid=%s user=%s", state.id, pid, user)
     return {"id": state.id, "project_id": pid}
+
+
+@router.get("/sessions")
+async def get_sessions(
+    pid: str,
+    _user: str = Depends(get_current_user),
+    app_state: AppState = Depends(get_app_state),
+) -> dict:
+    """List persisted sessions (newest first) for the header selector.
+
+    Mirrors the TUI resume picker: id, updated_at, turns, est_tokens.
+    """
+    try:
+        sessions = list_sessions(app_state.armance_root)
+    except Exception:
+        logger.warning("list_sessions failed pid=%s", pid, exc_info=True)
+        sessions = []
+    return {"sessions": sessions}
 
 
 @router.get("/sessions/latest")

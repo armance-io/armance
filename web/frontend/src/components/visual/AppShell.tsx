@@ -10,6 +10,7 @@ import {
 import { ThemeToggle } from "./ThemeToggle";
 import { SidebarNav } from "./SidebarNav";
 import { HeaderMetrics } from "./HeaderMetrics";
+import { SessionSelector } from "./SessionSelector";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -218,6 +219,11 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
           >
             {t("visual:shell.brand_domain")}
           </a>
+        </div>
+
+        {/* Centred session selector (TUI resume parity). */}
+        <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
+          <SessionSelector t={t} />
         </div>
 
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "20px" }}>

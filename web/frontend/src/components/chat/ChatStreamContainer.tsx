@@ -8,6 +8,7 @@ import { submitTurn, getSession, getMessages } from "@/lib/api";
 import { useEventStream, type SseEvent } from "@/lib/sse";
 import { assignAgentColour } from "@/lib/agent_colours";
 import { onAgentSwitch, setCurrentAgent as publishCurrentAgent } from "@/lib/agentBus";
+import { lockSession } from "@/lib/sessionBus";
 import { BottomSpinner } from "./BottomSpinner";
 import { ChatInput } from "./ChatInput";
 import { MessageBubble } from "./MessageBubble";
@@ -194,6 +195,7 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
 
   const onSubmit = useCallback(
     async (text: string) => {
+      lockSession(); // committing to this session — selector becomes read-only
       setMessages((prev) => [
         ...prev,
         {
