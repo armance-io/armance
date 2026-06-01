@@ -121,14 +121,14 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
     return (
       <button
         key={a.slug ?? a.name}
-        style={{ ...link(active), display: "flex", alignItems: "center", gap: 8, background: active ? undefined : "none", border: "none" }}
+        style={{ ...link(active), display: "flex", alignItems: "center", gap: 8, background: active ? undefined : "none", border: "none", width: "100%" }}
         onClick={() => (isStaff ? onAgentClick(a.name) : emitMention(a.name))}
         title={isStaff ? t("sidebar:staff.switch_hint") : t("sidebar:staff.mention_hint")}
         aria-pressed={active}
       >
         <PulseDot size={8} color={discColour} active={thinking} />
-        <span style={{ flex: 1 }}>{a.name}</span>
-        <span style={{ color: tokens.inkFaint, fontSize: 11 }}>{a.role}</span>
+        <span style={{ flex: 1, textAlign: "left" }}>{a.name}</span>
+        <span style={{ color: tokens.inkFaint, fontSize: 11, textAlign: "right" }}>{a.role}</span>
       </button>
     );
   };

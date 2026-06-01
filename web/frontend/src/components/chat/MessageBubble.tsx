@@ -37,142 +37,109 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
     });
   }, [markdown]);
 
-  /* ── Styles ── */
+  const isSystemSwitch = agentName === "system" && !markdown.startsWith("⚠");
 
+  if (isSystemSwitch) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          width: "100%",
+          padding: "16px 24px 16px 16px",
+          userSelect: "none",
+        }}
+      >
+        <div style={{ flex: 1, height: "1px", background: "var(--rule, #d6c8ad)", opacity: 0.8 }} />
+        <span
+          style={{
+            padding: "0 16px",
+            fontFamily: "var(--ff-sans, 'Inter', sans-serif)",
+            fontSize: "12px",
+            fontStyle: "italic",
+            color: "var(--ink-soft, #5b5145)",
+            letterSpacing: "0.03em",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {markdown}
+        </span>
+        <div style={{ flex: 1, height: "1px", background: "var(--rule, #d6c8ad)", opacity: 0.8 }} />
+      </div>
+    );
+  }
+
+  /* ── Styles ── */
   const wrapStyle: CSSProperties = {
-    display: "flex",
-    justifyContent: isAgent ? "flex-start" : "flex-end",
-    padding: "6px 0",
+    display: "flex", justifyContent: isAgent ? "flex-start" : "flex-end", padding: "6px 0",
   };
 
   const outerStyle: CSSProperties = {
-    display: "flex",
-    gap: "10px",
-    maxWidth: "72%",
-    minWidth: 0,
-    flexDirection: isAgent ? "row" : "row-reverse",
-    alignItems: "flex-start",
+    display: "flex", gap: "10px", maxWidth: "72%", minWidth: 0,
+    flexDirection: isAgent ? "row" : "row-reverse", alignItems: "flex-start",
   };
 
   const portraitStyle: CSSProperties = {
-    width: "32px",
-    height: "32px",
-    borderRadius: "999px",
-    overflow: "hidden",
-    flexShrink: 0,
-    border: "1px solid var(--rule, #d6c8ad)",
-    background: agentColour,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontFamily: "var(--ff-serif, 'Instrument Serif', serif)",
-    fontSize: "16px",
-    color: "oklch(0.97 0.012 82)",
+    width: "32px", height: "32px", borderRadius: "999px", overflow: "hidden", flexShrink: 0,
+    border: "1px solid var(--rule, #d6c8ad)", background: agentColour, display: "flex",
+    alignItems: "center", justifyContent: "center", fontFamily: "var(--ff-serif, 'Instrument Serif', serif)",
+    fontSize: "16px", color: "oklch(0.97 0.012 82)",
   };
 
   const bubbleStyle: CSSProperties = {
-    // User bubbles sit on a darker paper for clear sender contrast.
-    background: isAgent
-      ? "var(--bg-paper-card, #faf6ef)"
-      : "color-mix(in srgb, var(--accent) 7%, var(--bg-paper-deep, #e8dfcd))",
-    border: `1px solid ${isAgent ? "var(--rule, #d6c8ad)" : "var(--rule, #d6c8ad)"}`,
-    borderRadius: "6px",
-    padding: "12px 16px",
-    minWidth: 0,
+    background: isAgent ? "var(--bg-paper-card, #faf6ef)" : "color-mix(in srgb, var(--accent) 7%, var(--bg-paper-deep, #e8dfcd))",
+    border: `1px solid ${isAgent ? `color-mix(in srgb, ${agentColour} 40%, var(--rule, #d6c8ad))` : "var(--rule, #d6c8ad)"}`,
+    borderRadius: "6px", padding: "12px 16px", minWidth: 0,
   };
 
   const headerStyle: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    marginBottom: "6px",
+    display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px",
   };
 
   const bulletStyle: CSSProperties = {
-    width: "8px",
-    height: "8px",
-    borderRadius: "999px",
-    background: agentColour,
-    flexShrink: 0,
-    animation: streaming
-      ? "msgbubble-pulse 220ms ease-in-out infinite alternate"
-      : "none",
+    width: "8px", height: "8px", borderRadius: "999px", background: agentColour, flexShrink: 0,
+    animation: streaming ? "msgbubble-pulse 220ms ease-in-out infinite alternate" : "none",
   };
 
   const nameStyle: CSSProperties = {
-    fontFamily: "var(--ff-sans, 'Inter', sans-serif)",
-    fontSize: "12px",
-    fontWeight: 500,
-    color: "var(--ink-soft, #5b5145)",
-    letterSpacing: "0.02em",
+    fontFamily: "var(--ff-sans, 'Inter', sans-serif)", fontSize: "12px", fontWeight: 500,
+    color: "var(--ink-soft, #5b5145)", letterSpacing: "0.02em",
   };
 
   const proseStyle: CSSProperties = {
-    fontFamily: "var(--ff-sans, 'Inter', sans-serif)",
-    fontSize: "14px",
-    lineHeight: 1.6,
-    color: "var(--ink, #2a2520)",
+    fontFamily: "var(--ff-sans, 'Inter', sans-serif)", fontSize: "14px", lineHeight: 1.6, color: "var(--ink, #2a2520)",
   };
 
   const footerStyle: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: "8px",
-    marginTop: "6px",
+    display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginTop: "6px",
   };
 
   const timeStyle: CSSProperties = {
-    fontFamily: "var(--ff-mono, 'JetBrains Mono', monospace)",
-    fontSize: "10px",
-    color: "var(--ink-faint, #9c8e7e)",
+    fontFamily: "var(--ff-mono, 'JetBrains Mono', monospace)", fontSize: "10px", color: "var(--ink-faint, #9c8e7e)",
   };
 
   const copyBtnStyle: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "22px",
-    height: "22px",
-    padding: 0,
-    border: "none",
-    borderRadius: "4px",
-    background: "transparent",
+    display: "flex", alignItems: "center", justifyContent: "center", width: "22px", height: "22px",
+    padding: 0, border: "none", borderRadius: "4px", background: "transparent",
     color: copied ? "var(--accent, #6b4f8a)" : "var(--ink-faint, #9c8e7e)",
-    cursor: "pointer",
-    transition: "color 0.15s ease, background 0.15s ease",
-    flexShrink: 0,
+    cursor: "pointer", transition: "color 0.15s ease, background 0.15s ease", flexShrink: 0,
   };
 
   return (
     <div style={wrapStyle}>
       <style>{`
-        @keyframes msgbubble-pulse {
-          0% { opacity: 1; transform: scale(1); }
-          100% { opacity: 0.5; transform: scale(0.85); }
-        }
-        @keyframes msgbubble-spin {
-          to { transform: rotate(360deg); }
-        }
+        @keyframes msgbubble-pulse { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0.5; transform: scale(0.85); } }
+        @keyframes msgbubble-spin { to { transform: rotate(360deg); } }
         .msg-bubble-prose p { margin: 0 0 8px; }
         .msg-bubble-prose p:last-child { margin-bottom: 0; }
-        .msg-bubble-prose code {
-          font-family: var(--ff-mono, "JetBrains Mono", monospace);
-          font-size: 0.88em;
-          padding: 1px 5px;
-          border-radius: 3px;
-          background: var(--bg-paper-deep, #e8dfcd);
-          color: var(--accent-deep, #4a3666);
-        }
+        .msg-bubble-prose code { font-family: var(--ff-mono, "JetBrains Mono", monospace); font-size: 0.88em; padding: 1px 5px; border-radius: 3px; background: var(--bg-paper-deep, #e8dfcd); color: var(--accent-deep, #4a3666); }
         .msg-bubble-prose strong { font-weight: 600; }
         .msg-bubble-prose em { font-style: italic; }
         .msg-bubble-prose a { color: var(--accent, #6b4f8a); text-decoration: underline; }
         .msg-bubble-prose ul, .msg-bubble-prose ol { margin: 4px 0 8px; padding-left: 20px; }
         .msg-bubble-prose li { margin: 2px 0; }
         .prose-copy-btn:hover { background: var(--bg-paper-deep, #e8dfcd) !important; color: var(--accent, #6b4f8a) !important; }
-        @media (prefers-reduced-motion: reduce) {
-          * { animation: none !important; }
-        }
+        @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
       `}</style>
 
       <div style={outerStyle}>

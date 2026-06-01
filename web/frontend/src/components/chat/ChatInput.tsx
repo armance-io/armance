@@ -46,7 +46,17 @@ export const ChatInput: FC<ChatInputProps> = ({
     if (!canSend) return;
     onSubmit(value.trim());
     setValue("");
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 10);
   }, [canSend, onSubmit, value]);
+
+  // Re-focus the input once it becomes enabled again (e.g. after agent thinking)
+  useEffect(() => {
+    if (!disabled) {
+      textareaRef.current?.focus();
+    }
+  }, [disabled]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
