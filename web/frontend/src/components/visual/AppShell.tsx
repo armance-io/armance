@@ -268,6 +268,15 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
           {t("visual:shell.footer_motto")}
         </span>
         <span style={{ color: "var(--rule,#d6c8ad)" }} aria-hidden="true">·</span>
+        <a
+          href="https://armance.io"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ ...inlineMono, fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint,#9c8e7e)", textDecoration: "none" }}
+        >
+          armance.io
+        </a>
+        <span style={{ color: "var(--rule,#d6c8ad)" }} aria-hidden="true">·</span>
         <span style={{ ...inlineMono, fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint,#9c8e7e)" }}>
           {t("visual:shell.footer_line")}
         </span>
