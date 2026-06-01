@@ -326,7 +326,9 @@
     },
     "library": {
       "docs": "Documents",
-      "feuillets": "Slips"
+      "feuillets": "Slips",
+      "subtitle": "{docs} docs · {feuillets} slips",
+      "inactive": "inactive — no embedding model"
     }
   },
   "admin": {

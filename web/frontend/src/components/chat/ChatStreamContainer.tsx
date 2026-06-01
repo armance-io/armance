@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { submitTurn, getSession, getMessages } from "@/lib/api";
 import { useEventStream, type SseEvent } from "@/lib/sse";
 import { assignAgentColour } from "@/lib/agent_colours";
+import { displayAgentName } from "@/lib/agentNames";
 import { onAgentSwitch, setCurrentAgent as publishCurrentAgent } from "@/lib/agentBus";
 import { lockSession } from "@/lib/sessionBus";
 import { BottomSpinner } from "./BottomSpinner";
@@ -80,7 +81,7 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
       return {
         id: nextId(),
         role: isUser ? "user" as const : "agent" as const,
-        agentName: isUser ? "you" : agent,
+        agentName: isUser ? "you" : displayAgentName(agent),
         agentColour: isUser ? "var(--ink-soft, #5b5145)" : assignAgentColour(agent),
         markdown: m.content,
         timestamp: m.timestamp ?? new Date().toISOString(),
@@ -123,7 +124,7 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
         {
           id: nextId(),
           role: "agent",
-          agentName: agent,
+          agentName: displayAgentName(agent),
           agentColour: assignAgentColour(agent),
           markdown: reply,
           timestamp: new Date().toISOString(),
@@ -193,6 +194,22 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
   // Sidebar Staff click → switch here (no navigation, history preserved).
   useEffect(() => onAgentSwitch((fn) => { void onSelectAgent(fn); }), [onSelectAgent]);
 
+  // Coming from another tab via `?switch=<firstName>` (sidebar agent click):
+  // switch to that agent once, then drop the param so refresh is clean.
+  const switchedFromUrl = useRef(false);
+  useEffect(() => {
+    if (switchedFromUrl.current || agents.length === 0) return;
+    const params = new URLSearchParams(window.location.search);
+    const fn = params.get("switch");
+    if (fn) {
+      switchedFromUrl.current = true;
+      void onSelectAgent(fn);
+      const url = new URL(window.location.href);
+      url.searchParams.delete("switch");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [agents, onSelectAgent]);
+
   const onSubmit = useCallback(
     async (text: string) => {
       lockSession(); // committing to this session — selector becomes read-only
@@ -237,9 +254,9 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
   );
 
   return (
-    <section style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <section style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0, paddingLeft: 8 }}>
       {/* R4: no "Talking to" banner — agent selection lives in the sidebar. */}
-      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "16px 0" }}>
+      <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 0" }}>
         {messages.map((m) => (
           <MessageBubble
             key={m.id}

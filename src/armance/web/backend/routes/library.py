@@ -90,5 +90,6 @@ async def library_status(
         "docs": docs,
         "total_feuillets": total_feuillets,
         "doc_count": len(docs),
+        "embedding_model": status.get("embedding_model", "") or "",
         "library": status,
     }

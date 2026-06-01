@@ -199,6 +199,7 @@ export interface LibraryResponse {
   docs: Doc[];
   total_feuillets: number;
   doc_count: number;
+  embedding_model?: string;
 }
 
 export async function getLibrary(

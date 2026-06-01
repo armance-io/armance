@@ -47,7 +47,9 @@
     },
     "library": {
       "docs": "文档",
-      "feuillets": "片段"
+      "feuillets": "片段",
+      "subtitle": "{docs} 文档 · {feuillets} 片段",
+      "inactive": "未启用 — 无嵌入模型"
     }
   },
   "admin": {

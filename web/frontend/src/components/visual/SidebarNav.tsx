@@ -13,7 +13,7 @@ export interface SidebarNavProps {
 }
 
 const KEY_STAFF = "armance.sidebar.staff-open";
-const KEY_LIB = "armance.sidebar.library-open";
+const KEY_ROLES = "armance.sidebar.roles-open";
 
 function usePersistedOpen(key: string, fallback: boolean): [boolean, () => void] {
   const [open, setOpen] = useState(fallback);
@@ -33,7 +33,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
   const pathname = typeof window !== "undefined" ? window.location.pathname : "";
 
   const [staffOpen, toggleStaff] = usePersistedOpen(KEY_STAFF, true);
-  const [libOpen, toggleLib] = usePersistedOpen(KEY_LIB, true);
+  const [rolesOpen, toggleRoles] = usePersistedOpen(KEY_ROLES, true);
 
   const currentAgent = useCurrentAgent();
 
@@ -53,13 +53,12 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
     queryFn: () => getLibrary(pid, sid as string).catch(() => null),
   });
 
+  const onConversation = /\/sessions\/[^/]+$/.test(pathname) &&
+    !/(workflows|library|deliverables)/.test(pathname);
+
   const isTabActive = (tab: string): boolean => {
-    if (tab === "session")
-      return /\/sessions\/[^/]+$/.test(pathname) &&
-        !/(workflows|library|deliverables)/.test(pathname);
     if (tab === "workflows") return pathname.includes("/workflows");
     if (tab === "library") return pathname.includes("/library");
-    if (tab === "deliverables") return pathname.includes("/deliverables");
     if (tab === "admin") return pathname.includes("/admin");
     return false;
   };
@@ -88,28 +87,60 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
   });
   const sessionPath = (suffix = "") => `/projects/${pid}/sessions/${sid || "_"}${suffix}`;
 
-  const navLink = (tab: string, suffix: string, label: string) => (
-    <a
-      href={sid ? sessionPath(suffix) : "#"}
-      style={link(isTabActive(tab))}
-      onClick={(e) => { if (!sid) e.preventDefault(); }}
-    >
-      {label}
-    </a>
-  );
+  // Library subtitle, TUI-style: doc + feuillet counts, or inactive note when
+  // no embedding model is configured.
+  const librarySubtitle = (): string => {
+    if (library && !library.embedding_model) return t("sidebar:library.inactive");
+    const docs = library?.doc_count ?? 0;
+    const fe = library?.total_feuillets ?? 0;
+    return t("sidebar:library.subtitle")
+      .replace("{docs}", String(docs))
+      .replace("{feuillets}", String(fe));
+  };
+
+  // Agent click (anywhere): go to the conversation and switch to that agent.
+  const onAgentClick = (firstName: string) => {
+    if (onConversation) {
+      requestAgentSwitch(firstName);
+    } else if (sid) {
+      window.location.href = `${sessionPath()}?switch=${encodeURIComponent(firstName)}`;
+    }
+  };
+
+  const agentRow = (a: { name: string; slug?: string; role: string }, isStaff: boolean) => {
+    const active = isStaff && (currentAgent === (a.slug ?? a.name) || currentAgent === a.name);
+    return (
+      <button
+        key={a.slug ?? a.name}
+        style={{ ...link(active), display: "flex", justifyContent: "space-between", gap: 8, background: active ? undefined : "none", border: "none" }}
+        onClick={() => (isStaff ? onAgentClick(a.name) : emitMention(a.name))}
+        title={isStaff ? t("sidebar:staff.switch_hint") : t("sidebar:staff.mention_hint")}
+        aria-pressed={active}
+      >
+        <span>{a.name}</span>
+        <span style={{ color: tokens.inkFaint, fontSize: 11 }}>{a.role}</span>
+      </button>
+    );
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-      {/* Workspace nav */}
-      <p style={sectionHeader}>{t("sidebar:nav_section.workspace")}</p>
+      {/* 1 · Library — L0 with TUI-style subtitle, no sub-items */}
+      <p style={sectionHeader}>{t("sidebar:section.library")}</p>
       <nav style={navContainer}>
-        {navLink("session", "", t("sidebar:tabs.session_active"))}
-        {navLink("workflows", "/workflows/_", t("sidebar:tabs.workflows"))}
-        {navLink("library", "/library", t("sidebar:tabs.library"))}
-        {navLink("deliverables", "/deliverables", t("sidebar:tabs.deliverables"))}
+        <a
+          href={sid ? sessionPath("/library") : "#"}
+          style={{ ...link(isTabActive("library")), display: "flex", flexDirection: "column", gap: 2, alignItems: "flex-start" }}
+          onClick={(e) => { if (!sid) e.preventDefault(); }}
+        >
+          <span>{t("sidebar:tabs.library")}</span>
+          <span style={{ color: tokens.inkFaint, fontFamily: tokens.ffMono, fontSize: 10 }}>
+            {librarySubtitle()}
+          </span>
+        </a>
       </nav>
 
-      {/* Staff / Roles — click injects @Agent into the chat input */}
+      {/* 2 · Staff — permanent team; click = switch + go to conversation */}
       <button style={collapsibleHeader} onClick={toggleStaff} aria-expanded={staffOpen}>
         <span>{t("sidebar:section.staff")}</span>
         <span aria-hidden="true">{staffOpen ? "▾" : "▸"}</span>
@@ -121,67 +152,38 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
               {t("sidebar:staff.empty")}
             </span>
           )}
-          {staff.map((a) => {
-            const active = currentAgent === (a.slug ?? a.name) || currentAgent === a.name;
-            return (
-              <button
-                key={a.slug ?? a.name}
-                style={{ ...link(active), display: "flex", justifyContent: "space-between", gap: 8, border: "none" }}
-                onClick={() => requestAgentSwitch(a.name)}
-                title={t("sidebar:staff.switch_hint")}
-                aria-pressed={active}
-              >
-                <span>{a.name}</span>
-                <span style={{ color: tokens.inkFaint, fontSize: 11 }}>{a.role}</span>
-              </button>
-            );
-          })}
+          {staff.map((a) => agentRow(a, true))}
         </nav>
       )}
 
-      {/* Roles & agents — recruited specialists; click injects @mention */}
+      {/* 3 · Roles & agents — recruited specialists; click = @mention */}
       {specialists.length > 0 && (
         <>
-          <p style={sectionHeader}>{t("sidebar:section.roles")}</p>
-          <nav style={navContainer}>
-            {specialists.map((a) => (
-              <button
-                key={a.slug ?? a.name}
-                style={{ ...link(false), display: "flex", justifyContent: "space-between", gap: 8, background: "none", border: "none" }}
-                onClick={() => emitMention(a.name)}
-                title={t("sidebar:staff.mention_hint")}
-              >
-                <span>{a.name}</span>
-                <span style={{ color: tokens.inkFaint, fontSize: 11 }}>{a.role}</span>
-              </button>
-            ))}
-          </nav>
+          <button style={collapsibleHeader} onClick={toggleRoles} aria-expanded={rolesOpen}>
+            <span>{t("sidebar:section.roles")}</span>
+            <span aria-hidden="true">{rolesOpen ? "▾" : "▸"}</span>
+          </button>
+          {rolesOpen && (
+            <nav style={navContainer}>
+              {specialists.map((a) => agentRow(a, false))}
+            </nav>
+          )}
         </>
       )}
 
-      {/* Library — docs + feuillet counts */}
-      <button style={collapsibleHeader} onClick={toggleLib} aria-expanded={libOpen}>
-        <span>{t("sidebar:section.library")}</span>
-        <span aria-hidden="true">{libOpen ? "▾" : "▸"}</span>
-      </button>
-      {libOpen && (
-        <div style={{ ...navContainer, gap: 4 }}>
-          <a href={sid ? sessionPath("/library") : "#"} style={{ ...link(false), display: "flex", justifyContent: "space-between" }}>
-            <span>{t("sidebar:library.docs")}</span>
-            <span style={{ color: tokens.inkFaint, fontFamily: tokens.ffMono, fontSize: 11 }}>
-              {library?.doc_count ?? 0}
-            </span>
-          </a>
-          <div style={{ ...link(false), display: "flex", justifyContent: "space-between", cursor: "default" }}>
-            <span>{t("sidebar:library.feuillets")}</span>
-            <span style={{ color: tokens.inkFaint, fontFamily: tokens.ffMono, fontSize: 11 }}>
-              {library?.total_feuillets ?? 0}
-            </span>
-          </div>
-        </div>
-      )}
+      {/* 4 · Workspace — Workflows only */}
+      <p style={sectionHeader}>{t("sidebar:nav_section.workspace")}</p>
+      <nav style={navContainer}>
+        <a
+          href={sid ? sessionPath("/workflows/_") : "#"}
+          style={link(isTabActive("workflows"))}
+          onClick={(e) => { if (!sid) e.preventDefault(); }}
+        >
+          {t("sidebar:tabs.workflows")}
+        </a>
+      </nav>
 
-      {/* Account */}
+      {/* 5 · Admin */}
       <p style={sectionHeader}>{t("sidebar:nav_section.account")}</p>
       <nav style={navContainer}>
         <a href={`/projects/${pid}/admin`} style={link(isTabActive("admin"))}>

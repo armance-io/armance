@@ -47,7 +47,9 @@
     },
     "library": {
       "docs": "Documentos",
-      "feuillets": "Fragmentos"
+      "feuillets": "Fragmentos",
+      "subtitle": "{docs} docs · {feuillets} fragmentos",
+      "inactive": "inactivo — sin modelo de embedding"
     }
   },
   "admin": {
