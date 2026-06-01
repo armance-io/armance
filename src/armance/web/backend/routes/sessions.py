@@ -208,3 +208,36 @@ async def get_session(
         "agents": agents_info,
         "language": ws.ctx.cfg.language,
     }
+
+
+@router.get("/sessions/{sid}/messages")
+async def get_messages(
+    pid: str,
+    sid: str,
+    user: str = Depends(get_current_user),
+    app_state: AppState = Depends(get_app_state),
+) -> dict:
+    """Return the session's conversation turns, oldest-first.
+
+    The web chat replays these on mount so an existing session shows its
+    dialogue exactly like the TUI.
+    """
+    armance_root = app_state.armance_root
+    _check_initialised(armance_root, pid)
+
+    try:
+        ws = _load_web_session(app_state, armance_root, pid, sid, client_id=user)
+    except Exception:
+        raise HTTPException(status_code=404, detail="session_not_found")
+
+    conv = ws.ctx.session.conversation
+    messages = [
+        {
+            "role": turn.role,
+            "content": turn.content,
+            "agent": turn.agent,
+            "timestamp": turn.timestamp.isoformat() if turn.timestamp else None,
+        }
+        for turn in conv.turns
+    ]
+    return {"messages": messages}
