@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { AppShell } from "@/components/visual/AppShell";
 import { EmptyShell } from "@/components/visual/EmptyState/EmptyShell";
 import { DeliverablesTabContainer } from "@/components/sidebar/DeliverablesTabContainer";
 import { DeliverableReader } from "@/components/library/DeliverableReader";
@@ -97,31 +96,36 @@ export default function DeliverablesView() {
     : "";
 
   return (
-    <AppShell
-      sidebar={
-        <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-          <div style={{
-            fontFamily: "var(--ff-serif, 'Instrument Serif', serif)",
-            fontSize: "18px",
-            fontWeight: 600,
-            color: "var(--ink, #2a2520)",
-            padding: "16px",
-            borderBottom: "1px solid var(--rule, #d6c8ad)",
-          }}>
-            {t("sidebar:tabs.deliverables")}
-          </div>
-          <div style={{ flex: 1, minHeight: 0 }}>
-            <DeliverablesTabContainer
-              pid={pid}
-              sid={sid}
-              onOpen={(id) => setSelectedId(id)}
-            />
-          </div>
+    <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
+      <div style={{
+        width: "280px",
+        flexShrink: 0,
+        borderRight: "1px solid var(--rule, #d6c8ad)",
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        background: "var(--bg-paper, #f4ede0)"
+      }}>
+        <div style={{
+          fontFamily: "var(--ff-serif, 'Instrument Serif', serif)",
+          fontSize: "18px",
+          fontWeight: 600,
+          color: "var(--ink, #2a2520)",
+          padding: "16px",
+          borderBottom: "1px solid var(--rule, #d6c8ad)",
+        }}>
+          {t("sidebar:tabs.deliverables")}
         </div>
-      }
-      t={t}
-    >
-      <div style={{ height: "100%", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <DeliverablesTabContainer
+            pid={pid}
+            sid={sid}
+            onOpen={(id) => setSelectedId(id)}
+          />
+        </div>
+      </div>
+
+      <div style={{ flex: 1, height: "100%", overflow: "hidden", display: "flex", flexDirection: "column" }}>
         {loadingContent ? (
           <div style={{ padding: "20px", color: "var(--ink-soft)" }}>
             {t("app:loading")}
@@ -142,6 +146,6 @@ export default function DeliverablesView() {
           />
         )}
       </div>
-    </AppShell>
+    </div>
   );
 }

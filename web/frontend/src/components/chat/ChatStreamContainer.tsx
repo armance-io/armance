@@ -114,8 +114,9 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
     // on turn.completed.
     if (evt.name === "agent.streaming.started") {
       const agent = String(attrs["agent_name"] ?? "Armance");
-      setBusy({ name: agent, colour: assignAgentColour(agent) });
-      setBusyAgent(displayAgentName(agent)); // sidebar disc pulse
+      const human = displayAgentName(agent);
+      setBusy({ name: human, colour: assignAgentColour(human) });
+      setBusyAgent(human); // sidebar disc pulse
       return;
     }
 

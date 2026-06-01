@@ -1,8 +1,6 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
-import { AppShell } from "@/components/visual/AppShell";
-import { EmptyShell } from "@/components/visual/EmptyState/EmptyShell";
 import { LivePanel } from "@/components/run/LivePanel";
 import { useRouteParams } from "@/lib/routeParams";
 
@@ -89,30 +87,20 @@ export default function RunView() {
   ];
 
   return (
-    <AppShell
-      sidebar={
-        <EmptyShell
-          title={t("visual:empty.shell.title")}
-          hint={t("visual:empty.shell.hint")}
-        />
-      }
-      t={t}
-    >
-      <div style={{ display: "flex", width: "100%", height: "100%" }}>
-        <div style={{ flex: 1, padding: "24px", color: "var(--ink-soft)" }}>
-          <h2>{t("runs:detail.steps")}</h2>
-          <p>Run: {runId}</p>
-        </div>
-        <LivePanel
-          mode="autonomous"
-          deliverable={deliverable}
-          arguments={mockArguments}
-          sources={mockSources}
-          hypotheses={mockHypotheses}
-          downloads={mockDownloads}
-          t={customT}
-        />
+    <div style={{ display: "flex", width: "100%", height: "100%" }}>
+      <div style={{ flex: 1, padding: "24px", color: "var(--ink-soft)" }}>
+        <h2>{t("runs:detail.steps")}</h2>
+        <p>Run: {runId}</p>
       </div>
-    </AppShell>
+      <LivePanel
+        mode="autonomous"
+        deliverable={deliverable}
+        arguments={mockArguments}
+        sources={mockSources}
+        hypotheses={mockHypotheses}
+        downloads={mockDownloads}
+        t={customT}
+      />
+    </div>
   );
 }
