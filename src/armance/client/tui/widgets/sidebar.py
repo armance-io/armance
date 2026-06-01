@@ -41,10 +41,11 @@ _STATE_COLORS: dict[str, str] = {
 }
 
 _META_COLORS = {
-    "host":           "#bc9392",  # Armance — rose poussière, matches chat
-    "recruiter":      "#b29267",  # Malik   — ocre
-    "operator":       "#94ac98",  # Kim     — sauge
-    "vice-president": "#c5aa72",  # Mona    — ambre passé
+    "weaver":         "#4a3666",  # Armance — violet profond
+    "scout":          "#6b4f8a",  # Malik   — violet moyen
+    "conductor":      "#b7a4c9",  # Kim     — violet doux
+    "distiller":      "#7a5da4",  # Mona    — violet Mona
+    "critic":         "#3a2b54",  # Serge   — violet très sombre
 }
 
 
@@ -226,11 +227,11 @@ class Sidebar(Widget):
 
     # Meta agents = Armance firm staff — fixed list, always visible
     _META_STAFF: list[tuple[str, str, str]] = [
-        ("system-context",      "Armance", "host"),
-        ("system-hr",           "Malik",   "recruiter"),
-        ("system-orchestrator", "Kim",     "operator"),
-        ("system-judge",        "Mona",    "vice-president"),
-        ("system-challenger",   "Serge",   "criticalist"),
+        ("system-context",      "Armance", "weaver"),
+        ("system-hr",           "Malik",   "scout"),
+        ("system-orchestrator", "Kim",     "conductor"),
+        ("system-judge",        "Mona",    "distiller"),
+        ("system-challenger",   "Serge",   "critic"),
     ]
 
     def __init__(self, **kwargs: Any) -> None:
@@ -356,12 +357,14 @@ class Sidebar(Widget):
             section = self.query_one("#section-meta", SidebarSection)
         except Exception:
             return
+        from armance.nls import t
         lines: list[str] = []
         for canonical, first_name, title in self._META_STAFF:
             is_active = (self._active_meta == canonical) or (self._active_meta == first_name)
             state = self._meta_states.get(canonical, "idle")
             label = f"{first_name:<10}"
-            title_text = f"[#7d7a75]{title}[/]"
+            localized_title = t(f"staff.role.{title}", default=title)
+            title_text = f"[#7d7a75]{localized_title}[/]"
             # Glyph by state
             color = _META_COLORS.get(title, "#c5aa72")
             if state == "working":
