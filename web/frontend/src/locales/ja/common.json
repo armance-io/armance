@@ -37,11 +37,13 @@
     },
     "section": {
       "staff": "チーム",
-      "library": "ライブラリ"
+      "library": "ライブラリ",
+      "roles": "ロールとエージェント"
     },
     "staff": {
       "empty": "専門家はまだいません",
-      "mention_hint": "メッセージにメンションを挿入"
+      "mention_hint": "メッセージにメンションを挿入",
+      "switch_hint": "このエージェントに切替"
     },
     "library": {
       "docs": "ドキュメント",
@@ -122,7 +124,8 @@
   "chat": {
     "agents": {
       "label": "話し相手",
-      "switch_aria": "切り替え"
+      "switch_aria": "切り替え",
+      "switched": "OK — {name} に切り替えました"
     },
     "error": {
       "turn_failed": "応答に失敗しました。もう一度お試しください。"
