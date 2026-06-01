@@ -10,6 +10,7 @@ import { emitMention } from "@/lib/mentionBus";
 import { requestAgentSwitch, useCurrentAgent, useBusyAgent } from "@/lib/agentBus";
 import { tokens } from "../_shared/armance-tokens";
 import { PulseDot } from "../_shared/PulseDot";
+import { assignAgentColour } from "@/lib/agent_colours";
 
 export interface SidebarNavProps {
   t: (key: string) => string;
@@ -115,9 +116,9 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
   const agentRow = (a: { name: string; slug?: string; role: string; model?: string }, isStaff: boolean) => {
     const active = isStaff && (currentAgent === (a.slug ?? a.name) || currentAgent === a.name);
     const thinking = busyAgent === a.name;
-    // Dark violet = reachable (has a model); light violet = not reachable.
     const reachable = Boolean(a.model);
-    const discColour = reachable ? "var(--accent-deep, #4a3666)" : "var(--accent-soft, #b7a4c9)";
+    const agentColour = assignAgentColour(a.name);
+    const discColour = reachable ? agentColour : `color-mix(in srgb, ${agentColour} 40%, transparent)`;
     return (
       <button
         key={a.slug ?? a.name}
