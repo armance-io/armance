@@ -4,7 +4,7 @@ import { type FC, useCallback, useEffect, useMemo, useRef, useState } from "reac
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 
-import { submitTurn, getSession } from "@/lib/api";
+import { submitTurn, getSession, getMessages } from "@/lib/api";
 import { useEventStream, type SseEvent } from "@/lib/sse";
 import { assignAgentColour } from "@/lib/agent_colours";
 import { onAgentSwitch, setCurrentAgent as publishCurrentAgent } from "@/lib/agentBus";
@@ -62,6 +62,31 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
   });
 
   const agents: AgentInfo[] = useMemo(() => sessionData?.agents ?? [], [sessionData]);
+
+  // TUI parity: replay the existing conversation on mount so an existing
+  // session shows its history immediately.
+  const { data: history } = useQuery({
+    queryKey: ["messages", pid, sid],
+    queryFn: () => getMessages(pid, sid),
+    enabled: Boolean(pid && sid),
+  });
+
+  useEffect(() => {
+    if (!history) return;
+    setMessages(history.map((m) => {
+      const agent = m.agent ?? "Armance";
+      const isUser = m.role === "user";
+      return {
+        id: nextId(),
+        role: isUser ? "user" as const : "agent" as const,
+        agentName: isUser ? "you" : agent,
+        agentColour: isUser ? "var(--ink-soft, #5b5145)" : assignAgentColour(agent),
+        markdown: m.content,
+        timestamp: m.timestamp ?? new Date().toISOString(),
+        streaming: false,
+      };
+    }));
+  }, [history, nextId]);
 
   useEffect(() => {
     if (sessionData?.state) {

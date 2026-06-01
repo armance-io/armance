@@ -76,6 +76,20 @@ export async function getSession(pid: string, sid: string): Promise<SessionState
   return api.get<SessionState>(`/projects/${pid}/sessions/${sid}`);
 }
 
+export interface HistoryMessage {
+  role: string; // "user" | "assistant" | "system"
+  content: string;
+  agent: string | null;
+  timestamp: string | null;
+}
+
+export async function getMessages(pid: string, sid: string): Promise<HistoryMessage[]> {
+  const res = await api.get<{ messages: HistoryMessage[] }>(
+    `/projects/${pid}/sessions/${sid}/messages`,
+  );
+  return res.messages;
+}
+
 /* ─── Epic C — chat, checkpoint, agents, providers, hypotheses ─────────── */
 
 export interface TurnAck {
