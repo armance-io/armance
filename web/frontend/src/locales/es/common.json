@@ -37,11 +37,13 @@
     },
     "section": {
       "staff": "Equipo",
-      "library": "Biblioteca"
+      "library": "Biblioteca",
+      "roles": "Roles y agentes"
     },
     "staff": {
       "empty": "Aún no hay especialistas",
-      "mention_hint": "Insertar una mención en tu mensaje"
+      "mention_hint": "Insertar una mención en tu mensaje",
+      "switch_hint": "Cambiar a este agente"
     },
     "library": {
       "docs": "Documentos",
@@ -122,7 +124,8 @@
   "chat": {
     "agents": {
       "label": "Hablando con",
-      "switch_aria": "Cambiar a"
+      "switch_aria": "Cambiar a",
+      "switched": "OK — cambiado a {name}"
     },
     "error": {
       "turn_failed": "La respuesta falló. Por favor, inténtelo de nuevo."

@@ -1,12 +1,13 @@
 "use client";
 
-import { type CSSProperties, type FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 
 import { submitTurn, getSession } from "@/lib/api";
 import { useEventStream, type SseEvent } from "@/lib/sse";
 import { assignAgentColour } from "@/lib/agent_colours";
+import { onAgentSwitch, setCurrentAgent as publishCurrentAgent } from "@/lib/agentBus";
 import { BottomSpinner } from "./BottomSpinner";
 import { ChatInput } from "./ChatInput";
 import { MessageBubble } from "./MessageBubble";
@@ -32,94 +33,11 @@ export interface ChatStreamContainerProps {
   sid: string;
 }
 
-/* ─── Agent picker ──────────────────────────────────────────────────────────── */
-
 interface AgentInfo {
   name: string;
   first_name: string;
   title: string;
 }
-
-interface AgentPickerProps {
-  agents: AgentInfo[];
-  currentAgent: string;
-  onSelect: (firstName: string) => void;
-  t: (key: string) => string;
-}
-
-const AgentPicker: FC<AgentPickerProps> = ({ agents, currentAgent, onSelect, t }) => {
-  const rowStyle: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    padding: "6px 16px",
-    borderBottom: "1px solid var(--rule-soft, #e8dfcd)",
-    overflowX: "auto",
-  };
-
-  const chipBase: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: 5,
-    padding: "3px 10px",
-    borderRadius: 999,
-    border: "1px solid var(--rule, #d6c8ad)",
-    fontFamily: "var(--ff-sans, sans-serif)",
-    fontSize: 12,
-    cursor: "pointer",
-    transition: "background 120ms ease, border-color 120ms ease",
-    whiteSpace: "nowrap",
-    flexShrink: 0,
-  };
-
-  const labelStyle: CSSProperties = {
-    fontFamily: "var(--ff-mono, monospace)",
-    fontSize: 9,
-    textTransform: "uppercase",
-    letterSpacing: "0.1em",
-    color: "var(--ink-faint, #9c8e7e)",
-    marginRight: 4,
-    userSelect: "none",
-  };
-
-  return (
-    <div style={rowStyle} aria-label={t("chat:agents.label")}>
-      <span style={labelStyle}>{t("chat:agents.label")}</span>
-      {agents.map((ag) => {
-        const isActive = currentAgent === ag.name || currentAgent === ag.first_name;
-        const colour = assignAgentColour(ag.first_name);
-        return (
-          <button
-            key={ag.name}
-            type="button"
-            style={{
-              ...chipBase,
-              background: isActive
-                ? "color-mix(in srgb, var(--accent, #6b4f8a) 10%, transparent)"
-                : "transparent",
-              borderColor: isActive ? "var(--accent, #6b4f8a)" : "var(--rule, #d6c8ad)",
-              color: isActive ? "var(--accent, #6b4f8a)" : "var(--ink-soft, #5b5145)",
-              fontWeight: isActive ? 500 : 400,
-            }}
-            onClick={() => onSelect(ag.first_name)}
-            aria-pressed={isActive}
-            aria-label={`${t("chat:agents.switch_aria")} ${ag.first_name}`}
-          >
-            <span style={{
-              width: 7,
-              height: 7,
-              borderRadius: "999px",
-              background: colour,
-              flexShrink: 0,
-              display: "inline-block",
-            }} aria-hidden="true" />
-            {ag.first_name}
-          </button>
-        );
-      })}
-    </div>
-  );
-};
 
 /* ─── Main container ────────────────────────────────────────────────────────── */
 
@@ -152,6 +70,9 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
     }
   }, [sessionData]);
 
+  // Mirror the active agent to the sidebar bus so the L2 row highlights.
+  useEffect(() => { publishCurrentAgent(currentAgent); }, [currentAgent]);
+
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     const el = scrollRef.current;
@@ -167,7 +88,9 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
         const agentInfo = agents.find(
           (a) => a.first_name === agent || a.name === agent,
         );
-        return agentInfo?.name ?? prev;
+        const next = agentInfo?.name ?? prev;
+        publishCurrentAgent(next); // keep the sidebar L2 selection in sync
+        return next;
       });
       setMessages((prev) => [
         ...prev,
@@ -216,14 +139,33 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
 
   useEventStream(pid, sid, handleEvent);
 
+  // TUI parity: switching agent never refreshes the conversation — the history
+  // stays, only the active agent changes (+ a "basculé sur X" acknowledgement).
   const onSelectAgent = useCallback(
     async (firstName: string) => {
-      await submitTurn(pid, sid, `@${firstName}`).catch(() => null);
       const agentInfo = agents.find((a) => a.first_name === firstName);
-      if (agentInfo) setCurrentAgent(agentInfo.name);
+      const slug = agentInfo?.name ?? firstName;
+      setCurrentAgent(slug);
+      publishCurrentAgent(slug);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: nextId(),
+          role: "agent",
+          agentName: "system",
+          agentColour: "var(--ink-faint, #9c8e7e)",
+          markdown: t("chat:agents.switched").replace("{name}", firstName),
+          timestamp: new Date().toISOString(),
+          streaming: false,
+        },
+      ]);
+      await submitTurn(pid, sid, `@${firstName}`).catch(() => null);
     },
-    [pid, sid, agents],
+    [pid, sid, agents, nextId, t],
   );
+
+  // Sidebar Staff click → switch here (no navigation, history preserved).
+  useEffect(() => onAgentSwitch((fn) => { void onSelectAgent(fn); }), [onSelectAgent]);
 
   const onSubmit = useCallback(
     async (text: string) => {
@@ -269,14 +211,7 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
 
   return (
     <section style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      {agents.length > 0 && (
-        <AgentPicker
-          agents={agents}
-          currentAgent={currentAgent}
-          onSelect={(fn) => { void onSelectAgent(fn); }}
-          t={t}
-        />
-      )}
+      {/* R4: no "Talking to" banner — agent selection lives in the sidebar. */}
       <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", padding: "16px 0" }}>
         {messages.map((m) => (
           <MessageBubble

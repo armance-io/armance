@@ -37,11 +37,13 @@
     },
     "section": {
       "staff": "Team",
-      "library": "Bibliothek"
+      "library": "Bibliothek",
+      "roles": "Rollen & Agenten"
     },
     "staff": {
       "empty": "Noch keine Spezialisten",
-      "mention_hint": "Erwähnung in Ihre Nachricht einfügen"
+      "mention_hint": "Erwähnung in Ihre Nachricht einfügen",
+      "switch_hint": "Zu diesem Agenten wechseln"
     },
     "library": {
       "docs": "Dokumente",
@@ -122,7 +124,8 @@
   "chat": {
     "agents": {
       "label": "Spricht mit",
-      "switch_aria": "Wechseln zu"
+      "switch_aria": "Wechseln zu",
+      "switched": "OK — zu {name} gewechselt"
     },
     "error": {
       "turn_failed": "Antwort fehlgeschlagen. Bitte erneut versuchen."

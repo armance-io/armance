@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLatestSession } from "@/lib/useLatestSession";
 import { getAdminAgents, getLibrary } from "@/lib/api";
 import { emitMention } from "@/lib/mentionBus";
+import { requestAgentSwitch, useCurrentAgent } from "@/lib/agentBus";
 import { tokens } from "../_shared/armance-tokens";
 
 export interface SidebarNavProps {
@@ -34,11 +35,16 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
   const [staffOpen, toggleStaff] = usePersistedOpen(KEY_STAFF, true);
   const [libOpen, toggleLib] = usePersistedOpen(KEY_LIB, true);
 
+  const currentAgent = useCurrentAgent();
+
   const { data: agents = [] } = useQuery({
     queryKey: ["sidebar-agents", pid, sid],
     enabled: Boolean(pid && sid),
     queryFn: () => getAdminAgents(pid, sid as string).catch(() => []),
   });
+
+  const staff = agents.filter((a) => a.staff);
+  const specialists = agents.filter((a) => !a.staff);
 
   const { data: library } = useQuery({
     queryKey: ["sidebar-library", pid, sid],
@@ -110,23 +116,47 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
       </button>
       {staffOpen && (
         <nav style={navContainer}>
-          {agents.length === 0 && (
+          {staff.length === 0 && (
             <span style={{ ...link(false), color: tokens.inkFaint, fontStyle: "italic", cursor: "default" }}>
               {t("sidebar:staff.empty")}
             </span>
           )}
-          {agents.map((a) => (
-            <button
-              key={a.slug ?? a.name}
-              style={{ ...link(false), display: "flex", justifyContent: "space-between", gap: 8, background: "none", border: "none" }}
-              onClick={() => emitMention(a.name)}
-              title={t("sidebar:staff.mention_hint")}
-            >
-              <span>{a.name}</span>
-              <span style={{ color: tokens.inkFaint, fontSize: 11 }}>{a.role}</span>
-            </button>
-          ))}
+          {staff.map((a) => {
+            const active = currentAgent === (a.slug ?? a.name) || currentAgent === a.name;
+            return (
+              <button
+                key={a.slug ?? a.name}
+                style={{ ...link(active), display: "flex", justifyContent: "space-between", gap: 8, border: "none" }}
+                onClick={() => requestAgentSwitch(a.name)}
+                title={t("sidebar:staff.switch_hint")}
+                aria-pressed={active}
+              >
+                <span>{a.name}</span>
+                <span style={{ color: tokens.inkFaint, fontSize: 11 }}>{a.role}</span>
+              </button>
+            );
+          })}
         </nav>
+      )}
+
+      {/* Roles & agents — recruited specialists; click injects @mention */}
+      {specialists.length > 0 && (
+        <>
+          <p style={sectionHeader}>{t("sidebar:section.roles")}</p>
+          <nav style={navContainer}>
+            {specialists.map((a) => (
+              <button
+                key={a.slug ?? a.name}
+                style={{ ...link(false), display: "flex", justifyContent: "space-between", gap: 8, background: "none", border: "none" }}
+                onClick={() => emitMention(a.name)}
+                title={t("sidebar:staff.mention_hint")}
+              >
+                <span>{a.name}</span>
+                <span style={{ color: tokens.inkFaint, fontSize: 11 }}>{a.role}</span>
+              </button>
+            ))}
+          </nav>
+        </>
       )}
 
       {/* Library — docs + feuillet counts */}

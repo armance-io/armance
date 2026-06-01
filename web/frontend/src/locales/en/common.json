@@ -120,7 +120,8 @@
     },
     "agents": {
       "label": "Talking to",
-      "switch_aria": "Switch to"
+      "switch_aria": "Switch to",
+      "switched": "OK — switched to {name}"
     },
     "error": {
       "turn_failed": "The response failed. Please try again."
@@ -315,11 +316,13 @@
     },
     "section": {
       "staff": "Staff",
-      "library": "Library"
+      "library": "Library",
+      "roles": "Roles & agents"
     },
     "staff": {
       "empty": "No specialists yet",
-      "mention_hint": "Insert a mention in your message"
+      "mention_hint": "Insert a mention in your message",
+      "switch_hint": "Switch to this agent"
     },
     "library": {
       "docs": "Documents",

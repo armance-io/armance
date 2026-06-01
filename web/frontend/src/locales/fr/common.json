@@ -120,7 +120,8 @@
     },
     "agents": {
       "label": "Interlocuteur",
-      "switch_aria": "Basculer vers"
+      "switch_aria": "Basculer vers",
+      "switched": "OK — basculé sur {name}"
     },
     "error": {
       "turn_failed": "La réponse a échoué. Veuillez réessayer."
@@ -315,11 +316,13 @@
     },
     "section": {
       "staff": "Équipe",
-      "library": "Bibliothèque"
+      "library": "Bibliothèque",
+      "roles": "Rôles & agents"
     },
     "staff": {
       "empty": "Aucun spécialiste pour l'instant",
-      "mention_hint": "Insérer une mention dans votre message"
+      "mention_hint": "Insérer une mention dans votre message",
+      "switch_hint": "Basculer sur cet agent"
     },
     "library": {
       "docs": "Documents",
