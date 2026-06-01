@@ -1,12 +1,15 @@
 "use client";
 
 import { type CSSProperties, type FC, useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useLatestSession } from "@/lib/useLatestSession";
 import { getAdminAgents, getLibrary } from "@/lib/api";
 import { emitMention } from "@/lib/mentionBus";
 import { requestAgentSwitch, useCurrentAgent, useBusyAgent } from "@/lib/agentBus";
 import { tokens } from "../_shared/armance-tokens";
+import { PulseDot } from "../_shared/PulseDot";
 
 export interface SidebarNavProps {
   t: (key: string) => string;
@@ -35,6 +38,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
   const [staffOpen, toggleStaff] = usePersistedOpen(KEY_STAFF, true);
   const [rolesOpen, toggleRoles] = usePersistedOpen(KEY_ROLES, true);
 
+  const router = useRouter();
   const currentAgent = useCurrentAgent();
   const busyAgent = useBusyAgent();
 
@@ -104,7 +108,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
     if (onConversation) {
       requestAgentSwitch(firstName);
     } else if (sid) {
-      window.location.href = `${sessionPath()}?switch=${encodeURIComponent(firstName)}`;
+      router.push(`${sessionPath()}?switch=${encodeURIComponent(firstName)}`);
     }
   };
 
@@ -122,14 +126,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
         title={isStaff ? t("sidebar:staff.switch_hint") : t("sidebar:staff.mention_hint")}
         aria-pressed={active}
       >
-        <span
-          aria-hidden="true"
-          style={{
-            width: 8, height: 8, borderRadius: "999px", flexShrink: 0,
-            background: discColour,
-            animation: thinking ? "armance-disc-pulse 1.8s ease-in-out infinite" : "none",
-          }}
-        />
+        <PulseDot size={8} color={discColour} active={thinking} />
         <span style={{ flex: 1 }}>{a.name}</span>
         <span style={{ color: tokens.inkFaint, fontSize: 11 }}>{a.role}</span>
       </button>
@@ -141,7 +138,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
       {/* 1 · Library — L0 with TUI-style subtitle, no sub-items */}
       <p style={sectionHeader}>{t("sidebar:section.library")}</p>
       <nav style={navContainer}>
-        <a
+        <Link
           href={sid ? sessionPath("/library") : "#"}
           style={{ ...link(isTabActive("library")), display: "flex", flexDirection: "column", gap: 2, alignItems: "flex-start" }}
           onClick={(e) => { if (!sid) e.preventDefault(); }}
@@ -150,7 +147,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
           <span style={{ color: tokens.inkFaint, fontFamily: tokens.ffMono, fontSize: 10 }}>
             {librarySubtitle()}
           </span>
-        </a>
+        </Link>
       </nav>
 
       {/* 2 · Staff — permanent team; click = switch + go to conversation */}
@@ -187,21 +184,21 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
       {/* 4 · Workspace — Workflows only */}
       <p style={sectionHeader}>{t("sidebar:nav_section.workspace")}</p>
       <nav style={navContainer}>
-        <a
+        <Link
           href={sid ? sessionPath("/workflows/_") : "#"}
           style={link(isTabActive("workflows"))}
           onClick={(e) => { if (!sid) e.preventDefault(); }}
         >
           {t("sidebar:tabs.workflows")}
-        </a>
+        </Link>
       </nav>
 
       {/* 5 · Admin */}
       <p style={sectionHeader}>{t("sidebar:nav_section.account")}</p>
       <nav style={navContainer}>
-        <a href={`/projects/${pid}/admin`} style={link(isTabActive("admin"))}>
+        <Link href={`/projects/${pid}/admin`} style={link(isTabActive("admin"))}>
           {t("sidebar:tabs.settings")}
-        </a>
+        </Link>
       </nav>
     </div>
   );

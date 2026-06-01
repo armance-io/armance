@@ -60,8 +60,27 @@ export default function WorkflowView() {
     textTransform: "uppercase", color: tokens.inkFaint, margin: "0 0 8px",
   };
 
-  // No AppShell `sidebar` prop: Past runs lives in-page (under the title),
-  // not appended to the bottom of the global nav.
+  // No real workflow yet → the empty state takes the whole page. Nothing else
+  // (no graph fixtures, no launcher) until Kim designs one.
+  if (workflowsFetched && !workflowExists) {
+    return (
+      <AppShell t={t}>
+        <div
+          style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40, gap: 14, textAlign: "center" }}
+          data-testid="no-workflow-state"
+        >
+          <div style={{ fontFamily: tokens.ffSerif, fontSize: 22, color: tokens.ink, fontWeight: 500 }}>
+            {t("workflow:empty.title")}
+          </div>
+          <div style={{ fontFamily: tokens.ffSans, fontSize: 14, color: tokens.inkSoft, maxWidth: 360, lineHeight: 1.6 }}>
+            {t("workflow:empty.hint")}
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
+  // No AppShell `sidebar` prop: Past runs lives in-page (under the title).
   return (
     <AppShell t={t}>
       <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
@@ -74,13 +93,10 @@ export default function WorkflowView() {
             )}
           </div>
 
-          {/* Past runs — under the workflow title (not the global sidebar) */}
-          {workflowExists && (
-            <section>
-              <p style={sectionLabel}>{t("workflow:runs.title")}</p>
-              <RunHistoryContainer pid={pid} sid={sid} workflowName={workflowName} />
-            </section>
-          )}
+          <section>
+            <p style={sectionLabel}>{t("workflow:runs.title")}</p>
+            <RunHistoryContainer pid={pid} sid={sid} workflowName={workflowName} />
+          </section>
 
           <WorkflowGraphContainer pid={pid} sid={sid} workflowName={workflowName} runId={activeRunId} />
         </div>
@@ -89,7 +105,7 @@ export default function WorkflowView() {
         <div style={{ width: 420, height: "100%", borderLeft: `1px solid ${tokens.rule}`, display: "flex", flexDirection: "column", overflow: "auto" }}>
           {activeRunId ? (
             <LivePanelContainer pid={pid} sid={sid} workflowName={workflowName} runId={activeRunId} />
-          ) : workflowExists ? (
+          ) : (
             <div style={{ flex: 1, overflow: "auto" }}>
               <DepthPicker workflowName={workflowName} onLaunch={handleLaunch} t={t} />
               {launching && (
@@ -97,15 +113,6 @@ export default function WorkflowView() {
                   {t("workflow:launch.in_progress")}
                 </div>
               )}
-            </div>
-          ) : (
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, gap: 12, textAlign: "center" }} data-testid="no-workflow-state">
-              <div style={{ fontFamily: tokens.ffSerif, fontSize: 16, color: tokens.ink, fontWeight: 500 }}>
-                {t("workflow:empty.title")}
-              </div>
-              <div style={{ fontFamily: tokens.ffSans, fontSize: 13, color: tokens.inkSoft, maxWidth: 260, lineHeight: 1.5 }}>
-                {t("workflow:empty.hint")}
-              </div>
             </div>
           )}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface SseEvent {
   name: string;
@@ -29,6 +29,12 @@ export function useEventStream(
   const [connected, setConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState<SseEvent | null>(null);
 
+  // Keep the latest callback in a ref so the EventSource is NOT torn down and
+  // recreated whenever onEvent's identity changes (e.g. once `agents` loads).
+  // A reconnect mid-turn used to drop turn.completed → the input stayed stuck.
+  const cbRef = useRef(onEvent);
+  cbRef.current = onEvent;
+
   useEffect(() => {
     if (!sid) return;
     const url = `/api/projects/${pid}/sessions/${sid}/events`;
@@ -44,17 +50,15 @@ export function useEventStream(
           data: parsed,
         };
         setLastEvent(evt);
-        onEvent?.(evt);
+        cbRef.current?.(evt);
       } catch {
         /* malformed payload — ignore */
       }
     }
 
-    // Named events (sse_starlette emits event: <name> field).
     for (const name of SSE_EVENT_NAMES) {
       source.addEventListener(name, handleRaw);
     }
-    // Fallback for any unnamed events.
     source.onmessage = handleRaw;
 
     return () => {
@@ -63,7 +67,7 @@ export function useEventStream(
       }
       source.close();
     };
-  }, [pid, sid, onEvent]);
+  }, [pid, sid]);
 
   return { connected, lastEvent };
 }

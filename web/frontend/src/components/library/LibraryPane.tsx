@@ -7,6 +7,7 @@ import {
 } from "react";
 
 import { EmptyLibrary } from "../visual/EmptyState/EmptyLibrary";
+import { PulseDot } from "../_shared/PulseDot";
 import { type Doc, type DocFormat, type DocStatus } from "@/lib/api";
 
 export interface LibraryPaneProps {
@@ -262,13 +263,7 @@ export const LibraryPane: FC<LibraryPaneProps> = ({
                 ) : null}
 
                 {/* Busy indicator while an action runs */}
-                {b && (
-                  <span aria-hidden="true" style={{
-                    width: "10px", height: "10px", borderRadius: "999px", flexShrink: 0,
-                    border: `2px solid var(--accent-soft,#b7a4c9)`, borderTopColor: "var(--accent,#6b4f8a)",
-                    animation: "armance-spin 0.7s linear infinite",
-                  }} />
-                )}
+                {b && <PulseDot size={8} />}
 
                 {/* Actions */}
                 <div style={{ display: "flex", gap: "4px", flexShrink: 0, marginLeft: "4px" }}>

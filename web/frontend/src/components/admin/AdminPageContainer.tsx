@@ -10,6 +10,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useLatestSession } from "@/lib/useLatestSession";
 import { tokens } from "../_shared/armance-tokens";
+import { PulseDot } from "../_shared/PulseDot";
 import { ConfigForm, type ConfigValues } from "./ConfigForm";
 import { SecretsList, type SecretEntry } from "./SecretsList";
 import { LogViewer, type LogEntry } from "./LogViewer";
@@ -310,14 +311,7 @@ const LogsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
             fontFamily: tokens.ffMono, fontSize: 11, color: tokens.inkSoft,
           }}
         >
-          <span
-            aria-hidden="true"
-            style={{
-              width: 7, height: 7, borderRadius: "50%",
-              background: "var(--accent, #6b4f8a)",
-              animation: "armance-toast-in 1.2s ease-in-out infinite alternate",
-            }}
-          />
+          <PulseDot />
           {t("admin:logs.live")}
         </span>
       </div>

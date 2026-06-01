@@ -6,7 +6,10 @@ import { AppShell } from "../AppShell";
 
 // SidebarNav reads the route via next/navigation; HeaderMetrics + SidebarNav
 // query the API. Provide a pathname + a QueryClient so AppShell renders.
-vi.mock("next/navigation", () => ({ usePathname: () => "/projects/default/sessions/s1" }));
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/projects/default/sessions/s1",
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
+}));
 
 function renderShell(ui: ReactNode) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
