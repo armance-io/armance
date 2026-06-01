@@ -122,6 +122,14 @@
       "hint_interactive": "Mona pedirá tu orientación en los umbrales de decisión clave.",
       "hint_autonomous": "Mona gestiona puntos de control autónomos para entregar la síntesis.",
       "launch": "Lanzar"
+    },
+    "runs": {
+      "title": "Ejecuciones anteriores"
+    },
+    "launch": {
+      "started": "Ejecución lanzada: {id}",
+      "error": "No se pudo lanzar la ejecución.",
+      "in_progress": "Lanzando…"
     }
   },
   "chat": {

@@ -292,6 +292,14 @@
     "empty": {
       "title": "Aucun workflow conçu.",
       "hint": "Demandez à Kim d'en concevoir un via le chat."
+    },
+    "runs": {
+      "title": "Exécutions passées"
+    },
+    "launch": {
+      "started": "Exécution lancée : {id}",
+      "error": "Impossible de lancer l'exécution.",
+      "in_progress": "Lancement…"
     }
   },
   "hypotheses": {
