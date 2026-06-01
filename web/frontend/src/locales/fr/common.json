@@ -56,7 +56,8 @@
       "co2e_aria": "Empreinte carbone (gCO₂e)",
       "water_aria": "Empreinte eau (mL)",
       "tokens_in_aria": "Jetons entrants",
-      "tokens_out_aria": "Jetons sortants"
+      "tokens_out_aria": "Jetons sortants",
+      "model_aria": "Modèle utilisé (agent sélectionné)"
     }
   },
   "library": {
@@ -468,7 +469,8 @@
       "title": "Sessions (plus récentes d'abord)",
       "empty": "Aucune session précédente",
       "summary": "{turns} tours · ~{tokens} jetons",
-      "locked_aria": "Session active (verrouillée après le premier message)"
+      "locked_aria": "Session active (verrouillée après le premier message)",
+      "id_label": "Session ID"
     }
   }
 }

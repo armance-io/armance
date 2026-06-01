@@ -56,7 +56,8 @@
       "co2e_aria": "Carbon footprint (gCO₂e)",
       "water_aria": "Water footprint (mL)",
       "tokens_in_aria": "Tokens in",
-      "tokens_out_aria": "Tokens out"
+      "tokens_out_aria": "Tokens out",
+      "model_aria": "Model in use (selected agent)"
     }
   },
   "library": {
@@ -468,7 +469,8 @@
       "title": "Sessions (newest first)",
       "empty": "No previous sessions",
       "summary": "{turns} turns · ~{tokens} tk",
-      "locked_aria": "Active session (locked after first message)"
+      "locked_aria": "Active session (locked after first message)",
+      "id_label": "Session ID"
     }
   }
 }

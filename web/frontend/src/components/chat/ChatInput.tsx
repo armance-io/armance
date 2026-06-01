@@ -54,7 +54,9 @@ export const ChatInput: FC<ChatInputProps> = ({
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      // Enter sends; Shift+Enter inserts a newline (so ``` fences, inline
+      // `code`, and "- bullet" lists are easy to type over multiple lines).
+      if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleSubmit();
       }

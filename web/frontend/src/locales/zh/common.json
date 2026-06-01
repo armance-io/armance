@@ -16,7 +16,8 @@
       "co2e_aria": "碳足迹 (gCO₂e)",
       "water_aria": "水足迹 (mL)",
       "tokens_in_aria": "输入令牌",
-      "tokens_out_aria": "输出令牌"
+      "tokens_out_aria": "输出令牌",
+      "model_aria": "使用的模型（所选智能体）"
     }
   },
   "checkpoint": {
@@ -148,7 +149,8 @@
       "title": "会话（最新优先）",
       "empty": "没有以往会话",
       "summary": "{turns} 轮 · ~{tokens} tk",
-      "locked_aria": "当前会话（首条消息后锁定）"
+      "locked_aria": "当前会话（首条消息后锁定）",
+      "id_label": "会话 ID"
     }
   }
 }
