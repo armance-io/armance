@@ -12,6 +12,7 @@ import re
 
 from armance.nls import t
 from armance.service.agent_sandbox import scrub_reply
+from armance.service.agent_visibility import visible_turns
 from armance.service.agents.specialist_runner import run_specialist
 from armance.service.chat_handlers.common import resolve_agent_path, set_status
 from armance.service.library_ops import intercept_library_status
@@ -20,7 +21,6 @@ from armance.service.loop_context import LoopContext
 logger = logging.getLogger(__name__)
 
 
-_MALIK_AGENTS = {"system-hr", "malik"}
 _KNOWN_RECRUIT_KEYS = ["name", "persona", "domain", "description", "model", "provider", "role"]
 _FENCE_AGENTS_RE = re.compile(r"```(?:yaml)?\s*\n(agents:.*?)\n```", re.DOTALL)
 _TOOL_CALL_RECRUIT_RE = re.compile(
@@ -51,7 +51,7 @@ async def cmd_hr_chat(text: str, ctx: LoopContext) -> str:
         task = Task(
             prompt=text, domain="meta", mode="light", requested_agent=agent_name,
         )
-        history = _filter_history(ctx, agent_name)
+        history = visible_turns(ctx.session.conversation.turns, agent_name)
         ctx.session.conversation.append("user", text, agent=agent_name)
         hr_report = await run_specialist(
             hr_agent,
@@ -81,16 +81,6 @@ async def cmd_hr_chat(text: str, ctx: LoopContext) -> str:
     ctx.session.save()
     ctx._last_output = reply
     return reply
-
-
-def _filter_history(ctx: LoopContext, agent_name: str) -> list[dict[str, str]]:
-    """Keep only Malik-relevant turns to prevent cross-agent persona bleed."""
-    out: list[dict[str, str]] = []
-    for turn in ctx.session.conversation.turns:
-        norm = (turn.agent or "").lower().replace("system-", "")
-        if turn.role == "user" or norm in _MALIK_AGENTS or turn.agent == agent_name:
-            out.append({"role": turn.role, "content": turn.content})
-    return out
 
 
 _TIER_GEMS = {"free": "🟢", "low": "🟡", "medium": "🟠", "high": "🔴"}
