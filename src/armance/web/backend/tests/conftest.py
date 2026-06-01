@@ -18,11 +18,15 @@ def armance_root(tmp_path: Path) -> Path:
     """Create a minimal .armance directory for testing."""
     root = tmp_path / ".armance"
     root.mkdir()
-    # Create a minimal config.yaml so the sessions route works.
-    config_path = tmp_path / "config.yaml"
+    # Config lives in .armance/ (same path load_config reads + _check_initialised
+    # checks). A provider so the session route can build a client.
+    config_path = root / "config.yaml"
     config_path.write_text(
         "language: en\n"
-        "model: gpt-4o-mini\n",
+        "default_provider: openrouter\n"
+        "default_model: gpt-4o-mini\n"
+        "providers:\n"
+        "  - name: openrouter\n",
         encoding="utf-8",
     )
     return root
