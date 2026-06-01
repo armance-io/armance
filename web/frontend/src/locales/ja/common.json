@@ -136,7 +136,7 @@
     "agents": {
       "label": "話し相手",
       "switch_aria": "切り替え",
-      "switched": "OK — {name} に切り替えました"
+      "switched": "対話相手: {name}"
     },
     "error": {
       "turn_failed": "応答に失敗しました。もう一度お試しください。"
