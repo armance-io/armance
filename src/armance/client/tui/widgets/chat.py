@@ -28,10 +28,11 @@ _ROLE_COLORS: dict[str, str] = {
 # Fixed colors for meta staff — muted shades of the warm family, no flash.
 # Must match sidebar._META_COLORS exactly.
 _META_AGENT_COLORS: dict[str, str] = {
-    "armance":  "#bc9392",   # rose poussière
-    "malik":    "#b29267",   # ocre
-    "kim":      "#94ac98",   # sauge
-    "mona":     "#c5aa72",   # ambre passé
+    "armance":  "#4a3666",   # violet profond
+    "malik":    "#6b4f8a",   # violet moyen
+    "kim":      "#b7a4c9",   # violet doux
+    "mona":     "#7a5da4",   # violet Mona
+    "serge":    "#3a2b54",   # violet très sombre
 }
 
 # Default labels per role (used when no custom label given)
