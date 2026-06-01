@@ -15,6 +15,21 @@ export interface MessageBubbleProps {
   t: (key: string) => string;
 }
 
+function isSwitchMessage(markdown: string): boolean {
+  if (!markdown) return false;
+  const lc = markdown.toLowerCase();
+  return ["votre interlocuteur", "your interlocutor", "gesprächspartner", "su interlocutor", "対話相手", "您的对话者", "basculé sur", "switched to", "gewechselt", "cambiado a", "切り替えました", "已切换到"].some(kw => lc.includes(kw));
+}
+
+function formatSwitchMessage(markdown: string, t: (k: string) => string): string {
+  if (!markdown) return markdown;
+  const lc = markdown.toLowerCase();
+  if (["votre interlocuteur", "your interlocutor", "gesprächspartner", "su interlocutor", "対話相手", "您的对话者"].some(kw => lc.includes(kw))) return markdown;
+  const names = ["Malik", "Kim", "Serge", "Mona", "Armance"];
+  const matched = names.find(name => markdown.includes(name));
+  return matched ? t("chat:agents.switched").replace("{name}", matched) : markdown;
+}
+
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
 export const MessageBubble: FC<MessageBubbleProps> = ({
@@ -37,7 +52,8 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
     });
   }, [markdown]);
 
-  const isSystemSwitch = agentName === "system" && !markdown.startsWith("⚠");
+  const isSystemSwitch = (agentName === "system" && !markdown.startsWith("⚠")) || (role === "agent" && isSwitchMessage(markdown));
+  const displayMarkdown = isSystemSwitch ? formatSwitchMessage(markdown, t) : markdown;
 
   if (isSystemSwitch) {
     return (
@@ -62,7 +78,7 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
             whiteSpace: "nowrap",
           }}
         >
-          {markdown}
+          {displayMarkdown}
         </span>
         <div style={{ flex: 1, height: "1px", background: "var(--rule, #d6c8ad)", opacity: 0.8 }} />
       </div>

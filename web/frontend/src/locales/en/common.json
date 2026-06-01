@@ -123,7 +123,7 @@
     "agents": {
       "label": "Talking to",
       "switch_aria": "Switch to",
-      "switched": "OK — switched to {name}"
+      "switched": "Your interlocutor: {name}"
     },
     "error": {
       "turn_failed": "The response failed. Please try again."

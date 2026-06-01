@@ -149,7 +149,7 @@ export const LogViewer: FC<LogViewerProps> = ({
         />
       </div>
 
-      <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+      <div ref={scrollRef} style={{ flex: "1 1 0%", minHeight: 0, height: "500px", overflowY: "auto" }}>
         {filtered.map((e) => (
           <LogRow
             key={e.id}

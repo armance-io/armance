@@ -186,6 +186,7 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
   // stays, only the active agent changes (+ a "basculé sur X" acknowledgement).
   const onSelectAgent = useCallback(
     async (firstName: string) => {
+      setSending(true);
       const agentInfo = agents.find((a) => a.first_name === firstName);
       const slug = agentInfo?.name ?? firstName;
       setCurrentAgent(slug);
@@ -202,7 +203,13 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
           streaming: false,
         },
       ]);
-      await submitTurn(pid, sid, `@${firstName}`).catch(() => null);
+      try {
+        await submitTurn(pid, sid, `@${firstName}`);
+      } catch (err) {
+        console.error("Failed to switch agent:", err);
+      } finally {
+        setSending(false);
+      }
     },
     [pid, sid, agents, nextId, t],
   );

@@ -123,7 +123,7 @@
     "agents": {
       "label": "Interlocuteur",
       "switch_aria": "Basculer vers",
-      "switched": "OK — basculé sur {name}"
+      "switched": "Votre interlocuteur : {name}"
     },
     "error": {
       "turn_failed": "La réponse a échoué. Veuillez réessayer."

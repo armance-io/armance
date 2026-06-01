@@ -136,7 +136,7 @@
     "agents": {
       "label": "Hablando con",
       "switch_aria": "Cambiar a",
-      "switched": "OK — cambiado a {name}"
+      "switched": "Su interlocutor: {name}"
     },
     "error": {
       "turn_failed": "La respuesta falló. Por favor, inténtelo de nuevo."

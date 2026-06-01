@@ -136,7 +136,7 @@
     "agents": {
       "label": "对话对象",
       "switch_aria": "切换到",
-      "switched": "好的 — 已切换到 {name}"
+      "switched": "您的对话者: {name}"
     },
     "error": {
       "turn_failed": "响应失败，请重试。"

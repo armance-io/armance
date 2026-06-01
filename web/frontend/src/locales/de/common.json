@@ -136,7 +136,7 @@
     "agents": {
       "label": "Spricht mit",
       "switch_aria": "Wechseln zu",
-      "switched": "OK — zu {name} gewechselt"
+      "switched": "Ihr Gesprächspartner: {name}"
     },
     "error": {
       "turn_failed": "Antwort fehlgeschlagen. Bitte erneut versuchen."
