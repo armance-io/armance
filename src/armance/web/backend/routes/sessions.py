@@ -16,7 +16,7 @@ from armance.config import load_config, ensure_armance_tree
 from armance.nls import set_language
 from armance.platform.events import LocalEventBus
 from armance.platform.user import get_current_user
-from armance.service.llm_service import TokenLedger, set_ledger
+from armance.service.llm_service import TokenLedger, set_ledger, set_current_session_id
 from armance.service.session import start_or_resume, Session, load_state, latest_session_id, list_sessions
 from armance.service.tui_bridge import make_loop_context, META_AGENTS
 
@@ -74,6 +74,9 @@ def _load_web_session(
     ledger_path = Path(state.ledger_path) if state.ledger_path else None
     ledger = TokenLedger(persist_path=ledger_path) if ledger_path else TokenLedger()
     set_ledger(ledger)
+    # Prefix llm_exchanges logs per session, exactly like the TUI — otherwise
+    # web exchanges land in the unprefixed .armance/logs/llm_exchanges.jsonl.
+    set_current_session_id(state.id)
 
     log_path = armance_root / "sessions" / state.id / "events.log"
     bus = LocalEventBus(log_path=log_path)

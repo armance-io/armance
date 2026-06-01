@@ -16,7 +16,8 @@
       "co2e_aria": "CO₂-Fußabdruck (gCO₂e)",
       "water_aria": "Wasser-Fußabdruck (mL)",
       "tokens_in_aria": "Eingangs-Tokens",
-      "tokens_out_aria": "Ausgangs-Tokens"
+      "tokens_out_aria": "Ausgangs-Tokens",
+      "model_aria": "Verwendetes Modell (gewählter Agent)"
     }
   },
   "checkpoint": {
@@ -148,7 +149,8 @@
       "title": "Sitzungen (neueste zuerst)",
       "empty": "Keine früheren Sitzungen",
       "summary": "{turns} Runden · ~{tokens} tk",
-      "locked_aria": "Aktive Sitzung (nach erster Nachricht gesperrt)"
+      "locked_aria": "Aktive Sitzung (nach erster Nachricht gesperrt)",
+      "id_label": "Sitzungs-ID"
     }
   }
 }

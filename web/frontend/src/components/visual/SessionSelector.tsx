@@ -37,10 +37,12 @@ export const SessionSelector: FC<{ t: (k: string) => string }> = ({ t }) => {
     fontFamily: tokens.ffMono, fontSize: 11, cursor: locked ? "default" : "pointer",
   };
 
+  const idLabel = `${t("session:selector.id_label")}: ${shortId(sid)}`;
+
   if (locked) {
     return (
       <span style={{ ...pill, cursor: "default" }} title={t("session:selector.locked_aria")} data-testid="session-selector-locked">
-        {shortId(sid)}
+        {idLabel}
       </span>
     );
   }
@@ -48,7 +50,7 @@ export const SessionSelector: FC<{ t: (k: string) => string }> = ({ t }) => {
   return (
     <div style={{ position: "relative" }} data-testid="session-selector">
       <button type="button" style={pill} onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        {shortId(sid)}
+        {idLabel}
         <span aria-hidden="true">{open ? "▴" : "▾"}</span>
       </button>
       {open && (

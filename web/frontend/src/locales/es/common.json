@@ -16,7 +16,8 @@
       "co2e_aria": "Huella de carbono (gCO₂e)",
       "water_aria": "Huella hídrica (mL)",
       "tokens_in_aria": "Tokens de entrada",
-      "tokens_out_aria": "Tokens de salida"
+      "tokens_out_aria": "Tokens de salida",
+      "model_aria": "Modelo en uso (agente seleccionado)"
     }
   },
   "checkpoint": {
@@ -148,7 +149,8 @@
       "title": "Sesiones (más recientes primero)",
       "empty": "Sin sesiones anteriores",
       "summary": "{turns} turnos · ~{tokens} tk",
-      "locked_aria": "Sesión activa (bloqueada tras el primer mensaje)"
+      "locked_aria": "Sesión activa (bloqueada tras el primer mensaje)",
+      "id_label": "ID de sesión"
     }
   }
 }

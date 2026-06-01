@@ -10,6 +10,7 @@ import {
 import { ThemeToggle } from "./ThemeToggle";
 import { SidebarNav } from "./SidebarNav";
 import { HeaderMetrics } from "./HeaderMetrics";
+import { HeaderModel } from "./HeaderModel";
 import { SessionSelector } from "./SessionSelector";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
@@ -228,7 +229,8 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
           <SessionSelector t={t} />
         </div>
 
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "20px" }}>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "16px" }}>
+          <HeaderModel t={t} />
           <HeaderMetrics t={t} />
           <ThemeToggle t={t} />
         </div>
