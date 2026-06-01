@@ -56,6 +56,23 @@ export const LogViewer: FC<LogViewerProps> = ({
     return () => el.removeEventListener("scroll", onScroll);
   }, [loadMore, hasMore]);
 
+  // Live tail: auto-scroll to the bottom when new entries arrive, unless the
+  // user has scrolled up to read history (then leave their position alone).
+  const atBottomRef = useRef(true);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const track = () => {
+      atBottomRef.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
+    };
+    el.addEventListener("scroll", track);
+    return () => el.removeEventListener("scroll", track);
+  }, []);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el && atBottomRef.current) el.scrollTop = el.scrollHeight;
+  }, [filtered.length]);
+
   const toggle = (id: string) => {
     setExpanded((s) => {
       const next = new Set(s);

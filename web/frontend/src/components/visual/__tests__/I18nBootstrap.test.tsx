@@ -4,7 +4,15 @@ import { I18nBootstrap } from "../I18nBootstrap";
 
 // Mock i18n
 vi.mock("@/lib/i18n", () => ({
-  ensureI18n: vi.fn(),
+  ensureI18n: vi.fn(() => ({
+    language: "en",
+    changeLanguage: vi.fn(),
+  })),
+}));
+
+// Mock api
+vi.mock("@/lib/api", () => ({
+  getAdminConfig: vi.fn(() => Promise.resolve({ language: "fr" })),
 }));
 
 import { ensureI18n } from "@/lib/i18n";
@@ -14,7 +22,7 @@ describe("I18nBootstrap", () => {
     vi.restoreAllMocks();
   });
 
-  it("calls ensureI18n on mount and renders children", () => {
+  it("calls ensureI18n on mount and renders children", async () => {
     render(
       <I18nBootstrap>
         <span data-testid="child">Hello World</span>
@@ -22,6 +30,7 @@ describe("I18nBootstrap", () => {
     );
 
     expect(ensureI18n).toHaveBeenCalled();
-    expect(screen.getByTestId("child").textContent).toBe("Hello World");
+    const child = await screen.findByTestId("child");
+    expect(child.textContent).toBe("Hello World");
   });
 });

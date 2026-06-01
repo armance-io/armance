@@ -3,7 +3,6 @@
 import { type CSSProperties, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { AppShell } from "@/components/visual/AppShell";
 import { DepthPicker } from "@/components/workflow/DepthPicker";
 import { WorkflowGraphContainer } from "@/components/workflow/WorkflowGraphContainer";
 import { InterruptButtonContainer } from "@/components/workflow/InterruptButtonContainer";
@@ -64,26 +63,23 @@ export default function WorkflowView() {
   // (no graph fixtures, no launcher) until Kim designs one.
   if (workflowsFetched && !workflowExists) {
     return (
-      <AppShell t={t}>
-        <div
-          style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40, gap: 14, textAlign: "center" }}
-          data-testid="no-workflow-state"
-        >
-          <div style={{ fontFamily: tokens.ffSerif, fontSize: 22, color: tokens.ink, fontWeight: 500 }}>
-            {t("workflow:empty.title")}
-          </div>
-          <div style={{ fontFamily: tokens.ffSans, fontSize: 14, color: tokens.inkSoft, maxWidth: 360, lineHeight: 1.6 }}>
-            {t("workflow:empty.hint")}
-          </div>
+      <div
+        style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40, gap: 14, textAlign: "center" }}
+        data-testid="no-workflow-state"
+      >
+        <div style={{ fontFamily: tokens.ffSerif, fontSize: 22, color: tokens.ink, fontWeight: 500 }}>
+          {t("workflow:empty.title")}
         </div>
-      </AppShell>
+        <div style={{ fontFamily: tokens.ffSans, fontSize: 14, color: tokens.inkSoft, maxWidth: 360, lineHeight: 1.6 }}>
+          {t("workflow:empty.hint")}
+        </div>
+      </div>
     );
   }
 
-  // No AppShell `sidebar` prop: Past runs lives in-page (under the title).
+  // Past runs lives in-page (under the title), not in the global sidebar.
   return (
-    <AppShell t={t}>
-      <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
+    <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
         {/* Centre */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 24, padding: `${tokens.tabPadY} ${tokens.tabPadX}`, overflow: "auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -117,6 +113,5 @@ export default function WorkflowView() {
           )}
         </div>
       </div>
-    </AppShell>
   );
 }
