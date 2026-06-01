@@ -16,10 +16,13 @@ import { useEffect, useState } from "react";
  */
 type SwitchListener = (firstName: string) => void;
 type CurrentListener = (slugOrName: string) => void;
+type BusyListener = (busyName: string | null) => void;
 
 const switchListeners = new Set<SwitchListener>();
 const currentListeners = new Set<CurrentListener>();
+const busyListeners = new Set<BusyListener>();
 let current = "system-context"; // Armance by default
+let busyAgent: string | null = null; // the agent currently thinking (display name)
 
 export function requestAgentSwitch(firstName: string): void {
   switchListeners.forEach((fn) => fn(firstName));
@@ -42,6 +45,23 @@ export function useCurrentAgent(): string {
     currentListeners.add(setValue);
     return () => {
       currentListeners.delete(setValue);
+    };
+  }, []);
+  return value;
+}
+
+export function setBusyAgent(name: string | null): void {
+  busyAgent = name;
+  busyListeners.forEach((fn) => fn(name));
+}
+
+export function useBusyAgent(): string | null {
+  const [value, setValue] = useState(busyAgent);
+  useEffect(() => {
+    setValue(busyAgent);
+    busyListeners.add(setValue);
+    return () => {
+      busyListeners.delete(setValue);
     };
   }, []);
   return value;

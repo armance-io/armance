@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLatestSession } from "@/lib/useLatestSession";
 import { getAdminAgents, getLibrary } from "@/lib/api";
 import { emitMention } from "@/lib/mentionBus";
-import { requestAgentSwitch, useCurrentAgent } from "@/lib/agentBus";
+import { requestAgentSwitch, useCurrentAgent, useBusyAgent } from "@/lib/agentBus";
 import { tokens } from "../_shared/armance-tokens";
 
 export interface SidebarNavProps {
@@ -36,6 +36,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
   const [rolesOpen, toggleRoles] = usePersistedOpen(KEY_ROLES, true);
 
   const currentAgent = useCurrentAgent();
+  const busyAgent = useBusyAgent();
 
   const { data: agents = [] } = useQuery({
     queryKey: ["sidebar-agents", pid, sid],
@@ -107,17 +108,29 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
     }
   };
 
-  const agentRow = (a: { name: string; slug?: string; role: string }, isStaff: boolean) => {
+  const agentRow = (a: { name: string; slug?: string; role: string; model?: string }, isStaff: boolean) => {
     const active = isStaff && (currentAgent === (a.slug ?? a.name) || currentAgent === a.name);
+    const thinking = busyAgent === a.name;
+    // Dark violet = reachable (has a model); light violet = not reachable.
+    const reachable = Boolean(a.model);
+    const discColour = reachable ? "var(--accent-deep, #4a3666)" : "var(--accent-soft, #b7a4c9)";
     return (
       <button
         key={a.slug ?? a.name}
-        style={{ ...link(active), display: "flex", justifyContent: "space-between", gap: 8, background: active ? undefined : "none", border: "none" }}
+        style={{ ...link(active), display: "flex", alignItems: "center", gap: 8, background: active ? undefined : "none", border: "none" }}
         onClick={() => (isStaff ? onAgentClick(a.name) : emitMention(a.name))}
         title={isStaff ? t("sidebar:staff.switch_hint") : t("sidebar:staff.mention_hint")}
         aria-pressed={active}
       >
-        <span>{a.name}</span>
+        <span
+          aria-hidden="true"
+          style={{
+            width: 8, height: 8, borderRadius: "999px", flexShrink: 0,
+            background: discColour,
+            animation: thinking ? "armance-disc-pulse 1.8s ease-in-out infinite" : "none",
+          }}
+        />
+        <span style={{ flex: 1 }}>{a.name}</span>
         <span style={{ color: tokens.inkFaint, fontSize: 11 }}>{a.role}</span>
       </button>
     );

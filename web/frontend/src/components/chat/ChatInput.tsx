@@ -15,8 +15,6 @@ import { onMention } from "@/lib/mentionBus";
 export interface ChatInputProps {
   placeholder: string;
   disabled?: boolean;
-  busyAgentName?: string;
-  busyAgentColour?: string;
   onSubmit: (text: string) => void;
   t: (key: string) => string;
 }
@@ -26,15 +24,13 @@ export interface ChatInputProps {
 export const ChatInput: FC<ChatInputProps> = ({
   placeholder,
   disabled = false,
-  busyAgentName,
-  busyAgentColour,
   onSubmit,
   t,
 }) => {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const isBusy = !!busyAgentName;
+  // Thinking is shown only by the BottomSpinner, never inside the input.
   const canSend = value.trim().length > 0 && !disabled;
 
   /* Auto-grow textarea */
@@ -89,25 +85,6 @@ export const ChatInput: FC<ChatInputProps> = ({
     padding: "0",
   };
 
-  const busyBarStyle: CSSProperties = {
-    display: isBusy ? "flex" : "none",
-    alignItems: "center",
-    gap: "8px",
-    padding: "6px 16px",
-    fontFamily: "var(--ff-sans, 'Inter', sans-serif)",
-    fontSize: "13px",
-    fontStyle: "italic",
-    color: "var(--ink-soft, #5b5145)",
-  };
-
-  const busyDotStyle: CSSProperties = {
-    width: "6px",
-    height: "6px",
-    borderRadius: "999px",
-    background: busyAgentColour ?? "var(--accent, #6b4f8a)",
-    animation: "chatinput-pulse 1.4s ease-in-out infinite",
-    flexShrink: 0,
-  };
 
   // BUG-08: send button vertically centred with the input; wrapper background
   // matches the page (rootStyle uses --bg-paper), no contrasting box.
@@ -165,16 +142,6 @@ export const ChatInput: FC<ChatInputProps> = ({
           * { animation: none !important; transition: none !important; }
         }
       `}</style>
-
-      <div style={busyBarStyle} aria-live="polite">
-        <span style={busyDotStyle} aria-hidden="true" />
-        <span>
-          {t("chat:input.busy_label").replace(
-            "{name}",
-            busyAgentName ?? "",
-          )}
-        </span>
-      </div>
 
       <div style={inputRowStyle}>
         <textarea
