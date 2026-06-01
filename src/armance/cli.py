@@ -962,6 +962,10 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
         import webbrowser
 
         url = f"http://127.0.0.1:{web_args.port}/"
+        # Probe the API health endpoint, not `/`: the SPA shell is only served
+        # for `Accept: text/html`, but urllib sends `*/*`, so `/` would 404
+        # even when the server is up. /api/healthz always answers 200 once ready.
+        ready_url = f"http://127.0.0.1:{web_args.port}/api/healthz"
 
         def _open_when_ready() -> None:
             # BUG-15: wait until the server actually answers before opening the
@@ -969,7 +973,7 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
             deadline = time.time() + 15.0
             while time.time() < deadline:
                 try:
-                    with urllib.request.urlopen(url, timeout=1) as resp:
+                    with urllib.request.urlopen(ready_url, timeout=1) as resp:
                         if resp.status == 200:
                             webbrowser.open(url)
                             return
