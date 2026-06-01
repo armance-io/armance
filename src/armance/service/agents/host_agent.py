@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 import re
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 from armance.core.models.agent import Agent
 from armance.core.models import ContextVersion
@@ -63,11 +63,13 @@ class HostAgentService:
         config: Config,
         on_token: Callable[[str], None] | None = None,
         sandbox_role: str = "armance",
+        event_bus: "Any | None" = None,
     ) -> None:
         self.agent = agent
         self.armance_root = armance_root
         self.config = config
-        self.on_token = on_token or (lambda t: None)
+        self.on_token = on_token  # None → no-op in bridge_on_token
+        self.event_bus = event_bus
         # Per-role tag allow-list applied in dialogue(). Pass "kim" / "malik"
         # / "mona" / "specialist" to scope the available [EXECUTE:/...] tags.
         self.sandbox_role = sandbox_role
@@ -358,13 +360,27 @@ class HostAgentService:
             messages.append({"role": turn.role, "content": turn.content})
 
         client = get_client(self.agent.provider, self.config)
-        response = await call_with_ledger(
-            client,
-            self.agent.name,
-            messages,
-            self.agent.model,
-            ledger=None,
+
+        from armance.service.agents._streaming_bridge import (
+            AgentStreamingEmitter,
+            bridge_on_token,
         )
+        emitter = AgentStreamingEmitter(bus=self.event_bus, agent_name=self.agent.name)
+        await emitter.start()
+        effective_on_token = bridge_on_token(original=self.on_token, emitter=emitter)
+
+        try:
+            response = await call_with_ledger(
+                client,
+                self.agent.name,
+                messages,
+                self.agent.model,
+                ledger=None,
+                on_token=effective_on_token,
+            )
+        finally:
+            await emitter.end()
+
         full_response = response.text.strip()
         self.conversation.append("assistant", full_response)
         return full_response

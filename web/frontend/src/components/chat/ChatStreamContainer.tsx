@@ -106,8 +106,59 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
+  // ID of the in-progress streaming message, if any.
+  const streamingIdRef = useRef<string | null>(null);
+
   const handleEvent = useCallback((evt: SseEvent) => {
     const attrs = (evt.data["attributes"] as Record<string, unknown> | undefined) ?? {};
+
+    if (evt.name === "agent_streaming_started") {
+      const agent = String(attrs["agent_name"] ?? "Armance");
+      setBusy({ name: agent, colour: assignAgentColour(agent) });
+      // Create a live streaming placeholder message.
+      const id = nextId();
+      streamingIdRef.current = id;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id,
+          role: "agent" as const,
+          agentName: displayAgentName(agent),
+          agentColour: assignAgentColour(agent),
+          markdown: "",
+          timestamp: new Date().toISOString(),
+          streaming: true,
+        },
+      ]);
+      return;
+    }
+
+    if (evt.name === "agent_streaming") {
+      const partial = String(attrs["partial_text"] ?? "");
+      const streamId = streamingIdRef.current;
+      if (streamId && partial) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === streamId ? { ...m, markdown: partial } : m,
+          ),
+        );
+      }
+      return;
+    }
+
+    if (evt.name === "agent_streaming_end") {
+      // Mark the streaming message as done; turn.completed will replace it.
+      const streamId = streamingIdRef.current;
+      if (streamId) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === streamId ? { ...m, streaming: false } : m)),
+        );
+        streamingIdRef.current = null;
+      }
+      setBusy(null);
+      return;
+    }
+
     if (evt.name === "turn.completed") {
       const reply = String(attrs["reply"] ?? "");
       const agent = String(attrs["agent"] ?? "Armance");
@@ -116,51 +167,68 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
           (a) => a.first_name === agent || a.name === agent,
         );
         const next = agentInfo?.name ?? prev;
-        publishCurrentAgent(next); // keep the sidebar L2 selection in sync
+        publishCurrentAgent(next);
         return next;
       });
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: nextId(),
-          role: "agent",
-          agentName: displayAgentName(agent),
-          agentColour: assignAgentColour(agent),
-          markdown: reply,
-          timestamp: new Date().toISOString(),
-          streaming: false,
-        },
-      ]);
+      // Replace or append: if a streaming placeholder exists, update it with
+      // the authoritative full reply; otherwise append a new message.
+      const streamId = streamingIdRef.current;
+      streamingIdRef.current = null;
+      setMessages((prev) => {
+        if (streamId && prev.some((m) => m.id === streamId)) {
+          return prev.map((m) =>
+            m.id === streamId
+              ? {
+                  ...m,
+                  markdown: reply,
+                  streaming: false,
+                  agentName: displayAgentName(agent),
+                  agentColour: assignAgentColour(agent),
+                }
+              : m,
+          );
+        }
+        return [
+          ...prev,
+          {
+            id: nextId(),
+            role: "agent" as const,
+            agentName: displayAgentName(agent),
+            agentColour: assignAgentColour(agent),
+            markdown: reply,
+            timestamp: new Date().toISOString(),
+            streaming: false,
+          },
+        ];
+      });
       setBusy(null);
       setSending(false);
       return;
     }
-    if (evt.name === "agent_streaming_started") {
-      const agent = String(attrs["agent_name"] ?? "Armance");
-      setBusy({ name: agent, colour: assignAgentColour(agent) });
-      return;
-    }
-    if (evt.name === "agent_streaming_end") {
-      setBusy(null);
-      return;
-    }
+
     if (evt.name === "turn.error") {
       const err = String(attrs["error"] ?? t("chat:error.turn_failed"));
+      // Remove any partial streaming placeholder on error.
+      const streamId = streamingIdRef.current;
+      streamingIdRef.current = null;
       setBusy(null);
       setSending(false);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: nextId(),
-          role: "agent",
-          agentName: "system",
-          agentColour: "var(--danger, #a44141)",
-          markdown: `⚠ ${err}`,
-          timestamp: new Date().toISOString(),
-          streaming: false,
-          isError: true,
-        },
-      ]);
+      setMessages((prev) => {
+        const filtered = streamId ? prev.filter((m) => m.id !== streamId) : prev;
+        return [
+          ...filtered,
+          {
+            id: nextId(),
+            role: "agent" as const,
+            agentName: "system",
+            agentColour: "var(--danger, #a44141)",
+            markdown: `⚠ ${err}`,
+            timestamp: new Date().toISOString(),
+            streaming: false,
+            isError: true,
+          },
+        ];
+      });
     }
   }, [nextId, t, agents]);
 

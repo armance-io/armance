@@ -47,6 +47,7 @@ class AgentStreamingEmitter:
         self._agent = agent_name
         self._min_interval = min_interval
         self._last_emit_ts = 0.0
+        self._accumulated = ""
 
     async def start(self) -> None:
         if self._bus is None:
@@ -59,17 +60,20 @@ class AgentStreamingEmitter:
         except Exception:
             logger.exception("agent_streaming_started emit failed")
 
-    async def on_token(self, _chunk: str) -> None:
+    async def on_token(self, chunk: str) -> None:
         if self._bus is None:
             return
         now = time.monotonic()
-        if (now - self._last_emit_ts) < self._min_interval:
+        throttled = (now - self._last_emit_ts) < self._min_interval
+        self._accumulated += chunk
+        if throttled:
             return
         self._last_emit_ts = now
+        snapshot = self._accumulated
         try:
             await self._bus.emit(
                 "agent_streaming",
-                attributes={"agent_name": self._agent},
+                attributes={"agent_name": self._agent, "partial_text": snapshot},
             )
         except Exception:
             logger.exception("agent_streaming emit failed")

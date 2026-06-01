@@ -111,9 +111,10 @@ const EmpreinteTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t })
 
 const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
   const [cfg, setCfg] = useState<ConfigValues | null>(null);
+  const [modelOptions, setModelOptions] = useState<string[]>([]);
 
   useEffect(() => {
-    void getAdminConfig(pid).then((raw) => {
+    void Promise.all([getAdminConfig(pid), getProviders()]).then(([raw, prov]) => {
       setCfg({
         default_provider: String(raw.default_provider ?? "openrouter"),
         default_model: String(raw.default_model ?? ""),
@@ -121,6 +122,13 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
         language: String(raw.language ?? "en"),
         providers: (raw.providers as ConfigValues["providers"]) ?? [],
       });
+      const allModels = Object.values(
+        (prov.providers ?? {}) as Record<string, Array<{ id?: string }>>,
+      )
+        .flat()
+        .map((m) => m.id ?? "")
+        .filter(Boolean);
+      setModelOptions([...new Set(allModels)].sort());
     });
   }, [pid]);
 
@@ -138,7 +146,7 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
   if (!cfg) return null;
   return (
     <div data-testid="config-form">
-      <ConfigForm values={cfg} modelOptions={[]} languageOptions={["en", "fr"]} onSave={onSave} t={t} />
+      <ConfigForm values={cfg} modelOptions={modelOptions} languageOptions={["en", "fr"]} onSave={onSave} t={t} />
     </div>
   );
 };
