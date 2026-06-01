@@ -94,15 +94,9 @@ export const FootprintTab: FC<FootprintTabProps> = ({
                 </td>
                 <td style={td}>{bucket.calls === 0 ? "—" : `${Math.round(bucket.water_ml)} mL`}</td>
                 <td style={td}>
-                  {bucket.has_estimate ? (
-                    <span data-testid="estimate-badge" style={badge}>
-                      {t("admin:footprint.estimate")}
-                    </span>
-                  ) : (
-                    <span style={{ ...badge, background: "rgba(107, 79, 138, 0.1)" }}>
-                      {t("admin:footprint.measured")}
-                    </span>
-                  )}
+                  <span data-testid="estimate-badge" style={badge}>
+                    {t("admin:footprint.estimate")}
+                  </span>
                 </td>
               </tr>
             ))}

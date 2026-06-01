@@ -112,7 +112,8 @@ const EmpreinteTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t })
 
 const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
   const [cfg, setCfg] = useState<ConfigValues | null>(null);
-  const [modelOptions, setModelOptions] = useState<string[]>([]);
+  const [providerOptions, setProviderOptions] = useState<string[]>([]);
+  const [modelOptionsByProvider, setModelOptionsByProvider] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     void Promise.all([getAdminConfig(pid), getProviders()]).then(([raw, prov]) => {
@@ -123,13 +124,14 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
         language: String(raw.language ?? "en"),
         providers: (raw.providers as ConfigValues["providers"]) ?? [],
       });
-      const allModels = Object.values(
-        (prov.providers ?? {}) as Record<string, Array<{ id?: string }>>,
-      )
-        .flat()
-        .map((m) => m.id ?? "")
-        .filter(Boolean);
-      setModelOptions([...new Set(allModels)].sort());
+      const provs = (prov.providers ?? {}) as Record<string, Array<{ id?: string }>>;
+      setProviderOptions(Object.keys(provs).sort());
+
+      const mapped: Record<string, string[]> = {};
+      for (const [pName, mList] of Object.entries(provs)) {
+        mapped[pName] = mList.map((m) => m.id ?? "").filter(Boolean).sort();
+      }
+      setModelOptionsByProvider(mapped);
     });
   }, [pid]);
 
@@ -147,7 +149,14 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
   if (!cfg) return null;
   return (
     <div data-testid="config-form">
-      <ConfigForm values={cfg} modelOptions={modelOptions} languageOptions={["en", "fr"]} onSave={onSave} t={t} />
+      <ConfigForm
+        values={cfg}
+        providerOptions={providerOptions}
+        modelOptionsByProvider={modelOptionsByProvider}
+        languageOptions={["en", "fr"]}
+        onSave={onSave}
+        t={t}
+      />
     </div>
   );
 };
@@ -382,6 +391,7 @@ const StatsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => 
 const AgentsTab: FC<{ pid: string; sid: string | null; t: (k: string) => string }> = ({ pid, sid, t }) => {
   const [agentRecords, setAgentRecords] = useState<AgentRecord[]>([]);
   const [providers, setProviders] = useState<string[]>([]);
+  const [modelOptionsByProvider, setModelOptionsByProvider] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -404,7 +414,14 @@ const AgentsTab: FC<{ pid: string; sid: string | null; t: (k: string) => string 
             supportsReasoning: false,
           })),
         );
-        setProviders(Object.keys(prov.providers ?? {}));
+        const provs = (prov.providers ?? {}) as Record<string, Array<{ id?: string }>>;
+        setProviders(Object.keys(provs).sort());
+
+        const mapped: Record<string, string[]> = {};
+        for (const [pName, mList] of Object.entries(provs)) {
+          mapped[pName] = mList.map((m) => m.id ?? "").filter(Boolean).sort();
+        }
+        setModelOptionsByProvider(mapped);
       },
     ).catch(console.error).finally(() => setLoading(false));
   }, [pid, sid]);
@@ -435,7 +452,7 @@ const AgentsTab: FC<{ pid: string; sid: string | null; t: (k: string) => string 
       <AgentEditor
         agents={agentRecords}
         providerOptions={providers}
-        modelOptionsByProvider={{}}
+        modelOptionsByProvider={modelOptionsByProvider}
         onSave={onSave}
         t={t}
       />

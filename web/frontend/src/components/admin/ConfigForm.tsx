@@ -12,7 +12,8 @@ export interface ConfigValues {
 
 export interface ConfigFormProps {
   values: ConfigValues;
-  modelOptions: string[];
+  providerOptions: string[];
+  modelOptionsByProvider: Record<string, string[]>;
   languageOptions: string[];
   onSave: (values: ConfigValues) => Promise<void>;
   t: (key: string) => string;
@@ -22,7 +23,8 @@ const BUDGETS = ["free-first", "low", "medium", "high"] as const;
 
 export const ConfigForm: FC<ConfigFormProps> = ({
   values,
-  modelOptions,
+  providerOptions,
+  modelOptionsByProvider,
   languageOptions,
   onSave,
   t,
@@ -107,8 +109,25 @@ export const ConfigForm: FC<ConfigFormProps> = ({
       </h2>
 
       <div style={row}>
-        <label style={label}>{t("admin:config.default_provider")}</label>
-        <div style={readonlyVal}>{draft.default_provider ? providerLabel(draft.default_provider) : "—"}</div>
+         <label style={label}>{t("admin:config.default_provider")}</label>
+         <select
+           style={inputBase}
+           value={draft.default_provider}
+           onChange={(e) => {
+             const nextProv = e.target.value;
+             setDraft((d) => ({
+               ...d,
+               default_provider: nextProv,
+               default_model: "", // Clear model when provider changes to enforce cascade
+             }));
+           }}
+         >
+           {providerOptions.map((p) => (
+             <option key={p} value={p}>
+               {providerLabel(p)}
+             </option>
+           ))}
+         </select>
       </div>
 
       {/* Configured Providers Section */}
@@ -170,8 +189,8 @@ export const ConfigForm: FC<ConfigFormProps> = ({
           onChange={(e) => set("default_model", e.target.value)}
         >
           <option value="">—</option>
-          {modelOptions.map((m) => (
-            <option key={m}>{m}</option>
+          {(modelOptionsByProvider[draft.default_provider] || []).map((m) => (
+            <option key={m} value={m}>{m}</option>
           ))}
         </select>
         {errors.default_model && <span style={errStyle}>{errors.default_model}</span>}

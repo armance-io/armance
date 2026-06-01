@@ -51,7 +51,11 @@ describe("<ConfigForm />", () => {
     render(
       <ConfigForm
         values={defaultValues}
-        modelOptions={["gpt-4o", "claude-3-5"]}
+        providerOptions={["openrouter", "claude-code"]}
+        modelOptionsByProvider={{
+          openrouter: ["gpt-4o", "claude-3-5"],
+          "claude-code": ["claude-3-5-sonnet"],
+        }}
         languageOptions={["en", "fr"]}
         onSave={vi.fn()}
         t={mockT}
@@ -70,7 +74,8 @@ describe("<ConfigForm />", () => {
     render(
       <ConfigForm
         values={{ ...defaultValues, default_model: "", language: "" }}
-        modelOptions={[]}
+        providerOptions={["openrouter"]}
+        modelOptionsByProvider={{ openrouter: [] }}
         languageOptions={[]}
         onSave={handleSave}
         t={mockT}
@@ -90,7 +95,8 @@ describe("<ConfigForm />", () => {
     render(
       <ConfigForm
         values={defaultValues}
-        modelOptions={["gpt-4o"]}
+        providerOptions={["openrouter"]}
+        modelOptionsByProvider={{ openrouter: ["gpt-4o"] }}
         languageOptions={["en"]}
         onSave={handleSave}
         t={mockT}
@@ -109,7 +115,8 @@ describe("<ConfigForm />", () => {
     render(
       <ConfigForm
         values={defaultValues}
-        modelOptions={[]}
+        providerOptions={["openrouter"]}
+        modelOptionsByProvider={{ openrouter: [] }}
         languageOptions={[]}
         onSave={vi.fn()}
         t={mockT}
