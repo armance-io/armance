@@ -50,6 +50,7 @@ def _agent_row(
     default_provider: str,
     default_model: str,
     display_name: str | None = None,
+    role_override: str | None = None,
 ) -> dict[str, Any]:
     # Staff files often leave provider/model blank to inherit the project
     # defaults at runtime; surface the effective values, never a blank "-".
@@ -57,7 +58,7 @@ def _agent_row(
         "name": display_name or agent.name,
         "slug": agent.name,
         "domain": agent.domain,
-        "role": agent.role or agent.domain or "",
+        "role": role_override or agent.role or agent.domain or "",
         "provider": agent.provider or default_provider,
         "model": agent.model or default_model,
         "reasoning": agent.reasoning,
@@ -89,7 +90,7 @@ async def list_agents(
             agent = Agent.load(path)
         except Exception:  # noqa: BLE001 — skip an unreadable staff file
             continue
-        result.append(_agent_row(agent, staff=True, default_provider=dp, default_model=dm, display_name=first_name))
+        result.append(_agent_row(agent, staff=True, default_provider=dp, default_model=dm, display_name=first_name, role_override=_role))
         seen.add(agent.name)
     for agent in ws.ctx.agents:
         if agent.name in seen:

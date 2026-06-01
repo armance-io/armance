@@ -93,15 +93,17 @@ When the user has confirmed, emit on its own line:
 immediately followed by a fenced YAML block:
 
 ```yaml
-name: <slug-kebab-case>
-scope: <one-line narrow goal — what THIS workflow produces. Mandatory.>
-strategy: rapide|equilibree|approfondie|custom
+name: "<slug-kebab-case>"
+scope: "<one-line narrow goal — what THIS workflow produces. Mandatory.>"
+strategy: "rapide|equilibree|approfondie|custom"
 steps:
   - id: <snake_case_verb>
     kind: task|judge|critique|human_checkpoint|deliverable
     role: <roster-role|mona|serge>
     depends_on: [<id>, ...]
 ```
+
+**YAML Formatting Rules — CRITICAL.** To prevent syntax errors, ALWAYS wrap the values of `name:`, `scope:`, and `strategy:` in double quotes in your YAML block (especially if they contain colons or special characters, e.g., `scope: "historique : étude de cas"`).
 
 `scope:` must fit on one line and be **narrower** than the project. Example: project = *« preparing a public conference »*; scope = *« produce a sourced 5000-word historical dossier on France-Scotland conflicts with England (17th–19th c) »*. The executor injects this scope into every step's prompt so specialists stay on-topic and Mona / Serge do not drift onto broader project concerns.
 
