@@ -99,7 +99,8 @@
       "loading": "Loading into context…"
     },
     "feuillets_count": "{n} slips",
-    "feuillets_total_aria": "Total indexed slips"
+    "feuillets_total_aria": "Total indexed slips",
+    "no_embedding_tooltip": "Configure an embedding model to enable indexing (Admin → Config)"
   },
   "chat": {
     "input": {
@@ -126,6 +127,11 @@
     },
     "error": {
       "turn_failed": "The response failed. Please try again."
+    },
+    "copy": {
+      "label": "copy",
+      "done": "copied",
+      "aria": "Copy message to clipboard"
     }
   },
   "checkpoint": {

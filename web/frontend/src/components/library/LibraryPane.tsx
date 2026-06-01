@@ -13,6 +13,8 @@ export interface LibraryPaneProps {
   docs: Doc[];
   /** Total indexed slips (feuillets) across all sources. */
   totalFeuillets?: number;
+  /** False when no embedding model is configured — disables indexing actions. */
+  embeddingAvailable?: boolean;
   onImport:   (file: File)    => Promise<void>;
   onIndexAll: ()              => Promise<void>;
   onIndex:    (name: string)  => Promise<void>;
@@ -56,7 +58,7 @@ function fmtSize(b: number): string {
  * docs exist) · "Importer" (opens system file picker).
  */
 export const LibraryPane: FC<LibraryPaneProps> = ({
-  docs, totalFeuillets = 0, onImport, onIndexAll, onIndex, onLoad, onUnload, onUnindex, onDelete, t,
+  docs, totalFeuillets = 0, embeddingAvailable = true, onImport, onIndexAll, onIndex, onLoad, onUnload, onUnindex, onDelete, t,
 }) => {
   const [search,  setSearch]  = useState("");
   const [fmts,    setFmts]    = useState<Set<DocFormat>>(new Set());
@@ -122,6 +124,23 @@ export const LibraryPane: FC<LibraryPaneProps> = ({
     cursor: "pointer", transition: "all 0.15s ease",
   });
 
+  // Indexing action button — grayed out when no embedding model is configured.
+  const EmbedBtn = ({ label, onClick }: { label: string; onClick: () => void }) => (
+    <button
+      type="button"
+      disabled={busy.has(label) || !embeddingAvailable}
+      style={{
+        ...actBtnSty(),
+        opacity: embeddingAvailable ? 1 : 0.45,
+        cursor: embeddingAvailable ? "pointer" : "not-allowed",
+      }}
+      title={embeddingAvailable ? undefined : t("library:no_embedding_tooltip")}
+      onClick={() => embeddingAvailable && onClick()}
+    >
+      {label}
+    </button>
+  );
+
   /* ── Render ── */
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: P, overflow: "hidden" }}>
@@ -149,8 +168,17 @@ export const LibraryPane: FC<LibraryPaneProps> = ({
         </div>
 
         {docs.some(d => d.status === "pending") && (
-          <button type="button" style={tbBtnSty()} disabled={busy.has("__all__")}
-            onClick={() => act("__all__", onIndexAll)}>
+          <button
+            type="button"
+            style={{
+              ...tbBtnSty(),
+              opacity: embeddingAvailable ? 1 : 0.45,
+              cursor: embeddingAvailable ? "pointer" : "not-allowed",
+            }}
+            disabled={busy.has("__all__") || !embeddingAvailable}
+            title={embeddingAvailable ? undefined : t("library:no_embedding_tooltip")}
+            onClick={() => embeddingAvailable && act("__all__", onIndexAll)}
+          >
             {t("library:toolbar.index_all")}
           </button>
         )}
@@ -244,9 +272,9 @@ export const LibraryPane: FC<LibraryPaneProps> = ({
 
                 {/* Actions */}
                 <div style={{ display: "flex", gap: "4px", flexShrink: 0, marginLeft: "4px" }}>
-                  {doc.status === "pending"  && <button type="button" disabled={b} style={actBtnSty()} onClick={() => act(doc.name, () => onIndex(doc.name))}>{t("library:action.index")}</button>}
-                  {doc.status === "indexed"  && <button type="button" disabled={b} style={actBtnSty()} onClick={() => act(doc.name, () => onLoad(doc.name))}>{t("library:action.load")}</button>}
-                  {doc.status === "loaded"   && <button type="button" disabled={b} style={actBtnSty()} onClick={() => act(doc.name, () => onUnload(doc.name))}>{t("library:action.unload")}</button>}
+                  {doc.status === "pending"  && <EmbedBtn label={t("library:action.index")}  onClick={() => act(doc.name, () => onIndex(doc.name))} />}
+                  {doc.status === "indexed"  && <EmbedBtn label={t("library:action.load")}   onClick={() => act(doc.name, () => onLoad(doc.name))} />}
+                  {doc.status === "loaded"   && <EmbedBtn label={t("library:action.unload")} onClick={() => act(doc.name, () => onUnload(doc.name))} />}
                   {doc.status !== "pending"  && <button type="button" disabled={b} style={actBtnSty()} onClick={() => act(doc.name, () => onUnindex(doc.name))}>{t("library:action.unindex")}</button>}
                   <button type="button" disabled={b} style={actBtnSty(true)} onClick={() => setDel(doc.name)}>{t("library:action.delete")}</button>
                 </div>
