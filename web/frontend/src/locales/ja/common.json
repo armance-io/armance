@@ -47,7 +47,9 @@
     },
     "library": {
       "docs": "ドキュメント",
-      "feuillets": "スリップ"
+      "feuillets": "スリップ",
+      "subtitle": "{docs} 文書 · {feuillets} スリップ",
+      "inactive": "無効 — 埋め込みモデルなし"
     }
   },
   "admin": {

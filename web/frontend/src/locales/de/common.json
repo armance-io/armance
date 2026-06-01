@@ -47,7 +47,9 @@
     },
     "library": {
       "docs": "Dokumente",
-      "feuillets": "Abschnitte"
+      "feuillets": "Abschnitte",
+      "subtitle": "{docs} Dok. · {feuillets} Abschnitte",
+      "inactive": "inaktiv — kein Embedding-Modell"
     }
   },
   "admin": {

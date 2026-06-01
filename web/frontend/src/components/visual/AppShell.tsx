@@ -121,9 +121,11 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
   const actualW = collapsed ? 0 : sidebarW;
   const ease    = "cubic-bezier(0.4,0,0.2,1)";
 
+  // height (not minHeight): bound the column to the viewport so the chat
+  // scroll area is constrained and scrolls, instead of growing forever.
   const shellStyle: CSSProperties = {
     display: "flex", flexDirection: "column",
-    minHeight: "100vh",
+    height: "100vh",
     background: "var(--bg-paper,#f4ede0)",
   };
 
