@@ -2,8 +2,7 @@
 
 import { type CSSProperties, type FC, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { listSessions } from "@/lib/api";
-import { useSessionLocked } from "@/lib/sessionBus";
+import { listSessions, createSession } from "@/lib/api";
 import { useRouteParams } from "@/lib/routeParams";
 import { tokens } from "../_shared/armance-tokens";
 
@@ -18,7 +17,6 @@ function shortId(id: string): string {
 
 export const SessionSelector: FC<{ t: (k: string) => string }> = ({ t }) => {
   const { pid, sid } = useRouteParams();
-  const locked = useSessionLocked();
   const [open, setOpen] = useState(false);
 
   const { data: sessions = [] } = useQuery({
@@ -34,18 +32,10 @@ export const SessionSelector: FC<{ t: (k: string) => string }> = ({ t }) => {
     height: "28px", padding: "0 12px",
     border: `1px solid ${tokens.rule}`, borderRadius: tokens.radiusSm,
     background: tokens.bgPaperCard, color: tokens.inkSoft,
-    fontFamily: tokens.ffMono, fontSize: 11, cursor: locked ? "default" : "pointer",
+    fontFamily: tokens.ffMono, fontSize: 11, cursor: "pointer",
   };
 
   const idLabel = `${t("session:selector.id_label")}: ${shortId(sid)}`;
-
-  if (locked) {
-    return (
-      <span style={{ ...pill, cursor: "default" }} title={t("session:selector.locked_aria")} data-testid="session-selector-locked">
-        {idLabel}
-      </span>
-    );
-  }
 
   return (
     <div style={{ position: "relative" }} data-testid="session-selector">
@@ -62,6 +52,30 @@ export const SessionSelector: FC<{ t: (k: string) => string }> = ({ t }) => {
             borderRadius: tokens.radiusMd, boxShadow: tokens.shadowPop, zIndex: 60, padding: 6,
           }}
         >
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const newSession = await createSession(pid);
+                window.location.href = `/projects/${pid}/sessions/${newSession.id}`;
+              } catch (err) {
+                console.error("Failed to create new session:", err);
+              }
+            }}
+            style={{
+              display: "flex", alignItems: "center", gap: 8, padding: "8px 10px",
+              width: "100%", border: "none", background: "transparent",
+              borderRadius: tokens.radiusSm, cursor: "pointer",
+              color: tokens.accent, fontWeight: 600, textAlign: "left",
+              fontFamily: tokens.ffSans, fontSize: 12,
+              borderBottom: `1px solid ${tokens.ruleSoft || "rgba(0,0,0,0.05)"}`,
+              marginBottom: 4,
+            }}
+          >
+            <span style={{ fontSize: 14 }}>+</span>
+            <span>{t("visual:empty.session.cta")}</span>
+          </button>
+
           <div style={{ padding: "6px 10px", fontFamily: tokens.ffMono, fontSize: 9, letterSpacing: "0.12em", textTransform: "uppercase", color: tokens.inkFaint }}>
             {t("session:selector.title")}
           </div>
