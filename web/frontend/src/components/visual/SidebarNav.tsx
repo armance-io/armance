@@ -2,7 +2,6 @@
 
 import { type CSSProperties, type FC, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useLatestSession } from "@/lib/useLatestSession";
 import { getAdminAgents, getLibrary } from "@/lib/api";
@@ -11,6 +10,7 @@ import { requestAgentSwitch, useCurrentAgent, useBusyAgent } from "@/lib/agentBu
 import { tokens } from "../_shared/armance-tokens";
 import { PulseDot } from "../_shared/PulseDot";
 import { assignAgentColour } from "@/lib/agent_colours";
+import { emitViewChange, onViewChange, type ViewType } from "@/lib/navigationBus";
 
 export interface SidebarNavProps {
   t: (key: string) => string;
@@ -34,12 +34,17 @@ function usePersistedOpen(key: string, fallback: boolean): [boolean, () => void]
 
 export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
   const { pid, sid } = useLatestSession();
-  const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+  const [activeView, setActiveView] = useState<ViewType>("chat");
+
+  useEffect(() => {
+    return onViewChange((v) => {
+      setActiveView(v);
+    });
+  }, []);
 
   const [staffOpen, toggleStaff] = usePersistedOpen(KEY_STAFF, true);
   const [rolesOpen, toggleRoles] = usePersistedOpen(KEY_ROLES, true);
 
-  const router = useRouter();
   const currentAgent = useCurrentAgent();
   const busyAgent = useBusyAgent();
 
@@ -59,15 +64,22 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
     queryFn: () => getLibrary(pid, sid as string).catch(() => null),
   });
 
-  const onConversation = /\/sessions\/[^/]+$/.test(pathname) &&
-    !/(workflows|library|deliverables)/.test(pathname);
+  const onConversation = activeView === "chat";
 
   const isTabActive = (tab: string): boolean => {
-    if (tab === "workflows") return pathname.includes("/workflows");
-    if (tab === "library") return pathname.includes("/library");
-    if (tab === "admin") return pathname.includes("/admin");
+    if (tab === "workflows") return activeView === "workflows";
+    if (tab === "library") return activeView === "library";
+    if (tab === "admin") return activeView === "admin";
     return false;
   };
+
+  const handleNav = (e: React.MouseEvent, targetPath: string, view: ViewType) => {
+    e.preventDefault();
+    window.history.pushState(null, "", targetPath);
+    emitViewChange(view);
+  };
+
+  const sessionPath = (suffix = "") => `/projects/${pid}/sessions/${sid || "_"}${suffix}`;
 
   /* ── Styles ── */
   const sectionHeader: CSSProperties = {
@@ -91,7 +103,6 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
     textDecoration: "none", fontWeight: active ? 500 : 400,
     transition: "background 120ms ease, color 120ms ease", cursor: "pointer",
   });
-  const sessionPath = (suffix = "") => `/projects/${pid}/sessions/${sid || "_"}${suffix}`;
 
   // Library subtitle, TUI-style: doc + feuillet counts, or inactive note when
   // no embedding model is configured.
@@ -109,7 +120,10 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
     if (onConversation) {
       requestAgentSwitch(firstName);
     } else if (sid) {
-      router.push(`${sessionPath()}?switch=${encodeURIComponent(firstName)}`);
+      const targetPath = `${sessionPath()}?switch=${encodeURIComponent(firstName)}`;
+      window.history.pushState(null, "", targetPath);
+      emitViewChange("chat");
+      setTimeout(() => requestAgentSwitch(firstName), 50);
     }
   };
 
@@ -142,7 +156,13 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
         <Link
           href={sid ? sessionPath("/library") : "#"}
           style={{ ...link(isTabActive("library")), display: "flex", flexDirection: "column", gap: 2, alignItems: "flex-start" }}
-          onClick={(e) => { if (!sid) e.preventDefault(); }}
+          onClick={(e) => {
+            if (!sid) {
+              e.preventDefault();
+              return;
+            }
+            handleNav(e, sessionPath("/library"), "library");
+          }}
         >
           <span>{t("sidebar:tabs.library")}</span>
           <span style={{ color: tokens.inkFaint, fontFamily: tokens.ffMono, fontSize: 10 }}>
@@ -188,7 +208,13 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
         <Link
           href={sid ? sessionPath("/workflows/_") : "#"}
           style={link(isTabActive("workflows"))}
-          onClick={(e) => { if (!sid) e.preventDefault(); }}
+          onClick={(e) => {
+            if (!sid) {
+              e.preventDefault();
+              return;
+            }
+            handleNav(e, sessionPath("/workflows/_"), "workflows");
+          }}
         >
           {t("sidebar:tabs.workflows")}
         </Link>
@@ -197,7 +223,11 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
       {/* 5 · Admin */}
       <p style={sectionHeader}>{t("sidebar:nav_section.account")}</p>
       <nav style={navContainer}>
-        <Link href={`/projects/${pid}/admin`} style={link(isTabActive("admin"))}>
+        <Link
+          href={`/projects/${pid}/admin`}
+          style={link(isTabActive("admin"))}
+          onClick={(e) => handleNav(e, `/projects/${pid}/admin`, "admin")}
+        >
           {t("sidebar:tabs.settings")}
         </Link>
       </nav>
