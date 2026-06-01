@@ -1,1 +1,0 @@
-(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,95771,e=>{"use strict";let t={"system-context":"Armance","system-hr":"Malik","system-orchestrator":"Kim","system-judge":"Mona","system-challenger":"Serge",embedding:"Library"};e.s(["displayAgentName",0,function(e){return e in t?t[e]:e}])}]);
