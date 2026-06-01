@@ -75,13 +75,13 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
       <div style={{ ...cards, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
         <Card
           label="🌱 Empreinte Carbone Totale"
-          value={`~${totals.gco2e.toFixed(1)} gCO₂e`}
+          value={totals.gco2e > 0 ? `~${totals.gco2e.toFixed(1)} gCO₂e` : t("visual:empty.deliberation.title")}
           accent
           accentColor="var(--accent-deep, #4a3666)"
         />
         <Card
           label="💧 Consommation d'Eau Totale"
-          value={`~${Math.round(totals.water_ml)} mL`}
+          value={totals.water_ml > 0 ? `~${Math.round(totals.water_ml)} mL` : t("visual:empty.deliberation.title")}
           accent
           accentColor="#2e6f40"
         />
@@ -89,14 +89,14 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
 
       {/* Monetary & Token Statistics */}
       <div style={cards}>
-        <Card label={t("admin:stats.tokens_in")} value={fmt(totals.tokens_in)} />
-        <Card label={t("admin:stats.tokens_out")} value={fmt(totals.tokens_out)} />
+        <Card label={t("admin:stats.tokens_in")} value={totals.tokens_in > 0 ? fmt(totals.tokens_in) : t("visual:empty.deliberation.title")} />
+        <Card label={t("admin:stats.tokens_out")} value={totals.tokens_out > 0 ? fmt(totals.tokens_out) : t("visual:empty.deliberation.title")} />
         <Card
           label={t("admin:stats.cost")}
-          value={`${totals.cost.toFixed(3)} ${currency}`}
+          value={totals.cost > 0 ? `${totals.cost.toFixed(3)} ${currency}` : t("visual:empty.deliberation.title")}
           accent
         />
-        <Card label={t("admin:stats.messages")} value={fmt(totals.messages)} />
+        <Card label={t("admin:stats.messages")} value={totals.messages > 0 ? fmt(totals.messages) : t("visual:empty.deliberation.title")} />
       </div>
 
       {/* Per Agent section with Environmental Footprint listed ABOVE monetary cost */}
@@ -143,7 +143,7 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
                     🌱 {t("admin:stats.carbon")}
                   </span>
                   <span style={{ fontSize: 15, fontWeight: 600, color: tokens.ink }}>
-                    {a.has_estimate ? "~" : ""}{a.gco2e?.toFixed(1) ?? "0.0"} gCO₂e
+                    {a.gco2e && a.gco2e > 0 ? `${a.has_estimate ? "~" : ""}${a.gco2e.toFixed(1)} gCO₂e` : "—"}
                   </span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -151,7 +151,7 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
                     💧 {t("admin:stats.water")}
                   </span>
                   <span style={{ fontSize: 15, fontWeight: 600, color: tokens.ink }}>
-                    {Math.round(a.water_ml ?? 0)} mL
+                    {a.water_ml && a.water_ml > 0 ? `${Math.round(a.water_ml)} mL` : "—"}
                   </span>
                 </div>
               </div>
@@ -170,13 +170,21 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
               >
                 <div>
                   <span style={{ fontFamily: tokens.ffMono }}>Tokens: </span>
-                  <span>↑{fmt(a.tokens_in)} · ↓{fmt(a.tokens_out)}</span>
+                  {a.tokens_in > 0 || a.tokens_out > 0 ? (
+                    <span>↑{fmt(a.tokens_in)} · ↓{fmt(a.tokens_out)}</span>
+                  ) : (
+                    <span>—</span>
+                  )}
                 </div>
                 <div>
                   <span style={{ fontFamily: tokens.ffMono }}>{t("admin:stats.cost")}: </span>
-                  <span style={{ fontWeight: 600, color: tokens.accent }}>
-                    {a.cost.toFixed(4)} {currency}
-                  </span>
+                  {a.cost > 0 ? (
+                    <span style={{ fontWeight: 600, color: tokens.accent }}>
+                      {a.cost.toFixed(4)} {currency}
+                    </span>
+                  ) : (
+                    <span>—</span>
+                  )}
                 </div>
               </div>
             </div>
