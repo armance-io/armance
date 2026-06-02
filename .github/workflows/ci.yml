@@ -59,8 +59,8 @@ jobs:
 
       - name: Run web backend tests
         run: |
-          if [ -d "web/backend/tests" ]; then
-            cd web && uv run pytest -q --tb=short --cov=backend --cov-fail-under=85
+          if [ -d "src/armance/web/backend/tests" ]; then
+            cd web && uv run pytest -q --tb=short ../src/armance/web/backend/tests/ --cov=armance.web.backend --cov-fail-under=85
           else
             echo "No web backend tests yet — skipping"
           fi
