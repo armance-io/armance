@@ -12,6 +12,7 @@ export interface AgentRecord {
   model: string;
   reasoning?: "off" | "low" | "high";
   supportsReasoning: boolean;
+  staff: boolean;
 }
 
 export interface AgentEditorProps {
@@ -56,14 +57,15 @@ const AgentCard: FC<{
 
   const card: CSSProperties = {
     display: "grid",
-    gridTemplateColumns: "120px 1fr",
-    gap: 24,
-    padding: 24,
+    gridTemplateColumns: "84px 1fr",
+    gap: 18,
+    padding: 16,
     background: tokens.bgPaperCard,
     border: `1px solid ${tokens.rule}`,
     fontFamily: tokens.ffSans,
     color: tokens.ink,
   };
+  const roleLabel = agent.staff ? t(`roles:${agent.role}`) : agent.role;
   const label: CSSProperties = {
     fontFamily: tokens.ffMono,
     fontSize: 11,
@@ -89,44 +91,44 @@ const AgentCard: FC<{
 
   return (
     <div style={card}>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
         <AgentPortrait
           name={draft.name}
           src={draft.portraitUrl}
           tint="#6b4f8a"
-          size="md"
+          size="sm"
         />
-        <span style={{ fontSize: 11, fontFamily: tokens.ffMono, color: tokens.inkFaint }}>
+        <span style={{ fontSize: 10, fontFamily: tokens.ffMono, color: tokens.inkFaint }}>
           ID: {draft.id}
         </span>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
           <h3
             style={{
               fontFamily: tokens.ffSerif,
-              fontSize: 26,
+              fontSize: 20,
               margin: 0,
               letterSpacing: "-0.01em",
             }}
           >
             {draft.name}
           </h3>
-          <p style={{ ...ro, margin: "4px 0 0", fontStyle: "italic" }}>{draft.role}</p>
+          <span style={{ ...ro, fontSize: 13, fontStyle: "italic" }}>{roleLabel}</span>
         </div>
 
         <div>
           <span style={label}>{t("admin:agents.persona")}</span>
-          <p style={{ ...ro, margin: 0, lineHeight: 1.5 }}>
-            {draft.persona}
-            <span style={{ color: tokens.inkFaint, marginLeft: 8, fontStyle: "italic" }}>
+          <p style={{ ...ro, margin: 0, lineHeight: 1.45, fontSize: 13 }}>{draft.persona}</p>
+          {!agent.staff && (
+            <p style={{ color: tokens.inkFaint, margin: "6px 0 0", fontStyle: "italic", fontSize: 12 }}>
               {t("admin:agents.persona_hint")}
-            </span>
-          </p>
+            </p>
+          )}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div>
             <span style={label}>{t("admin:agents.provider")}</span>
             <select

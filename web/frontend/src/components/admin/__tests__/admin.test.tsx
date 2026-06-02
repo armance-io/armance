@@ -380,6 +380,7 @@ describe("<AgentEditor />", () => {
       model: "gpt-4o",
       reasoning: "low",
       supportsReasoning: true,
+      staff: false,
     },
   ];
 
