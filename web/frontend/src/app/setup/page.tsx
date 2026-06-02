@@ -31,6 +31,19 @@ const PROVIDERS = [
     ],
   },
   {
+    id: "claude-code",
+    name: "Claude Subscription",
+    description: "Anthropic Claude Pro/Max subscription model via claude-agent-sdk. No API Key required.",
+    envName: "",
+    placeholder: "",
+    requiresKey: false,
+    fallbackModels: [
+      { id: "claude-3-5-sonnet", display_name: "Claude 3.5 Sonnet", context_window: 200000, tier: "medium" },
+      { id: "claude-3-opus", display_name: "Claude 3 Opus", context_window: 200000, tier: "high" },
+      { id: "claude-3-5-haiku", display_name: "Claude 3.5 Haiku", context_window: 200000, tier: "low" },
+    ],
+  },
+  {
     id: "openrouter",
     name: "OpenRouter",
     description: "Unified gateway. Access hundreds of open & closed models (DeepSeek R1, GPT-4o).",
@@ -183,7 +196,7 @@ export default function SetupPage() {
       // Validate that all selected providers requiring keys have keys input
       const missingKey = selectedProviders.find((pId) => {
         const p = PROVIDERS.find((prov) => prov.id === pId);
-        return p && p.id !== "custom-openai" && !(apiKeys[pId] || "").trim();
+        return p && p.requiresKey !== false && p.id !== "custom-openai" && !(apiKeys[pId] || "").trim();
       });
       if (missingKey) {
         setErrorMsg("API Key is required for " + PROVIDERS.find((p) => p.id === missingKey)?.name);
@@ -230,13 +243,13 @@ export default function SetupPage() {
   const getGemStyle = (tier: string): CSSProperties => {
     switch (tier) {
       case "free":
-        return { background: "var(--ink-soft, #5b5145)", color: "var(--bg-paper-card)" };
+        return { background: "hsl(120, 15%, 55%)", color: "#ffffff" };
       case "low":
-        return { background: "rgba(33, 150, 243, 0.15)", color: "#2196f3" };
+        return { background: "hsl(200, 20%, 60%)", color: "#ffffff" };
       case "medium":
-        return { background: "rgba(156, 39, 176, 0.15)", color: "#9c27b0" };
+        return { background: "hsl(35, 30%, 60%)", color: "#ffffff" };
       case "high":
-        return { background: "rgba(255, 87, 34, 0.15)", color: "#ff5722" };
+        return { background: "hsl(0, 30%, 65%)", color: "#ffffff" };
       default:
         return { background: "var(--accent)", color: "var(--bg-paper)" };
     }
@@ -512,12 +525,27 @@ export default function SetupPage() {
               })}
             </div>
 
-            {/* API Keys and Custom URL inputs vertically list for each selected provider */}
             <div style={{ maxHeight: "200px", overflowY: "auto", paddingRight: "4px" }}>
               {selectedProviders.map((pId) => {
                 const p = PROVIDERS.find((prov) => prov.id === pId);
                 if (!p) return null;
+                const requiresKey = p.requiresKey !== false;
                 const showKey = showKeys[pId] || false;
+
+                if (!requiresKey) {
+                  return (
+                    <div key={pId} style={{ marginTop: "16px", padding: "14px", border: "1px solid var(--rule-soft)", borderRadius: "6px", background: "var(--bg-paper)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", color: "var(--accent)" }}>
+                          {p.name}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: "11px", color: "var(--ink-soft)", marginTop: "6px", marginBottom: 0 }}>
+                        Uses subscription auth via local CLI tools. No API Key required.
+                      </p>
+                    </div>
+                  );
+                }
 
                 return (
                   <div key={pId} style={{ marginTop: "16px", padding: "14px", border: "1px solid var(--rule-soft)", borderRadius: "6px", background: "var(--bg-paper)" }}>
