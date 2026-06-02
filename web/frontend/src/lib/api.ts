@@ -582,6 +582,7 @@ export interface SetupStatusResponse {
 export interface SetupInitIn {
   provider: string;
   api_key?: string;
+  providers_keys?: Record<string, string>;
   model: string;
   budget: "free-first" | "low" | "medium" | "high" | "adaptive";
   language: "en" | "fr" | "es" | "de" | "zh" | "ja";

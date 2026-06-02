@@ -98,7 +98,18 @@ export const SessionSelector: FC<{ t: (k: string) => string }> = ({ t }) => {
               <span style={{ fontFamily: tokens.ffMono, fontSize: 10, color: tokens.inkFaint, width: 18 }}>{i + 1}</span>
               <span style={{ fontFamily: tokens.ffMono, fontSize: 12 }}>{shortId(s.id)}</span>
               <span style={{ marginLeft: "auto", fontFamily: tokens.ffMono, fontSize: 10, color: tokens.inkFaint }}>
-                {t("session:selector.summary").replace("{turns}", String(s.turns)).replace("{tokens}", String(s.est_tokens))}
+                {(() => {
+                  const ts = s.updated_at || s.created_at;
+                  if (!ts) return "";
+                  try {
+                    const d = new Date(ts);
+                    if (isNaN(d.getTime())) return "";
+                    const pad = (n: number) => String(n).padStart(2, "0");
+                    return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}·${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                  } catch {
+                    return "";
+                  }
+                })()}
               </span>
             </a>
           ))}
