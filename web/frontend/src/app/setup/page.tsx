@@ -3,6 +3,7 @@
 import { useState, useEffect, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { Fleuron } from "@/components/visual/Fleuron";
+import { ThemeToggle } from "@/components/visual/ThemeToggle";
 import {
   getProviders,
   initSetup,
@@ -21,24 +22,12 @@ const PROVIDERS = [
   {
     id: "gemini",
     name: "Google Gemini",
-    description: "Highly responsive, massive context windows. Excellent multimodal support.",
+    description: "Highly responsive, massive context windows. Dedicated free tiers per quota.",
     envName: "GEMINI_API_KEY",
     placeholder: "AIzaSy...",
     fallbackModels: [
       { id: "gemini-2.5-flash", display_name: "Gemini 2.5 Flash", context_window: 1000000, tier: "low" },
       { id: "gemini-2.5-pro", display_name: "Gemini 2.5 Pro", context_window: 2000000, tier: "medium" },
-    ],
-  },
-  {
-    id: "claude-code",
-    name: "Claude Code / Anthropic",
-    description: "Deep reasoning, precise software engineering and coding capabilities.",
-    envName: "ANTHROPIC_API_KEY",
-    placeholder: "sk-ant-...",
-    fallbackModels: [
-      { id: "claude-sonnet-4-6", display_name: "Claude Sonnet 4.6", context_window: 2000000, tier: "medium" },
-      { id: "claude-haiku-4-5", display_name: "Claude Haiku 4.5", context_window: 200000, tier: "low" },
-      { id: "claude-opus-4-7", display_name: "Claude Opus 4.7", context_window: 200000, tier: "high" },
     ],
   },
   {
@@ -103,43 +92,61 @@ const LANGUAGES = [
   { id: "ja" as const, label: "日本語", emoji: "🇯🇵" },
 ];
 
+// Patterns that identify non-text chat models (audio, vision, embedding) matching backend discovery patterns
+const NON_TEXT_PATTERNS = /(ocr|vision|audio|tts|speech|whisper|embed|image|video|multimodal|diffus|sdxl|dall-e|guard|moderat)/i;
+
 export default function SetupPage() {
   const { t, i18n } = useTranslation();
 
   const [step, setStep] = useState(1);
-  const [provider, setProvider] = useState("gemini");
-  const [apiKey, setApiKey] = useState("");
+  const [language, setLanguage] = useState<SetupInitIn["language"]>("en");
+  const [selectedProviders, setSelectedProviders] = useState<string[]>(["gemini"]);
+  const [apiKeys, setApiKeys] = useState<Record<string, string>>({});
   const [baseUrl, setBaseUrl] = useState("http://localhost:11434/v1");
+  const [primaryProvider, setPrimaryProvider] = useState("gemini");
   const [model, setModel] = useState("gemini-2.5-flash");
   const [budget, setBudget] = useState<SetupInitIn["budget"]>("medium");
-  const [language, setLanguage] = useState<SetupInitIn["language"]>("en");
 
-  const [showKey, setShowKey] = useState(false);
+  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [discoveredModels, setDiscoveredModels] = useState<Record<string, SetupModel[]>>({});
   const [loadingModels, setLoadingModels] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Sync state when provider changes
+  // Sync language with i18n
+  const handleLanguageChange = (lang: SetupInitIn["language"]) => {
+    setLanguage(lang);
+    void i18n.changeLanguage(lang);
+  };
+
+  // Keep primary default provider in sync with selected providers list
   useEffect(() => {
-    // Pick default model for this provider
-    const provObj = PROVIDERS.find((p) => p.id === provider);
+    if (!selectedProviders.includes(primaryProvider)) {
+      if (selectedProviders.length > 0 && selectedProviders[0]) {
+        setPrimaryProvider(selectedProviders[0]);
+      }
+    }
+  }, [selectedProviders, primaryProvider]);
+
+  // Sync state when primary provider changes
+  useEffect(() => {
+    const provObj = PROVIDERS.find((p) => p.id === primaryProvider);
     if (provObj && provObj.fallbackModels && provObj.fallbackModels[0]) {
       setModel(provObj.fallbackModels[0].id);
     } else {
       setModel("gpt-4o"); // fallback default for custom-openai
     }
     setErrorMsg("");
-  }, [provider]);
+  }, [primaryProvider]);
 
-  // Load models live when reaching step 2
+  // Fetch model catalogs when reaching the Model Selection step (Step 4)
   useEffect(() => {
-    if (step === 2) {
+    if (step === 4) {
       setLoadingModels(true);
       getProviders()
         .then((cat) => {
           if (cat && cat.providers) {
-            setDiscoveredModels(cat.providers);
+            setDiscoveredModels(cat.providers as unknown as Record<string, SetupModel[]>);
           }
         })
         .catch((err) => {
@@ -151,26 +158,35 @@ export default function SetupPage() {
     }
   }, [step]);
 
-  // Sync language with react-i18next instantly
-  const handleLanguageChange = (lang: SetupInitIn["language"]) => {
-    setLanguage(lang);
-    void i18n.changeLanguage(lang);
+  const handleProviderToggle = (provId: string) => {
+    if (selectedProviders.includes(provId)) {
+      if (selectedProviders.length > 1) {
+        setSelectedProviders((prev) => prev.filter((id) => id !== provId));
+      }
+    } else {
+      setSelectedProviders((prev) => [...prev, provId]);
+    }
   };
 
-  const getActiveModels = () => {
-    const liveList = discoveredModels[provider];
-    if (liveList && liveList.length > 0) {
-      return liveList;
-    }
-    const provObj = PROVIDERS.find((p) => p.id === provider);
-    return provObj ? provObj.fallbackModels : [];
+  const getFilteredActiveModels = () => {
+    const liveList = discoveredModels[primaryProvider];
+    const listToFilter = (liveList && liveList.length > 0) 
+      ? liveList 
+      : (PROVIDERS.find((p) => p.id === primaryProvider)?.fallbackModels || []);
+      
+    // strictly exclude audio, video, embeddings, image models
+    return listToFilter.filter((m) => !NON_TEXT_PATTERNS.test(m.id));
   };
 
   const handleNext = () => {
-    if (step === 1) {
-      // Validate key if required
-      if (provider !== "custom-openai" && !apiKey.trim()) {
-        setErrorMsg("API Key is required to connect to " + PROVIDERS.find(p => p.id === provider)?.name);
+    if (step === 2) {
+      // Validate that all selected providers requiring keys have keys input
+      const missingKey = selectedProviders.find((pId) => {
+        const p = PROVIDERS.find((prov) => prov.id === pId);
+        return p && p.id !== "custom-openai" && !(apiKeys[pId] || "").trim();
+      });
+      if (missingKey) {
+        setErrorMsg("API Key is required for " + PROVIDERS.find((p) => p.id === missingKey)?.name);
         return;
       }
     }
@@ -188,20 +204,19 @@ export default function SetupPage() {
     setErrorMsg("");
     try {
       const payload: SetupInitIn = {
-        provider,
+        provider: primaryProvider,
+        providers_keys: apiKeys,
         model,
         budget,
         language,
       };
-      if (apiKey && apiKey.trim()) {
-        payload.api_key = apiKey.trim();
+      if (apiKeys[primaryProvider] && apiKeys[primaryProvider].trim()) {
+        payload.api_key = apiKeys[primaryProvider].trim();
       }
 
-      // If custom-openai is selected and custom URL is present, we could persist it.
-      // But standard SetupInitIn matches exactly setup.py which receives: provider, api_key, model, budget, language.
       await initSetup(payload);
       
-      // Setup successful! Now create a default session and redirect.
+      // Setup successful! Create session and redirect.
       const session = await createSession("default");
       window.location.replace(`/projects/default/sessions/${session.id}`);
     } catch (err: unknown) {
@@ -212,19 +227,18 @@ export default function SetupPage() {
     }
   };
 
-  // Styled helper for cost gem color
   const getGemStyle = (tier: string): CSSProperties => {
     switch (tier) {
       case "free":
-        return { background: "#4caf50", color: "#fff" };
+        return { background: "var(--ink-soft, #5b5145)", color: "var(--bg-paper-card)" };
       case "low":
-        return { background: "#2196f3", color: "#fff" };
+        return { background: "rgba(33, 150, 243, 0.15)", color: "#2196f3" };
       case "medium":
-        return { background: "#9c27b0", color: "#fff" };
+        return { background: "rgba(156, 39, 176, 0.15)", color: "#9c27b0" };
       case "high":
-        return { background: "#ff5722", color: "#fff" };
+        return { background: "rgba(255, 87, 34, 0.15)", color: "#ff5722" };
       default:
-        return { background: "var(--accent)", color: "#fff" };
+        return { background: "var(--accent)", color: "var(--bg-paper)" };
     }
   };
 
@@ -284,14 +298,7 @@ export default function SetupPage() {
     lineHeight: 1.1,
     color: "var(--ink)",
     textAlign: "center",
-    margin: "0 0 8px 0",
-  };
-
-  const subtitleStyle: CSSProperties = {
-    fontSize: "14px",
-    color: "var(--ink-soft)",
-    textAlign: "center",
-    margin: "0 0 32px 0",
+    margin: "0 0 24px 0",
   };
 
   const progressContainer: CSSProperties = {
@@ -303,25 +310,21 @@ export default function SetupPage() {
     position: "relative",
   };
 
-  const progressBar: CSSProperties = {
+  const progressTrackContainer: CSSProperties = {
     position: "absolute",
     top: "15px",
-    left: "24px",
-    right: "24px",
+    left: "16px",
+    right: "16px",
     height: "2px",
     background: "var(--rule-soft)",
     zIndex: 0,
   };
 
-  const progressFill = (currentStep: number): CSSProperties => ({
-    position: "absolute",
-    top: "15px",
-    left: "24px",
+  const progressFillStyle = (currentStep: number): CSSProperties => ({
     width: `${((currentStep - 1) / 3) * 100}%`,
-    height: "2px",
+    height: "100%",
     background: "var(--accent)",
     transition: "width 0.30s cubic-bezier(0.16, 1, 0.3, 1)",
-    zIndex: 0,
   });
 
   const stepDot = (index: number, active: boolean): CSSProperties => ({
@@ -425,15 +428,20 @@ export default function SetupPage() {
     <div style={containerStyle}>
       <div style={glowStyle} />
 
+      {/* Theme Switcher placed fixed in the top right */}
+      <div style={{ position: "absolute", top: "24px", right: "24px", zIndex: 10 }}>
+        <ThemeToggle t={t} />
+      </div>
+
       <div style={cardStyle}>
         <Fleuron size="sm" />
         <h1 style={titleStyle}>{t("setup:title")}</h1>
-        <p style={subtitleStyle}>{t("app:tagline")}</p>
 
-        {/* Progress Dots */}
+        {/* Mathematically constrained progress fill bar */}
         <div style={progressContainer}>
-          <div style={progressBar} />
-          <div style={progressFill(step)} />
+          <div style={progressTrackContainer}>
+            <div style={progressFillStyle(step)} />
+          </div>
           {[1, 2, 3, 4].map((i) => (
             <div key={i} style={stepDot(i, step >= i)}>
               {i}
@@ -443,20 +451,54 @@ export default function SetupPage() {
 
         {errorMsg && <div style={errorAlert}>{errorMsg}</div>}
 
-        {/* Step 1: Provider selection */}
+        {/* Step 1: Language selection */}
         {step === 1 && (
           <div style={{ display: "flex", flexDirection: "column" }}>
+            <h3 style={formLabel}>{t("setup:step_language")}</h3>
+            <div style={{ ...gridStyle, gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+              {LANGUAGES.map((l) => {
+                const selected = language === l.id;
+                return (
+                  <div
+                    key={l.id}
+                    onClick={() => handleLanguageChange(l.id)}
+                    style={{
+                      padding: "16px",
+                      borderRadius: "6px",
+                      border: `1.5px solid ${selected ? "var(--accent)" : "var(--rule-soft)"}`,
+                      background: selected ? "var(--bg-paper)" : "var(--bg-paper-card)",
+                      cursor: "pointer",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      transition: "border-color 0.2s, background 0.2s",
+                      gap: "6px",
+                    }}
+                  >
+                    <span style={{ fontSize: "24px" }}>{l.emoji}</span>
+                    <span style={{ fontSize: "13px", fontWeight: 500 }}>{l.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Provider selection & key inputs */}
+        {step === 2 && (
+          <div style={{ display: "flex", flexDirection: "column" }}>
             <h3 style={formLabel}>{t("setup:step_provider")}</h3>
-            <div style={gridStyle}>
+            <p style={{ fontSize: "12px", color: "var(--ink-soft)", marginBottom: "14px" }}>
+              Select one or more providers to enable.
+            </p>
+            <div style={{ ...gridStyle, gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
               {PROVIDERS.map((p) => {
-                const selected = provider === p.id;
+                const selected = selectedProviders.includes(p.id);
                 return (
                   <div
                     key={p.id}
-                    onClick={() => {
-                      setProvider(p.id);
-                      setApiKey("");
-                    }}
+                    onClick={() => handleProviderToggle(p.id)}
                     style={providerCard(selected)}
                   >
                     <span style={{ fontWeight: 600, fontSize: "14px", marginBottom: "4px" }}>
@@ -470,159 +512,68 @@ export default function SetupPage() {
               })}
             </div>
 
-            {provider === "custom-openai" && (
-              <div style={{ marginBottom: "20px" }}>
-                <label style={{ ...formLabel, fontSize: "11px", display: "block" }}>
-                  Endpoint Base URL
-                </label>
-                <input
-                  type="text"
-                  value={baseUrl}
-                  onChange={(e) => setBaseUrl(e.target.value)}
-                  style={inputStyle}
-                />
-              </div>
-            )}
+            {/* API Keys and Custom URL inputs vertically list for each selected provider */}
+            <div style={{ maxHeight: "200px", overflowY: "auto", paddingRight: "4px" }}>
+              {selectedProviders.map((pId) => {
+                const p = PROVIDERS.find((prov) => prov.id === pId);
+                if (!p) return null;
+                const showKey = showKeys[pId] || false;
 
-            <div style={{ position: "relative" }}>
-              <label style={{ ...formLabel, fontSize: "11px", display: "block" }}>
-                API Key for {PROVIDERS.find((p) => p.id === provider)?.name}
-              </label>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <input
-                  type={showKey ? "text" : "password"}
-                  placeholder={PROVIDERS.find((p) => p.id === provider)?.placeholder}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  style={{ ...inputStyle, flex: 1 }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowKey(!showKey)}
-                  style={{
-                    padding: "0 12px",
-                    background: "var(--bg-paper-deep)",
-                    border: "1px solid var(--rule)",
-                    borderRadius: "6px",
-                    color: "var(--ink-soft)",
-                    fontSize: "12px",
-                    cursor: "pointer",
-                  }}
-                >
-                  {showKey ? "Hide" : "Show"}
-                </button>
-              </div>
-              <span
-                style={{
-                  fontSize: "11px",
-                  color: "var(--ink-faint)",
-                  marginTop: "6px",
-                  display: "block",
-                }}
-              >
-                Saved locally into your <code>.armance/.env</code> file.
-              </span>
-            </div>
-          </div>
-        )}
+                return (
+                  <div key={pId} style={{ marginTop: "16px", padding: "14px", border: "1px solid var(--rule-soft)", borderRadius: "6px", background: "var(--bg-paper)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+                      <span style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", color: "var(--accent)" }}>
+                        {p.name} Configuration
+                      </span>
+                    </div>
 
-        {/* Step 2: Model selection */}
-        {step === 2 && (
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <h3 style={formLabel}>{t("setup:step_model")}</h3>
-
-            {provider === "custom-openai" ? (
-              <div style={{ marginBottom: "20px" }}>
-                <p style={{ fontSize: "13px", color: "var(--ink-soft)", marginBottom: "12px" }}>
-                  Type the exact model identifier exposed by your custom endpoint:
-                </p>
-                <input
-                  type="text"
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  style={inputStyle}
-                  placeholder="e.g. llama3, qwen2.5-coder, gpt-4o"
-                />
-              </div>
-            ) : loadingModels ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px" }}>
-                <div
-                  style={{
-                    width: "24px",
-                    height: "24px",
-                    border: "2px solid var(--rule-soft)",
-                    borderTop: "2px solid var(--accent)",
-                    borderRadius: "50%",
-                    animation: "armance-spin 0.8s linear infinite",
-                    marginBottom: "12px",
-                  }}
-                />
-                <span style={{ fontSize: "13px", color: "var(--ink-soft)" }}>
-                  Discovering provider catalogue...
-                </span>
-              </div>
-            ) : (
-              <div
-                style={{
-                  maxHeight: "260px",
-                  overflowY: "auto",
-                  border: "1px solid var(--rule-soft)",
-                  borderRadius: "6px",
-                  background: "var(--bg-paper)",
-                  padding: "6px",
-                  marginBottom: "20px",
-                }}
-              >
-                {getActiveModels().map((m) => {
-                  const selected = model === m.id;
-                  return (
-                    <div
-                      key={m.id}
-                      onClick={() => setModel(m.id)}
-                      style={{
-                        padding: "10px 14px",
-                        borderRadius: "4px",
-                        background: selected ? "var(--bg-paper-deep)" : "transparent",
-                        borderLeft: `3px solid ${selected ? "var(--accent)" : "transparent"}`,
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        transition: "background 0.2s",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      <div style={{ display: "flex", flexDirection: "column" }}>
-                        <span style={{ fontSize: "13px", fontWeight: 600 }}>
-                          {m.display_name || m.id}
-                        </span>
-                        <span style={{ fontSize: "11px", color: "var(--ink-soft)", fontFamily: "var(--ff-mono)" }}>
-                          {m.id}
-                        </span>
+                    {p.showBaseUrl && (
+                      <div style={{ marginBottom: "10px" }}>
+                        <label style={{ fontSize: "10px", color: "var(--ink-soft)", display: "block", marginBottom: "4px" }}>
+                          Base Endpoint URL
+                        </label>
+                        <input
+                          type="text"
+                          value={baseUrl}
+                          onChange={(e) => setBaseUrl(e.target.value)}
+                          style={{ ...inputStyle, padding: "8px 10px" }}
+                        />
                       </div>
-                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                        {m.context_window && (
-                          <span style={{ fontSize: "10px", color: "var(--ink-faint)" }}>
-                            {formatContextWindow(m.context_window)}
-                          </span>
-                        )}
-                        <span
+                    )}
+
+                    <div>
+                      <label style={{ fontSize: "10px", color: "var(--ink-soft)", display: "block", marginBottom: "4px" }}>
+                        API Key ({p.envName})
+                      </label>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <input
+                          type={showKey ? "text" : "password"}
+                          placeholder={p.placeholder}
+                          value={apiKeys[pId] || ""}
+                          onChange={(e) => setApiKeys((prev) => ({ ...prev, [pId]: e.target.value }))}
+                          style={{ ...inputStyle, padding: "8px 10px", flex: 1 }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowKeys((prev) => ({ ...prev, [pId]: !showKey }))}
                           style={{
-                            fontSize: "10px",
-                            padding: "2px 6px",
-                            borderRadius: "4px",
-                            fontWeight: 500,
-                            ...getGemStyle(m.tier),
+                            padding: "0 12px",
+                            background: "var(--bg-paper-deep)",
+                            border: "1px solid var(--rule)",
+                            borderRadius: "6px",
+                            color: "var(--ink-soft)",
+                            fontSize: "11px",
+                            cursor: "pointer",
                           }}
                         >
-                          {m.tier}
-                        </span>
+                          {showKey ? "Hide" : "Show"}
+                        </button>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
@@ -685,37 +636,138 @@ export default function SetupPage() {
           </div>
         )}
 
-        {/* Step 4: Language selection */}
+        {/* Step 4: Model selection with Primary Default selector */}
         {step === 4 && (
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <h3 style={formLabel}>{t("setup:step_language")}</h3>
-            <div style={{ ...gridStyle, gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
-              {LANGUAGES.map((l) => {
-                const selected = language === l.id;
-                return (
-                  <div
-                    key={l.id}
-                    onClick={() => handleLanguageChange(l.id)}
-                    style={{
-                      padding: "16px",
-                      borderRadius: "6px",
-                      border: `1.5px solid ${selected ? "var(--accent)" : "var(--rule-soft)"}`,
-                      background: selected ? "var(--bg-paper)" : "var(--bg-paper-card)",
-                      cursor: "pointer",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      transition: "border-color 0.2s, background 0.2s",
-                      gap: "6px",
-                    }}
-                  >
-                    <span style={{ fontSize: "24px" }}>{l.emoji}</span>
-                    <span style={{ fontSize: "13px", fontWeight: 500 }}>{l.label}</span>
-                  </div>
-                );
-              })}
-            </div>
+            <h3 style={formLabel}>{t("setup:step_model")}</h3>
+            
+            {/* If multiple providers are configured, let them select the default primary one */}
+            {selectedProviders.length > 1 && (
+              <div style={{ marginBottom: "14px" }}>
+                <label style={{ ...formLabel, fontSize: "10px", display: "block", marginBottom: "6px" }}>
+                  Primary Default Provider
+                </label>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  {selectedProviders.map((pId) => {
+                    const p = PROVIDERS.find((prov) => prov.id === pId);
+                    if (!p) return null;
+                    const isPrimary = primaryProvider === pId;
+                    return (
+                      <button
+                        key={pId}
+                        type="button"
+                        onClick={() => setPrimaryProvider(pId)}
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: "4px",
+                          border: `1.5px solid ${isPrimary ? "var(--accent)" : "var(--rule-soft)"}`,
+                          background: isPrimary ? "var(--accent)" : "transparent",
+                          color: isPrimary ? "var(--bg-paper)" : "var(--ink-soft)",
+                          fontSize: "12px",
+                          fontWeight: 500,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {p.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {primaryProvider === "custom-openai" ? (
+              <div style={{ marginBottom: "20px" }}>
+                <p style={{ fontSize: "13px", color: "var(--ink-soft)", marginBottom: "12px" }}>
+                  Type the exact model identifier exposed by your custom endpoint:
+                </p>
+                <input
+                  type="text"
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  style={inputStyle}
+                  placeholder="e.g. Llama-3, Qwen-2.5-Coder"
+                />
+              </div>
+            ) : loadingModels ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px" }}>
+                <div
+                  style={{
+                    width: "24px",
+                    height: "24px",
+                    border: "2px solid var(--rule-soft)",
+                    borderTop: "2px solid var(--accent)",
+                    borderRadius: "50%",
+                    animation: "armance-spin 0.8s linear infinite",
+                    marginBottom: "12px",
+                  }}
+                />
+                <span style={{ fontSize: "13px", color: "var(--ink-soft)" }}>
+                  Discovering provider catalogue...
+                </span>
+              </div>
+            ) : (
+              <div
+                style={{
+                  maxHeight: "220px",
+                  overflowY: "auto",
+                  border: "1px solid var(--rule-soft)",
+                  borderRadius: "6px",
+                  background: "var(--bg-paper)",
+                  padding: "6px",
+                  marginBottom: "20px",
+                }}
+              >
+                {getFilteredActiveModels().map((m) => {
+                  const selected = model === m.id;
+                  return (
+                    <div
+                      key={m.id}
+                      onClick={() => setModel(m.id)}
+                      style={{
+                        padding: "10px 14px",
+                        borderRadius: "4px",
+                        background: selected ? "var(--bg-paper-deep)" : "transparent",
+                        borderLeft: `3px solid ${selected ? "var(--accent)" : "transparent"}`,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        transition: "background 0.2s",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <span style={{ fontSize: "13px", fontWeight: 600 }}>
+                          {m.display_name || m.id}
+                        </span>
+                        <span style={{ fontSize: "11px", color: "var(--ink-soft)", fontFamily: "var(--ff-mono)" }}>
+                          {m.id}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                        {m.context_window && (
+                          <span style={{ fontSize: "10px", color: "var(--ink-faint)" }}>
+                            {formatContextWindow(m.context_window)}
+                          </span>
+                        )}
+                        <span
+                          style={{
+                            fontSize: "10px",
+                            padding: "2px 6px",
+                            borderRadius: "4px",
+                            fontWeight: 500,
+                            ...getGemStyle(m.tier),
+                          }}
+                        >
+                          {m.tier}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 

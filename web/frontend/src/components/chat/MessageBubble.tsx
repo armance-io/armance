@@ -105,11 +105,11 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
   const bubbleStyle: CSSProperties = {
     background: isAgent ? "var(--bg-paper-card, #faf6ef)" : "color-mix(in srgb, var(--accent) 7%, var(--bg-paper-deep, #e8dfcd))",
     border: `1px solid ${isAgent ? `color-mix(in srgb, ${agentColour} 40%, var(--rule, #d6c8ad))` : "var(--rule, #d6c8ad)"}`,
-    borderRadius: "6px", padding: "12px 16px", minWidth: 0,
+    borderRadius: "6px", padding: "10px 14px", minWidth: W_BUBBLE_MIN,
   };
 
   const headerStyle: CSSProperties = {
-    display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px",
+    display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "6px", width: "100%",
   };
 
   const bulletStyle: CSSProperties = {
@@ -118,27 +118,38 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
   };
 
   const nameStyle: CSSProperties = {
-    fontFamily: "var(--ff-sans, 'Inter', sans-serif)", fontSize: "12px", fontWeight: 500,
-    color: "var(--ink-soft, #5b5145)", letterSpacing: "0.02em",
+    fontFamily: "var(--ff-sans, 'Inter', sans-serif)", fontSize: "11px", fontWeight: 600,
+    color: "var(--ink-soft, #5b5145)", letterSpacing: "0.03em", textTransform: "uppercase",
   };
 
   const proseStyle: CSSProperties = {
-    fontFamily: "var(--ff-sans, 'Inter', sans-serif)", fontSize: "14px", lineHeight: 1.6, color: "var(--ink, #2a2520)",
+    fontFamily: "var(--ff-sans, 'Inter', sans-serif)", fontSize: "13px", lineHeight: 1.55, color: "var(--ink, #2a2520)",
   };
 
   const footerStyle: CSSProperties = {
-    display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginTop: "6px",
+    display: "flex", justifyContent: "flex-end", marginTop: "4px",
   };
 
   const timeStyle: CSSProperties = {
-    fontFamily: "var(--ff-mono, 'JetBrains Mono', monospace)", fontSize: "10px", color: "var(--ink-faint, #9c8e7e)",
+    fontFamily: "var(--ff-mono, 'JetBrains Mono', monospace)", fontSize: "9px", color: "var(--ink-faint, #9c8e7e)",
   };
 
   const copyBtnStyle: CSSProperties = {
-    display: "flex", alignItems: "center", justifyContent: "center", width: "22px", height: "22px",
-    padding: 0, border: "none", borderRadius: "4px", background: "transparent",
+    display: "flex", alignItems: "center", justifyContent: "center", width: "18px", height: "18px",
+    padding: 0, border: "none", borderRadius: "3px", background: "transparent",
     color: copied ? "var(--accent, #6b4f8a)" : "var(--ink-faint, #9c8e7e)",
     cursor: "pointer", transition: "color 0.15s ease, background 0.15s ease", flexShrink: 0,
+  };
+
+  const formatTimestamp = (ts: string): string => {
+    try {
+      const d = new Date(ts);
+      if (isNaN(d.getTime())) return ts;
+      const pad = (n: number) => String(n).padStart(2, "0");
+      return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} · ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    } catch {
+      return ts;
+    }
   };
 
   return (
@@ -178,17 +189,11 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
         )}
 
         <div style={bubbleStyle}>
-          {isAgent && (
-            <div style={headerStyle}>
-              <span style={bulletStyle} aria-hidden="true" />
-              <span style={nameStyle}>{agentName}</span>
+          <div style={headerStyle}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              {isAgent && <span style={bulletStyle} aria-hidden="true" />}
+              <span style={nameStyle}>{isAgent ? agentName : (t("chat:you") || "you")}</span>
             </div>
-          )}
-          <div className="msg-bubble-prose" style={proseStyle}>
-            <MarkdownRenderer markdown={markdown} t={t} />
-          </div>
-          <div style={footerStyle}>
-            <span style={timeStyle}>{timestamp}</span>
             {markdown && !streaming && (
               <button
                 type="button"
@@ -199,22 +204,32 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
                 title={copied ? t("chat:copy.done") : t("chat:copy.label")}
               >
                 {copied ? (
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M2.5 7.5l3 3 6-7" />
                   </svg>
                 ) : (
-                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <rect x="4.5" y="1.5" width="8" height="9" rx="1.5" />
-                    <rect x="1.5" y="4.5" width="8" height="9" rx="1.5" />
+                  <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="5" y="5" width="8" height="8" rx="1" />
+                    <path d="M3 11V3a1 1 0 0 1 1-1h8" />
                   </svg>
                 )}
               </button>
             )}
+          </div>
+
+          <div className="msg-bubble-prose" style={proseStyle}>
+            <MarkdownRenderer markdown={markdown} t={t} />
+          </div>
+
+          <div style={footerStyle}>
+            <span style={timeStyle}>{formatTimestamp(timestamp)}</span>
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+const W_BUBBLE_MIN = "120px";
 
 export default MessageBubble;
