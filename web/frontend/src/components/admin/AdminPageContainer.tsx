@@ -30,6 +30,8 @@ import {
   getAdminAgents,
   patchAdminAgent,
   getProviders,
+  getEmbeddingModels,
+  type EmbeddingModel,
 } from "@/lib/api";
 import { KNOWN_PROVIDERS } from "@/lib/providerLabels";
 
@@ -117,6 +119,7 @@ export const AdminPageContainer: FC<AdminPageContainerProps> = ({ pid, t }) => {
 const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
   const [cfg, setCfg] = useState<ConfigValues | null>(null);
   const [providerOptions, setProviderOptions] = useState<string[]>([]);
+  const [embeddingOptions, setEmbeddingOptions] = useState<EmbeddingModel[]>([]);
   const [secrets, setSecrets] = useState<Array<{ name: string; value: string; set: boolean }>>([]);
 
   const reloadSecrets = useCallback(() => {
@@ -140,6 +143,8 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
         default_model: String(raw.default_model ?? ""),
         budget_effort: (raw.budget_effort as ConfigValues["budget_effort"]) ?? "free-first",
         language: String(raw.language ?? "en"),
+        embedding_provider: String(raw.embedding_provider ?? ""),
+        embedding_model: String(raw.embedding_model ?? ""),
         providers: (raw.providers as ConfigValues["providers"]) ?? [],
       });
       const provs = (prov.providers ?? {}) as Record<string, Array<{ id?: string }>>;
@@ -150,6 +155,9 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
         Array.from(new Set([...KNOWN_PROVIDERS, ...Object.keys(provs)])).sort(),
       );
     });
+    void getEmbeddingModels()
+      .then((res) => setEmbeddingOptions(res.models ?? []))
+      .catch(console.error);
     reloadSecrets();
   }, [pid, reloadSecrets]);
 
@@ -194,6 +202,8 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
       default_model: String(updated.default_model ?? ""),
       budget_effort: (updated.budget_effort as ConfigValues["budget_effort"]) ?? "free-first",
       language: String(updated.language ?? "en"),
+      embedding_provider: String(updated.embedding_provider ?? ""),
+      embedding_model: String(updated.embedding_model ?? ""),
       providers: (updated.providers as ConfigValues["providers"]) ?? [],
     });
     reloadSecrets();
@@ -206,6 +216,7 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
         values={cfg}
         providerOptions={providerOptions}
         languageOptions={["en", "fr"]}
+        embeddingOptions={embeddingOptions}
         onSave={onSave}
         onAddProviderSecrets={onAddProviderSecrets}
         secrets={secrets}

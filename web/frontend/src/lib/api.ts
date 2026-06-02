@@ -167,6 +167,17 @@ export async function getProviders(): Promise<ProvidersCatalogue> {
   return api.get<ProvidersCatalogue>(`/providers`);
 }
 
+export interface EmbeddingModel {
+  provider: string;
+  id: string;
+  name: string;
+  free: boolean;
+}
+
+export async function getEmbeddingModels(): Promise<{ models: EmbeddingModel[] }> {
+  return api.get<{ models: EmbeddingModel[] }>(`/embedding-models`);
+}
+
 export interface HypothesisEntry {
   step_id: string;
   text: string;

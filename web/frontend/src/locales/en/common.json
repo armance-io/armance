@@ -389,7 +389,10 @@
       "providers": "Configured Providers",
       "default": "Default",
       "delete_provider": "Delete Provider",
-      "add_provider": "+ Add a Provider"
+      "add_provider": "+ Add a Provider",
+      "embedding": "Embedding model",
+      "embedding_placeholder": "Type or pick an embedding model id…",
+      "embedding_hint": "Used to index your library. Pick from your providers or type any model id."
     },
     "secrets": {
       "title": "Secrets",
