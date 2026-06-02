@@ -293,6 +293,10 @@
       "title": "Aucun workflow conçu.",
       "hint": "Demandez à Kim d'en concevoir un via le chat."
     },
+    "list": {
+      "title": "Workflows",
+      "steps": "{count} étapes"
+    },
     "runs": {
       "title": "Exécutions passées"
     },
