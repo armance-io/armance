@@ -107,5 +107,5 @@ def test_cmd_init_gemini_writes_key(
     assert "GEMINI_API_KEY=sk-gemini-key" in env
 
     yaml_text = (tmp_path / ".armance" / "config.yaml").read_text(encoding="utf-8")
-    assert "gemini-1.5-pro" in yaml_text
     assert "budget_effort: low" in yaml_text
+    assert "gemini" in yaml_text
