@@ -51,6 +51,12 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
   const [currentAgent, setCurrentAgent] = useState("system-context");
   const counter = useRef(0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Set when *we* initiate an agent switch (sending `@Name`). The next
+  // turn.completed is the backend's switch acknowledgement; onSelectAgent
+  // already inserted the local separator, so we drop that one bubble. This
+  // replaces a fragile multilingual content match — we know structurally,
+  // because we triggered it, that the next reply is the ack.
+  const awaitingSwitchAck = useRef(false);
 
   const nextId = useCallback((): string => {
     counter.current += 1;
@@ -141,18 +147,26 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
         publishCurrentAgent(next);
         return next;
       });
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: nextId(),
-          role: "agent" as const,
-          agentName: displayAgentName(agent),
-          agentColour: assignAgentColour(agent),
-          markdown: reply,
-          timestamp: new Date().toISOString(),
-          streaming: false,
-        },
-      ]);
+      // Suppress the switch acknowledgement: onSelectAgent already inserted
+      // the separator locally, so the backend's ack reply would only create a
+      // duplicate bubble. We know this turn.completed is the ack because we
+      // armed the flag when we sent `@Name`.
+      const isSwitchAck = awaitingSwitchAck.current;
+      awaitingSwitchAck.current = false;
+      if (!isSwitchAck) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: nextId(),
+            role: "agent" as const,
+            agentName: displayAgentName(agent),
+            agentColour: assignAgentColour(agent),
+            markdown: reply,
+            timestamp: new Date().toISOString(),
+            streaming: false,
+          },
+        ]);
+      }
       setBusy(null);
       setBusyAgent(null);
       setSending(false);
@@ -182,11 +196,31 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
 
   useEventStream(pid, sid, handleEvent);
 
+  // Safety net: unlock the input after 60 s even if no SSE event arrives
+  // (network drop, backend crash, EventSource reconnect losing the in-flight
+  // turn.completed, etc.).
+  const sendingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startSending = useCallback(() => {
+    setSending(true);
+    if (sendingTimer.current) clearTimeout(sendingTimer.current);
+    sendingTimer.current = setTimeout(() => setSending(false), 60_000);
+  }, []);
+  // Clear the safety timer whenever sending is explicitly unlocked.
+  useEffect(() => {
+    if (!sending && sendingTimer.current) {
+      clearTimeout(sendingTimer.current);
+      sendingTimer.current = null;
+    }
+  }, [sending]);
+
   // TUI parity: switching agent never refreshes the conversation — the history
-  // stays, only the active agent changes (+ a "basculé sur X" acknowledgement).
+  // stays, only the active agent changes (+ a switch acknowledgement).
   const onSelectAgent = useCallback(
     async (firstName: string) => {
-      setSending(true);
+      // Lock the input AND arm the safety timer so the switch turn can't leave
+      // the input stuck forever if its turn.completed never reaches the client.
+      startSending();
+      awaitingSwitchAck.current = true;
       const agentInfo = agents.find((a) => a.first_name === firstName);
       const slug = agentInfo?.name ?? firstName;
       setCurrentAgent(slug);
@@ -204,14 +238,17 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
         },
       ]);
       try {
+        // The backend switch is fire-and-forget: the 202 response confirms
+        // the turn was enqueued; the turn.completed SSE event will unlock
+        // sending via setSending(false).
         await submitTurn(pid, sid, `@${firstName}`);
       } catch (err) {
         console.error("Failed to switch agent:", err);
-      } finally {
-        setSending(false);
       }
+      // Don't setSending(false) here — wait for turn.completed SSE event.
+      // The safety timer (60 s) armed by startSending guarantees unlock.
     },
-    [pid, sid, agents, nextId, t],
+    [pid, sid, agents, nextId, t, startSending],
   );
 
   // Sidebar Staff click → switch here (no navigation, history preserved).
@@ -248,7 +285,7 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
           streaming: false,
         },
       ]);
-      setSending(true);
+      startSending();
       try {
         await submitTurn(pid, sid, text);
       } catch {
@@ -268,7 +305,7 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
         ]);
       }
     },
-    [pid, sid, nextId, t],
+    [pid, sid, nextId, t, startSending],
   );
 
   const bottom = useMemo(
