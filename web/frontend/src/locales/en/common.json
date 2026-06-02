@@ -494,7 +494,9 @@
     "step_model": "Pick a model",
     "step_budget": "Pick a budget",
     "step_language": "Pick a language",
-    "continue": "Continue"
+    "continue": "Continue",
+    "model_hint": "Choose a default model. This initializes your staff agents (Malik, Kim, Mona, etc.). You can type any model id.",
+    "model_placeholder": "Type or pick a model id…"
   },
   "session": {
     "selector": {
