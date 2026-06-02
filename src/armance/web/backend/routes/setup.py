@@ -24,6 +24,7 @@ router = APIRouter(prefix="/setup", tags=["setup"])
 class SetupInitIn(BaseModel):
     provider: str
     api_key: Optional[str] = None
+    providers_keys: Optional[dict[str, str]] = None
     model: str
     budget: Literal["free-first", "low", "medium", "high", "adaptive"] = "free-first"
     language: Literal["en", "fr", "es", "de", "zh", "ja"] = "en"
@@ -57,15 +58,38 @@ async def setup_init(
 
     from armance.config import Config, ProviderConfig, ensure_armance_tree, save_config, write_env
 
-    prov = ProviderConfig(
-        name=body.provider, # type: ignore
-        api_key=body.api_key or None,
-    )
-    if body.provider in _DEFAULT_BASE_URLS:
-        prov.base_url = _DEFAULT_BASE_URLS[body.provider]
+    # Map the primary provider key
+    primary_key = body.api_key or ""
+    
+    # Gather all configured providers
+    providers_dict = body.providers_keys or {}
+    if body.provider not in providers_dict and primary_key:
+        providers_dict[body.provider] = primary_key
+
+    providers_list = []
+    for prov_name, k in providers_dict.items():
+        if prov_name not in ALL_PROVIDERS:
+            raise HTTPException(status_code=400, detail=f"unknown_provider: {prov_name}")
+        prov = ProviderConfig(
+            name=prov_name, # type: ignore
+            api_key=k or None,
+        )
+        if prov_name in _DEFAULT_BASE_URLS:
+            prov.base_url = _DEFAULT_BASE_URLS[prov_name]
+        providers_list.append(prov)
+
+    # In case no providers keys dictionary was sent, make sure at least the primary is added
+    if not providers_list:
+        prov = ProviderConfig(
+            name=body.provider, # type: ignore
+            api_key=body.api_key or None,
+        )
+        if body.provider in _DEFAULT_BASE_URLS:
+            prov.base_url = _DEFAULT_BASE_URLS[body.provider]
+        providers_list.append(prov)
 
     cfg = Config(
-        providers=[prov],
+        providers=providers_list,
         default_provider=body.provider,
         default_model=body.model,
         budget_effort=body.budget,
@@ -75,8 +99,7 @@ async def setup_init(
     try:
         ensure_armance_tree(app_state.armance_root.parent, cfg)
         save_config(app_state.armance_root.parent, cfg)
-        if body.api_key:
-            write_env(app_state.armance_root.parent, [prov])
+        write_env(app_state.armance_root.parent, providers_list)
     except Exception as exc:
         logger.exception("Failed to initialise config from setup wizard")
         raise HTTPException(status_code=500, detail=str(exc))
