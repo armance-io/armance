@@ -293,6 +293,10 @@
       "title": "No workflow designed yet.",
       "hint": "Ask Kim to design one by typing your request in the chat."
     },
+    "list": {
+      "title": "Workflows",
+      "steps": "{count} steps"
+    },
     "runs": {
       "title": "Past runs"
     },
