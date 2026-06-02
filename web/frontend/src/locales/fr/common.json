@@ -494,7 +494,9 @@
     "step_model": "Choisissez un modèle",
     "step_budget": "Choisissez un budget",
     "step_language": "Choisissez une langue",
-    "continue": "Continuer"
+    "continue": "Continuer",
+    "model_hint": "Choisissez un modèle par défaut. Il initialise vos agents permanents (Malik, Kim, Mona, etc.). Vous pouvez saisir l'identifiant de n'importe quel modèle.",
+    "model_placeholder": "Saisissez ou choisissez un identifiant de modèle…"
   },
   "session": {
     "selector": {

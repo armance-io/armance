@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/visual/ThemeToggle";
 import {
   initSetup,
   createSession,
+  getProviders,
   type SetupInitIn,
 } from "@/lib/api";
 
@@ -115,6 +116,35 @@ export default function SetupPage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
+  // Live model catalogue per provider, discovered from the provider APIs.
+  // OpenRouter enumerates keyless, so its full list shows even before keys
+  // are saved — this is what fixes the "only a handful of models" bug. The
+  // curated fallbackModels stay as seeds for providers that can't enumerate
+  // keyless (Gemini, Claude) and are merged (deduped) below.
+  const [liveModels, setLiveModels] = useState<Record<string, Array<{ id: string; display_name: string }>>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    void getProviders()
+      .then((res) => {
+        if (cancelled) return;
+        const provs = (res.providers ?? {}) as Record<string, Array<{ id?: string; display_name?: string }>>;
+        const mapped: Record<string, Array<{ id: string; display_name: string }>> = {};
+        for (const [name, models] of Object.entries(provs)) {
+          mapped[name] = models
+            .map((m) => ({ id: m.id ?? "", display_name: m.display_name || m.id || "" }))
+            .filter((m) => m.id);
+        }
+        setLiveModels(mapped);
+      })
+      .catch(() => {
+        /* keep fallbackModels only — discovery is best-effort */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Sync language with i18n
   const handleLanguageChange = (lang: SetupInitIn["language"]) => {
     setLanguage(lang);
@@ -174,16 +204,20 @@ export default function SetupPage() {
 
   const getModelOptions = () => {
     const opts: Array<{ id: string; display_name: string; provider: string }> = [];
+    const seen = new Set<string>();
+    const push = (id: string, display_name: string, provider: string) => {
+      if (!id || seen.has(id)) return;
+      seen.add(id);
+      opts.push({ id, display_name, provider });
+    };
     selectedProviders.forEach((pId) => {
+      // Live catalogue first (full OpenRouter list), then curated seeds.
+      (liveModels[pId] ?? []).forEach((m) => push(m.id, m.display_name, pId));
       const p = PROVIDERS.find((prov) => prov.id === pId);
-      if (p && p.fallbackModels) {
-        p.fallbackModels.forEach((m) => {
-          opts.push({ id: m.id, display_name: m.display_name, provider: pId });
-        });
-      }
+      p?.fallbackModels?.forEach((m) => push(m.id, m.display_name, pId));
     });
     if (selectedProviders.includes("custom-openai")) {
-      opts.push({ id: "gpt-4o", display_name: "Local/Custom default (gpt-4o)", provider: "custom-openai" });
+      push("gpt-4o", "Local/Custom default (gpt-4o)", "custom-openai");
     }
     return opts;
   };
@@ -195,7 +229,7 @@ export default function SetupPage() {
       setModel(opts[0].id);
       setPrimaryProvider(opts[0].provider);
     }
-  }, [selectedProviders]);
+  }, [selectedProviders, liveModels]);
 
   const handleFinish = async () => {
     setSubmitting(true);
@@ -586,8 +620,30 @@ export default function SetupPage() {
           <div style={{ display: "flex", flexDirection: "column" }}>
             <h3 style={formLabel}>{t("setup:step_model")}</h3>
             <p style={{ fontSize: "12px", color: "var(--ink-soft)", marginBottom: "14px" }}>
-              Choose a default model. This is used to initialize your staff agents (Malik, Kim, Mona, etc.).
+              {t("setup:model_hint")}
             </p>
+
+            {/* Free-type model id with typeahead over the discovered catalogue. */}
+            <input
+              list="setup-model-list"
+              value={model}
+              onChange={(e) => {
+                const v = e.target.value;
+                setModel(v);
+                const match = getModelOptions().find((o) => o.id === v);
+                if (match) setPrimaryProvider(match.provider);
+              }}
+              placeholder={t("setup:model_placeholder")}
+              style={{ ...inputStyle, marginBottom: "14px" }}
+            />
+            <datalist id="setup-model-list">
+              {getModelOptions().map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.display_name}
+                </option>
+              ))}
+            </datalist>
+
             <div
               style={{
                 display: "flex",
