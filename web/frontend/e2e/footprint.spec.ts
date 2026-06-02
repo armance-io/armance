@@ -137,30 +137,23 @@ test.describe("EI.8 — Footprint chip + Empreinte admin tab", () => {
     },
   );
 
+  // The Empreinte tab was merged into Statistics: footprint now renders in
+  // the Stats dashboard, with the EcoLogits method note folded in there.
   test(
-    "admin Empreinte tab renders per-agent gCO₂e rollup",
+    "admin Statistics tab renders per-agent gCO₂e rollup",
     async ({ page }) => {
       await page.goto(ADMIN_URL);
-      await page.getByRole("tab", { name: /empreinte/i }).click();
-      await expect(page.getByTestId("footprint-tab")).toBeVisible();
+      await page.getByRole("tab", { name: /statistics|statistiques/i }).click();
+      await expect(page.getByTestId("stats-dashboard")).toBeVisible();
     },
   );
 
   test(
-    "Empreinte tab shows estimate badge for ~ rows",
+    "Statistics method expander cites EcoLogits + ISO 14044",
     async ({ page }) => {
       await page.goto(ADMIN_URL);
-      await page.getByRole("tab", { name: /empreinte/i }).click();
-      await expect(page.getByTestId("estimate-badge")).toBeVisible();
-    },
-  );
-
-  test(
-    "Méthode expander cites EcoLogits + ISO 14044",
-    async ({ page }) => {
-      await page.goto(ADMIN_URL);
-      await page.getByRole("tab", { name: /empreinte/i }).click();
-      await page.getByRole("button", { name: /méthode/i }).click();
+      await page.getByRole("tab", { name: /statistics|statistiques/i }).click();
+      await page.getByRole("button", { name: /méthode|method/i }).click();
       await expect(page.getByTestId("methode-panel")).toContainText("EcoLogits");
       await expect(page.getByTestId("methode-panel")).toContainText("ISO 14044");
     },

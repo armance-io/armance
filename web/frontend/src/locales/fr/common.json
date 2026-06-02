@@ -366,8 +366,7 @@
       "secrets": "Secrets",
       "logs": "Journaux",
       "stats": "Statistiques",
-      "agents": "Agents",
-      "empreinte": "Empreinte"
+      "agents": "Agents"
     },
     "config": {
       "title": "Configuration",
@@ -441,7 +440,9 @@
       "per_agent": "Par agent",
       "top5_cost": "Top 5 par coût",
       "carbon": "Empreinte carbone",
-      "water": "Consommation d'eau"
+      "water": "Consommation d'eau",
+      "carbon_total": "Empreinte carbone totale",
+      "water_total": "Consommation d'eau totale"
     },
     "agents": {
       "title": "Agents",
