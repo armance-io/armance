@@ -8,6 +8,8 @@ import {
   initSetup,
   createSession,
   getProviders,
+  getEmbeddingModels,
+  type EmbeddingModel,
   type SetupInitIn,
 } from "@/lib/api";
 
@@ -122,6 +124,25 @@ export default function SetupPage() {
   // curated fallbackModels stay as seeds for providers that can't enumerate
   // keyless (Gemini, Claude) and are merged (deduped) below.
   const [liveModels, setLiveModels] = useState<Record<string, Array<{ id: string; display_name: string }>>>({});
+
+  // Optional embedding model for the library (step 3). Free-text + type-ahead.
+  const [embeddingModel, setEmbeddingModel] = useState("");
+  const [embeddingProvider, setEmbeddingProvider] = useState("");
+  const [embeddingOptions, setEmbeddingOptions] = useState<EmbeddingModel[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getEmbeddingModels()
+      .then((res) => {
+        if (!cancelled) setEmbeddingOptions(res.models ?? []);
+      })
+      .catch(() => {
+        /* best-effort — free-text still works */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -254,6 +275,10 @@ export default function SetupPage() {
       };
       if (apiKeys[primaryProvider] && apiKeys[primaryProvider].trim()) {
         payload.api_key = apiKeys[primaryProvider].trim();
+      }
+      if (embeddingModel.trim()) {
+        payload.embedding_model = embeddingModel.trim();
+        payload.embedding_provider = embeddingProvider || primaryProvider;
       }
 
       await initSetup(payload);
@@ -687,6 +712,35 @@ export default function SetupPage() {
                   </div>
                 );
               })}
+            </div>
+
+            {/* Optional: embedding model for the library (type-ahead + free text). */}
+            <div style={{ marginTop: "20px" }}>
+              <label style={{ ...formLabel, marginBottom: "6px" }}>
+                {t("setup:embedding_label")}
+              </label>
+              <p style={{ fontSize: "11px", color: "var(--ink-soft)", marginBottom: "8px" }}>
+                {t("setup:embedding_hint")}
+              </p>
+              <input
+                list="setup-embedding-list"
+                value={embeddingModel}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setEmbeddingModel(v);
+                  const match = embeddingOptions.find((o) => o.id === v);
+                  setEmbeddingProvider(match?.provider ?? "");
+                }}
+                placeholder={t("setup:embedding_placeholder")}
+                style={inputStyle}
+              />
+              <datalist id="setup-embedding-list">
+                {embeddingOptions.map((m) => (
+                  <option key={`${m.provider}:${m.id}`} value={m.id}>
+                    {`${m.name} (${m.provider})`}
+                  </option>
+                ))}
+              </datalist>
             </div>
           </div>
         )}

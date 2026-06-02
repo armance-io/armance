@@ -28,6 +28,8 @@ class SetupInitIn(BaseModel):
     model: str
     budget: Literal["free-first", "low", "medium", "high", "adaptive"] = "free-first"
     language: Literal["en", "fr", "es", "de", "zh", "ja"] = "en"
+    embedding_provider: Optional[str] = None
+    embedding_model: Optional[str] = None
 
 
 @router.get("/status")
@@ -101,6 +103,8 @@ async def setup_init(
         default_model=body.model,
         budget_effort=body.budget,
         language=body.language,
+        embedding_provider=body.embedding_provider or "",
+        embedding_model=body.embedding_model or "",
     )
 
     try:
