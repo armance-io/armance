@@ -42,6 +42,14 @@ def _serialise_model(m: Any) -> dict[str, Any]:
 async def _discover_serialised(armance_root) -> dict[str, list[dict[str, Any]]]:
     """Inner helper — keeps the route trivially mockable in tests."""
     cfg = load_config(armance_root.parent)
+    if not cfg.providers:
+        from armance.config import ProviderConfig
+        cfg.providers = [
+            ProviderConfig(name="openrouter"),
+            ProviderConfig(name="claude-code"),
+            ProviderConfig(name="gemini"),
+            ProviderConfig(name="custom-openai"),
+        ]
     raw = await discover_all(cfg)
     out: dict[str, list[dict[str, Any]]] = {}
     for provider_name, models in raw.items():

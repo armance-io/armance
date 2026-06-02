@@ -7,7 +7,7 @@ import { QueryProvider } from "@/components/visual/QueryProvider";
 import { ToastProvider } from "@/components/_shared/Toast";
 
 export const metadata: Metadata = {
-  title: "Armance",
+  title: "👒 Armance",
   description: "A house of minds, deliberating with you.",
 };
 

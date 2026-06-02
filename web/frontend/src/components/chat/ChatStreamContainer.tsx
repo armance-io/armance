@@ -13,6 +13,7 @@ import { lockSession } from "@/lib/sessionBus";
 import { BottomSpinner } from "./BottomSpinner";
 import { ChatInput } from "./ChatInput";
 import { MessageBubble } from "./MessageBubble";
+import { EmptySession } from "@/components/visual/EmptyState/EmptySession";
 
 interface Message {
   id: string;
@@ -318,18 +319,22 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
       {/* R4: no "Talking to" banner — agent selection lives in the sidebar. */}
       {/* paddingLeft only on the scroll area — ChatInput stays flush with the sidebar border. */}
       <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 0", paddingLeft: 8 }}>
-        {messages.map((m) => (
-          <MessageBubble
-            key={m.id}
-            role={m.role}
-            agentName={m.agentName}
-            agentColour={m.agentColour}
-            markdown={m.markdown}
-            timestamp={m.timestamp}
-            streaming={m.streaming}
-            t={t}
-          />
-        ))}
+        {messages.length === 0 ? (
+          <EmptySession t={t} />
+        ) : (
+          messages.map((m) => (
+            <MessageBubble
+              key={m.id}
+              role={m.role}
+              agentName={m.agentName}
+              agentColour={m.agentColour}
+              markdown={m.markdown}
+              timestamp={m.timestamp}
+              streaming={m.streaming}
+              t={t}
+            />
+          ))
+        )}
       </div>
       <BottomSpinner busy={bottom} t={t} />
       <ChatInput

@@ -9,6 +9,7 @@ import {
   type ChangeEvent,
 } from "react";
 import { onMention } from "@/lib/mentionBus";
+import { onPrefill } from "@/lib/prefillBus";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -81,6 +82,14 @@ export const ChatInput: FC<ChatInputProps> = ({
         const sep = prev && !prev.endsWith(" ") ? " " : "";
         return `${prev}${sep}${mention}`;
       });
+      textareaRef.current?.focus();
+    });
+  }, []);
+
+  /* Prefill suggestion text */
+  useEffect(() => {
+    return onPrefill((text) => {
+      setValue(text);
       textareaRef.current?.focus();
     });
   }, []);

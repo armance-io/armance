@@ -41,7 +41,9 @@
       "session": {
         "title": "Une nouvelle séance commence",
         "hint": "Décrivez une décision que vous pesez, ou déposez un document.",
-        "cta": "Nouvelle session"
+        "cta": "Nouvelle session",
+        "suggestion_decision": "décrivez une décision que vous pesez",
+        "suggestion_document": "déposez un document que vous voulez examiner"
       },
       "shell": {
         "title": "Choisissez une séance",
