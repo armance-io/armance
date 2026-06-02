@@ -41,7 +41,9 @@
       "session": {
         "title": "A new session begins",
         "hint": "Describe a decision you're weighing, or drop a document.",
-        "cta": "New session"
+        "cta": "New session",
+        "suggestion_decision": "Describe a decision you are weighing",
+        "suggestion_document": "Drop a document you want to examine"
       },
       "shell": {
         "title": "Choose a session",
