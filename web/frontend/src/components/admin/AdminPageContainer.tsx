@@ -373,6 +373,7 @@ const AgentsTab: FC<{ pid: string; sid: string | null; t: (k: string) => string 
             model: a.model,
             reasoning: (a.reasoning as AgentRecord["reasoning"]) ?? "off",
             supportsReasoning: false,
+            staff: a.staff ?? false,
           })),
         );
         const provs = (prov.providers ?? {}) as Record<string, Array<{ id?: string }>>;

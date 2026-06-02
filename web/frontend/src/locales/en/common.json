@@ -315,11 +315,11 @@
     "invalidator": "invalidator"
   },
   "roles": {
-    "weaver": "weaver",
-    "scout": "scout",
-    "conductor": "conductor",
-    "distiller": "distiller",
-    "critic": "critic"
+    "weaver": "Weaver",
+    "scout": "Scout",
+    "conductor": "Conductor",
+    "distiller": "Distiller",
+    "critic": "Critic"
   },
   "sidebar": {
     "nav_section": {
