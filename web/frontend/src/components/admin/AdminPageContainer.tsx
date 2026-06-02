@@ -124,12 +124,11 @@ const EmpreinteTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t })
 const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
   const [cfg, setCfg] = useState<ConfigValues | null>(null);
   const [providerOptions, setProviderOptions] = useState<string[]>([]);
-  const [modelOptionsByProvider, setModelOptionsByProvider] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     void Promise.all([getAdminConfig(pid), getProviders()]).then(([raw, prov]) => {
       setCfg({
-        default_provider: String(raw.default_provider ?? "openrouter"),
+        default_provider: String(raw.default_provider ?? ""),
         default_model: String(raw.default_model ?? ""),
         budget_effort: (raw.budget_effort as ConfigValues["budget_effort"]) ?? "free-first",
         language: String(raw.language ?? "en"),
@@ -137,19 +136,41 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
       });
       const provs = (prov.providers ?? {}) as Record<string, Array<{ id?: string }>>;
       setProviderOptions(Object.keys(provs).sort());
-
-      const mapped: Record<string, string[]> = {};
-      for (const [pName, mList] of Object.entries(provs)) {
-        mapped[pName] = mList.map((m) => m.id ?? "").filter(Boolean).sort();
-      }
-      setModelOptionsByProvider(mapped);
     });
   }, [pid]);
 
+  const onAddProviderSecrets = async (provName: string, apiKey: string, baseUrl?: string) => {
+    const provUpper = provName.toUpperCase().replace("-", "_");
+    if (apiKey) {
+      await putAdminSecret(pid, `${provUpper}_API_KEY`, apiKey);
+    }
+    if (baseUrl) {
+      await putAdminSecret(pid, `${provUpper}_BASE_URL`, baseUrl);
+    }
+  };
+
   const onSave = async (values: ConfigValues) => {
+    const currentProvs = cfg?.providers ?? [];
+    const nextProvs = values.providers ?? [];
+    const deletedProvs = currentProvs.filter((cp) => !nextProvs.some((np) => np.name === cp.name));
+
+    for (const dp of deletedProvs) {
+      const provUpper = dp.name.toUpperCase().replace("-", "_");
+      try {
+        await deleteAdminSecret(pid, `${provUpper}_API_KEY`);
+      } catch (e) {
+        console.warn(`Could not delete API key for ${dp.name}`, e);
+      }
+      try {
+        await deleteAdminSecret(pid, `${provUpper}_BASE_URL`);
+      } catch (e) {
+        console.warn(`Could not delete BASE_URL for ${dp.name}`, e);
+      }
+    }
+
     const updated = await patchAdminConfig(pid, values as unknown as Record<string, unknown>);
     setCfg({
-      default_provider: String(updated.default_provider ?? "openrouter"),
+      default_provider: String(updated.default_provider ?? ""),
       default_model: String(updated.default_model ?? ""),
       budget_effort: (updated.budget_effort as ConfigValues["budget_effort"]) ?? "free-first",
       language: String(updated.language ?? "en"),
@@ -163,9 +184,9 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
       <ConfigForm
         values={cfg}
         providerOptions={providerOptions}
-        modelOptionsByProvider={modelOptionsByProvider}
         languageOptions={["en", "fr"]}
         onSave={onSave}
+        onAddProviderSecrets={onAddProviderSecrets}
         t={t}
       />
     </div>
@@ -445,6 +466,7 @@ const AgentsTab: FC<{ pid: string; sid: string | null; t: (k: string) => string 
   const onSave = async (agent: AgentRecord) => {
     if (!sid) return;
     await patchAdminAgent(pid, sid, agent.id, {
+      provider: agent.provider,
       model: agent.model,
       reasoning: agent.reasoning ?? null,
     });

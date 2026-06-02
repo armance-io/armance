@@ -205,7 +205,7 @@ export const SecretsList: FC<SecretsListProps> = ({
           open={true}
           title={popupSecret.key}
           onClose={() => setPopupSecret(null)}
-          cancelLabel={t("common.close") || "Close"}
+          cancelLabel={t("common:close") || "Close"}
         >
           <div
             style={{
