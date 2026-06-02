@@ -40,6 +40,9 @@ async function request<T>(
     const detail = await res.json().catch(() => ({ detail: res.statusText }));
     const code = typeof detail.detail === "string" ? detail.detail : detail.detail?.error ?? "unknown";
     if (res.status === 409) {
+      if (code === "not_initialised" && typeof window !== "undefined") {
+        window.location.replace("/setup");
+      }
       throw new ApiConflictError(String(code), String(code));
     }
     throw new ApiError(res.status, String(code), String(code));
@@ -565,6 +568,31 @@ export async function patchAdminAgent(
     `/projects/${pid}/sessions/${sid}/agents/${encodeURIComponent(name)}`,
     patch,
   );
+}
+
+// ---------------------------------------------------------------------------
+// Setup / Onboarding routes (Epic E)
+// ---------------------------------------------------------------------------
+
+export interface SetupStatusResponse {
+  configured: boolean;
+  missing?: string[];
+}
+
+export interface SetupInitIn {
+  provider: string;
+  api_key?: string;
+  model: string;
+  budget: "free-first" | "low" | "medium" | "high" | "adaptive";
+  language: "en" | "fr" | "es" | "de" | "zh" | "ja";
+}
+
+export async function getSetupStatus(): Promise<SetupStatusResponse> {
+  return api.get<SetupStatusResponse>("/setup/status");
+}
+
+export async function initSetup(body: SetupInitIn): Promise<{ configured: boolean; project_id: string }> {
+  return api.post<{ configured: boolean; project_id: string }>("/setup/init", body);
 }
 
 
