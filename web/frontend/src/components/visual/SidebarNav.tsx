@@ -116,15 +116,15 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
   };
 
   // Agent click (anywhere): go to the conversation and switch to that agent.
+  // The chat container stays mounted across tabs, so the agentBus switch reaches
+  // it whatever the active view — no `?switch=` URL relay (which used to double-
+  // fire alongside the bus and stack 2-3 "interlocuteur" separators).
   const onAgentClick = (firstName: string) => {
-    if (onConversation) {
-      requestAgentSwitch(firstName);
-    } else if (sid) {
-      const targetPath = `${sessionPath()}?switch=${encodeURIComponent(firstName)}`;
-      window.history.pushState(null, "", targetPath);
+    if (!onConversation && sid) {
+      window.history.pushState(null, "", sessionPath());
       emitViewChange("chat");
-      setTimeout(() => requestAgentSwitch(firstName), 50);
     }
+    requestAgentSwitch(firstName);
   };
 
   const agentRow = (a: { name: string; slug?: string; role: string; model?: string }, isStaff: boolean) => {
@@ -133,6 +133,9 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
     const reachable = Boolean(a.model);
     const agentColour = assignAgentColour(a.name);
     const discColour = reachable ? agentColour : `color-mix(in srgb, ${agentColour} 40%, transparent)`;
+    // Staff carry a canonical role (weaver/scout/conductor/distiller/critic) that
+    // is localized; specialists carry a free-form domain label, shown verbatim.
+    const roleLabel = isStaff ? t(`roles:${a.role}`) : a.role;
     return (
       <button
         key={a.slug ?? a.name}
@@ -143,7 +146,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
       >
         <PulseDot size={8} color={discColour} active={thinking} />
         <span style={{ flex: 1, textAlign: "left" }}>{a.name}</span>
-        <span style={{ color: tokens.inkFaint, fontSize: 11, textAlign: "right" }}>{a.role}</span>
+        <span style={{ color: tokens.inkFaint, fontSize: 11, textAlign: "right" }}>{roleLabel}</span>
       </button>
     );
   };

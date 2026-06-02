@@ -71,6 +71,12 @@ describe("i18n key validation guard", () => {
       for (const v of values) usedKeys.add(`${prefix}.${v}`);
     }
 
+    // Flat dynamic key family `t(`roles:${a.role}`)` in SidebarNav — the colon
+    // separates ns from key, so these are added whole (no extra dot).
+    for (const r of ["weaver", "scout", "conductor", "distiller", "critic"]) {
+      usedKeys.add(`roles:${r}`);
+    }
+
     const missingEn: string[] = [];
     const missingFr: string[] = [];
 

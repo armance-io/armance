@@ -311,6 +311,13 @@
     "marker": "Hypothesis",
     "invalidator": "invalidator"
   },
+  "roles": {
+    "weaver": "weaver",
+    "scout": "scout",
+    "conductor": "conductor",
+    "distiller": "distiller",
+    "critic": "critic"
+  },
   "sidebar": {
     "nav_section": {
       "workspace": "Workspace",
