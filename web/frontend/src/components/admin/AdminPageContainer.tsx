@@ -46,12 +46,19 @@ export const AdminPageContainer: FC<AdminPageContainerProps> = ({ pid, t }) => {
   const [activeTab, setActiveTab] = useState<Tab>("config");
 
   // BUG-06: uniform tab content rhythm via shared tokens (not magic numbers).
+  // Flex column bounded by <main> (definite height) so a tab can hand its child
+  // a real height to scroll inside: the Logs tab fills it (filter bar pinned,
+  // rows scroll); other tabs scroll within the tabpanel.
   const outer: CSSProperties = {
     fontFamily: tokens.ffSans,
     color: tokens.ink,
     padding: `${tokens.tabPadY} ${tokens.tabPadX}`,
     maxWidth: 900,
     marginInline: "auto",
+    height: "100%",
+    minHeight: 0,
+    display: "flex",
+    flexDirection: "column",
   };
 
   const tabBar: CSSProperties = {
@@ -89,7 +96,7 @@ export const AdminPageContainer: FC<AdminPageContainerProps> = ({ pid, t }) => {
         ))}
       </div>
 
-      <div role="tabpanel">
+      <div role="tabpanel" style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
         {activeTab === "config" && <ConfigTab pid={pid} t={t} />}
         {activeTab === "secrets" && <SecretsTab pid={pid} t={t} />}
         {activeTab === "logs" && <LogsTab pid={pid} t={t} />}
@@ -306,8 +313,11 @@ const LogsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
   };
 
   return (
-    <div data-testid="log-viewer">
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+    <div
+      data-testid="log-viewer"
+      style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexShrink: 0 }}>
         <LogLevelToggle
           current={logLevel}
           onChange={async (lvl) => { await patchLogLevel(pid, lvl); setLogLevel(lvl); }}
@@ -324,7 +334,9 @@ const LogsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
           {t("admin:logs.live")}
         </span>
       </div>
-      <LogViewer entries={entries} agents={[]} loadMore={loadMore} hasMore={cursor !== null} t={t} />
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <LogViewer entries={entries} agents={[]} loadMore={loadMore} hasMore={cursor !== null} t={t} />
+      </div>
     </div>
   );
 };
