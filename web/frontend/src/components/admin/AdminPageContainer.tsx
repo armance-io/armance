@@ -32,6 +32,7 @@ import {
   patchAdminAgent,
   getProviders,
 } from "@/lib/api";
+import { KNOWN_PROVIDERS } from "@/lib/providerLabels";
 
 type Tab = "config" | "logs" | "stats" | "agents" | "empreinte";
 const TABS: Tab[] = ["config", "logs", "stats", "agents", "empreinte"];
@@ -149,7 +150,12 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
         providers: (raw.providers as ConfigValues["providers"]) ?? [],
       });
       const provs = (prov.providers ?? {}) as Record<string, Array<{ id?: string }>>;
-      setProviderOptions(Object.keys(provs).sort());
+      // The "add provider" picker must offer every supported provider, not
+      // only the ones discovery returned (which are the already-configured
+      // ones). Union the canonical set with whatever discovery surfaced.
+      setProviderOptions(
+        Array.from(new Set([...KNOWN_PROVIDERS, ...Object.keys(provs)])).sort(),
+      );
     });
     reloadSecrets();
   }, [pid, reloadSecrets]);
