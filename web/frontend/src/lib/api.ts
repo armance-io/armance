@@ -597,6 +597,8 @@ export interface SetupInitIn {
   model: string;
   budget: "free-first" | "low" | "medium" | "high" | "adaptive";
   language: "en" | "fr" | "es" | "de" | "zh" | "ja";
+  embedding_provider?: string;
+  embedding_model?: string;
 }
 
 export async function getSetupStatus(): Promise<SetupStatusResponse> {

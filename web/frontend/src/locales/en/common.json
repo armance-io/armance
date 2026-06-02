@@ -499,7 +499,10 @@
     "step_language": "Pick a language",
     "continue": "Continue",
     "model_hint": "Choose a default model. This initializes your staff agents (Malik, Kim, Mona, etc.). You can type any model id.",
-    "model_placeholder": "Type or pick a model id…"
+    "model_placeholder": "Type or pick a model id…",
+    "embedding_label": "Embedding model (optional)",
+    "embedding_hint": "For indexing your library. You can skip this and set it later.",
+    "embedding_placeholder": "Type or pick an embedding model id…"
   },
   "session": {
     "selector": {

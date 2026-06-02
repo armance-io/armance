@@ -499,7 +499,10 @@
     "step_language": "Choisissez une langue",
     "continue": "Continuer",
     "model_hint": "Choisissez un modèle par défaut. Il initialise vos agents permanents (Malik, Kim, Mona, etc.). Vous pouvez saisir l'identifiant de n'importe quel modèle.",
-    "model_placeholder": "Saisissez ou choisissez un identifiant de modèle…"
+    "model_placeholder": "Saisissez ou choisissez un identifiant de modèle…",
+    "embedding_label": "Modèle d'embedding (optionnel)",
+    "embedding_hint": "Pour indexer votre bibliothèque. Vous pouvez l'ignorer et le définir plus tard.",
+    "embedding_placeholder": "Saisissez ou choisissez un identifiant de modèle d'embedding…"
   },
   "session": {
     "selector": {
