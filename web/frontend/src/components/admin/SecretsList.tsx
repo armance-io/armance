@@ -1,5 +1,6 @@
 import { type CSSProperties, type FC, useState } from "react";
 import { tokens } from "../_shared/armance-tokens";
+import { ElegantPopup } from "../_shared/ElegantPopup";
 
 export interface SecretEntry {
   key: string;
@@ -24,30 +25,26 @@ export const SecretsList: FC<SecretsListProps> = ({
   onReveal,
   t,
 }) => {
-  const [revealedKey, setRevealedKey] = useState<string | null>(null);
+  const [popupSecret, setPopupSecret] = useState<{ key: string; value: string } | null>(null);
   const [clearValues, setClearValues] = useState<Record<string, string>>({});
   const [loadingReveal, setLoadingReveal] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 
-  const toggleReveal = async (key: string) => {
-    if (revealedKey === key) {
-      setRevealedKey(null);
+  const handleRevealClick = async (key: string) => {
+    if (clearValues[key]) {
+      setPopupSecret({ key, value: clearValues[key] });
     } else {
-      if (clearValues[key]) {
-        setRevealedKey(key);
-      } else {
-        setLoadingReveal(key);
-        try {
-          const val = await onReveal(key);
-          setClearValues(prev => ({ ...prev, [key]: val }));
-          setRevealedKey(key);
-        } catch (err) {
-          console.error(err);
-        } finally {
-          setLoadingReveal(null);
-        }
+      setLoadingReveal(key);
+      try {
+        const val = await onReveal(key);
+        setClearValues((prev) => ({ ...prev, [key]: val }));
+        setPopupSecret({ key, value: val });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingReveal(null);
       }
     }
   };
@@ -60,7 +57,7 @@ export const SecretsList: FC<SecretsListProps> = ({
   };
   const head: CSSProperties = {
     display: "grid",
-    gridTemplateColumns: "1fr 1.4fr auto",
+    gridTemplateColumns: "260px 1fr auto",
     padding: "12px 20px",
     borderBottom: `1px solid ${tokens.rule}`,
     background: tokens.bgPaperDeep,
@@ -72,7 +69,7 @@ export const SecretsList: FC<SecretsListProps> = ({
   };
   const row: CSSProperties = {
     display: "grid",
-    gridTemplateColumns: "1fr 1.4fr auto",
+    gridTemplateColumns: "260px 1fr auto",
     padding: "12px 20px",
     borderBottom: `1px solid ${tokens.rule}`,
     alignItems: "center",
@@ -95,11 +92,7 @@ export const SecretsList: FC<SecretsListProps> = ({
 
       {secrets.map((s) => {
         const isBaseUrl = s.key.endsWith("_BASE_URL");
-        const displayedValue = isBaseUrl
-          ? s.value
-          : revealedKey === s.key
-          ? (clearValues[s.key] || s.value)
-          : `sk-***…${s.last4}`;
+        const displayedValue = isBaseUrl ? s.value : `sk-***…${s.last4}`;
 
         return (
           <div key={s.key} style={row}>
@@ -162,17 +155,17 @@ export const SecretsList: FC<SecretsListProps> = ({
                   {!isBaseUrl && (
                     <IconBtn
                       label={t("admin:secrets.action.reveal")}
-                      onClick={() => toggleReveal(s.key)}
-                      active={revealedKey === s.key}
+                      onClick={() => handleRevealClick(s.key)}
+                      active={popupSecret?.key === s.key}
                     >
-                      <EyeIcon crossed={revealedKey === s.key} />
+                      <EyeIcon crossed={popupSecret?.key === s.key} />
                     </IconBtn>
                   )}
                   <IconBtn
                     label={t("admin:secrets.action.edit")}
                     onClick={() => {
                       setEditing(s.key);
-                      setEditValue(revealedKey === s.key ? (clearValues[s.key] || s.value) : s.value);
+                      setEditValue(isBaseUrl ? s.value : (clearValues[s.key] || ""));
                     }}
                   >
                     ✎
@@ -205,6 +198,27 @@ export const SecretsList: FC<SecretsListProps> = ({
             setConfirmingDelete(null);
           }}
         />
+      )}
+
+      {popupSecret && (
+        <ElegantPopup
+          open={true}
+          title={popupSecret.key}
+          onClose={() => setPopupSecret(null)}
+          cancelLabel={t("common.close") || "Close"}
+        >
+          <div
+            style={{
+              wordBreak: "break-all",
+              fontFamily: tokens.ffMono,
+              fontSize: 13,
+              color: tokens.ink,
+              padding: "8px 0",
+            }}
+          >
+            {popupSecret.value}
+          </div>
+        </ElegantPopup>
       )}
     </div>
   );

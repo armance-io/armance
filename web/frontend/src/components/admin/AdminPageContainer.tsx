@@ -45,6 +45,8 @@ export const AdminPageContainer: FC<AdminPageContainerProps> = ({ pid, t }) => {
   const { sid } = useLatestSession();
   const [activeTab, setActiveTab] = useState<Tab>("config");
 
+  const isLogs = activeTab === "logs";
+
   // BUG-06: uniform tab content rhythm via shared tokens (not magic numbers).
   // Flex column bounded by <main> (definite height) so a tab can hand its child
   // a real height to scroll inside: the Logs tab fills it (filter bar pinned,
@@ -55,10 +57,12 @@ export const AdminPageContainer: FC<AdminPageContainerProps> = ({ pid, t }) => {
     padding: `${tokens.tabPadY} ${tokens.tabPadX}`,
     maxWidth: 900,
     marginInline: "auto",
-    height: "100%",
-    minHeight: 0,
-    display: "flex",
-    flexDirection: "column",
+    ...(isLogs ? {
+      height: "100%",
+      minHeight: 0,
+      display: "flex",
+      flexDirection: "column",
+    } : {}),
   };
 
   const tabBar: CSSProperties = {
@@ -96,7 +100,7 @@ export const AdminPageContainer: FC<AdminPageContainerProps> = ({ pid, t }) => {
         ))}
       </div>
 
-      <div role="tabpanel" style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+      <div role="tabpanel" style={isLogs ? { flex: 1, minHeight: 0, overflowY: "auto" } : {}}>
         {activeTab === "config" && <ConfigTab pid={pid} t={t} />}
         {activeTab === "secrets" && <SecretsTab pid={pid} t={t} />}
         {activeTab === "logs" && <LogsTab pid={pid} t={t} />}

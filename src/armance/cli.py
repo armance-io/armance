@@ -933,6 +933,24 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     # --host is a legacy alias for --bind
     bind = web_args.host or web_args.bind
 
+    # Port discovery / port hunting: if specified port is in use, try the next ones.
+    port = web_args.port
+    import socket
+    while port < web_args.port + 100:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                s.bind((bind, port))
+                break
+            except socket.error:
+                port += 1
+    else:
+        print(f"error: could not find an available port starting from {web_args.port}", file=sys.stderr)
+        return 1
+
+    if port != web_args.port:
+        print(f"⚠  Port {web_args.port} is occupied. Discovered available port: {port}", file=sys.stderr)
+
     _missing = [m for m in ("fastapi", "uvicorn", "sse_starlette") if __import__("importlib").util.find_spec(m) is None]
     if _missing:
         print(
@@ -961,11 +979,11 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
         import urllib.request
         import webbrowser
 
-        url = f"http://127.0.0.1:{web_args.port}/"
+        url = f"http://127.0.0.1:{port}/"
         # Probe the API health endpoint, not `/`: the SPA shell is only served
         # for `Accept: text/html`, but urllib sends `*/*`, so `/` would 404
         # even when the server is up. /api/healthz always answers 200 once ready.
-        ready_url = f"http://127.0.0.1:{web_args.port}/api/healthz"
+        ready_url = f"http://127.0.0.1:{port}/api/healthz"
 
         def _open_when_ready() -> None:
             # BUG-15: wait until the server actually answers before opening the
@@ -996,7 +1014,7 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
 
     if _web_main._resolve_static_dir() is None:
         print(
-            f"Note: no bundled UI found — running API only on http://{bind}:{web_args.port}.\n"
+            f"Note: no bundled UI found — running API only on http://{bind}:{port}.\n"
             "  The web UI is a build artifact, not shipped in git installs. To get it:\n"
             "    • pip install a release wheel (UI bundled), then `armance web`; or\n"
             "    • from a repo clone: `uv run armance web --build` (needs Node + pnpm).",
@@ -1010,7 +1028,7 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
                 sys.executable, "-m", "uvicorn",
                 "armance.web.backend.main:app",
                 "--host", bind,
-                "--port", str(web_args.port),
+                "--port", str(port),
             ],
             env=env,
             check=True,
