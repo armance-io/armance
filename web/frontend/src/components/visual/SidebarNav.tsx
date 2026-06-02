@@ -177,7 +177,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
       {/* 2 · Staff — permanent team; click = switch + go to conversation */}
       <button style={collapsibleHeader} onClick={toggleStaff} aria-expanded={staffOpen}>
         <span>{t("sidebar:section.staff")}</span>
-        <span aria-hidden="true" style={{ fontSize: "18px", fontWeight: "bold", display: "inline-block" }}>{staffOpen ? "▾" : "▸"}</span>
+        <span aria-hidden="true" style={{ fontSize: "18px", fontWeight: "bold", display: "inline-flex", alignItems: "center", transform: "translateY(-2px)" }}>{staffOpen ? "▾" : "▸"}</span>
       </button>
       {staffOpen && (
         <nav style={navContainer}>
@@ -195,7 +195,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
         <>
           <button style={collapsibleHeader} onClick={toggleRoles} aria-expanded={rolesOpen}>
             <span>{t("sidebar:section.roles")}</span>
-            <span aria-hidden="true" style={{ fontSize: "18px", fontWeight: "bold", display: "inline-block" }}>{rolesOpen ? "▾" : "▸"}</span>
+            <span aria-hidden="true" style={{ fontSize: "18px", fontWeight: "bold", display: "inline-flex", alignItems: "center", transform: "translateY(-2px)" }}>{rolesOpen ? "▾" : "▸"}</span>
           </button>
           {rolesOpen && (
             <nav style={navContainer}>

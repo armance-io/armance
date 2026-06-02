@@ -164,7 +164,7 @@ export default function SetupPage() {
       }
     }
     setErrorMsg("");
-    setStep((s) => Math.min(s + 1, 3));
+    setStep((s) => Math.min(s + 1, 4));
   };
 
   const handleBack = () => {
@@ -172,13 +172,48 @@ export default function SetupPage() {
     setStep((s) => Math.max(s - 1, 1));
   };
 
+  const getModelOptions = () => {
+    const opts: Array<{ id: string; display_name: string; provider: string }> = [];
+    selectedProviders.forEach((pId) => {
+      const p = PROVIDERS.find((prov) => prov.id === pId);
+      if (p && p.fallbackModels) {
+        p.fallbackModels.forEach((m) => {
+          opts.push({ id: m.id, display_name: m.display_name, provider: pId });
+        });
+      }
+    });
+    if (selectedProviders.includes("custom-openai")) {
+      opts.push({ id: "gpt-4o", display_name: "Local/Custom default (gpt-4o)", provider: "custom-openai" });
+    }
+    return opts;
+  };
+
+  // Sync model option when selected providers change
+  useEffect(() => {
+    const opts = getModelOptions();
+    if (opts.length > 0 && opts[0] && !opts.some((o) => o.id === model)) {
+      setModel(opts[0].id);
+      setPrimaryProvider(opts[0].provider);
+    }
+  }, [selectedProviders]);
+
   const handleFinish = async () => {
     setSubmitting(true);
     setErrorMsg("");
     try {
+      const keysPayload: Record<string, string> = {};
+      selectedProviders.forEach((pId) => {
+        keysPayload[pId] = apiKeys[pId] || "";
+      });
+
+      // Special case: include custom base url in keysPayload if configured
+      if (selectedProviders.includes("custom-openai") && baseUrl) {
+        keysPayload["custom-openai_base_url"] = baseUrl;
+      }
+
       const payload: SetupInitIn = {
         provider: primaryProvider,
-        providers_keys: apiKeys,
+        providers_keys: keysPayload,
         model,
         budget,
         language,
@@ -275,7 +310,7 @@ export default function SetupPage() {
   };
 
   const progressFillStyle = (currentStep: number): CSSProperties => ({
-    width: `${((currentStep - 1) / 2) * 100}%`,
+    width: `${((currentStep - 1) / 3) * 100}%`,
     height: "100%",
     background: "var(--accent)",
     transition: "width 0.30s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -396,7 +431,7 @@ export default function SetupPage() {
           <div style={progressTrackContainer}>
             <div style={progressFillStyle(step)} />
           </div>
-          {[1, 2, 3].map((i) => (
+          {[1, 2, 3, 4].map((i) => (
             <div key={i} style={stepDot(i, step >= i)}>
               {i}
             </div>
@@ -546,8 +581,62 @@ export default function SetupPage() {
           </div>
         )}
 
-        {/* Step 3: Budget selection */}
+        {/* Step 3: Model selection */}
         {step === 3 && (
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <h3 style={formLabel}>{t("setup:step_model")}</h3>
+            <p style={{ fontSize: "12px", color: "var(--ink-soft)", marginBottom: "14px" }}>
+              Choose a default model. This is used to initialize your staff agents (Malik, Kim, Mona, etc.).
+            </p>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+                maxHeight: "280px",
+                overflowY: "auto",
+                paddingRight: "4px",
+              }}
+            >
+              {getModelOptions().map((m) => {
+                const selected = model === m.id;
+                return (
+                  <div
+                    key={m.id}
+                    onClick={() => {
+                      setModel(m.id);
+                      setPrimaryProvider(m.provider);
+                    }}
+                    style={{
+                      padding: "12px 16px",
+                      borderRadius: "6px",
+                      border: `1.5px solid ${selected ? "var(--accent)" : "var(--rule-soft)"}`,
+                      background: selected ? "var(--bg-paper)" : "var(--bg-paper-card)",
+                      cursor: "pointer",
+                      transition: "border-color 0.2s, background 0.2s",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span style={{ fontWeight: 600, fontSize: "13px" }}>{m.display_name}</span>
+                      <span style={{ fontSize: "10px", color: "var(--ink-faint)", fontFamily: "var(--ff-mono)" }}>
+                        {m.id}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--accent)", fontWeight: 600, fontFamily: "var(--ff-mono)" }}>
+                      {PROVIDERS.find((p) => p.id === m.provider)?.name}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Budget selection */}
+        {step === 4 && (
           <div style={{ display: "flex", flexDirection: "column" }}>
             <h3 style={formLabel}>{t("setup:step_budget")}</h3>
             <div
@@ -623,7 +712,7 @@ export default function SetupPage() {
             <div />
           )}
 
-          {step < 3 ? (
+          {step < 4 ? (
             <button type="button" onClick={handleNext} style={btnStyle()}>
               {t("common:next")}
             </button>
