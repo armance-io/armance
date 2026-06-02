@@ -18,6 +18,7 @@ const NAMESPACES = [
   "run",
   "workflow",
   "hypotheses",
+  "roles",
   "sidebar",
   "admin",
   "audio",

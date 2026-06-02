@@ -311,6 +311,13 @@
     "marker": "Hypothèse",
     "invalidator": "invalidant"
   },
+  "roles": {
+    "weaver": "tisserande",
+    "scout": "dénicheur",
+    "conductor": "orchestratrice",
+    "distiller": "distillatrice",
+    "critic": "critique"
+  },
   "sidebar": {
     "nav_section": {
       "workspace": "Espace de travail",
