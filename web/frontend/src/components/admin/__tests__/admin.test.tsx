@@ -32,6 +32,7 @@ vi.mock("@/lib/api", () => ({
   getAdminAgents: vi.fn(),
   patchAdminAgent: vi.fn(),
   getProviders: vi.fn(),
+  getEmbeddingModels: vi.fn(),
 }));
 
 vi.mock("@/lib/useLatestSession", () => ({
@@ -480,6 +481,7 @@ describe("<AdminPageContainer />", () => {
     vi.mocked(api.getAdminStats).mockResolvedValue(mockStats);
     vi.mocked(api.getAdminAgents).mockResolvedValue(mockAgents);
     vi.mocked(api.getProviders).mockResolvedValue(mockProviderCatalogue);
+    vi.mocked(api.getEmbeddingModels).mockResolvedValue({ models: [] });
   });
 
   it("switches tabs and fetches corresponding backend data", async () => {
