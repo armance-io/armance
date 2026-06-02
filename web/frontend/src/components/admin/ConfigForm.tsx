@@ -277,7 +277,9 @@ export const ConfigForm: FC<ConfigFormProps> = ({
     return (
       <div style={{ display: "grid", gap: 10 }}>
         {renderSecretRow(apiKeyName, apiSecret)}
-        {(provName === "custom-openai" || (baseSecret && baseSecret.set)) && renderSecretRow(baseUrlName, baseSecret)}
+        {/* Only custom-openai needs a configurable base URL. For the other
+            providers the endpoint is a fixed constant — no need to expose it. */}
+        {provName === "custom-openai" && renderSecretRow(baseUrlName, baseSecret)}
       </div>
     );
   };
