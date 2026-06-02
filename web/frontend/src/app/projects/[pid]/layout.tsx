@@ -42,10 +42,20 @@ export default function ProjectLayout({ children: _children }: { children: React
 
   return (
     <AppShell t={t}>
+      {/* Chat stays mounted across tab switches: this preserves its local state
+          (agent-switch separators) AND keeps the SSE EventSource alive, so a
+          turn.completed emitted while another tab is showing is never lost (the
+          cause of the recurring stuck-input + vanishing-separator bugs). When
+          active it uses `contents` so the chat section's height:100% still
+          resolves against <main>; when inactive it is fully removed from layout
+          with `none`. The other views carry no ephemeral state and refetch on
+          mount, so they stay conditionally mounted. */}
+      <div style={{ display: activeView === "chat" ? "contents" : "none" }}>
+        <SessionView />
+      </div>
       {activeView === "library" && <LibraryView />}
       {activeView === "workflows" && <WorkflowView />}
       {activeView === "admin" && <AdminPageContainer pid={pid || "default"} t={t} />}
-      {activeView === "chat" && <SessionView />}
     </AppShell>
   );
 }
