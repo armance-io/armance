@@ -12,7 +12,7 @@ import { useLatestSession } from "@/lib/useLatestSession";
 import { tokens } from "../_shared/armance-tokens";
 import { PulseDot } from "../_shared/PulseDot";
 import { ConfigForm, type ConfigValues } from "./ConfigForm";
-import { SecretsList, type SecretEntry } from "./SecretsList";
+
 import { LogViewer, type LogEntry } from "./LogViewer";
 import { LogLevelToggle } from "./LogLevelToggle";
 import { StatsDashboard, type AgentStat } from "./StatsDashboard";
@@ -33,8 +33,8 @@ import {
   getProviders,
 } from "@/lib/api";
 
-type Tab = "config" | "secrets" | "logs" | "stats" | "agents" | "empreinte";
-const TABS: Tab[] = ["config", "secrets", "logs", "stats", "agents", "empreinte"];
+type Tab = "config" | "logs" | "stats" | "agents" | "empreinte";
+const TABS: Tab[] = ["config", "logs", "stats", "agents", "empreinte"];
 
 interface AdminPageContainerProps {
   pid: string;
@@ -102,7 +102,6 @@ export const AdminPageContainer: FC<AdminPageContainerProps> = ({ pid, t }) => {
 
       <div role="tabpanel" style={isLogs ? { flex: 1, minHeight: 0, overflowY: "auto" } : {}}>
         {activeTab === "config" && <ConfigTab pid={pid} t={t} />}
-        {activeTab === "secrets" && <SecretsTab pid={pid} t={t} />}
         {activeTab === "logs" && <LogsTab pid={pid} t={t} />}
         {activeTab === "stats" && <StatsTab pid={pid} t={t} />}
         {activeTab === "agents" && <AgentsTab pid={pid} sid={sid} t={t} />}
@@ -124,6 +123,21 @@ const EmpreinteTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t })
 const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
   const [cfg, setCfg] = useState<ConfigValues | null>(null);
   const [providerOptions, setProviderOptions] = useState<string[]>([]);
+  const [secrets, setSecrets] = useState<Array<{ name: string; value: string; set: boolean }>>([]);
+
+  const reloadSecrets = useCallback(() => {
+    void getAdminSecrets(pid, true)
+      .then((data) => {
+        setSecrets(
+          data.map((s) => ({
+            name: s.name,
+            value: s.value,
+            set: s.set,
+          }))
+        );
+      })
+      .catch(console.error);
+  }, [pid]);
 
   useEffect(() => {
     void Promise.all([getAdminConfig(pid), getProviders()]).then(([raw, prov]) => {
@@ -137,7 +151,8 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
       const provs = (prov.providers ?? {}) as Record<string, Array<{ id?: string }>>;
       setProviderOptions(Object.keys(provs).sort());
     });
-  }, [pid]);
+    reloadSecrets();
+  }, [pid, reloadSecrets]);
 
   const onAddProviderSecrets = async (provName: string, apiKey: string, baseUrl?: string) => {
     const provUpper = provName.toUpperCase().replace("-", "_");
@@ -147,6 +162,12 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
     if (baseUrl) {
       await putAdminSecret(pid, `${provUpper}_BASE_URL`, baseUrl);
     }
+    reloadSecrets();
+  };
+
+  const onEditSecret = async (key: string, val: string) => {
+    await putAdminSecret(pid, key, val);
+    reloadSecrets();
   };
 
   const onSave = async (values: ConfigValues) => {
@@ -176,6 +197,7 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
       language: String(updated.language ?? "en"),
       providers: (updated.providers as ConfigValues["providers"]) ?? [],
     });
+    reloadSecrets();
   };
 
   if (!cfg) return null;
@@ -187,107 +209,10 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
         languageOptions={["en", "fr"]}
         onSave={onSave}
         onAddProviderSecrets={onAddProviderSecrets}
+        secrets={secrets}
+        onEditSecret={onEditSecret}
         t={t}
       />
-    </div>
-  );
-};
-
-// ---------------------------------------------------------------------------
-// Secrets tab
-// ---------------------------------------------------------------------------
-
-const SecretsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
-  const [secrets, setSecrets] = useState<SecretEntry[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [isOnline, setIsOnline] = useState(typeof navigator !== "undefined" ? navigator.onLine : true);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, []);
-
-  const reload = useCallback(() => {
-    setError(null);
-    void getAdminSecrets(pid)
-      .then((data) => {
-        setSecrets(
-          data.map((s) => ({
-            key: s.name,
-            value: s.value,
-            last4: s.value.slice(-4),
-          })),
-        );
-      })
-      .catch((err: unknown) => {
-        const errorWithStatus = err as { status?: number } | null | undefined;
-        if (errorWithStatus && errorWithStatus.status === 403) {
-          setError("localhost_only");
-        } else {
-          setError("fetch_failed");
-        }
-      });
-  }, [pid]);
-
-  const isNonLoopback = typeof window !== "undefined" && !["localhost", "127.0.0.1", "::1"].includes(window.location.hostname);
-  const showOffline = !isOnline && isNonLoopback;
-
-  useEffect(() => {
-    if (showOffline) {
-      setError("offline");
-      return;
-    }
-    reload();
-  }, [reload, showOffline]);
-
-  const onEdit = async (key: string, newValue: string) => {
-    await putAdminSecret(pid, key, newValue);
-    reload();
-  };
-  const onDelete = async (key: string) => {
-    await deleteAdminSecret(pid, key);
-    reload();
-  };
-  const onReveal = async (key: string) => {
-    const data = await getAdminSecrets(pid, true);
-    const found = data.find((s) => s.name === key);
-    return found ? found.value : "";
-  };
-
-  if (showOffline) {
-    return (
-      <div style={{ padding: 20, color: tokens.inkSoft, fontFamily: tokens.ffSans }}>
-        {t("admin:secrets.offline")}
-      </div>
-    );
-  }
-
-  if (error === "localhost_only") {
-    return (
-      <div style={{ padding: 20, color: tokens.accent, fontFamily: tokens.ffSans, fontWeight: 500 }}>
-        {t("admin:secrets.localhost_only")}
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{ padding: 20, color: tokens.accent, fontFamily: tokens.ffSans }}>
-        {t("admin:secrets.error_loading")}
-      </div>
-    );
-  }
-
-  return (
-    <div data-testid="secrets-list">
-      <SecretsList secrets={secrets} onEdit={onEdit} onDelete={onDelete} onReveal={onReveal} t={t} />
     </div>
   );
 };
