@@ -4,6 +4,7 @@ import { type CSSProperties, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { DepthPicker } from "@/components/workflow/DepthPicker";
+import { WorkflowsList } from "./WorkflowsList";
 import { WorkflowGraphContainer } from "@/components/workflow/WorkflowGraphContainer";
 import { InterruptButtonContainer } from "@/components/workflow/InterruptButtonContainer";
 import { RunHistoryContainer } from "@/components/workflow/RunHistoryContainer";
@@ -18,6 +19,11 @@ export default function WorkflowView() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const workflowName = name;
+
+  // No specific workflow selected (sidebar "Workflows" → /workflows/_) → show
+  // the index of workflows the user designed with Kim. Picking one routes here
+  // again with a real name and renders its detail below.
+  const noSelection = workflowName === "" || workflowName === "_";
 
   const { data: activeData, refetch: refetchActive } = useQuery({
     queryKey: ["active-workflow", pid, sid],
@@ -59,7 +65,12 @@ export default function WorkflowView() {
     textTransform: "uppercase", color: tokens.inkFaint, margin: "0 0 8px",
   };
 
-  // No real workflow yet → the empty state takes the whole page. Nothing else
+  // No workflow selected → the index (list of Kim-designed workflows).
+  if (noSelection) {
+    return <WorkflowsList />;
+  }
+
+  // A name was given but no such workflow exists → empty state. Nothing else
   // (no graph fixtures, no launcher) until Kim designs one.
   if (workflowsFetched && !workflowExists) {
     return (
