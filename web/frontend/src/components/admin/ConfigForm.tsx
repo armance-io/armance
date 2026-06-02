@@ -2,12 +2,16 @@ import { type CSSProperties, type FC, useState } from "react";
 import { tokens } from "../_shared/armance-tokens";
 import { providerLabel } from "@/lib/providerLabels";
 import { ElegantPopup } from "../_shared/ElegantPopup";
+import { EmbeddingSection } from "./EmbeddingSection";
+import type { EmbeddingModel } from "@/lib/api";
 
 export interface ConfigValues {
   default_provider: string;
   default_model: string;
   budget_effort: "free-first" | "low" | "medium" | "high";
   language: string;
+  embedding_provider?: string;
+  embedding_model?: string;
   providers?: Array<{ name: string; base_url?: string | null }>;
 }
 
@@ -15,6 +19,7 @@ export interface ConfigFormProps {
   values: ConfigValues;
   providerOptions: string[];
   languageOptions: string[];
+  embeddingOptions?: EmbeddingModel[];
   onSave: (values: ConfigValues) => Promise<void>;
   onAddProviderSecrets?: (provName: string, apiKey: string, baseUrl?: string) => Promise<void>;
   secrets?: Array<{ name: string; value: string; set: boolean }>;
@@ -65,6 +70,7 @@ export const ConfigForm: FC<ConfigFormProps> = ({
   values,
   providerOptions,
   languageOptions,
+  embeddingOptions = [],
   onSave,
   onAddProviderSecrets,
   secrets = [],
@@ -588,6 +594,15 @@ export const ConfigForm: FC<ConfigFormProps> = ({
         </select>
         {errors.language && <span style={errStyle}>{errors.language}</span>}
       </div>
+
+      <EmbeddingSection
+        value={draft.embedding_model ?? ""}
+        options={embeddingOptions}
+        onChange={(provider, model) =>
+          setDraft((d) => ({ ...d, embedding_provider: provider, embedding_model: model }))
+        }
+        t={t}
+      />
 
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 24 }}>
         <button
