@@ -52,6 +52,7 @@ const AgentCard: FC<{
 }> = ({ agent, providerOptions, modelOptionsByProvider, onSave, t }) => {
   const [draft, setDraft] = useState<AgentRecord>(agent);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const card: CSSProperties = {
     display: "grid",
@@ -188,8 +189,11 @@ const AgentCard: FC<{
             disabled={saving}
             onClick={async () => {
               setSaving(true);
+              setSaved(false);
               try {
                 await onSave(draft);
+                setSaved(true);
+                setTimeout(() => setSaved(false), 2000);
               } finally {
                 setSaving(false);
               }
@@ -197,15 +201,27 @@ const AgentCard: FC<{
             style={{
               padding: "8px 20px",
               borderRadius: 999,
-              border: `1px solid ${tokens.accent}`,
-              background: tokens.accent,
+              border: `1px solid ${saved ? "hsl(120, 15%, 55%)" : tokens.accent}`,
+              background: saved ? "hsl(120, 15%, 55%)" : tokens.accent,
               color: tokens.bgPaperCard,
               fontFamily: tokens.ffSans,
               fontSize: 13,
               cursor: saving ? "wait" : "pointer",
+              transition: "background 0.25s ease, border-color 0.25s ease",
             }}
           >
-            {saving ? t("admin:agents.saving") : t("admin:agents.save")}
+            {saving ? (
+              t("admin:agents.saving")
+            ) : saved ? (
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block" }}>
+                  <path d="M2.5 7.5l3 3 6-7" />
+                </svg>
+                {t("admin:agents.saved") || "Enregistré"}
+              </span>
+            ) : (
+              t("admin:agents.save")
+            )}
           </button>
         </div>
       </div>

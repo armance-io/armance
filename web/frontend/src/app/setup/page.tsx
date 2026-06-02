@@ -5,18 +5,10 @@ import { useTranslation } from "react-i18next";
 import { Fleuron } from "@/components/visual/Fleuron";
 import { ThemeToggle } from "@/components/visual/ThemeToggle";
 import {
-  getProviders,
   initSetup,
   createSession,
   type SetupInitIn,
 } from "@/lib/api";
-
-interface SetupModel {
-  id: string;
-  display_name?: string;
-  context_window?: number;
-  tier: string;
-}
 
 const PROVIDERS = [
   {
@@ -38,9 +30,9 @@ const PROVIDERS = [
     placeholder: "",
     requiresKey: false,
     fallbackModels: [
-      { id: "claude-3-5-sonnet", display_name: "Claude 3.5 Sonnet", context_window: 200000, tier: "medium" },
-      { id: "claude-3-opus", display_name: "Claude 3 Opus", context_window: 200000, tier: "high" },
-      { id: "claude-3-5-haiku", display_name: "Claude 3.5 Haiku", context_window: 200000, tier: "low" },
+      { id: "claude-opus-4-7", display_name: "Claude Opus 4.7", context_window: 200000, tier: "high" },
+      { id: "claude-sonnet-4-6", display_name: "Claude Sonnet 4.6", context_window: 200000, tier: "medium" },
+      { id: "claude-haiku-4-5", display_name: "Claude Haiku 4.5", context_window: 200000, tier: "low" },
     ],
   },
   {
@@ -105,8 +97,7 @@ const LANGUAGES = [
   { id: "ja" as const, label: "日本語", emoji: "🇯🇵" },
 ];
 
-// Patterns that identify non-text chat models (audio, vision, embedding) matching backend discovery patterns
-const NON_TEXT_PATTERNS = /(ocr|vision|audio|tts|speech|whisper|embed|image|video|multimodal|diffus|sdxl|dall-e|guard|moderat)/i;
+
 
 export default function SetupPage() {
   const { t, i18n } = useTranslation();
@@ -121,8 +112,6 @@ export default function SetupPage() {
   const [budget, setBudget] = useState<SetupInitIn["budget"]>("medium");
 
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
-  const [discoveredModels, setDiscoveredModels] = useState<Record<string, SetupModel[]>>({});
-  const [loadingModels, setLoadingModels] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -152,25 +141,6 @@ export default function SetupPage() {
     setErrorMsg("");
   }, [primaryProvider]);
 
-  // Fetch model catalogs when reaching the Model Selection step (Step 4)
-  useEffect(() => {
-    if (step === 4) {
-      setLoadingModels(true);
-      getProviders()
-        .then((cat) => {
-          if (cat && cat.providers) {
-            setDiscoveredModels(cat.providers as unknown as Record<string, SetupModel[]>);
-          }
-        })
-        .catch((err) => {
-          console.error("Failed to load live catalogues", err);
-        })
-        .finally(() => {
-          setLoadingModels(false);
-        });
-    }
-  }, [step]);
-
   const handleProviderToggle = (provId: string) => {
     if (selectedProviders.includes(provId)) {
       if (selectedProviders.length > 1) {
@@ -179,16 +149,6 @@ export default function SetupPage() {
     } else {
       setSelectedProviders((prev) => [...prev, provId]);
     }
-  };
-
-  const getFilteredActiveModels = () => {
-    const liveList = discoveredModels[primaryProvider];
-    const listToFilter = (liveList && liveList.length > 0) 
-      ? liveList 
-      : (PROVIDERS.find((p) => p.id === primaryProvider)?.fallbackModels || []);
-      
-    // strictly exclude audio, video, embeddings, image models
-    return listToFilter.filter((m) => !NON_TEXT_PATTERNS.test(m.id));
   };
 
   const handleNext = () => {
@@ -204,7 +164,7 @@ export default function SetupPage() {
       }
     }
     setErrorMsg("");
-    setStep((s) => Math.min(s + 1, 4));
+    setStep((s) => Math.min(s + 1, 3));
   };
 
   const handleBack = () => {
@@ -240,26 +200,7 @@ export default function SetupPage() {
     }
   };
 
-  const getGemStyle = (tier: string): CSSProperties => {
-    switch (tier) {
-      case "free":
-        return { background: "hsl(120, 15%, 55%)", color: "#ffffff" };
-      case "low":
-        return { background: "hsl(200, 20%, 60%)", color: "#ffffff" };
-      case "medium":
-        return { background: "hsl(35, 30%, 60%)", color: "#ffffff" };
-      case "high":
-        return { background: "hsl(0, 30%, 65%)", color: "#ffffff" };
-      default:
-        return { background: "var(--accent)", color: "var(--bg-paper)" };
-    }
-  };
 
-  const formatContextWindow = (ctx: number) => {
-    if (!ctx) return "N/A";
-    if (ctx >= 1000000) return `${ctx / 1000000}M tokens`;
-    return `${ctx / 1000}k tokens`;
-  };
 
   // Styles
   const containerStyle: CSSProperties = {
@@ -334,7 +275,7 @@ export default function SetupPage() {
   };
 
   const progressFillStyle = (currentStep: number): CSSProperties => ({
-    width: `${((currentStep - 1) / 3) * 100}%`,
+    width: `${((currentStep - 1) / 2) * 100}%`,
     height: "100%",
     background: "var(--accent)",
     transition: "width 0.30s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -455,7 +396,7 @@ export default function SetupPage() {
           <div style={progressTrackContainer}>
             <div style={progressFillStyle(step)} />
           </div>
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3].map((i) => (
             <div key={i} style={stepDot(i, step >= i)}>
               {i}
             </div>
@@ -664,141 +605,6 @@ export default function SetupPage() {
           </div>
         )}
 
-        {/* Step 4: Model selection with Primary Default selector */}
-        {step === 4 && (
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <h3 style={formLabel}>{t("setup:step_model")}</h3>
-            
-            {/* If multiple providers are configured, let them select the default primary one */}
-            {selectedProviders.length > 1 && (
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ ...formLabel, fontSize: "10px", display: "block", marginBottom: "6px" }}>
-                  Primary Default Provider
-                </label>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  {selectedProviders.map((pId) => {
-                    const p = PROVIDERS.find((prov) => prov.id === pId);
-                    if (!p) return null;
-                    const isPrimary = primaryProvider === pId;
-                    return (
-                      <button
-                        key={pId}
-                        type="button"
-                        onClick={() => setPrimaryProvider(pId)}
-                        style={{
-                          padding: "6px 12px",
-                          borderRadius: "4px",
-                          border: `1.5px solid ${isPrimary ? "var(--accent)" : "var(--rule-soft)"}`,
-                          background: isPrimary ? "var(--accent)" : "transparent",
-                          color: isPrimary ? "var(--bg-paper)" : "var(--ink-soft)",
-                          fontSize: "12px",
-                          fontWeight: 500,
-                          cursor: "pointer",
-                        }}
-                      >
-                        {p.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {primaryProvider === "custom-openai" ? (
-              <div style={{ marginBottom: "20px" }}>
-                <p style={{ fontSize: "13px", color: "var(--ink-soft)", marginBottom: "12px" }}>
-                  Type the exact model identifier exposed by your custom endpoint:
-                </p>
-                <input
-                  type="text"
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  style={inputStyle}
-                  placeholder="e.g. Llama-3, Qwen-2.5-Coder"
-                />
-              </div>
-            ) : loadingModels ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px" }}>
-                <div
-                  style={{
-                    width: "24px",
-                    height: "24px",
-                    border: "2px solid var(--rule-soft)",
-                    borderTop: "2px solid var(--accent)",
-                    borderRadius: "50%",
-                    animation: "armance-spin 0.8s linear infinite",
-                    marginBottom: "12px",
-                  }}
-                />
-                <span style={{ fontSize: "13px", color: "var(--ink-soft)" }}>
-                  Discovering provider catalogue...
-                </span>
-              </div>
-            ) : (
-              <div
-                style={{
-                  maxHeight: "220px",
-                  overflowY: "auto",
-                  border: "1px solid var(--rule-soft)",
-                  borderRadius: "6px",
-                  background: "var(--bg-paper)",
-                  padding: "6px",
-                  marginBottom: "20px",
-                }}
-              >
-                {getFilteredActiveModels().map((m) => {
-                  const selected = model === m.id;
-                  return (
-                    <div
-                      key={m.id}
-                      onClick={() => setModel(m.id)}
-                      style={{
-                        padding: "10px 14px",
-                        borderRadius: "4px",
-                        background: selected ? "var(--bg-paper-deep)" : "transparent",
-                        borderLeft: `3px solid ${selected ? "var(--accent)" : "transparent"}`,
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        transition: "background 0.2s",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      <div style={{ display: "flex", flexDirection: "column" }}>
-                        <span style={{ fontSize: "13px", fontWeight: 600 }}>
-                          {m.display_name || m.id}
-                        </span>
-                        <span style={{ fontSize: "11px", color: "var(--ink-soft)", fontFamily: "var(--ff-mono)" }}>
-                          {m.id}
-                        </span>
-                      </div>
-                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                        {m.context_window && (
-                          <span style={{ fontSize: "10px", color: "var(--ink-faint)" }}>
-                            {formatContextWindow(m.context_window)}
-                          </span>
-                        )}
-                        <span
-                          style={{
-                            fontSize: "10px",
-                            padding: "2px 6px",
-                            borderRadius: "4px",
-                            fontWeight: 500,
-                            ...getGemStyle(m.tier),
-                          }}
-                        >
-                          {m.tier}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Navigation buttons */}
         <div
           style={{
@@ -817,7 +623,7 @@ export default function SetupPage() {
             <div />
           )}
 
-          {step < 4 ? (
+          {step < 3 ? (
             <button type="button" onClick={handleNext} style={btnStyle()}>
               {t("common:next")}
             </button>

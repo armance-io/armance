@@ -562,9 +562,9 @@ export async function patchAdminAgent(
   pid: string,
   sid: string,
   name: string,
-  patch: { model?: string; reasoning?: string | null },
-): Promise<{ name: string; model: string; reasoning: string | null }> {
-  return api.patch<{ name: string; model: string; reasoning: string | null }>(
+  patch: { provider?: string; model?: string; reasoning?: string | null },
+): Promise<{ name: string; provider: string; model: string; reasoning: string | null }> {
+  return api.patch<{ name: string; provider: string; model: string; reasoning: string | null }>(
     `/projects/${pid}/sessions/${sid}/agents/${encodeURIComponent(name)}`,
     patch,
   );

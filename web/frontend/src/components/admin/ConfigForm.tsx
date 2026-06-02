@@ -13,9 +13,9 @@ export interface ConfigValues {
 export interface ConfigFormProps {
   values: ConfigValues;
   providerOptions: string[];
-  modelOptionsByProvider: Record<string, string[]>;
   languageOptions: string[];
   onSave: (values: ConfigValues) => Promise<void>;
+  onAddProviderSecrets?: (provName: string, apiKey: string, baseUrl?: string) => Promise<void>;
   t: (key: string) => string;
 }
 
@@ -24,21 +24,25 @@ const BUDGETS = ["free-first", "low", "medium", "high"] as const;
 export const ConfigForm: FC<ConfigFormProps> = ({
   values,
   providerOptions,
-  modelOptionsByProvider,
   languageOptions,
   onSave,
+  onAddProviderSecrets,
   t,
 }) => {
   const [draft, setDraft] = useState<ConfigValues>(values);
   const [errors, setErrors] = useState<Partial<Record<keyof ConfigValues, string>>>({});
   const [saving, setSaving] = useState(false);
 
+  // States for the add provider form
+  const [newProvName, setNewProvName] = useState("");
+  const [newBaseUrl, setNewBaseUrl] = useState("");
+  const [newApiKey, setNewApiKey] = useState("");
+
   const set = <K extends keyof ConfigValues>(k: K, v: ConfigValues[K]) =>
     setDraft((d) => ({ ...d, [k]: v }));
 
   const validate = () => {
     const e: Partial<Record<keyof ConfigValues, string>> = {};
-    if (!draft.default_model) e.default_model = t("admin:config.err.required");
     if (!draft.language) e.language = t("admin:config.err.required");
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -52,6 +56,13 @@ export const ConfigForm: FC<ConfigFormProps> = ({
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDeleteProvider = (name: string) => {
+    setDraft((d) => ({
+      ...d,
+      providers: (d.providers ?? []).filter((p) => p.name !== name),
+    }));
   };
 
   const wrap: CSSProperties = {
@@ -89,6 +100,10 @@ export const ConfigForm: FC<ConfigFormProps> = ({
     fontStyle: "italic",
   };
 
+  const availableToAdd = providerOptions.filter(
+    (opt) => !(draft.providers ?? []).some((p) => p.name === opt)
+  );
+
   return (
     <form
       onSubmit={(e) => {
@@ -108,35 +123,12 @@ export const ConfigForm: FC<ConfigFormProps> = ({
         {t("admin:config.title")}
       </h2>
 
-      <div style={row}>
-         <label style={label}>{t("admin:config.default_provider")}</label>
-         <select
-           style={inputBase}
-           value={draft.default_provider}
-           onChange={(e) => {
-             const nextProv = e.target.value;
-             setDraft((d) => ({
-               ...d,
-               default_provider: nextProv,
-               default_model: "", // Clear model when provider changes to enforce cascade
-             }));
-           }}
-         >
-           {providerOptions.map((p) => (
-             <option key={p} value={p}>
-               {providerLabel(p)}
-             </option>
-           ))}
-         </select>
-      </div>
-
       {/* Configured Providers Section */}
       <div style={row}>
         <label style={label}>{t("admin:config.providers")}</label>
         <div style={{ display: "grid", gap: 10 }}>
           {draft.providers && draft.providers.length > 0 ? (
             draft.providers.map((prov) => {
-              const isDefault = prov.name === draft.default_provider;
               return (
                 <div
                   key={prov.name}
@@ -146,32 +138,38 @@ export const ConfigForm: FC<ConfigFormProps> = ({
                     justifyContent: "space-between",
                     alignItems: "center",
                     padding: "12px 16px",
-                    border: isDefault ? `1px solid var(--accent, #6b4f8a)` : `1px solid ${tokens.rule}`,
-                    background: isDefault ? "color-mix(in srgb, var(--accent, #6b4f8a) 4%, var(--bg-paper-card))" : tokens.bgPaperDeep,
+                    border: `1px solid ${tokens.rule}`,
+                    background: tokens.bgPaperDeep,
                   }}
                 >
                   <div>
-                    <span style={{ fontWeight: 600, fontFamily: tokens.ffSans, color: tokens.ink }}>{providerLabel(prov.name)}</span>
+                    <span style={{ fontWeight: 600, fontFamily: tokens.ffSans, color: tokens.ink }}>
+                      {providerLabel(prov.name)}
+                    </span>
                     {prov.base_url && (
                       <span style={{ fontSize: 11, marginLeft: 8, color: tokens.inkSoft, fontFamily: tokens.ffMono }}>
                         ({prov.base_url})
                       </span>
                     )}
                   </div>
-                  {isDefault && (
-                    <span
-                      style={{
-                        fontSize: 10,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.08em",
-                        color: "var(--accent, #6b4f8a)",
-                        fontWeight: 600,
-                        fontFamily: tokens.ffMono,
-                      }}
-                    >
-                      {t("admin:config.default")}
-                    </span>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteProvider(prov.name)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: "var(--danger, #a44141)",
+                      cursor: "pointer",
+                      fontSize: 14,
+                      padding: "0 4px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                    title={t("admin:config.delete_provider") || "Delete Provider"}
+                  >
+                    🗑
+                  </button>
                 </div>
               );
             })
@@ -179,21 +177,114 @@ export const ConfigForm: FC<ConfigFormProps> = ({
             <div style={readonlyVal}>—</div>
           )}
         </div>
-      </div>
 
-      <div style={row}>
-        <label style={label}>{t("admin:config.default_model")}</label>
-        <select
-          style={inputBase}
-          value={draft.default_model}
-          onChange={(e) => set("default_model", e.target.value)}
-        >
-          <option value="">—</option>
-          {(modelOptionsByProvider[draft.default_provider] || []).map((m) => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </select>
-        {errors.default_model && <span style={errStyle}>{errors.default_model}</span>}
+        {/* Add Provider Selector inline form */}
+        {availableToAdd.length > 0 && (
+          <div
+            style={{
+              marginTop: 16,
+              padding: 16,
+              border: `1px dashed ${tokens.rule}`,
+              borderRadius: "4px",
+              background: tokens.bgPaperCard,
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+          >
+            <span style={{ ...label, fontSize: 11 }}>
+              {t("admin:config.add_provider") || "+ Add a Provider"}
+            </span>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div>
+                <label style={{ ...label, fontSize: 9 }}>Select Provider</label>
+                <select
+                  style={{ ...inputBase, width: "100%" }}
+                  value={newProvName}
+                  onChange={(e) => {
+                    setNewProvName(e.target.value);
+                    setNewApiKey("");
+                    setNewBaseUrl(e.target.value === "custom-openai" ? "http://localhost:11434/v1" : "");
+                  }}
+                >
+                  <option value="">— Select —</option>
+                  {availableToAdd.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {providerLabel(opt)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {newProvName === "custom-openai" && (
+                <div>
+                  <label style={{ ...label, fontSize: 9 }}>Base URL</label>
+                  <input
+                    type="text"
+                    value={newBaseUrl}
+                    onChange={(e) => setNewBaseUrl(e.target.value)}
+                    style={{ ...inputBase, width: "100%" }}
+                    placeholder="e.g. http://localhost:11434/v1"
+                  />
+                </div>
+              )}
+            </div>
+
+            {newProvName && newProvName !== "claude-code" && (
+              <div>
+                <label style={{ ...label, fontSize: 9 }}>
+                  API Key ({newProvName.toUpperCase().replace("-", "_")}_API_KEY)
+                </label>
+                <input
+                  type="password"
+                  value={newApiKey}
+                  onChange={(e) => setNewApiKey(e.target.value)}
+                  style={{ ...inputBase, width: "100%" }}
+                  placeholder="Paste API Key here (will be saved in .env)"
+                />
+              </div>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button
+                type="button"
+                disabled={!newProvName}
+                onClick={async () => {
+                  if (!newProvName) return;
+                  
+                  if (onAddProviderSecrets) {
+                    await onAddProviderSecrets(newProvName, newApiKey, newBaseUrl || undefined);
+                  }
+                  
+                  setDraft((d) => ({
+                    ...d,
+                    providers: [
+                      ...(d.providers ?? []),
+                      { name: newProvName, base_url: newBaseUrl || null },
+                    ],
+                  }));
+                  
+                  setNewProvName("");
+                  setNewBaseUrl("");
+                  setNewApiKey("");
+                }}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 4,
+                  border: `1px solid ${tokens.accent}`,
+                  background: "transparent",
+                  color: tokens.accent,
+                  fontFamily: tokens.ffSans,
+                  fontSize: 12,
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                + Add Provider
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={row}>

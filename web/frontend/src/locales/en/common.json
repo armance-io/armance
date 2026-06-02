@@ -134,7 +134,8 @@
       "label": "copy",
       "done": "copied",
       "aria": "Copy message to clipboard"
-    }
+    },
+    "you": "you"
   },
   "checkpoint": {
     "drawer": {
@@ -387,7 +388,9 @@
         "required": "Required"
       },
       "providers": "Configured Providers",
-      "default": "Default"
+      "default": "Default",
+      "delete_provider": "Delete Provider",
+      "add_provider": "+ Add a Provider"
     },
     "secrets": {
       "title": "Secrets",
@@ -448,7 +451,8 @@
       "persona": "Persona",
       "persona_hint": "Edit persona via Malik chat.",
       "save": "Save",
-      "saving": "Saving…"
+      "saving": "Saving…",
+      "saved": "Agent saved successfully."
     },
     "footprint": {
       "error": "Error loading footprint stats.",

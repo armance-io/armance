@@ -52,10 +52,6 @@ describe("<ConfigForm />", () => {
       <ConfigForm
         values={defaultValues}
         providerOptions={["openrouter", "claude-code"]}
-        modelOptionsByProvider={{
-          openrouter: ["gpt-4o", "claude-3-5"],
-          "claude-code": ["claude-3-5-sonnet"],
-        }}
         languageOptions={["en", "fr"]}
         onSave={vi.fn()}
         t={mockT}
@@ -65,7 +61,6 @@ describe("<ConfigForm />", () => {
     expect(screen.getByText("admin:config.title")).toBeDefined();
     // Provider id is shown via providerLabel (openrouter → "OpenRouter").
     expect(screen.getAllByText("OpenRouter").length).toBeGreaterThan(0);
-    expect(screen.getByDisplayValue("gpt-4o")).toBeDefined();
     expect(screen.getByDisplayValue("en")).toBeDefined();
   });
 
@@ -73,9 +68,8 @@ describe("<ConfigForm />", () => {
     const handleSave = vi.fn();
     render(
       <ConfigForm
-        values={{ ...defaultValues, default_model: "", language: "" }}
+        values={{ ...defaultValues, language: "" }}
         providerOptions={["openrouter"]}
-        modelOptionsByProvider={{ openrouter: [] }}
         languageOptions={[]}
         onSave={handleSave}
         t={mockT}
@@ -87,7 +81,7 @@ describe("<ConfigForm />", () => {
 
     expect(handleSave).not.toHaveBeenCalled();
     const errors = screen.getAllByText("admin:config.err.required");
-    expect(errors.length).toBe(2);
+    expect(errors.length).toBe(1);
   });
 
   it("calls onSave when form is submitted successfully", async () => {
@@ -96,7 +90,6 @@ describe("<ConfigForm />", () => {
       <ConfigForm
         values={defaultValues}
         providerOptions={["openrouter"]}
-        modelOptionsByProvider={{ openrouter: ["gpt-4o"] }}
         languageOptions={["en"]}
         onSave={handleSave}
         t={mockT}
@@ -116,7 +109,6 @@ describe("<ConfigForm />", () => {
       <ConfigForm
         values={defaultValues}
         providerOptions={["openrouter"]}
-        modelOptionsByProvider={{ openrouter: [] }}
         languageOptions={[]}
         onSave={vi.fn()}
         t={mockT}
@@ -182,7 +174,8 @@ describe("<SecretsList />", () => {
       expect(screen.getByText("sk-or-v1-abcdef")).toBeDefined();
     });
 
-    fireEvent.click(revealBtn);
+    const closeBtn = screen.getByRole("button", { name: "common:close" });
+    fireEvent.click(closeBtn);
     expect(screen.queryByText("sk-or-v1-abcdef")).toBeNull();
   });
 

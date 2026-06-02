@@ -134,7 +134,8 @@
       "label": "copier",
       "done": "copié",
       "aria": "Copier le message dans le presse-papiers"
-    }
+    },
+    "you": "Vous"
   },
   "checkpoint": {
     "drawer": {
@@ -387,7 +388,9 @@
         "required": "Requis"
       },
       "providers": "Fournisseurs configurés",
-      "default": "Par défaut"
+      "default": "Par défaut",
+      "delete_provider": "Supprimer le fournisseur",
+      "add_provider": "+ Ajouter un fournisseur"
     },
     "secrets": {
       "title": "Secrets",
@@ -448,7 +451,8 @@
       "persona": "Personnalité",
       "persona_hint": "Modifiez la personnalité via le chat Malik.",
       "save": "Sauvegarder",
-      "saving": "Sauvegarde…"
+      "saving": "Sauvegarde…",
+      "saved": "Agent sauvegardé."
     },
     "footprint": {
       "error": "Erreur de chargement de l'empreinte.",
