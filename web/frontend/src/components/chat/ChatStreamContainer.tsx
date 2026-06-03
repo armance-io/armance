@@ -127,7 +127,7 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
     const attrs = (evt.data["attributes"] as Record<string, unknown> | undefined) ?? {};
 
     // Refresh the roster when Malik recruits new specialists
-    if (evt.name === "agents_proposed") {
+    if (evt.name === "agents.proposed") {
       void queryClient.invalidateQueries({ queryKey: ["session", pid, sid] });
       return;
     }
