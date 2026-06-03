@@ -6,7 +6,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLatestSession } from "@/lib/useLatestSession";
 import { getAdminAgents, getLibrary, listWorkflows } from "@/lib/api";
 import { useEventStream, type SseEvent } from "@/lib/sse";
-import { emitMention } from "@/lib/mentionBus";
 import { requestAgentSwitch, useCurrentAgent, useBusyAgent } from "@/lib/agentBus";
 import { tokens } from "../_shared/armance-tokens";
 import { PulseDot } from "../_shared/PulseDot";
@@ -160,7 +159,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
   };
 
   const agentRow = (a: { name: string; slug?: string; role: string; model?: string }, isStaff: boolean) => {
-    const active = isStaff && (currentAgent === (a.slug ?? a.name) || currentAgent === a.name);
+    const active = currentAgent === (a.slug ?? a.name) || currentAgent === a.name;
     const thinking = busyAgent === a.name;
     const reachable = Boolean(a.model);
     const agentColour = assignAgentColour(a.name);
@@ -172,8 +171,11 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
       <button
         key={a.slug ?? a.name}
         style={{ ...link(active), display: "flex", alignItems: "center", gap: 8, background: active ? undefined : "none", border: "none", width: "100%" }}
-        onClick={() => (isStaff ? onAgentClick(a.name) : emitMention(a.name))}
-        title={isStaff ? t("sidebar:staff.switch_hint") : t("sidebar:staff.mention_hint")}
+        // Both staff and specialists switch the conversation (with the
+        // "Your interlocutor: X" separator) — clicking a specialist used to
+        // only drop an @mention into the input.
+        onClick={() => onAgentClick(a.name)}
+        title={t("sidebar:staff.switch_hint")}
         aria-pressed={active}
       >
         <PulseDot size={8} color={discColour} active={thinking} />
