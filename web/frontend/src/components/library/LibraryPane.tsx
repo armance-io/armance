@@ -31,8 +31,8 @@ export interface LibraryPaneProps {
   onDelete:   (name: string)  => Promise<void>;
   /** Embedding catalogue for the inline picker (type-ahead + free text). */
   embeddingOptions?: { provider: string; id: string; name: string }[];
-  /** Set the project embedding model (enables indexing). */
-  onSetEmbedding?: (model: string) => Promise<void>;
+  /** Set the project embedding provider + model (enables indexing). */
+  onSetEmbedding?: (provider: string, model: string) => Promise<void>;
   t: (key: string) => string;
 }
 

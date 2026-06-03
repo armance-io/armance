@@ -596,6 +596,7 @@ export const ConfigForm: FC<ConfigFormProps> = ({
       </div>
 
       <EmbeddingSection
+        provider={draft.embedding_provider ?? ""}
         value={draft.embedding_model ?? ""}
         options={embeddingOptions}
         onChange={(provider, model) =>

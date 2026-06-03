@@ -12,6 +12,7 @@ import {
   type EmbeddingModel,
   type SetupInitIn,
 } from "@/lib/api";
+import { EMBEDDING_PROVIDERS } from "@/lib/embeddingProviders";
 
 const PROVIDERS = [
   {
@@ -278,7 +279,7 @@ export default function SetupPage() {
       }
       if (embeddingModel.trim()) {
         payload.embedding_model = embeddingModel.trim();
-        payload.embedding_provider = embeddingProvider || primaryProvider;
+        payload.embedding_provider = embeddingProvider || EMBEDDING_PROVIDERS[0];
       }
 
       await initSetup(payload);
@@ -722,18 +723,31 @@ export default function SetupPage() {
               <p style={{ fontSize: "11px", color: "var(--ink-soft)", marginBottom: "8px" }}>
                 {t("setup:embedding_hint")}
               </p>
-              <input
-                list="setup-embedding-list"
-                value={embeddingModel}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setEmbeddingModel(v);
-                  const match = embeddingOptions.find((o) => o.id === v);
-                  setEmbeddingProvider(match?.provider ?? "");
-                }}
-                placeholder={t("setup:embedding_placeholder")}
-                style={inputStyle}
-              />
+              <div style={{ display: "flex", gap: "8px" }}>
+                <select
+                  value={embeddingProvider || EMBEDDING_PROVIDERS[0]}
+                  onChange={(e) => setEmbeddingProvider(e.target.value)}
+                  style={{ ...inputStyle, flex: "0 0 40%" }}
+                >
+                  {EMBEDDING_PROVIDERS.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+                <input
+                  list="setup-embedding-list"
+                  value={embeddingModel}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setEmbeddingModel(v);
+                    // Sync provider only when the id matches a catalogue entry;
+                    // otherwise keep the explicitly chosen provider.
+                    const match = embeddingOptions.find((o) => o.id === v);
+                    if (match) setEmbeddingProvider(match.provider);
+                  }}
+                  placeholder={t("setup:embedding_placeholder")}
+                  style={{ ...inputStyle, flex: 1 }}
+                />
+              </div>
               <datalist id="setup-embedding-list">
                 {embeddingOptions.map((m) => (
                   <option key={`${m.provider}:${m.id}`} value={m.id}>
