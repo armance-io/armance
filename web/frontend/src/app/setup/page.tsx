@@ -13,6 +13,7 @@ import {
   type SetupInitIn,
 } from "@/lib/api";
 import { EMBEDDING_PROVIDERS } from "@/lib/embeddingProviders";
+import { providerLabel } from "@/lib/providerLabels";
 
 const PROVIDERS = [
   {
@@ -101,6 +102,37 @@ const LANGUAGES = [
   { id: "ja" as const, label: "日本語", emoji: "🇯🇵" },
 ];
 
+// Soft cost-tier pill (DESIGN.md: muted gems, no saturated colours).
+const TIER_COLOURS: Record<string, string> = {
+  free: "hsl(120, 15%, 45%)",
+  low: "hsl(160, 18%, 42%)",
+  medium: "hsl(35, 30%, 45%)",
+  high: "hsl(0, 28%, 50%)",
+};
+
+function TierBadge({ tier, t }: { tier: string; t: (k: string) => string }) {
+  const colour = TIER_COLOURS[tier];
+  if (!colour) return null;
+  return (
+    <span
+      style={{
+        fontSize: "9px",
+        textTransform: "uppercase",
+        letterSpacing: "0.06em",
+        fontFamily: "var(--ff-mono)",
+        fontWeight: 600,
+        color: colour,
+        border: `1px solid ${colour}`,
+        borderRadius: "3px",
+        padding: "1px 5px",
+        background: `color-mix(in srgb, ${colour} 10%, transparent)`,
+      }}
+    >
+      {t(`setup:tier.${tier}`)}
+    </span>
+  );
+}
+
 
 
 export default function SetupPage() {
@@ -124,12 +156,25 @@ export default function SetupPage() {
   // are saved — this is what fixes the "only a handful of models" bug. The
   // curated fallbackModels stay as seeds for providers that can't enumerate
   // keyless (Gemini, Claude) and are merged (deduped) below.
-  const [liveModels, setLiveModels] = useState<Record<string, Array<{ id: string; display_name: string }>>>({});
+  const [liveModels, setLiveModels] = useState<Record<string, Array<{ id: string; display_name: string; tier: string }>>>({});
 
   // Optional embedding model for the library (step 3). Free-text + type-ahead.
   const [embeddingModel, setEmbeddingModel] = useState("");
   const [embeddingProvider, setEmbeddingProvider] = useState("");
   const [embeddingOptions, setEmbeddingOptions] = useState<EmbeddingModel[]>([]);
+
+  // Embedding-capable providers among those selected at step 2. claude-code
+  // has no embeddings endpoint, so it is excluded.
+  const embeddingProviderChoices = selectedProviders.filter((p) =>
+    (EMBEDDING_PROVIDERS as readonly string[]).includes(p),
+  );
+  // Keep the chosen embedding provider within the available set.
+  useEffect(() => {
+    if (embeddingProviderChoices.length === 0) return;
+    if (!embeddingProviderChoices.includes(embeddingProvider)) {
+      setEmbeddingProvider(embeddingProviderChoices[0] ?? "");
+    }
+  }, [embeddingProviderChoices, embeddingProvider]);
 
   useEffect(() => {
     let cancelled = false;
@@ -150,11 +195,11 @@ export default function SetupPage() {
     void getProviders()
       .then((res) => {
         if (cancelled) return;
-        const provs = (res.providers ?? {}) as Record<string, Array<{ id?: string; display_name?: string }>>;
-        const mapped: Record<string, Array<{ id: string; display_name: string }>> = {};
+        const provs = (res.providers ?? {}) as Record<string, Array<{ id?: string; display_name?: string; tier?: string }>>;
+        const mapped: Record<string, Array<{ id: string; display_name: string; tier: string }>> = {};
         for (const [name, models] of Object.entries(provs)) {
           mapped[name] = models
-            .map((m) => ({ id: m.id ?? "", display_name: m.display_name || m.id || "" }))
+            .map((m) => ({ id: m.id ?? "", display_name: m.display_name || m.id || "", tier: m.tier || "" }))
             .filter((m) => m.id);
         }
         setLiveModels(mapped);
@@ -225,21 +270,21 @@ export default function SetupPage() {
   };
 
   const getModelOptions = () => {
-    const opts: Array<{ id: string; display_name: string; provider: string }> = [];
+    const opts: Array<{ id: string; display_name: string; provider: string; tier: string }> = [];
     const seen = new Set<string>();
-    const push = (id: string, display_name: string, provider: string) => {
+    const push = (id: string, display_name: string, provider: string, tier: string) => {
       if (!id || seen.has(id)) return;
       seen.add(id);
-      opts.push({ id, display_name, provider });
+      opts.push({ id, display_name, provider, tier });
     };
     selectedProviders.forEach((pId) => {
       // Live catalogue first (full OpenRouter list), then curated seeds.
-      (liveModels[pId] ?? []).forEach((m) => push(m.id, m.display_name, pId));
+      (liveModels[pId] ?? []).forEach((m) => push(m.id, m.display_name, pId, m.tier));
       const p = PROVIDERS.find((prov) => prov.id === pId);
-      p?.fallbackModels?.forEach((m) => push(m.id, m.display_name, pId));
+      p?.fallbackModels?.forEach((m) => push(m.id, m.display_name, pId, m.tier ?? ""));
     });
     if (selectedProviders.includes("custom-openai")) {
-      push("gpt-4o", "Local/Custom default (gpt-4o)", "custom-openai");
+      push("gpt-4o", "Local/Custom default (gpt-4o)", "custom-openai", "");
     }
     return opts;
   };
@@ -279,7 +324,7 @@ export default function SetupPage() {
       }
       if (embeddingModel.trim()) {
         payload.embedding_model = embeddingModel.trim();
-        payload.embedding_provider = embeddingProvider || EMBEDDING_PROVIDERS[0];
+        payload.embedding_provider = embeddingProvider || embeddingProviderChoices[0] || "";
       }
 
       await initSetup(payload);
@@ -707,55 +752,60 @@ export default function SetupPage() {
                         {m.id}
                       </span>
                     </div>
-                    <span style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--accent)", fontWeight: 600, fontFamily: "var(--ff-mono)" }}>
-                      {PROVIDERS.find((p) => p.id === m.provider)?.name}
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      {m.tier && <TierBadge tier={m.tier} t={t} />}
+                      <span style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--accent)", fontWeight: 600, fontFamily: "var(--ff-mono)" }}>
+                        {PROVIDERS.find((p) => p.id === m.provider)?.name}
+                      </span>
+                    </div>
                   </div>
                 );
               })}
             </div>
 
-            {/* Optional: embedding model for the library (type-ahead + free text). */}
-            <div style={{ marginTop: "20px" }}>
-              <label style={{ ...formLabel, marginBottom: "6px" }}>
-                {t("setup:embedding_label")}
-              </label>
-              <p style={{ fontSize: "11px", color: "var(--ink-soft)", marginBottom: "8px" }}>
-                {t("setup:embedding_hint")}
-              </p>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <select
-                  value={embeddingProvider || EMBEDDING_PROVIDERS[0]}
-                  onChange={(e) => setEmbeddingProvider(e.target.value)}
-                  style={{ ...inputStyle, flex: "0 0 40%" }}
-                >
-                  {EMBEDDING_PROVIDERS.map((p) => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
-                <input
-                  list="setup-embedding-list"
-                  value={embeddingModel}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setEmbeddingModel(v);
-                    // Sync provider only when the id matches a catalogue entry;
-                    // otherwise keep the explicitly chosen provider.
-                    const match = embeddingOptions.find((o) => o.id === v);
-                    if (match) setEmbeddingProvider(match.provider);
-                  }}
-                  placeholder={t("setup:embedding_placeholder")}
-                  style={{ ...inputStyle, flex: 1 }}
-                />
+            {/* Optional: embedding model for the library. Provider picked from
+                the step-2 selection; model is a free-text field with type-ahead
+                over the detected embedding catalogue for that provider. */}
+            {embeddingProviderChoices.length > 0 && (
+              <div style={{ marginTop: "20px" }}>
+                <label style={{ ...formLabel, marginBottom: "6px" }}>
+                  {t("setup:embedding_label")}
+                </label>
+                <p style={{ fontSize: "11px", color: "var(--ink-soft)", marginBottom: "8px" }}>
+                  {t("setup:embedding_hint")}
+                </p>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <select
+                    value={embeddingProvider || embeddingProviderChoices[0]}
+                    onChange={(e) => {
+                      setEmbeddingProvider(e.target.value);
+                      setEmbeddingModel("");
+                    }}
+                    style={{ ...inputStyle, flex: "0 0 42%", cursor: "pointer" }}
+                  >
+                    {embeddingProviderChoices.map((p) => (
+                      <option key={p} value={p}>{providerLabel(p)}</option>
+                    ))}
+                  </select>
+                  <input
+                    list="setup-embedding-list"
+                    value={embeddingModel}
+                    onChange={(e) => setEmbeddingModel(e.target.value)}
+                    placeholder={t("setup:embedding_placeholder")}
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                </div>
+                <datalist id="setup-embedding-list">
+                  {embeddingOptions
+                    .filter((m) => m.provider === (embeddingProvider || embeddingProviderChoices[0]))
+                    .map((m) => (
+                      <option key={`${m.provider}:${m.id}`} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                </datalist>
               </div>
-              <datalist id="setup-embedding-list">
-                {embeddingOptions.map((m) => (
-                  <option key={`${m.provider}:${m.id}`} value={m.id}>
-                    {`${m.name} (${m.provider})`}
-                  </option>
-                ))}
-              </datalist>
-            </div>
+            )}
           </div>
         )}
 

@@ -508,7 +508,13 @@
     "model_placeholder": "Type or pick a model id…",
     "embedding_label": "Embedding model (optional)",
     "embedding_hint": "For indexing your library. You can skip this and set it later.",
-    "embedding_placeholder": "Type or pick an embedding model id…"
+    "embedding_placeholder": "Type or pick an embedding model id…",
+    "tier": {
+      "free": "Free",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    }
   },
   "session": {
     "selector": {
