@@ -92,8 +92,8 @@ async def test_run_dispatch_seam_derives_run_id_from_index(
         encoding="utf-8",
     )
     with patch(
-        "armance.web.backend.routes.workflows.dispatch_input",
-        new=AsyncMock(return_value=("Lancé.", "kim")),
+        "armance.service.handlers._cmd_workflow_run",
+        new=AsyncMock(return_value="Lancé."),
     ):
         body = await _dispatch_run(ws, "wf", "interactive")
     assert body["ack"] is True
@@ -113,8 +113,8 @@ async def test_run_dispatch_seam_no_index_blank_run_id(
     _seed_workflow(armance_root)
     ws = app_state.get(sid)
     with patch(
-        "armance.web.backend.routes.workflows.dispatch_input",
-        new=AsyncMock(return_value=("ok", "kim")),
+        "armance.service.handlers._cmd_workflow_run",
+        new=AsyncMock(return_value="ok"),
     ):
         body = await _dispatch_run(ws, "wf", "autonomous")
     assert body["run_id"] == ""
