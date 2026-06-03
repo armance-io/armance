@@ -42,6 +42,16 @@ async def library_action(
     if ws is None:
         raise HTTPException(status_code=404, detail="session_not_found")
 
+    # The web session caches the config snapshot taken at session creation, so
+    # an embedding-model change (PATCH /admin/config or a hand-edit of
+    # config.yaml) wouldn't reach the live indexing path. Reload from disk here
+    # so indexing always uses the current embedding provider/model.
+    from armance.config import load_config
+    try:
+        ws.ctx.cfg = load_config(ws.ctx.armance_root.parent)
+    except Exception:  # noqa: BLE001 — keep the cached cfg if reload fails
+        logger.warning("config reload failed before library action sid=%s", sid, exc_info=True)
+
     result = await run_library_action(body.action, body.name, ws.ctx)
     logger.info(
         "library action sid=%s action=%s name=%s ok=%s",
