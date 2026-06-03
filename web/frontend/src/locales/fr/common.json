@@ -243,8 +243,13 @@
         "completed": "terminé",
         "failed": "échec",
         "skipped": "ignoré",
-        "cancelled": "annulé"
-      }
+        "cancelled": "annulé",
+        "awaiting": "en attente"
+      },
+      "answer_placeholder": "Saisissez votre réponse…",
+      "answer_send": "Envoyer",
+      "awaiting_answer": "En attente de votre réponse",
+      "question_notif": "Un agent vous pose une question"
     }
   },
   "workflow": {
