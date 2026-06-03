@@ -22,9 +22,18 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
   className,
   t,
 }) => {
+  const processedMarkdown = useMemo(() => {
+    if (!markdown) return "";
+    return markdown
+      .replace(/🟢/g, '<span class="ae-pastille ae-pastille-success" aria-label="Succès/Normal"></span>')
+      .replace(/🟡/g, '<span class="ae-pastille ae-pastille-warning" aria-label="Attention"></span>')
+      .replace(/🟠/g, '<span class="ae-pastille ae-pastille-orange" aria-label="Moyen"></span>')
+      .replace(/🔴/g, '<span class="ae-pastille ae-pastille-danger" aria-label="Alerte/Erreur"></span>');
+  }, [markdown]);
+
   const blocks = useMemo(
-    () => marked.lexer(markdown, { gfm: true }),
-    [markdown],
+    () => marked.lexer(processedMarkdown, { gfm: true }),
+    [processedMarkdown],
   );
 
   const containerStyle: CSSProperties = {
@@ -143,6 +152,31 @@ const PROSE_CSS = `
   font-weight: 600;
   color: ${tokens.inkSoft};
   border-bottom: 1.5px solid ${tokens.inkSoft};
+}
+.ae-pastille {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin: 0 4px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.ae-pastille-success {
+  background-color: hsl(120, 15%, 55%);
+  box-shadow: 0 0 0 1.5px hsla(120, 15%, 55%, 0.25);
+}
+.ae-pastille-warning {
+  background-color: hsl(35, 30%, 60%);
+  box-shadow: 0 0 0 1.5px hsla(35, 30%, 60%, 0.25);
+}
+.ae-pastille-orange {
+  background-color: hsl(20, 30%, 60%);
+  box-shadow: 0 0 0 1.5px hsla(20, 30%, 60%, 0.25);
+}
+.ae-pastille-danger {
+  background-color: hsl(0, 30%, 65%);
+  box-shadow: 0 0 0 1.5px hsla(0, 30%, 65%, 0.25);
 }
 `;
 

@@ -17,14 +17,48 @@ export interface MessageBubbleProps {
 
 function isSwitchMessage(markdown: string): boolean {
   if (!markdown) return false;
-  const lc = markdown.toLowerCase();
-  return ["votre interlocuteur", "your interlocutor", "gesprächspartner", "su interlocutor", "対話相手", "您的对话者", "basculé sur", "switched to", "gewechselt", "cambiado a", "切り替えました", "已切换到"].some(kw => lc.includes(kw));
+  const lc = markdown.toLowerCase().trim();
+  // Check if it starts with OK prefix or is a direct switch confirmation
+  const isMatch = [
+    "ok — basculé sur",
+    "ok - basculé sur",
+    "ok — switched to",
+    "ok - switched to",
+    "basculé sur l'agent",
+    "switched to agent",
+    "votre interlocuteur",
+    "your interlocutor",
+    "gesprächspartner",
+    "su interlocutor",
+    "対話相手",
+    "您的对话者",
+  ].some(kw => lc.startsWith(kw));
+  return isMatch;
 }
 
 function formatSwitchMessage(markdown: string, t: (k: string) => string): string {
   if (!markdown) return markdown;
   const lc = markdown.toLowerCase();
-  if (["votre interlocuteur", "your interlocutor", "gesprächspartner", "su interlocutor", "対話相手", "您的对话者"].some(kw => lc.includes(kw))) return markdown;
+
+  if (["votre interlocuteur", "your interlocutor", "gesprächspartner", "su interlocutor", "対話相手", "您的对话者"].some(kw => lc.includes(kw))) {
+    return markdown;
+  }
+
+  // Try to parse the name dynamically
+  // Supports:
+  // "OK - basculé sur Aisha · woodworker. A vous"
+  // "OK — basculé sur Aisha. À vous."
+  // "OK — switched to Aisha. Go ahead."
+  // "OK — switched to Aisha."
+  const match = markdown.match(/(?:basculé sur|switched to)\s+([^.·\n]+)/i);
+  if (match && match[1]) {
+    const name = match[1].trim();
+    if (name) {
+      return t("chat:agents.switched").replace("{name}", name);
+    }
+  }
+
+  // Fallback to legacy behavior if regex fails
   const names = ["Malik", "Kim", "Serge", "Mona", "Armance"];
   const matched = names.find(name => markdown.includes(name));
   return matched ? t("chat:agents.switched").replace("{name}", matched) : markdown;
