@@ -9,6 +9,7 @@ import {
 import { EmptyLibrary } from "../visual/EmptyState/EmptyLibrary";
 import { PulseDot } from "../_shared/PulseDot";
 import { LibraryEmbeddingBanner } from "./LibraryEmbeddingBanner";
+import { LibraryIndexingBanner } from "./LibraryIndexingBanner";
 import { type Doc, type DocFormat, type DocStatus } from "@/lib/api";
 
 export interface LibraryPaneProps {
@@ -33,6 +34,8 @@ export interface LibraryPaneProps {
   embeddingOptions?: { provider: string; id: string; name: string }[];
   /** Set the project embedding provider + model (enables indexing). */
   onSetEmbedding?: (provider: string, model: string) => Promise<void>;
+  /** True while an index action runs — drives a prominent progress banner. */
+  indexing?: boolean;
   t: (key: string) => string;
 }
 
@@ -66,7 +69,7 @@ function fmtSize(b: number): string {
  */
 export const LibraryPane: FC<LibraryPaneProps> = ({
   docs, totalFeuillets = 0, embeddingAvailable = true, onImport, onIndexAll, onIndex, onLoad, onUnload, onUnindex, onDelete,
-  embeddingOptions = [], onSetEmbedding, t,
+  embeddingOptions = [], onSetEmbedding, indexing = false, t,
 }) => {
   const [search,  setSearch]  = useState("");
   const [fmts,    setFmts]    = useState<Set<DocFormat>>(new Set());
@@ -235,6 +238,9 @@ export const LibraryPane: FC<LibraryPaneProps> = ({
       {!embeddingAvailable && onSetEmbedding && (
         <LibraryEmbeddingBanner options={embeddingOptions} onSet={onSetEmbedding} t={t} />
       )}
+
+      {/* ── Indexing-in-progress banner ──────────────────────────────────── */}
+      {indexing && <LibraryIndexingBanner t={t} />}
 
       {/* ── List ─────────────────────────────────────────────────────────── */}
       <div style={{ flex: 1, overflowY: "auto" }} role="list" aria-label={t("library:list_aria")}>
