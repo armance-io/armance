@@ -9,6 +9,7 @@ Spec: web-d-pipeline.md
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -211,13 +212,35 @@ async def run_workflow(
     user: str = Depends(get_current_user),
     app_state: AppState = Depends(get_app_state),
 ) -> dict:
+    """Launch a workflow run in the background and return immediately.
+
+    The run executes as a detached asyncio task so this request returns at
+    once: the run can then pause on HITL checkpoints (resolved by separate
+    POST /checkpoint requests) and the frontend tracks progress via
+    GET /active-workflow + the run manifest. ``run_id`` is empty here — the
+    client discovers it from /active-workflow once the run dir is minted.
+    """
     if body.mode not in ("interactive", "autonomous"):
         raise HTTPException(status_code=400, detail="invalid_mode")
     ws = app_state.get(sid)
     if ws is None:
         raise HTTPException(status_code=404, detail="session_not_found")
     _require_workflow(ws, name)
-    return await _dispatch_run(ws, name, body.mode)
+
+    if ws.run_task is not None and not ws.run_task.done():
+        raise HTTPException(status_code=409, detail={"error": "run_already_active"})
+
+    async def _runner() -> object:
+        try:
+            return await _dispatch_run(ws, name, body.mode)
+        except Exception:  # noqa: BLE001 — log, never crash the event loop
+            logger.exception("workflow run failed sid=%s name=%s", sid, name)
+            return {"ack": False}
+        finally:
+            ws.run_task = None
+
+    ws.run_task = asyncio.create_task(_runner())
+    return {"ack": True, "run_id": "", "started": True}
 
 
 # --- D.5 -----------------------------------------------------------------

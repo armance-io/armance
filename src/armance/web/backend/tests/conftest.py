@@ -33,11 +33,13 @@ def armance_root(tmp_path: Path) -> Path:
 
 
 @pytest_asyncio.fixture()
-async def client(armance_root: Path) -> AsyncClient:
+async def client(armance_root: Path, request) -> AsyncClient:
     """Async test client with ARMANCE_ROOT pointed at a temp dir.
 
     Uses the app's lifespan manager so that app.state.app_state is
-    populated before any request is made.
+    populated before any request is made. The created AppState is also
+    stashed so the `app_state` fixture can hand it to tests that call the
+    route seams (e.g. _dispatch_run) directly.
     """
     os.environ["ARMANCE_ROOT"] = str(armance_root.parent)
     from armance.web.backend.main import create_app
@@ -49,6 +51,15 @@ async def client(armance_root: Path) -> AsyncClient:
     ) as ac:
         # Manually trigger lifespan so app.state.app_state is set.
         from armance.web.backend.state import AppState
-        app.state.app_state = AppState(armance_root=armance_root)
+        state = AppState(armance_root=armance_root)
+        app.state.app_state = state
+        request.node._armance_app_state = state
         yield ac
     os.environ.pop("ARMANCE_ROOT", None)
+
+
+@pytest.fixture()
+def app_state(client, request):  # noqa: ARG001 — depend on client for ordering
+    """The live AppState created by the `client` fixture (same instance the
+    routes use). Lets a test call route seams directly with the real ws."""
+    return getattr(request.node, "_armance_app_state", None)

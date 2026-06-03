@@ -440,6 +440,9 @@ export async function getRunHypotheses(
 
 export interface RunLaunched {
   run_id: string;
+  /** True when the run was launched in the background (run_id discovered via
+   * /active-workflow once the run dir is minted). */
+  started?: boolean;
 }
 
 export async function launchWorkflow(
