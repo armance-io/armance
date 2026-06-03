@@ -344,16 +344,23 @@ export async function listWorkflows(
 
 export interface Workflow {
   name: string;
-  nodes: Array<{ id: string; data: Record<string, unknown> }>;
-  edges: Array<{ id: string; source: string; target: string }>;
+  scope: string;
+  strategy: string;
+  steps: Array<{ id: string; kind: string; role: string; depends_on: string[] }>;
+  graph: {
+    nodes: Array<{ id: string; position?: { x: number; y: number }; data: Record<string, unknown> }>;
+    edges: Array<{ id: string; source: string; target: string }>;
+  };
 }
 
 export async function getWorkflow(
-  _pid: string,
-  _sid: string,
-  _name: string,
+  pid: string,
+  sid: string,
+  name: string,
 ): Promise<Workflow> {
-  throw new Error("NotImplemented");
+  return api.get<Workflow>(
+    `/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(name)}`,
+  );
 }
 
 export interface ActiveWorkflow {
