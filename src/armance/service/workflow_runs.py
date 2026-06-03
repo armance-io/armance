@@ -106,11 +106,11 @@ def create_run(armance_root: Path, workflow_name: str) -> RunArtefact:
         run_dir=run_dir,
         started_at=datetime.now(timezone.utc).isoformat(),
     )
-    # Register the run as 'running' up-front: an initial manifest + a runs.json
+    # Register the run as in-flight up-front: an initial manifest + a runs.json
     # entry so /active-workflow reports it immediately and the web UI can switch
     # to the live view before the first step completes.
     write_running_manifest(artefact)
-    _append_runs_index(run_dir.parent, _build_manifest(artefact, status="running", finalising=False))
+    _append_runs_index(run_dir.parent, _build_manifest(artefact, status="working", finalising=False))
     return artefact
 
 
@@ -237,13 +237,13 @@ def _build_manifest(artefact: RunArtefact, *, status: str, finalising: bool) -> 
 
 
 def write_running_manifest(artefact: RunArtefact) -> None:
-    """Persist a live snapshot of the manifest with status='running'.
+    """Persist a live snapshot of the manifest (status='working').
 
     Called after every step transition so the web UI (which polls
     manifest.json) sees steps go queued → working → completed in real time.
     Does NOT touch runs.json — that index is bumped once, by finalise().
     """
-    manifest = _build_manifest(artefact, status="running", finalising=False)
+    manifest = _build_manifest(artefact, status="working", finalising=False)
     try:
         artefact.manifest_path().write_text(
             json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8"
@@ -297,7 +297,7 @@ def _aggregate(artefact: RunArtefact) -> dict[str, Any]:
 def _append_runs_index(workflow_dir: Path, manifest: dict[str, Any]) -> None:
     """Upsert `<workflow>/runs.json` with a compact entry for this run.
 
-    Upsert (not blind append) so a run can be registered as 'running' when it
+    Upsert (not blind append) so a run can be registered as in-flight when it
     starts and updated in place to 'completed'/'failed' when it finishes —
     without creating duplicate entries.
     """

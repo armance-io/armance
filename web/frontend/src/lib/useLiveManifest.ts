@@ -31,10 +31,12 @@ export function useLiveManifest(
         setError(null);
         setIsLoading(false);
 
-        // Check if run is no longer running (look at manifest.json status)
+        // Stop polling once the run reaches a terminal state. The live run
+        // status is "working" (canonical lifecycle string); anything else
+        // (completed / failed / canceled) is terminal.
         if (result && result["manifest.json"]) {
           const manifest = JSON.parse(result["manifest.json"]);
-          if (manifest.status !== "running") {
+          if (manifest.status !== "working") {
             if (timerId) {
               clearInterval(timerId);
               timerId = null;

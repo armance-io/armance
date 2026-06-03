@@ -17,16 +17,16 @@ describe("useLiveManifest", () => {
     vi.useRealTimers();
   });
 
-  it("polls every second while status is running", async () => {
+  it("polls every second while status is in-flight", async () => {
     const mockLoadRun = vi.mocked(loadRun);
     
     // First call returns running
     mockLoadRun.mockResolvedValueOnce({
-      "manifest.json": JSON.stringify({ status: "running" }),
+      "manifest.json": JSON.stringify({ status: "working" }),
     });
     // Second call returns running
     mockLoadRun.mockResolvedValueOnce({
-      "manifest.json": JSON.stringify({ status: "running" }),
+      "manifest.json": JSON.stringify({ status: "working" }),
     });
     // Third call returns completed
     mockLoadRun.mockResolvedValueOnce({
@@ -47,7 +47,7 @@ describe("useLiveManifest", () => {
 
     expect(result.current.isLoading).toBe(false);
     expect(result.current.data).toEqual({
-      "manifest.json": '{"status":"running"}',
+      "manifest.json": '{"status":"working"}',
     });
     expect(mockLoadRun).toHaveBeenCalledTimes(1);
 
@@ -58,7 +58,7 @@ describe("useLiveManifest", () => {
 
     expect(mockLoadRun).toHaveBeenCalledTimes(2);
     expect(result.current.data).toEqual({
-      "manifest.json": '{"status":"running"}',
+      "manifest.json": '{"status":"working"}',
     });
 
     // Advance time by another 1 second -> should transition to completed and stop polling
@@ -100,7 +100,7 @@ describe("useLiveManifest", () => {
   it("stops polling on unmount", async () => {
     const mockLoadRun = vi.mocked(loadRun);
     mockLoadRun.mockResolvedValue({
-      "manifest.json": JSON.stringify({ status: "running" }),
+      "manifest.json": JSON.stringify({ status: "working" }),
     });
 
     const { unmount } = renderHook(() =>
