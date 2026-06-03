@@ -102,7 +102,7 @@ export const AdminPageContainer: FC<AdminPageContainerProps> = ({ pid, t }) => {
         ))}
       </div>
 
-      <div role="tabpanel" style={isLogs ? { flex: 1, minHeight: 0, overflowY: "auto" } : {}}>
+      <div role="tabpanel" style={isLogs ? { flex: 1, minHeight: 0, display: "flex", flexDirection: "column" } : {}}>
         {activeTab === "config" && <ConfigTab pid={pid} t={t} />}
         {activeTab === "logs" && <LogsTab pid={pid} t={t} />}
         {activeTab === "stats" && <StatsTab pid={pid} t={t} />}

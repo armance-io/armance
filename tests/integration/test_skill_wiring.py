@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -16,7 +15,7 @@ from armance.client.tui.types import LoopContext
 from armance.config import Config, ProviderConfig
 from armance.core.models.agent import Agent
 from armance.service.agents.agent_lifecycle_service import AgentLifecycleService
-from armance.service.handlers import HANDLERS, _cmd_workflow
+from armance.service.handlers import HANDLERS
 from armance.service.llm_service import TokenLedger
 from armance.service.session import SessionState
 
@@ -30,7 +29,7 @@ def _make_cfg() -> Config:
 
 
 def _make_ctx(tmp_path: Path) -> LoopContext:
-    from armance.service.session import Session, SessionState
+    from armance.service.session import Session
     armance_root = tmp_path / ".armance"
     armance_root.mkdir(parents=True, exist_ok=True)
     cfg = _make_cfg()

@@ -24,7 +24,7 @@ from armance.service.footprint_ops import (
     aggregate_footprint_records,
     format_token_subtitle,
 )
-from armance.service.llm_service import LedgerEntry, TokenLedger
+from armance.service.llm_service import TokenLedger
 
 
 # ---------------------------------------------------------------------------

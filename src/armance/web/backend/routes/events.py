@@ -43,23 +43,27 @@ async def stream_events(
         raise HTTPException(status_code=404, detail="session_not_found")
 
     bus = ws.bus
+    queue = bus.subscribe()
 
     async def _generator() -> AsyncIterator[dict]:
-        while True:
-            try:
-                event = await asyncio.wait_for(bus.queue.get(), timeout=_HEARTBEAT_INTERVAL)
-            except asyncio.TimeoutError:
-                # Send a heartbeat comment to keep the connection alive.
-                yield {"comment": "heartbeat"}
-                continue
-            payload = {
-                "name": event.name,
-                "attributes": event.attributes,
-                "timestamp": event.timestamp.isoformat(),
-            }
-            yield {
-                "event": event.name,
-                "data": json.dumps(payload),
-            }
+        try:
+            while True:
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=_HEARTBEAT_INTERVAL)
+                except asyncio.TimeoutError:
+                    # Send a heartbeat comment to keep the connection alive.
+                    yield {"comment": "heartbeat"}
+                    continue
+                payload = {
+                    "name": event.name,
+                    "attributes": event.attributes,
+                    "timestamp": event.timestamp.isoformat(),
+                }
+                yield {
+                    "event": event.name,
+                    "data": json.dumps(payload),
+                }
+        finally:
+            bus.unsubscribe(queue)
 
     return EventSourceResponse(_generator())

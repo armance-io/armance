@@ -18,7 +18,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from armance.client.tui.types import LoopContext, AgentStatus
+from armance.client.tui.types import LoopContext
 from armance.config import Config
 from armance.core.models.agent import Agent
 

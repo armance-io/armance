@@ -7,9 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from armance.config import Config, ProviderConfig
-from armance.core.models.agent import Agent
 from armance.core.models.workflow import WorkflowStep
-from armance.service.checkpoint import Checkpoint, CheckpointResponse
+from armance.service.checkpoint import CheckpointResponse
 from armance.service.handlers import _mona_proxy_checkpoint, _cmd_workflow_run
 from armance.service.workflow_runs import create_run, finalise, write_assumptions
 

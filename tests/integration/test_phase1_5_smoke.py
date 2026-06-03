@@ -24,23 +24,18 @@ Spec refs: 05_context.md (Layers), 19_claim_ledger.md (Path A),
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 import pytest
-import yaml  # type: ignore[import-untyped]
 
 from armance.core.models.agent import Agent
-from armance.core.models.claim import Claim, ClaimStatus, Confidence, Evidence, EvidenceKind
+from armance.core.models.claim import ClaimStatus, Confidence
 from armance.service.claim_ledger_service import ClaimLedgerService
 from armance.service.claim_parser import parse_claims
 from armance.service.context_service import ContextService
 from armance.service.agents.agent_lifecycle_service import (
-    AgentLifecycleError,
     AgentLifecycleService,
     AgentNotFoundError,
-    DuplicateAgentError,
 )
 
 

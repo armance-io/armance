@@ -124,8 +124,6 @@ def save_config(repo_root: Path, cfg: Config) -> Path:
     yaml_path = armance_dir / "config.yaml"
 
     payload = cfg.model_dump()
-    payload.pop("default_provider", None)
-    payload.pop("default_model", None)
     for provider in payload["providers"]:
         provider.pop("api_key", None)
     yaml_path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
