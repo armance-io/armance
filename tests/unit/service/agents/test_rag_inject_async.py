@@ -37,6 +37,22 @@ async def test_inject_rag_section_no_embedding_config(tmp_path: Path):
 
 
 @pytest.mark.asyncio
+async def test_inject_rag_section_skips_embed_when_no_docs(tmp_path: Path):
+    # Embedding configured but nothing indexed → return "" WITHOUT building an
+    # embedding client / embedding the query.
+    from unittest.mock import patch
+
+    class _Cfg:
+        embedding_provider = "openrouter"
+        embedding_model = "some-embed-model"
+
+    with patch("armance.service.llm_service.get_client") as get_client:
+        result = await inject_rag_section(tmp_path, "hello", config=_Cfg())
+    assert result == ""
+    get_client.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_inject_rag_section_runs_inside_running_loop(tmp_path: Path):
     # If the impl ever reintroduces asyncio.run() this would raise
     # `RuntimeError: asyncio.run() cannot be called from a running event loop`.
