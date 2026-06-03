@@ -243,8 +243,13 @@
         "completed": "done",
         "failed": "failed",
         "skipped": "skipped",
-        "cancelled": "cancelled"
-      }
+        "cancelled": "cancelled",
+        "awaiting": "awaiting"
+      },
+      "answer_placeholder": "Type your answer…",
+      "answer_send": "Send",
+      "awaiting_answer": "Waiting for your answer",
+      "question_notif": "An agent is asking you a question"
     }
   },
   "workflow": {
