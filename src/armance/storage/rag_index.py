@@ -292,6 +292,13 @@ def context_with_rag(armance_root: Path, query: str, k: int = 8) -> str:
     Format per chunk: ``[source: filename p.N] text``
     Returns empty string if vector store is empty or unavailable.
     """
+    # Skip when nothing is indexed — avoids embedding the query for nothing.
+    try:
+        from armance.storage.rag_status import has_indexed_chunks
+        if not has_indexed_chunks(armance_root):
+            return ""
+    except Exception:
+        logger.debug("RAG index probe failed; proceeding", exc_info=True)
     try:
         store = RagService(armance_root)
 
