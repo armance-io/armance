@@ -115,9 +115,14 @@ export const WorkflowGraphContainer: FC<WorkflowGraphContainerProps> = ({
     ? JSON.parse(runData["manifest.json"])
     : null;
 
-  const mergedNodes = ((workflowData?.nodes as RawNode[] | undefined) || fallbackNodes).map((n: RawNode) => {
+  // The backend returns the real graph under `graph.{nodes,edges}`. Nodes carry
+  // {step_id, kind, role} but no run status until a run manifest exists — default
+  // to "queued" so a freshly designed workflow renders its true steps/edges
+  // (not the placeholder fixture).
+  const baseNodes = (workflowData?.graph?.nodes as RawNode[] | undefined) || fallbackNodes;
+  const mergedNodes = baseNodes.map((n: RawNode) => {
     const stepRecord = runManifest?.steps?.find((s: StepRecord) => s.id === n.id);
-    const stepStatus = stepRecord ? stepRecord.status : n.data.status;
+    const stepStatus = stepRecord ? stepRecord.status : (n.data.status ?? "queued");
     const stepDuration = stepRecord ? stepRecord.duration_ms : n.data.duration_ms;
     const startedAt = stepRecord ? stepRecord.started_at : n.data.started_at;
     const endedAt = stepRecord ? stepRecord.ended_at : n.data.ended_at;
@@ -135,7 +140,7 @@ export const WorkflowGraphContainer: FC<WorkflowGraphContainerProps> = ({
     };
   });
 
-  const edges = workflowData?.edges || fallbackEdges;
+  const edges = workflowData?.graph?.edges || fallbackEdges;
 
   return (
     <div
