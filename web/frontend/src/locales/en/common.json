@@ -230,6 +230,21 @@
       "proposed_by": "Proposed by",
       "rejected_by": "Rejected by",
       "weight": "weight"
+    },
+    "tabs": {
+      "flow": "Flow",
+      "report": "Report"
+    },
+    "flow": {
+      "waiting": "Waiting for the run to start…",
+      "status": {
+        "queued": "queued",
+        "working": "working",
+        "completed": "done",
+        "failed": "failed",
+        "skipped": "skipped",
+        "cancelled": "cancelled"
+      }
     }
   },
   "workflow": {
@@ -318,6 +333,9 @@
       "error": "Could not launch the run.",
       "in_progress": "Launching…",
       "started_no_id": "Workflow run started."
+    },
+    "panel": {
+      "resize": "Drag to resize"
     }
   },
   "hypotheses": {
