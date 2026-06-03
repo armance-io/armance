@@ -57,6 +57,28 @@ def host_service(mock_agent, mock_config, temp_armance_root):
     )
 
 
+class TestConfirmationDetection:
+    """_is_confirmation gates the /save (freeze) tag."""
+
+    def test_affirmative_opener_with_punctuation(self, host_service):
+        # Regression: "oui, tu peux figer …" was rejected because the comma
+        # after "oui" defeated the old startswith("oui ") check → /save dropped.
+        assert host_service._is_confirmation(
+            "oui, tu peux figer, c'est la raison d'être de cette conférence."
+        ) is True
+        assert host_service._is_confirmation("oui") is True
+        assert host_service._is_confirmation("ok go") is True
+
+    def test_imperative_freeze_is_confirmation(self, host_service):
+        assert host_service._is_confirmation("tu peux figer maintenant") is True
+        assert host_service._is_confirmation("valide ce cadrage") is True
+
+    def test_non_confirmation(self, host_service):
+        assert host_service._is_confirmation("non merci") is False
+        assert host_service._is_confirmation("peux-tu enrichir d'abord ?") is False
+        assert host_service._is_confirmation("") is False
+
+
 class TestGreetingDetection:
     """Test _is_greeting detection logic."""
 
