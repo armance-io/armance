@@ -508,7 +508,13 @@
     "model_placeholder": "Saisissez ou choisissez un identifiant de modèle…",
     "embedding_label": "Modèle d'embedding (optionnel)",
     "embedding_hint": "Pour indexer votre bibliothèque. Vous pouvez l'ignorer et le définir plus tard.",
-    "embedding_placeholder": "Saisissez ou choisissez un identifiant de modèle d'embedding…"
+    "embedding_placeholder": "Saisissez ou choisissez un identifiant de modèle d'embedding…",
+    "tier": {
+      "free": "Gratuit",
+      "low": "Faible",
+      "medium": "Moyen",
+      "high": "Élevé"
+    }
   },
   "session": {
     "selector": {
