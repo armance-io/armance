@@ -40,6 +40,17 @@ const STATUS_DOT_COLOR: Record<StepStatus, string> = {
   skipped: "var(--ink-faint, #9c8e7e)",
 };
 
+// Soft, muted backgrounds per DESIGN.md gems — done steps tint sage,
+// working steps warm ochre, failed terracotta. Others keep the parchment.
+const STATUS_BG: Record<StepStatus, string> = {
+  queued: "var(--bg-paper, #f4ede0)",
+  working: "color-mix(in srgb, hsl(35, 30%, 60%) 12%, var(--bg-paper, #f4ede0))",
+  completed: "color-mix(in srgb, hsl(120, 15%, 55%) 14%, var(--bg-paper, #f4ede0))",
+  failed: "color-mix(in srgb, hsl(0, 30%, 65%) 12%, var(--bg-paper, #f4ede0))",
+  cancelled: "var(--bg-paper, #f4ede0)",
+  skipped: "var(--bg-paper, #f4ede0)",
+};
+
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
 export const StepNode: FC<StepNodeProps> = ({ data, selected = false }) => {
@@ -49,12 +60,21 @@ export const StepNode: FC<StepNodeProps> = ({ data, selected = false }) => {
   const isSkipped = status === "skipped";
   const isWorking = status === "working";
 
+  const isCompleted = status === "completed";
+  const borderColor = selected
+    ? "var(--accent, #6b4f8a)"
+    : isWorking
+      ? "var(--accent, #6b4f8a)"
+      : isCompleted
+        ? "hsl(120, 15%, 55%)"
+        : "var(--rule, #d6c8ad)";
+
   const boxStyle: CSSProperties = {
     width: "200px",
     height: "72px",
-    border: `1px solid ${selected ? "var(--accent, #6b4f8a)" : "var(--rule, #d6c8ad)"}`,
+    border: `1px solid ${borderColor}`,
     borderRadius: "2px",
-    background: "var(--bg-paper, #f4ede0)",
+    background: STATUS_BG[status],
     padding: "8px 12px",
     display: "flex",
     flexDirection: "column",
@@ -66,7 +86,10 @@ export const StepNode: FC<StepNodeProps> = ({ data, selected = false }) => {
       ? "var(--ink-soft, #5b5145)"
       : "var(--ink, #2a2520)",
     position: "relative",
-    transition: "border-color 160ms ease",
+    transition: "border-color 160ms ease, background 240ms ease",
+    boxShadow: isWorking
+      ? "0 0 0 3px color-mix(in srgb, var(--accent, #6b4f8a) 14%, transparent)"
+      : "none",
   };
 
   const idStyle: CSSProperties = {
@@ -130,6 +153,7 @@ export const StepNode: FC<StepNodeProps> = ({ data, selected = false }) => {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.35; }
         }
+        @keyframes stepnode-spin { to { transform: rotate(360deg); } }
         @media (prefers-reduced-motion: reduce) {
           * { animation: none !important; transition: none !important; }
         }
@@ -138,7 +162,26 @@ export const StepNode: FC<StepNodeProps> = ({ data, selected = false }) => {
       <div style={idStyle}>{step_id}</div>
       <div style={roleStyle}>{role}</div>
       <div style={bottomRowStyle}>
-        <span style={dotStyle} aria-hidden="true" />
+        {isWorking ? (
+          <span
+            aria-hidden="true"
+            style={{
+              width: "12px", height: "12px", borderRadius: "999px",
+              border: "2px solid color-mix(in srgb, var(--accent,#6b4f8a) 25%, transparent)",
+              borderTopColor: "var(--accent, #6b4f8a)",
+              display: "inline-block",
+              animation: "stepnode-spin 0.8s linear infinite",
+            }}
+          />
+        ) : isCompleted ? (
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"
+            stroke="hsl(120, 15%, 45%)" strokeWidth="2.2" strokeLinecap="round"
+            strokeLinejoin="round" aria-hidden="true" style={{ display: "block" }}>
+            <path d="M2.5 7.5l3 3 6-7" />
+          </svg>
+        ) : (
+          <span style={dotStyle} aria-hidden="true" />
+        )}
         {duration_ms !== undefined && (
           <span style={durationStyle}>{fmtDuration(duration_ms)}</span>
         )}

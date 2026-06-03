@@ -38,6 +38,32 @@ def test_manifest_records_per_step_status_and_duration(tmp_path: Path) -> None:
     assert by_id["gamma"]["status"] == "skipped"
 
 
+def test_running_manifest_is_live_during_run(tmp_path: Path) -> None:
+    """The manifest + runs.json reflect progress before finalise (live view)."""
+    art = create_run(tmp_path, "wf")
+
+    # create_run registers the run as 'running' up-front.
+    runs = json.loads((art.run_dir.parent / "runs.json").read_text())
+    assert runs[-1]["run_id"] == art.run_id
+    assert runs[-1]["status"] == "running"
+
+    mark_step_started(art, "alpha")
+    # Manifest on disk shows alpha working — before any finalise.
+    live = json.loads(art.manifest_path().read_text())
+    assert live["status"] == "running"
+    assert {s["id"]: s["status"] for s in live["steps"]}["alpha"] == "working"
+
+    mark_step_completed(art, "alpha")
+    live2 = json.loads(art.manifest_path().read_text())
+    assert {s["id"]: s["status"] for s in live2["steps"]}["alpha"] == "completed"
+
+    finalise(art, status="completed")
+    # runs.json upserted in place (no duplicate entry for this run).
+    runs2 = json.loads((art.run_dir.parent / "runs.json").read_text())
+    assert [r["run_id"] for r in runs2].count(art.run_id) == 1
+    assert runs2[-1]["status"] == "completed"
+
+
 def test_manifest_cost_is_none_when_not_measured(tmp_path: Path) -> None:
     """A step without explicit cost MUST NOT contribute a fake number."""
     art = create_run(tmp_path, "test-wf")
