@@ -126,7 +126,7 @@
       "cost_na": "n/a"
     },
     "bottom": {
-      "thinking": "{{name}} is thinking…"
+      "thinking": "{name} is thinking…"
     },
     "agents": {
       "label": "Talking to",

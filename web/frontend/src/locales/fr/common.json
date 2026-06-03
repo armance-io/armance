@@ -126,7 +126,7 @@
       "cost_na": "n/a"
     },
     "bottom": {
-      "thinking": "{{name}} réfléchit…"
+      "thinking": "{name} réfléchit…"
     },
     "agents": {
       "label": "Interlocuteur",
