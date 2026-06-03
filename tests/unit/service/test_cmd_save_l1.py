@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from armance.client.tui.types import LoopContext, AgentStatus
+from armance.client.tui.types import LoopContext
 from armance.config import Config
 from armance.service.session import SessionState
 
@@ -39,7 +39,7 @@ def cfg() -> Config:
 def _make_ctx(
     armance_root: Path, cfg: Config, buffer: list[str], current_agent: str = "system-context"
 ) -> LoopContext:
-    from armance.service.session import Session, SessionState
+    from armance.service.session import Session
     state = SessionState.new()
     session = Session(state, armance_root)
     session.metadata["host_buffer"] = buffer

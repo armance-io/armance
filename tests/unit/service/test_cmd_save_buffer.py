@@ -6,15 +6,13 @@ the facts Armance accumulated during dialogue.
 """
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from armance.client.tui.types import LoopContext, AgentStatus
+from armance.client.tui.types import LoopContext
 from armance.config import Config
-from armance.core.models.agent import Agent
 from armance.service.session import SessionState
 
 
@@ -46,7 +44,7 @@ def cfg() -> Config:
 
 
 def _make_ctx(armance_root: Path, cfg: Config, buffer: list[str]) -> LoopContext:
-    from armance.service.session import Session, SessionState
+    from armance.service.session import Session
     state = SessionState.new()
     session = Session(state, armance_root)
     session.metadata["host_buffer"] = buffer

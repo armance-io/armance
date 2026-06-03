@@ -1,7 +1,6 @@
 """Tests for src/armance/tokens.py — per-provider tokenizer abstraction."""
 from __future__ import annotations
 
-import pytest
 
 from armance.core.models.tokens import count_tokens, _resolve_encoding
 
