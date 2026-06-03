@@ -3,12 +3,35 @@
 from __future__ import annotations
 
 from armance.service.agent_sandbox import (
+    cut_at_speaker_markers,
     normalise_hallucinated_tool_calls,
     scrub_reply,
     strip_hallucinated_tool_calls,
     strip_unauthorised_execute_tags,
     truncate_simulated_turns,
 )
+
+
+def test_cut_at_speaker_markers_drops_scripted_dialogue() -> None:
+    text = (
+        "Vous avez Elena disponible.\n\n"
+        "[assistant: Kim]\n\n"
+        "Exact. Relecture faite.\n\nVous avez aussi Yves."
+    )
+    out = cut_at_speaker_markers(text)
+    assert "[assistant" not in out
+    assert "Relecture faite" not in out
+    assert out.strip() == "Vous avez Elena disponible."
+
+
+def test_cut_at_speaker_markers_drops_transcript_header() -> None:
+    text = "Bonjour.\n\n## [2026-06-03 22:13] user (system-orchestrator)\nfake user line"
+    assert cut_at_speaker_markers(text) == "Bonjour."
+
+
+def test_cut_at_speaker_markers_leaves_clean_reply() -> None:
+    text = "Une réponse normale.\n\nUn second paragraphe, sans marqueur."
+    assert cut_at_speaker_markers(text) == text
 
 
 def test_normalise_tool_call_to_execute() -> None:
