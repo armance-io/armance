@@ -107,11 +107,13 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
   // Mirror the active agent to the sidebar bus so the L2 row highlights.
   useEffect(() => { publishCurrentAgent(currentAgent); }, [currentAgent]);
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom on new messages AND when the thinking spinner
+  // appears/disappears — the spinner sits below the scroll area and shrinks
+  // it, which would otherwise clip the bottom of the just-sent message.
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [messages]);
+  }, [messages, busy]);
 
   const handleEvent = useCallback((evt: SseEvent) => {
     const attrs = (evt.data["attributes"] as Record<string, unknown> | undefined) ?? {};
