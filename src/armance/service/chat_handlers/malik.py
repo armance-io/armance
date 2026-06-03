@@ -434,9 +434,11 @@ async def _emit_agents_proposed(ctx: LoopContext, created: list) -> None:
             "reasoning": a.reasoning,
         })
     try:
-        await bus.emit("agents_proposed", attributes={"agents": payload})
+        # Event names must be dotted (<component>.<action>) — the bus rejects
+        # underscored names, which silently dropped the recruit refresh.
+        await bus.emit("agents.proposed", attributes={"agents": payload})
     except Exception:
-        logger.exception("event_bus.emit(agents_proposed) failed")
+        logger.exception("event_bus.emit(agents.proposed) failed")
 
 
 def _peek_proposed_names(yaml_text: str) -> list[str]:

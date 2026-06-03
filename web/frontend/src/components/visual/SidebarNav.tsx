@@ -70,10 +70,10 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
   });
 
   // Refresh the roster when Malik recruits — otherwise the sidebar only
-  // updated on a full page reload. The backend emits `agents_proposed` once
+  // updated on a full page reload. The backend emits `agents.proposed` once
   // the specialist files are written.
   const handleSse = useCallback((evt: SseEvent) => {
-    if (evt.name === "agents_proposed") {
+    if (evt.name === "agents.proposed") {
       void queryClient.invalidateQueries({ queryKey: ["sidebar-agents", pid, sid] });
     }
   }, [queryClient, pid, sid]);
