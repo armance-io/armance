@@ -316,7 +316,8 @@
     "launch": {
       "started": "Exécution lancée : {id}",
       "error": "Impossible de lancer l'exécution.",
-      "in_progress": "Lancement…"
+      "in_progress": "Lancement…",
+      "started_no_id": "Exécution du workflow lancée."
     }
   },
   "hypotheses": {

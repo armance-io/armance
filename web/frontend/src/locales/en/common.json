@@ -316,7 +316,8 @@
     "launch": {
       "started": "Run launched: {id}",
       "error": "Could not launch the run.",
-      "in_progress": "Launching…"
+      "in_progress": "Launching…",
+      "started_no_id": "Workflow run started."
     }
   },
   "hypotheses": {
