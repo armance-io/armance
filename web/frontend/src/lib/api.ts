@@ -264,6 +264,8 @@ export interface LibraryActionResult {
   ok: boolean;
   message: string;
   error: string | null;
+  /** Names of documents (re)indexed — for per-doc completion toasts. */
+  indexed_docs?: string[];
 }
 
 export async function libraryAction(

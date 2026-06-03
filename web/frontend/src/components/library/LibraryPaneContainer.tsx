@@ -83,6 +83,10 @@ export const LibraryPaneContainer: FC<LibraryPaneContainerProps> = ({
     refetch();
   };
 
+  // Prominent "indexing in progress" state — the per-row spinner alone was too
+  // discreet. Drives a banner in the library while an index action runs.
+  const [indexing, setIndexing] = useState(false);
+
   // Library mutations now run synchronously via the dedicated action route
   // (no LLM turn, no conversation entry). Returns the ok flag so the button
   // can flash an ephemeral check on success; errors surface as elegant toasts.
@@ -90,17 +94,25 @@ export const LibraryPaneContainer: FC<LibraryPaneContainerProps> = ({
     action: "index" | "load" | "unload" | "unindex",
     name?: string,
   ): Promise<boolean> => {
+    const isIndex = action === "index";
+    if (isIndex) setIndexing(true);
     try {
       const res = await libraryAction(pid, sid, action, name);
       if (!res.ok) {
         toast(res.message || t("common:error"), "error");
         return false;
       }
+      // One elegant toast per (re)indexed document.
+      (res.indexed_docs ?? []).forEach((doc) =>
+        toast(t("library:toast.doc_indexed").replace("{name}", doc), "success"),
+      );
       refetch();
       return true;
     } catch {
       toast(t("common:error"), "error");
       return false;
+    } finally {
+      if (isIndex) setIndexing(false);
     }
   };
 
@@ -140,6 +152,7 @@ export const LibraryPaneContainer: FC<LibraryPaneContainerProps> = ({
       onIndexAll={onIndexAll}
       embeddingOptions={embeddingOptions}
       onSetEmbedding={onSetEmbedding}
+      indexing={indexing}
       t={t}
     />
   );

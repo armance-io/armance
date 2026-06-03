@@ -21,11 +21,15 @@ async def test_index_all_ok(tmp_path) -> None:
     ctx = _ctx(tmp_path)
     with patch(
         "armance.storage.ingestion.sync_docs",
-        return_value={"indexed": 1, "chunks": 23, "skipped": 0, "deleted": 0},
+        return_value={
+            "indexed": 1, "chunks": 23, "skipped": 0, "deleted": 0,
+            "per_doc_chunks": {"doc.pdf": 23},
+        },
     ):
         res = await run_library_action("index", None, ctx)
     assert res["ok"] is True
     assert res["error"] is None
+    assert res["indexed_docs"] == ["doc.pdf"]
 
 
 @pytest.mark.asyncio
