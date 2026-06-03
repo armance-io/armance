@@ -71,12 +71,19 @@ async def test_get_workflow_invalid_yaml_422(
 
 @pytest.mark.asyncio
 async def test_run_dispatch_seam_derives_run_id_from_index(
-    client: AsyncClient, armance_root: Path
+    client: AsyncClient, armance_root: Path, app_state
 ) -> None:
-    """Exercise the real _dispatch_run: it reads runs.json for the run_id."""
+    """Exercise the real _dispatch_run directly: it reads runs.json for run_id.
+
+    (The route now runs this in the background and returns immediately, so we
+    call the seam directly to assert run_id derivation + reply_preview.)
+    """
+    from armance.web.backend.routes.workflows import _dispatch_run
+
     cr = await client.post("/projects/default/sessions")
     sid = cr.json()["id"]
     _seed_workflow(armance_root)
+    ws = app_state.get(sid)
     # Seed a runs.json so _dispatch_run can derive the last run_id.
     exports = armance_root / "exports" / "wf"
     exports.mkdir(parents=True, exist_ok=True)
@@ -88,12 +95,7 @@ async def test_run_dispatch_seam_derives_run_id_from_index(
         "armance.web.backend.routes.workflows.dispatch_input",
         new=AsyncMock(return_value=("Lancé.", "kim")),
     ):
-        resp = await client.post(
-            f"/projects/default/sessions/{sid}/workflows/wf/run",
-            json={"mode": "interactive"},
-        )
-    assert resp.status_code == 202
-    body = resp.json()
+        body = await _dispatch_run(ws, "wf", "interactive")
     assert body["ack"] is True
     assert body["run_id"] == "run-latest"
     assert body["reply_preview"] == "Lancé."
@@ -101,22 +103,21 @@ async def test_run_dispatch_seam_derives_run_id_from_index(
 
 @pytest.mark.asyncio
 async def test_run_dispatch_seam_no_index_blank_run_id(
-    client: AsyncClient, armance_root: Path
+    client: AsyncClient, armance_root: Path, app_state
 ) -> None:
-    """No runs.json → run_id falls back to empty string, still 202."""
+    """No runs.json → run_id falls back to empty string."""
+    from armance.web.backend.routes.workflows import _dispatch_run
+
     cr = await client.post("/projects/default/sessions")
     sid = cr.json()["id"]
     _seed_workflow(armance_root)
+    ws = app_state.get(sid)
     with patch(
         "armance.web.backend.routes.workflows.dispatch_input",
         new=AsyncMock(return_value=("ok", "kim")),
     ):
-        resp = await client.post(
-            f"/projects/default/sessions/{sid}/workflows/wf/run",
-            json={"mode": "autonomous"},
-        )
-    assert resp.status_code == 202
-    assert resp.json()["run_id"] == ""
+        body = await _dispatch_run(ws, "wf", "autonomous")
+    assert body["run_id"] == ""
 
 
 @pytest.mark.asyncio
