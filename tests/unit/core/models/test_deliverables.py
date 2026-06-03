@@ -99,7 +99,6 @@ def temp_dir():
 
 def test_parse_report_structure(report_tree):
     """Test parse_report() produces correct ReportTree structure."""
-    from armance.core.models.deliverables import Section
 
     # Check title
     assert report_tree.title == "Project Alpha Report"

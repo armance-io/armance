@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 
 from armance.core.models.agent import Agent
 from armance.service.tui_bridge import (

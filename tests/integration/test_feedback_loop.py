@@ -4,7 +4,6 @@ Spec: docs/spec/22_circular_outputs.md § 2. Skill feedback_loop
 """
 from __future__ import annotations
 
-import pytest
 
 from armance.service.skills.feedback_loop import FeedbackLoopSkill
 from armance.service.context_service import ContextService

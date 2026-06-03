@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from armance.service.handlers import HANDLERS, LoopContext
+from armance.service.handlers import LoopContext
 from armance.config import Config, ProviderConfig
 from armance.service.llm_service import TokenLedger
 from armance.service.session import SessionState, save_state
@@ -18,7 +18,7 @@ from armance.client.tui.types import AgentStatus
 
 
 def _make_ctx(tmp_path: Path) -> LoopContext:
-    from armance.service.session import Session, SessionState
+    from armance.service.session import Session
     cfg = Config(
         providers=[ProviderConfig(name="openrouter", api_key="k")],
         default_provider="openrouter",
