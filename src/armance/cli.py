@@ -929,7 +929,32 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
         "--build", action="store_true",
         help="Rebuild the static UI bundle (needs Node + pnpm; dev/repo only).",
     )
+    web_parser.add_argument(
+        "--stop", action="store_true",
+        help="Stop the web server running in this folder, then exit.",
+    )
     web_args, _ = web_parser.parse_known_args(remaining or [])
+
+    root = repo_root or Path.cwd()
+
+    # `armance web stop` (positional) is an alias for `armance web --stop`.
+    if web_args.stop or "stop" in (remaining or []):
+        from armance.web.server_lock import stop_server
+        stopped, message = stop_server(root)
+        print(message, file=sys.stderr if not stopped else sys.stdout)
+        return 0 if stopped else 1
+
+    # One instance per folder: refuse to launch over a live server.
+    from armance.web.server_lock import read_lock, write_lock, clear_lock
+    existing = read_lock(root)
+    if existing is not None:
+        print(
+            f"Armance web is already running in this folder "
+            f"(pid {existing.pid}, port {existing.port}).\n"
+            f"  stop it: armance web --stop",
+            file=sys.stderr,
+        )
+        return 1
 
     if web_args.build:
         rc = _build_web_bundle()
@@ -975,8 +1000,6 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
             "Driver-only writes.",
             file=sys.stderr,
         )
-
-    root = repo_root or Path.cwd()
 
     url = f"http://127.0.0.1:{port}/"
     open_browser = not web_args.no_browser
@@ -1040,15 +1063,23 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     ]
 
     # Foreground mode keeps the old blocking behaviour (Ctrl+C stops it,
-    # logs stream to the terminal). Useful for dev / debugging.
+    # logs stream to the terminal). Useful for dev / debugging. We still write
+    # the pidfile so the single-instance lock holds, and clear it on exit.
     if web_args.foreground:
+        proc = None
         try:
-            subprocess.run(cmd, env=env, check=True)
+            proc = subprocess.Popen(cmd, env=env, start_new_session=True)
+            write_lock(root, proc.pid, port)
+            rc = proc.wait()
         except KeyboardInterrupt:
-            pass
-        except subprocess.CalledProcessError as e:
-            print(f"web server exited with code {e.returncode}", file=sys.stderr)
-            return e.returncode
+            if proc is not None:
+                proc.terminate()
+            rc = 0
+        finally:
+            clear_lock(root)
+        if rc not in (0, None):
+            print(f"web server exited with code {rc}", file=sys.stderr)
+            return rc
         return 0
 
     # Default: run the server in the background and return 0. Logs go to
@@ -1097,6 +1128,9 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
         print(f"web server did not become ready within 20s; see {log_path}", file=sys.stderr)
         return 1
 
+    # Server is up: record the single-instance lock for this folder.
+    write_lock(root, proc.pid, port)
+
     if open_browser:
         import webbrowser
         webbrowser.open(url)
@@ -1104,7 +1138,7 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     print(
         f"✓ Armance web running at http://{bind}:{port}  (pid {proc.pid})\n"
         f"  logs: {log_path}\n"
-        f"  stop: kill {proc.pid}",
+        f"  stop: armance web --stop",
     )
     return 0
 
