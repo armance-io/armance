@@ -35,10 +35,23 @@ function usePersistedOpen(key: string, fallback: boolean): [boolean, () => void]
 export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
   const { pid, sid } = useLatestSession();
   const [activeView, setActiveView] = useState<ViewType>("chat");
+  // Which workflow is open (from the URL), so its sidebar sub-link highlights
+  // instead of the parent "Workflows" entry.
+  const [activeWorkflow, setActiveWorkflow] = useState<string>("");
+
+  const readWorkflowFromPath = () => {
+    if (typeof window === "undefined") return "";
+    const segs = window.location.pathname.split("/").filter(Boolean);
+    const i = segs.indexOf("workflows");
+    const n = i >= 0 ? segs[i + 1] : "";
+    return n && n !== "_" ? decodeURIComponent(n) : "";
+  };
 
   useEffect(() => {
+    setActiveWorkflow(readWorkflowFromPath());
     return onViewChange((v) => {
       setActiveView(v);
+      setActiveWorkflow(v === "workflows" ? readWorkflowFromPath() : "");
     });
   }, []);
 
@@ -155,6 +168,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
     e.preventDefault();
     if (!sid) return;
     window.history.pushState(null, "", sessionPath(`/workflows/${encodeURIComponent(name)}`));
+    setActiveWorkflow(name);
     emitViewChange("workflows");
   };
 
@@ -244,37 +258,43 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
       <nav style={navContainer}>
         <Link
           href={sid ? sessionPath("/workflows/_") : "#"}
-          style={link(isTabActive("workflows"))}
+          // Parent highlights only on the workflows index (no specific workflow).
+          style={link(isTabActive("workflows") && !activeWorkflow)}
           onClick={(e) => {
             if (!sid) {
               e.preventDefault();
               return;
             }
+            setActiveWorkflow("");
             handleNav(e, sessionPath("/workflows/_"), "workflows");
           }}
         >
           {t("sidebar:tabs.workflows")}
         </Link>
-        {workflows.map((w) => (
-          <a
-            key={w.name}
-            href={sid ? sessionPath(`/workflows/${encodeURIComponent(w.name)}`) : "#"}
-            onClick={(e) => openWorkflow(e, w.name)}
-            data-testid={`sidebar-workflow-${w.name}`}
-            title={w.scope || w.name}
-            style={{
-              ...link(false),
-              paddingLeft: 28,
-              fontSize: "12px",
-              color: tokens.inkSoft,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {w.name}
-          </a>
-        ))}
+        {workflows.map((w) => {
+          const wfActive = isTabActive("workflows") && activeWorkflow === w.name;
+          return (
+            <a
+              key={w.name}
+              href={sid ? sessionPath(`/workflows/${encodeURIComponent(w.name)}`) : "#"}
+              onClick={(e) => openWorkflow(e, w.name)}
+              data-testid={`sidebar-workflow-${w.name}`}
+              title={w.scope || w.name}
+              aria-current={wfActive ? "page" : undefined}
+              style={{
+                ...link(wfActive),
+                paddingLeft: 28,
+                fontSize: "12px",
+                color: wfActive ? tokens.accent : tokens.inkSoft,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {w.name}
+            </a>
+          );
+        })}
       </nav>
 
       {/* 5 · Admin */}
