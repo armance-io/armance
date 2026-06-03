@@ -162,6 +162,12 @@ process** — no Node, no second server:
 armance web                 # serves API + UI at http://127.0.0.1:8000, opens a browser
 ```
 
+By default the server runs **in the background**: the command waits until the
+server answers, opens a browser, prints the URL + pid, and returns `0`. Logs go
+to `.armance/logs/web-server.log` (not the terminal). Stop it with the printed
+`kill <pid>`. Use `--foreground` to block instead (Ctrl+C stops it; logs stream
+to the terminal) — handy for dev.
+
 Run it from a project directory (one that has — or will have — a `.armance/`
 folder, exactly like `armance run`). Options:
 
@@ -170,6 +176,7 @@ folder, exactly like `armance run`). Options:
 | `--port 8000` | port (default `8000`) |
 | `--bind 0.0.0.0` | expose on the LAN (read-only for watchers; only the first client may write) |
 | `--no-browser` | don't auto-open a browser |
+| `--foreground` | block in the terminal (Ctrl+C stops; logs stream to stdout) instead of backgrounding |
 | `--build` | (repo checkout only) rebuild the UI bundle before serving — needs Node + pnpm |
 
 **Where the UI comes from:**
