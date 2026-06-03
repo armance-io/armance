@@ -6,6 +6,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLatestSession } from "@/lib/useLatestSession";
@@ -231,9 +232,11 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
 // Logs tab
 // ---------------------------------------------------------------------------
 
-function logLineToEntry(l: import("@/lib/api").LogLine, id: string): LogEntry {
+function logLineToEntry(l: import("@/lib/api").LogLine): LogEntry {
+  // Use a stable, unique ID based on timestamp, agent, and event to identify duplicates across pages
+  const stableId = (l.id as string) || `${l.timestamp || ""}-${l.agent || ""}-${l.event || ""}-${l.tokens_in || 0}-${l.tokens_out || 0}`;
   return {
-    id,
+    id: stableId,
     ts: l.timestamp || "",
     agent: l.agent || "System",
     level: "info" as LogEntry["level"],
@@ -245,12 +248,12 @@ function logLineToEntry(l: import("@/lib/api").LogLine, id: string): LogEntry {
 }
 
 const LogsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
-  const [extra, setExtra] = useState<LogEntry[]>([]);
-  const [cursor, setCursor] = useState<string | null>(null);
+  const [allLogs, setAllLogs] = useState<LogEntry[]>([]);
+  const [hasMore, setHasMore] = useState(false);
   const [logLevel, setLogLevel] = useState<"INFO" | "DEBUG" | "WARN" | "ERROR">("INFO");
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  // BUG-11: live tail — poll the first page every 2s so new logs appear
-  // without a manual refresh.
+  // BUG-11: live tail — poll the first page every 2s so new logs appear at the top.
   const { data: head } = useQuery({
     queryKey: ["admin-logs", pid],
     queryFn: () => getAdminLogs(pid, { limit: 50 }),
@@ -258,18 +261,56 @@ const LogsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
   });
 
   useEffect(() => {
-    setCursor(head?.cursor ?? null);
-    setExtra([]); // older pages reset when the live head refreshes
-  }, [head?.cursor]);
+    if (!head?.lines) return;
+    setAllLogs((prev) => {
+      const incoming = head.lines.map((l) => logLineToEntry(l));
+      // Merge incoming with existing entries and de-duplicate by stable ID
+      const seen = new Set<string>();
+      const combined = [...incoming, ...prev];
+      const deduplicated = combined.filter((item) => {
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      });
+      // Sort newest-first
+      return deduplicated.sort((a, b) => b.ts.localeCompare(a.ts));
+    });
+    setHasMore((prev) => {
+      // If we already reached the end (hasMore was false), keep it false.
+      // Otherwise, check if head has a next cursor.
+      return prev === false ? false : head.cursor !== null;
+    });
+  }, [head]);
 
-  const headEntries = (head?.lines ?? []).map((l, i) => logLineToEntry(l, `head-${i}`));
-  const entries = [...headEntries, ...extra];
+  const agentsList = useMemo(() => {
+    return Array.from(new Set(allLogs.map((l) => l.agent))).sort();
+  }, [allLogs]);
 
   const loadMore = async () => {
-    if (!cursor) return;
-    const res = await getAdminLogs(pid, { limit: 50, cursor });
-    setExtra((prev) => [...prev, ...res.lines.map((l, i) => logLineToEntry(l, `more-${prev.length + i}`))]);
-    setCursor(res.cursor);
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      // Offset equals the total number of unique logs we have loaded so far
+      const offset = allLogs.length;
+      const res = await getAdminLogs(pid, { limit: 50, cursor: String(offset) });
+      const incoming = res.lines.map((l) => logLineToEntry(l));
+      
+      setAllLogs((prev) => {
+        const seen = new Set<string>();
+        const combined = [...prev, ...incoming];
+        const deduplicated = combined.filter((item) => {
+          if (seen.has(item.id)) return false;
+          seen.add(item.id);
+          return true;
+        });
+        return deduplicated.sort((a, b) => b.ts.localeCompare(a.ts));
+      });
+      setHasMore(res.cursor !== null);
+    } catch (err) {
+      console.error("Failed to load more logs:", err);
+    } finally {
+      setLoadingMore(false);
+    }
   };
 
   return (
@@ -295,7 +336,7 @@ const LogsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
         </span>
       </div>
       <div style={{ flex: 1, minHeight: 0 }}>
-        <LogViewer entries={entries} agents={[]} loadMore={loadMore} hasMore={cursor !== null} t={t} />
+        <LogViewer entries={allLogs} agents={agentsList} loadMore={loadMore} hasMore={hasMore} t={t} />
       </div>
     </div>
   );
