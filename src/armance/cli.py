@@ -920,6 +920,12 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     web_parser.add_argument("--port", type=int, default=8000)
     web_parser.add_argument("--no-browser", action="store_true")
     web_parser.add_argument(
+        "--foreground", action="store_true",
+        help="Run in the foreground (blocks; Ctrl+C stops; logs stream to the "
+             "terminal). Default runs in the background, logging to "
+             ".armance/logs/web-server.log and returning 0.",
+    )
+    web_parser.add_argument(
         "--build", action="store_true",
         help="Rebuild the static UI bundle (needs Node + pnpm; dev/repo only).",
     )
@@ -972,22 +978,26 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
 
     root = repo_root or Path.cwd()
 
-    if not web_args.no_browser:
+    url = f"http://127.0.0.1:{port}/"
+    open_browser = not web_args.no_browser
+
+    # Foreground mode blocks in subprocess.run below, so the browser must be
+    # opened from a background thread that waits for readiness first. Background
+    # mode opens it inline after the readiness wait (see below), since the
+    # main thread is free there.
+    if open_browser and web_args.foreground:
         import threading
         import time
         import urllib.error
         import urllib.request
         import webbrowser
 
-        url = f"http://127.0.0.1:{port}/"
         # Probe the API health endpoint, not `/`: the SPA shell is only served
         # for `Accept: text/html`, but urllib sends `*/*`, so `/` would 404
         # even when the server is up. /api/healthz always answers 200 once ready.
         ready_url = f"http://127.0.0.1:{port}/api/healthz"
 
         def _open_when_ready() -> None:
-            # BUG-15: wait until the server actually answers before opening the
-            # browser, so the first load never shows a connection error.
             deadline = time.time() + 15.0
             while time.time() < deadline:
                 try:
@@ -1022,22 +1032,80 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
         )
 
     env = {**os.environ, "ARMANCE_ROOT": str(root)}
+    cmd = [
+        sys.executable, "-m", "uvicorn",
+        "armance.web.backend.main:app",
+        "--host", bind,
+        "--port", str(port),
+    ]
+
+    # Foreground mode keeps the old blocking behaviour (Ctrl+C stops it,
+    # logs stream to the terminal). Useful for dev / debugging.
+    if web_args.foreground:
+        try:
+            subprocess.run(cmd, env=env, check=True)
+        except KeyboardInterrupt:
+            pass
+        except subprocess.CalledProcessError as e:
+            print(f"web server exited with code {e.returncode}", file=sys.stderr)
+            return e.returncode
+        return 0
+
+    # Default: run the server in the background and return 0. Logs go to
+    # .armance/logs/web-server.log instead of the terminal, so the shell is
+    # freed and the window stays clean.
+    log_dir = root / ".armance" / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_path = log_dir / "web-server.log"
+    log_file = open(log_path, "a", encoding="utf-8")  # noqa: SIM115 — handed to the child
     try:
-        subprocess.run(
-            [
-                sys.executable, "-m", "uvicorn",
-                "armance.web.backend.main:app",
-                "--host", bind,
-                "--port", str(port),
-            ],
-            env=env,
-            check=True,
+        proc = subprocess.Popen(
+            cmd, env=env, stdout=log_file, stderr=subprocess.STDOUT,
+            start_new_session=True,
         )
-    except KeyboardInterrupt:
-        pass
-    except subprocess.CalledProcessError as e:
-        print(f"web server exited with code {e.returncode}", file=sys.stderr)
-        return e.returncode
+    except Exception as exc:  # noqa: BLE001
+        log_file.close()
+        print(f"error: failed to start web server: {exc}", file=sys.stderr)
+        return 1
+
+    # Wait for readiness so a 0 exit means "the server is actually up".
+    import time
+    import urllib.error
+    import urllib.request
+
+    ready_url = f"http://127.0.0.1:{port}/api/healthz"
+    deadline = time.time() + 20.0
+    ready = False
+    while time.time() < deadline:
+        if proc.poll() is not None:
+            log_file.close()
+            print(
+                f"web server exited early (code {proc.returncode}); see {log_path}",
+                file=sys.stderr,
+            )
+            return proc.returncode or 1
+        try:
+            with urllib.request.urlopen(ready_url, timeout=1) as resp:
+                if resp.status == 200:
+                    ready = True
+                    break
+        except (urllib.error.URLError, OSError):
+            pass
+        time.sleep(0.2)
+
+    if not ready:
+        print(f"web server did not become ready within 20s; see {log_path}", file=sys.stderr)
+        return 1
+
+    if open_browser:
+        import webbrowser
+        webbrowser.open(url)
+
+    print(
+        f"✓ Armance web running at http://{bind}:{port}  (pid {proc.pid})\n"
+        f"  logs: {log_path}\n"
+        f"  stop: kill {proc.pid}",
+    )
     return 0
 
 
