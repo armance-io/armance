@@ -12,6 +12,14 @@ export function useLiveManifest(
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // No active run → don't poll. Polling with an empty runId hits `/runs/`
+    // (trailing slash → 307 redirect) every second and floods the server log.
+    if (!runId) {
+      setData(null);
+      setIsLoading(false);
+      return;
+    }
+
     let active = true;
     let timerId: ReturnType<typeof setInterval> | null = null;
 
