@@ -69,8 +69,12 @@ async def _index(args: list[str], ctx: LoopContext) -> dict:
     chunks = result.get("chunks", 0)
     skipped = result.get("skipped", 0)
     deleted = result.get("deleted", 0)
+    # Per-doc chunk counts → the names actually (re)indexed, for the UI to
+    # surface one "<doc> indexed" toast per document.
+    per_doc = result.get("per_doc_chunks") or {}
+    indexed_docs = sorted(per_doc.keys())
     if indexed == 0 and skipped == 0 and deleted == 0:
-        return {"ok": True, "message": t("ingest.nothing_to_do"), "error": None}
+        return {"ok": True, "message": t("ingest.nothing_to_do"), "error": None, "indexed_docs": []}
 
     parts: list[str] = []
     if indexed:
@@ -81,4 +85,4 @@ async def _index(args: list[str], ctx: LoopContext) -> dict:
         parts.append(t("ingest.part_skipped", n=skipped))
     if deleted:
         parts.append(t("ingest.part_deleted", n=deleted))
-    return {"ok": True, "message": " ; ".join(parts) + ".", "error": None}
+    return {"ok": True, "message": " ; ".join(parts) + ".", "error": None, "indexed_docs": indexed_docs}

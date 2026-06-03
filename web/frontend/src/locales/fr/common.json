@@ -99,7 +99,8 @@
       "indexing": "Indexation lancée…",
       "indexing_all": "Indexation de tous les documents…",
       "loading": "Chargement en contexte…",
-      "embedding_set": "Modèle d'embedding défini"
+      "embedding_set": "Modèle d'embedding défini",
+      "doc_indexed": "{name} indexé"
     },
     "feuillets_count": "{n} feuillets",
     "feuillets_total_aria": "Total des feuillets indexés",
@@ -108,6 +109,9 @@
       "prompt": "Aucun modèle d'embedding défini — choisissez-en un pour activer l'indexation.",
       "placeholder": "Saisissez ou choisissez un modèle d'embedding…",
       "set": "Activer"
+    },
+    "indexing": {
+      "in_progress": "Indexation en cours…"
     }
   },
   "chat": {

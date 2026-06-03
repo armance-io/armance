@@ -99,7 +99,8 @@
       "indexing": "Indexing started…",
       "indexing_all": "Indexing all documents…",
       "loading": "Loading into context…",
-      "embedding_set": "Embedding model set"
+      "embedding_set": "Embedding model set",
+      "doc_indexed": "{name} indexed"
     },
     "feuillets_count": "{n} slips",
     "feuillets_total_aria": "Total indexed slips",
@@ -108,6 +109,9 @@
       "prompt": "No embedding model set — pick one to enable indexing.",
       "placeholder": "Type or pick an embedding model…",
       "set": "Enable"
+    },
+    "indexing": {
+      "in_progress": "Indexing in progress…"
     }
   },
   "chat": {
