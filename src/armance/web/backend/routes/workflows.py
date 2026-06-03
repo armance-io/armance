@@ -182,12 +182,43 @@ class RunIn(BaseModel):
 
 
 async def _dispatch_run(ws, name: str, mode: str) -> dict[str, Any]:
-    """Thin seam — patched in unit tests.  Forwards to Kim via /workflow-run."""
-    reply, _agent = await dispatch_input(
-        f"/workflow run {name} {mode}",
+    """Run the workflow on the web path.
+
+    Unlike the TUI/Kim flow, the web run must NOT block on the interactive
+    user-prompt + cost-confirm checkpoints: those fire *before* the run dir is
+    created, and the web HITL surface only mounts once the run is reported via
+    /active-workflow — a deadlock. So we feed the workflow's own scope as the
+    prompt and skip the cost preflight. Any IN-run checkpoints still pause and
+    surface through the Flux tab. current_workflow is set so /active-workflow
+    reports the run while it is in flight.
+    """
+    wf_path = ws.ctx.armance_root / "workflows" / f"{name}.yaml"
+    if not wf_path.exists():
+        wf_path = ws.ctx.armance_root / ".armance" / "workflows" / f"{name}.yaml"
+    scope = ""
+    try:
+        wf = _load_workflow_safe(wf_path)
+        scope = (getattr(wf, "scope", "") or "") if wf else ""
+    except Exception:  # noqa: BLE001
+        scope = ""
+
+    try:
+        ws.session.state.current_workflow = name
+        ws.session.save()
+    except Exception:  # noqa: BLE001
+        logger.debug("could not set current_workflow", exc_info=True)
+
+    from armance.service.handlers import _cmd_workflow_run
+    reply = await _cmd_workflow_run(
+        name,
+        None,
         ws.ctx,
+        skip_preflight=True,
+        user_prompt_override=scope or name,
+        run_mode=mode,
     )
-    # Backend doesn't return a run_id directly; derive from current state.
+
+    # Derive the run_id from the index (create_run wrote it up-front).
     safe = _safe_wf(name)
     runs_index = ws.ctx.armance_root / "exports" / safe / "runs.json"
     run_id = ""
