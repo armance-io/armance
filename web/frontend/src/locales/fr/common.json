@@ -230,6 +230,21 @@
       "proposed_by": "Proposé par",
       "rejected_by": "Rejeté par",
       "weight": "poids"
+    },
+    "tabs": {
+      "flow": "Flux",
+      "report": "Compte rendu"
+    },
+    "flow": {
+      "waiting": "En attente du démarrage de l'exécution…",
+      "status": {
+        "queued": "en file",
+        "working": "en cours",
+        "completed": "terminé",
+        "failed": "échec",
+        "skipped": "ignoré",
+        "cancelled": "annulé"
+      }
     }
   },
   "workflow": {
@@ -318,6 +333,9 @@
       "error": "Impossible de lancer l'exécution.",
       "in_progress": "Lancement…",
       "started_no_id": "Exécution du workflow lancée."
+    },
+    "panel": {
+      "resize": "Glisser pour redimensionner"
     }
   },
   "hypotheses": {
