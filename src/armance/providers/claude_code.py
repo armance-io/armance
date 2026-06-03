@@ -124,6 +124,15 @@ class ClaudeCodeClient(LLMClient):
                 raise
 
         text = "".join(text_parts)
+        # Pseudo-error: the SDK sometimes flags is_error on a ResultMessage that
+        # nonetheless carried valid assistant text (the "error result: success"
+        # case). If we got usable text, it was a success — don't propagate an
+        # error finish_reason (which surfaced as "erreur : ... success" in the UI).
+        if finish_reason == "error" and text.strip():
+            logger.warning(
+                "Claude Code flagged is_error but produced text; treating as success"
+            )
+            finish_reason = "stop"
         if tokens_in == 0:
             tokens_in = _estimate_tokens(prompt) + (
                 _estimate_tokens(system_prompt) if system_prompt else 0
@@ -230,6 +239,15 @@ class ClaudeCodeClient(LLMClient):
                 raise
 
         text = "".join(text_parts)
+        # Pseudo-error: the SDK sometimes flags is_error on a ResultMessage that
+        # nonetheless carried valid assistant text (the "error result: success"
+        # case). If we got usable text, it was a success — don't propagate an
+        # error finish_reason (which surfaced as "erreur : ... success" in the UI).
+        if finish_reason == "error" and text.strip():
+            logger.warning(
+                "Claude Code flagged is_error but produced text; treating as success"
+            )
+            finish_reason = "stop"
         if tokens_in == 0:
             tokens_in = _estimate_tokens(prompt) + (
                 _estimate_tokens(system_prompt) if system_prompt else 0
