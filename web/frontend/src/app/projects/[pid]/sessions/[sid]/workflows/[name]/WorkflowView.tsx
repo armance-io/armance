@@ -48,7 +48,10 @@ export default function WorkflowView() {
     setLaunching(true);
     try {
       const result = await launchWorkflow(pid, sid, workflowName, { mode, depth });
-      toast(t("workflow:launch.started").replace("{id}", result.run_id), "success");
+      const msg = result.run_id
+        ? t("workflow:launch.started").replace("{id}", result.run_id)
+        : t("workflow:launch.started_no_id");
+      toast(msg, "success");
       refetchActive();
     } catch {
       toast(t("workflow:launch.error"), "error");
