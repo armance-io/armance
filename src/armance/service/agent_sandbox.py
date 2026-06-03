@@ -120,6 +120,36 @@ _ACK_TOKENS = (
 )
 
 
+# Literal speaker markers a model emits when it starts scripting both sides of
+# the dialogue: "[assistant: Kim]", "[assistant]", "[user]", "[utilisateur]",
+# or a transcript header like "## [2026-…] user (system-…)". None of these are
+# ever legitimate inside a single agent reply — cut at the first one.
+_SPEAKER_MARKER_RE = re.compile(
+    r"(?im)^\s*(?:"
+    r"\[\s*(?:assistant|user|utilisateur|système|systeme|system)\b[^\]]*\]\s*$"  # [assistant: Kim]
+    r"|#{1,6}\s*\[[^\]]*\]\s*(?:user|assistant|utilisateur)\b"                   # ## [ts] user (...)
+    r")",
+)
+
+
+def cut_at_speaker_markers(text: str) -> str:
+    """Cut a reply at the first literal speaker marker.
+
+    Small models on long transcripts continue the recorded turn pattern and
+    script the user's lines (and their own next turn) inside one reply, tagging
+    them with markers like ``[assistant: Kim]`` or a ``## [...] user`` header.
+    Everything from the first such marker on is hallucinated dialogue — drop it.
+    """
+    m = _SPEAKER_MARKER_RE.search(text)
+    if m is None:
+        return text
+    cut = text[: m.start()].rstrip()
+    logger.warning("truncated LLM reply: speaker marker detected (model scripting a dialogue)")
+    if not cut:
+        return text  # marker at the very top — nothing safe to keep; leave as-is
+    return cut
+
+
 def truncate_simulated_turns(text: str, max_acks: int = 1) -> str:
     """Cut reply when the model starts simulating user turns.
 
@@ -185,6 +215,7 @@ def scrub_reply(reply: str, *, agent_role: str) -> str:
     reply = normalise_hallucinated_tool_calls(reply, allow=allow)
     reply = strip_hallucinated_tool_calls(reply)
     reply = truncate_repeated_garbage(reply)
+    reply = cut_at_speaker_markers(reply)
     reply = truncate_simulated_turns(reply)
     reply = strip_unauthorised_execute_tags(reply, agent_role=agent_role)
     return reply
