@@ -1,10 +1,11 @@
 "use client";
 
-import { type CSSProperties, type FC, useEffect, useState } from "react";
+import { type CSSProperties, type FC, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLatestSession } from "@/lib/useLatestSession";
 import { getAdminAgents, getLibrary } from "@/lib/api";
+import { useEventStream, type SseEvent } from "@/lib/sse";
 import { emitMention } from "@/lib/mentionBus";
 import { requestAgentSwitch, useCurrentAgent, useBusyAgent } from "@/lib/agentBus";
 import { tokens } from "../_shared/armance-tokens";
@@ -48,11 +49,23 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
   const currentAgent = useCurrentAgent();
   const busyAgent = useBusyAgent();
 
+  const queryClient = useQueryClient();
+
   const { data: agents = [] } = useQuery({
     queryKey: ["sidebar-agents", pid, sid],
     enabled: Boolean(pid && sid),
     queryFn: () => getAdminAgents(pid, sid as string).catch(() => []),
   });
+
+  // Refresh the roster when Malik recruits — otherwise the sidebar only
+  // updated on a full page reload. The backend emits `agents_proposed` once
+  // the specialist files are written.
+  const handleSse = useCallback((evt: SseEvent) => {
+    if (evt.name === "agents_proposed") {
+      void queryClient.invalidateQueries({ queryKey: ["sidebar-agents", pid, sid] });
+    }
+  }, [queryClient, pid, sid]);
+  useEventStream(pid, sid || "", handleSse);
 
   const staff = agents.filter((a) => a.staff);
   const specialists = agents.filter((a) => !a.staff);
