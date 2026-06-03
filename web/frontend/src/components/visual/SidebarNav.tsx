@@ -4,7 +4,7 @@ import { type CSSProperties, type FC, useCallback, useEffect, useState } from "r
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLatestSession } from "@/lib/useLatestSession";
-import { getAdminAgents, getLibrary } from "@/lib/api";
+import { getAdminAgents, getLibrary, listWorkflows } from "@/lib/api";
 import { useEventStream, type SseEvent } from "@/lib/sse";
 import { emitMention } from "@/lib/mentionBus";
 import { requestAgentSwitch, useCurrentAgent, useBusyAgent } from "@/lib/agentBus";
@@ -77,6 +77,17 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
     queryFn: () => getLibrary(pid, sid as string).catch(() => null),
   });
 
+  // Designed workflows, listed under the Workflows section as shortcuts to
+  // their visualization. Polled so a freshly designed workflow appears
+  // without a reload (no dedicated workflow-created event exists).
+  const { data: workflowsData } = useQuery({
+    queryKey: ["sidebar-workflows", pid, sid],
+    enabled: Boolean(pid && sid),
+    refetchInterval: 4000,
+    queryFn: () => listWorkflows(pid, sid as string).catch(() => null),
+  });
+  const workflows = workflowsData?.workflows ?? [];
+
   const onConversation = activeView === "chat";
 
   const isTabActive = (tab: string): boolean => {
@@ -138,6 +149,14 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
       emitViewChange("chat");
     }
     requestAgentSwitch(firstName);
+  };
+
+  // Open a specific workflow's visualization (mirrors WorkflowsList nav).
+  const openWorkflow = (e: React.MouseEvent, name: string) => {
+    e.preventDefault();
+    if (!sid) return;
+    window.history.pushState(null, "", sessionPath(`/workflows/${encodeURIComponent(name)}`));
+    emitViewChange("workflows");
   };
 
   const agentRow = (a: { name: string; slug?: string; role: string; model?: string }, isStaff: boolean) => {
@@ -234,6 +253,26 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
         >
           {t("sidebar:tabs.workflows")}
         </Link>
+        {workflows.map((w) => (
+          <a
+            key={w.name}
+            href={sid ? sessionPath(`/workflows/${encodeURIComponent(w.name)}`) : "#"}
+            onClick={(e) => openWorkflow(e, w.name)}
+            data-testid={`sidebar-workflow-${w.name}`}
+            title={w.scope || w.name}
+            style={{
+              ...link(false),
+              paddingLeft: 28,
+              fontSize: "12px",
+              color: tokens.inkSoft,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {w.name}
+          </a>
+        ))}
       </nav>
 
       {/* 5 · Admin */}
