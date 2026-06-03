@@ -249,7 +249,10 @@
       "answer_placeholder": "Type your answer…",
       "answer_send": "Send",
       "awaiting_answer": "Waiting for your answer",
-      "question_notif": "An agent is asking you a question"
+      "question_notif": "An agent is asking you a question",
+      "qa_question": "Q:",
+      "qa_mona_answered": "Mona answered:",
+      "qa_you_answered": "You answered:"
     }
   },
   "workflow": {

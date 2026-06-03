@@ -29,6 +29,13 @@ interface PendingCheckpoint {
   options?: string[];
 }
 
+interface QaEntry {
+  stepId: string;
+  question: string;
+  answer: string;
+  answeredBy: string;
+}
+
 const STATUS_TINT: Record<string, string> = {
   working: "hsl(35, 30%, 60%)",
   completed: "hsl(120, 15%, 55%)",
@@ -58,24 +65,38 @@ export const RunFlowContainer: FC<RunFlowContainerProps> = ({ pid, sid, workflow
   const { toast } = useToast();
   const { data: runFiles } = useLiveManifest(pid, sid, workflowName, runId);
   const [pending, setPending] = useState<PendingCheckpoint | null>(null);
+  const [qa, setQa] = useState<QaEntry[]>([]);
   const [answer, setAnswer] = useState("");
   const [resolving, setResolving] = useState(false);
 
   const onSse = useCallback((evt: SseEvent) => {
-    if (evt.name !== "checkpoint.requested") return;
     const attrs = (evt.data["attributes"] as Record<string, unknown> | undefined) ?? {};
-    const kindRaw = String(attrs["kind"] ?? "text");
-    const kind = kindRaw === "select" || kindRaw === "confirm" ? kindRaw : "text";
-    const opts = parseOptions(attrs["options"]);
-    setPending({
-      id: String(attrs["checkpoint_id"] ?? ""),
-      kind,
-      prompt: String(attrs["prompt"] ?? ""),
-      ...(opts !== undefined ? { options: opts } : {}),
-    });
-    setAnswer("");
-    // Bottom-right notif so the user notices the run is waiting on them.
-    toast(t("run:flow.question_notif"), "info");
+    if (evt.name === "checkpoint.requested") {
+      const kindRaw = String(attrs["kind"] ?? "text");
+      const kind = kindRaw === "select" || kindRaw === "confirm" ? kindRaw : "text";
+      const opts = parseOptions(attrs["options"]);
+      setPending({
+        id: String(attrs["checkpoint_id"] ?? ""),
+        kind,
+        prompt: String(attrs["prompt"] ?? ""),
+        ...(opts !== undefined ? { options: opts } : {}),
+      });
+      setAnswer("");
+      // Bottom-right notif so the user notices the run is waiting on them.
+      toast(t("run:flow.question_notif"), "info");
+      return;
+    }
+    if (evt.name === "checkpoint.answered") {
+      // Q/A trace — in autonomous mode answered_by is "Mona".
+      setQa((prev) => [...prev, {
+        stepId: String(attrs["step_id"] ?? ""),
+        question: String(attrs["question"] ?? ""),
+        answer: String(attrs["answer"] ?? ""),
+        answeredBy: String(attrs["answered_by"] ?? ""),
+      }]);
+      setPending(null);
+      return;
+    }
   }, [toast, t]);
   useEventStream(pid, sid, onSse);
 
@@ -160,6 +181,29 @@ export const RunFlowContainer: FC<RunFlowContainerProps> = ({ pid, sid, workflow
           )}
         </div>
       )}
+
+      {qa.map((entry, i) => (
+        <div
+          key={`${entry.stepId}-${i}`}
+          data-testid="run-flow-qa"
+          style={{ border: `1px solid ${tokens.rule}`, borderRadius: 4, padding: "10px 12px", background: tokens.bgPaper, display: "flex", flexDirection: "column", gap: 6 }}
+        >
+          <div style={{ fontFamily: tokens.ffMono, fontSize: 10, color: tokens.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            {entry.stepId}
+          </div>
+          <div style={{ fontFamily: tokens.ffSans, fontSize: 13, color: tokens.ink }}>
+            <span style={{ color: tokens.inkSoft }}>{t("run:flow.qa_question")} </span>{entry.question}
+          </div>
+          <div style={{ fontFamily: tokens.ffSans, fontSize: 13, color: tokens.ink }}>
+            <span style={{ color: tokens.accent, fontWeight: 600 }}>
+              {entry.answeredBy === "Mona"
+                ? t("run:flow.qa_mona_answered")
+                : t("run:flow.qa_you_answered")}{" "}
+            </span>
+            {entry.answer}
+          </div>
+        </div>
+      ))}
 
       {steps.length === 0 && !pending ? (
         <div style={{ color: tokens.inkSoft, fontStyle: "italic" }}>{t("run:flow.waiting")}</div>

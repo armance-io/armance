@@ -42,15 +42,15 @@ def test_running_manifest_is_live_during_run(tmp_path: Path) -> None:
     """The manifest + runs.json reflect progress before finalise (live view)."""
     art = create_run(tmp_path, "wf")
 
-    # create_run registers the run as 'running' up-front.
+    # create_run registers the run as in-flight up-front.
     runs = json.loads((art.run_dir.parent / "runs.json").read_text())
     assert runs[-1]["run_id"] == art.run_id
-    assert runs[-1]["status"] == "running"
+    assert runs[-1]["status"] == "working"
 
     mark_step_started(art, "alpha")
     # Manifest on disk shows alpha working — before any finalise.
     live = json.loads(art.manifest_path().read_text())
-    assert live["status"] == "running"
+    assert live["status"] == "working"
     assert {s["id"]: s["status"] for s in live["steps"]}["alpha"] == "working"
 
     mark_step_completed(art, "alpha")
