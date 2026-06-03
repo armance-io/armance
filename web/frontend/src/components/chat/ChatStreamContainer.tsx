@@ -263,15 +263,17 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
         },
       ]);
       try {
-        // The backend switch is fire-and-forget: the 202 response confirms
-        // the turn was enqueued; the turn.completed SSE event will unlock
-        // sending via setSending(false).
+        // The switch is lightweight (no streamed reply). The separator is
+        // already shown locally, so unlock the input as soon as the POST
+        // returns instead of waiting for the turn.completed SSE ack — a
+        // switch to the already-current agent produces no ack, which left the
+        // input frozen "every other click".
         await submitTurn(pid, sid, `@${firstName}`);
       } catch (err) {
         console.error("Failed to switch agent:", err);
+      } finally {
+        setSending(false);
       }
-      // Don't setSending(false) here — wait for turn.completed SSE event.
-      // The safety timer (60 s) armed by startSending guarantees unlock.
     },
     [pid, sid, agents, nextId, t, startSending],
   );
