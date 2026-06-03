@@ -260,6 +260,24 @@ export async function deleteDoc(
   );
 }
 
+export interface LibraryActionResult {
+  ok: boolean;
+  message: string;
+  error: string | null;
+}
+
+export async function libraryAction(
+  pid: string,
+  sid: string,
+  action: "index" | "load" | "unload" | "unindex",
+  name?: string,
+): Promise<LibraryActionResult> {
+  return api.post<LibraryActionResult>(
+    `/projects/${pid}/sessions/${sid}/library/action`,
+    { action, name },
+  );
+}
+
 export type RunStatus = "running" | "completed" | "failed" | "cancelled";
 
 export interface RunItem {

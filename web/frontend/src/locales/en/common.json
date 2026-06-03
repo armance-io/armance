@@ -98,11 +98,17 @@
       "imported": "Document imported",
       "indexing": "Indexing started…",
       "indexing_all": "Indexing all documents…",
-      "loading": "Loading into context…"
+      "loading": "Loading into context…",
+      "embedding_set": "Embedding model set"
     },
     "feuillets_count": "{n} slips",
     "feuillets_total_aria": "Total indexed slips",
-    "no_embedding_tooltip": "Configure an embedding model to enable indexing (Admin → Config)"
+    "no_embedding_tooltip": "Configure an embedding model to enable indexing (Admin → Config)",
+    "embedding": {
+      "prompt": "No embedding model set — pick one to enable indexing.",
+      "placeholder": "Type or pick an embedding model…",
+      "set": "Enable"
+    }
   },
   "chat": {
     "input": {

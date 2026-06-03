@@ -98,11 +98,17 @@
       "imported": "Document importé",
       "indexing": "Indexation lancée…",
       "indexing_all": "Indexation de tous les documents…",
-      "loading": "Chargement en contexte…"
+      "loading": "Chargement en contexte…",
+      "embedding_set": "Modèle d'embedding défini"
     },
     "feuillets_count": "{n} feuillets",
     "feuillets_total_aria": "Total des feuillets indexés",
-    "no_embedding_tooltip": "Configurez un modèle d'embedding pour activer l'indexation (Admin → Config)"
+    "no_embedding_tooltip": "Configurez un modèle d'embedding pour activer l'indexation (Admin → Config)",
+    "embedding": {
+      "prompt": "Aucun modèle d'embedding défini — choisissez-en un pour activer l'indexation.",
+      "placeholder": "Saisissez ou choisissez un modèle d'embedding…",
+      "set": "Activer"
+    }
   },
   "chat": {
     "input": {
