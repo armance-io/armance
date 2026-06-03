@@ -59,11 +59,10 @@ export const LibraryPaneContainer: FC<LibraryPaneContainerProps> = ({
     };
   }, []);
 
-  const onSetEmbedding = async (model: string) => {
-    const match = embeddingOptions.find((o) => o.id === model);
+  const onSetEmbedding = async (provider: string, model: string) => {
     try {
       await patchAdminConfig(pid, {
-        embedding_provider: match?.provider ?? "",
+        embedding_provider: provider,
         embedding_model: model,
       });
       toast(t("library:toast.embedding_set"), "success");
