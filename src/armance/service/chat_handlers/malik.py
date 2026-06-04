@@ -23,7 +23,7 @@ from armance.service.loop_context import LoopContext
 logger = logging.getLogger(__name__)
 
 
-_KNOWN_RECRUIT_KEYS = ["name", "persona", "domain", "description", "model", "provider", "role"]
+_KNOWN_RECRUIT_KEYS = ["name", "persona", "domain", "description", "model", "provider", "role", "boost_provider", "boost_model"]
 _FENCE_AGENTS_RE = re.compile(r"```(?:yaml)?\s*\n(agents:.*?)\n```", re.DOTALL)
 _TOOL_CALL_RECRUIT_RE = re.compile(
     r"<tool_call>\s*execute_recruit\s*(.*?)(?:</tool_call>|$)", re.DOTALL
