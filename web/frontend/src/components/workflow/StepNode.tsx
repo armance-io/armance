@@ -32,11 +32,11 @@ function fmtDuration(ms?: number): string {
 }
 
 const STATUS_DOT_COLOR: Record<StepStatus, string> = {
-  queued: "var(--ink-soft, #5b5145)",
-  working: "var(--accent, #6b4f8a)",
-  completed: "var(--accent-deep, #4a3666)",
-  failed: "oklch(0.55 0.18 25)",
-  cancelled: "var(--ink-soft, #5b5145)",
+  queued: "var(--ink-faint, #9c8e7e)",
+  working: "hsl(35, 30%, 60%)",
+  completed: "hsl(120, 15%, 55%)",
+  failed: "hsl(0, 30%, 65%)",
+  cancelled: "var(--ink-faint, #9c8e7e)",
   skipped: "var(--ink-faint, #9c8e7e)",
 };
 
@@ -55,11 +55,11 @@ export const StepNode: FC<StepNodeProps> = ({ data, selected = false }) => {
     border: `1px solid ${selected ? "var(--accent, #6b4f8a)" : "var(--rule, #d6c8ad)"}`,
     borderRadius: "2px",
     background: "var(--bg-paper, #f4ede0)",
-    padding: "10px",
+    padding: "8px 12px",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "center",
-    gap: "4px",
+    justifyContent: "space-between",
+    boxSizing: "border-box",
     opacity: isSkipped ? 0.6 : 1,
     textDecoration: isCancelled ? "line-through" : "none",
     color: isCancelled

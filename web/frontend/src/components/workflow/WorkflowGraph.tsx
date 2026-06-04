@@ -13,8 +13,8 @@ import {
   MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import dagre from "@dagrejs/dagre";
 import { StepNode } from "@/components/workflow/StepNode";
+import { computeLayout } from "@/lib/graphLayout";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -28,47 +28,20 @@ export interface WorkflowGraphProps {
   t: (key: string) => string;
 }
 
-/* ─── Dagre layout helper ────────────────────────────────────────────────── */
-
-const NODE_W = 200;
-const NODE_H = 72;
-
 function layoutNodes(
   rawNodes: Array<{ id: string; data: StepNodeData }>,
   rawEdges: Array<{ id: string; source: string; target: string }>,
 ): { nodes: Node[]; edges: Edge[] } {
-  const g = new dagre.graphlib.Graph();
-  g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: "LR", nodesep: 40, ranksep: 80 });
+  const result = computeLayout(rawNodes, rawEdges);
+  
+  const nodes: Node[] = result.nodes.map((n) => ({
+    ...n,
+    sourcePosition: Position.Right,
+    targetPosition: Position.Left,
+  }));
 
-  rawNodes.forEach((n) => {
-    g.setNode(n.id, { width: NODE_W, height: NODE_H });
-  });
-  rawEdges.forEach((e) => {
-    g.setEdge(e.source, e.target);
-  });
-
-  dagre.layout(g);
-
-  const nodes: Node[] = rawNodes.map((n) => {
-    const pos = g.node(n.id);
-    return {
-      id: n.id,
-      type: "stepNode",
-      data: n.data,
-      position: {
-        x: pos.x - NODE_W / 2,
-        y: pos.y - NODE_H / 2,
-      },
-      sourcePosition: Position.Right,
-      targetPosition: Position.Left,
-    };
-  });
-
-  const edges: Edge[] = rawEdges.map((e) => ({
-    id: e.id,
-    source: e.source,
-    target: e.target,
+  const edges: Edge[] = result.edges.map((e) => ({
+    ...e,
     type: "straight",
     markerEnd: { type: MarkerType.ArrowClosed, width: 10, height: 10 },
     style: {

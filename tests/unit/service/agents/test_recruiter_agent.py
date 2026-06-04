@@ -221,6 +221,42 @@ agents:
                     await hr_service.create_agents("design")
 
 
+class TestParseAgentsYamlRecovery:
+    """Convergence bug: recruit died with 'Failed to parse agents YAML' on
+    models (e.g. haiku) that emit a reply YAML can't load or a free-form list.
+    The agents parser must recover like the jobs parser, not hard-raise."""
+
+    def test_recovers_from_freeform_numbered_list(self, hr_service):
+        """A numbered '1. **Name** — description' list (no valid YAML) recovers."""
+        text = (
+            "Here is the team I propose for your project:\n\n"
+            "1. **Sofia** — historienne spécialisée dans l'époque médiévale\n"
+            "2. **Liam** — analyste des sources primaires et de leur fiabilité\n"
+            "3. **Noor** — synthétiste qui relie les perspectives divergentes\n"
+        )
+        agents = hr_service._parse_agents_yaml(text, "specialist")
+        assert len(agents) == 3
+        names = [a.name for a in agents]
+        assert len(set(names)) == 3
+        assert all(n for n in names)
+
+    def test_recovers_from_yaml_with_unquoted_colon(self, hr_service):
+        """Unquoted colons in descriptions break safe_load; recover via fallback."""
+        text = (
+            "agents:\n"
+            "  - name: Sofia — role: historienne: étudie le contexte\n"
+            "  - name: Liam — role: analyste: vérifie les sources\n"
+        )
+        agents = hr_service._parse_agents_yaml(text, "specialist")
+        assert len(agents) >= 1
+        assert all(a.name for a in agents)
+
+    def test_truly_unparseable_still_raises(self, hr_service):
+        """No names anywhere → still a hard error (no silent empty team)."""
+        with pytest.raises(ValueError):
+            hr_service._parse_agents_yaml("This is not valid YAML", "specialist")
+
+
 class TestArchive:
     """Test agent archive functionality."""
 

@@ -1,1 +1,164 @@
-{}
+{
+  "visual": {
+    "empty": {
+      "workflow": {
+        "cta": "Workflow starten"
+      },
+      "session": {
+        "cta": "Neue Sitzung"
+      },
+      "deliberation": {
+        "title": "Noch keine Daten",
+        "hint": "Starten Sie eine Beratung, um Statistiken zu sammeln."
+      }
+    },
+    "metrics": {
+      "co2e_aria": "CO₂-Fußabdruck (gCO₂e)",
+      "water_aria": "Wasser-Fußabdruck (mL)",
+      "tokens_in_aria": "Eingangs-Tokens",
+      "tokens_out_aria": "Ausgangs-Tokens",
+      "model_aria": "Verwendetes Modell (gewählter Agent)"
+    }
+  },
+  "checkpoint": {
+    "drawer": {
+      "submitted_title": "Antwort aufgezeichnet",
+      "submitted_desc": "Ihre Antwort wurde erfolgreich gespeichert."
+    }
+  },
+  "sidebar": {
+    "nav_section": {
+      "workspace": "Arbeitsbereich",
+      "account": "Konto"
+    },
+    "tabs": {
+      "session_active": "Aktive Sitzung",
+      "settings": "Einstellungen",
+      "workflows": "Workflows"
+    },
+    "section": {
+      "staff": "Team",
+      "library": "Bibliothek",
+      "roles": "Rollen & Agenten"
+    },
+    "staff": {
+      "empty": "Noch keine Spezialisten",
+      "mention_hint": "Erwähnung in Ihre Nachricht einfügen",
+      "switch_hint": "Zu diesem Agenten wechseln"
+    },
+    "library": {
+      "docs": "Dokumente",
+      "feuillets": "Abschnitte",
+      "subtitle": "{docs} Dok. · {feuillets} Abschnitte",
+      "inactive": "inaktiv — kein Embedding-Modell"
+    }
+  },
+  "admin": {
+    "config": {
+      "budget": {
+        "free-first": "Kostenlos zuerst",
+        "low": "Niedrig",
+        "medium": "Mittel",
+        "high": "Hoch"
+      },
+      "providers": "Konfigurierte Anbieter",
+      "default": "Standard"
+    },
+    "logs": {
+      "level_changed_title": "Protokollebene aktualisiert",
+      "level_changed_desc": "Die Protokollebene wurde in {level} geändert.",
+      "live": "Live"
+    },
+    "stats": {
+      "messages": "Nachrichten",
+      "carbon": "CO₂-Fußabdruck",
+      "water": "Wasserverbrauch",
+      "cost": "Kosten"
+    },
+    "footprint": {
+      "error": "Fehler beim Laden des Fußabdrucks.",
+      "no_data": "Noch keine Fußabdruckdaten — führen Sie eine Beratung durch, um sie zu füllen.",
+      "method": "Schätzmethode",
+      "method_body": "Die Umweltwirkung wird mit der EcoLogits-Methodik (ÖKO-Bilanz ISO 14044) berechnet, unter Berücksichtigung der Nutzungsphase (GPU, Rechenzentrums-PUE) und der grauen Energie der Hardwareherstellung.",
+      "estimate": "Schätzung",
+      "measured": "Messung",
+      "zone_label": "CO₂-Intensitätszone",
+      "col": {
+        "agent": "Agent",
+        "calls": "Aufrufe",
+        "co2e": "CO₂e",
+        "water": "Wasser",
+        "type": "Typ"
+      },
+      "zone": {
+        "wor": "Welt — globale durchschnittliche CO₂-Intensität",
+        "unknown": "Unbekannte Zone"
+      }
+    }
+  },
+  "workflow": {
+    "history": {
+      "status": {
+        "queued": "⋯",
+        "working": "⏳",
+        "running": "⏳",
+        "completed": "✓",
+        "failed": "✗",
+        "cancelled": "⊘",
+        "canceled": "⊘"
+      }
+    },
+    "empty": {
+      "title": "Noch kein Workflow entworfen.",
+      "hint": "Bitten Sie Kim, einen im Chat zu entwerfen."
+    },
+    "picker": {
+      "quick_title": "Eine schnelle Perspektive",
+      "quick_desc": "Schnelle Prüfung der Hauptannahmen anhand wichtiger Kennzahlen.",
+      "deep_title": "Eine gründliche, hinterfragte Analyse",
+      "deep_desc": "Strenge Bewertung, die jede Behauptung durch strukturierte Debatte hinterfragt.",
+      "mode_interactive": "interaktiv",
+      "mode_autonomous": "autonom",
+      "hint_interactive": "Mona bittet an wichtigen Entscheidungsschwellen um Ihre Anleitung.",
+      "hint_autonomous": "Mona betreibt autonome Kontrollpunkte, um die Synthese zu liefern.",
+      "launch": "Starten"
+    },
+    "runs": {
+      "title": "Frühere Läufe"
+    },
+    "launch": {
+      "started": "Lauf gestartet: {id}",
+      "error": "Lauf konnte nicht gestartet werden.",
+      "in_progress": "Wird gestartet…"
+    }
+  },
+  "chat": {
+    "agents": {
+      "label": "Spricht mit",
+      "switch_aria": "Wechseln zu",
+      "switched": "Ihr Gesprächspartner: {name}"
+    },
+    "error": {
+      "turn_failed": "Antwort fehlgeschlagen. Bitte erneut versuchen."
+    }
+  },
+  "library": {
+    "toast": {
+      "imported": "Dokument importiert",
+      "indexing": "Indizierung gestartet…",
+      "indexing_all": "Alle Dokumente werden indiziert…",
+      "loading": "Wird in den Kontext geladen…"
+    },
+    "feuillets_count": "{n} Abschnitte",
+    "feuillets_total_aria": "Indizierte Abschnitte gesamt"
+  },
+  "session": {
+    "selector": {
+      "title": "Sitzungen (neueste zuerst)",
+      "empty": "Keine früheren Sitzungen",
+      "summary": "{turns} Runden · ~{tokens} tk",
+      "locked_aria": "Aktive Sitzung (nach erster Nachricht gesperrt)",
+      "id_label": "Sitzungs-ID"
+    }
+  }
+}

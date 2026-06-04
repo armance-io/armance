@@ -18,11 +18,27 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}"],
-      exclude: ["src/**/*.test.{ts,tsx}", "src/test/**", "src/app/**"],
-      // Global gate kept low until B–H epics ship their unit tests.
-      // Per-epic acceptance still requires >= 80% lines on touched files.
-      // Re-raise to { lines: 80, branches: 75 } once coverage catches up.
-      thresholds: { lines: 0, branches: 0 },
+      exclude: [
+        "src/**/*.test.{ts,tsx}",
+        "src/test/**",
+        "src/app/**",
+        // Visual / React-Flow-heavy components: tested via Playwright e2e,
+        // not unit coverage. Excluded from the gate by design.
+        "src/components/workflow/WorkflowGraph.tsx",
+        "src/components/workflow/StepNode.tsx",
+        "src/components/workflow/RunNode.tsx",
+        "src/components/render/MermaidBlock.tsx",
+      ],
+      thresholds: {
+        // Anti-regression floor for the suite as a whole. Raise as more
+        // components gain unit tests; do not lower without discussion.
+        lines: 40,
+        branches: 35,
+        // Pure-logic modules are fully covered — lock them down so a future
+        // PR cannot silently break URL parsing or graph layout.
+        "src/lib/routeParams.ts": { lines: 93, branches: 90 },
+        "src/lib/graphLayout.ts": { lines: 95, branches: 90 },
+      },
     },
   },
 });

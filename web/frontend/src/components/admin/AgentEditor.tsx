@@ -1,5 +1,6 @@
 import { type CSSProperties, type FC, useState } from "react";
 import { tokens } from "../_shared/armance-tokens";
+import { AgentPortrait } from "../visual/AgentPortrait";
 
 export interface AgentRecord {
   id: string;
@@ -87,18 +88,16 @@ const AgentCard: FC<{
 
   return (
     <div style={card}>
-      <div>
-        <img
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+        <AgentPortrait
+          name={draft.name}
           src={draft.portraitUrl}
-          alt={draft.name}
-          style={{
-            width: 96,
-            height: 96,
-            objectFit: "cover",
-            border: `1px solid ${tokens.rule}`,
-            borderRadius: 4,
-          }}
+          tint="#6b4f8a"
+          size="md"
         />
+        <span style={{ fontSize: 11, fontFamily: tokens.ffMono, color: tokens.inkFaint }}>
+          ID: {draft.id}
+        </span>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

@@ -36,6 +36,7 @@ async def cmd_context_chat(text: str, ctx: LoopContext) -> str:
         agent=context_agent,
         armance_root=ctx.armance_root,
         config=ctx.cfg,
+        event_bus=ctx.event_bus,
     )
     cas.set_state(ctx.session.metadata)
     cas.conversation = ctx.session.conversation

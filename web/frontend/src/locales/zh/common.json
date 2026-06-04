@@ -1,1 +1,164 @@
-{}
+{
+  "visual": {
+    "empty": {
+      "workflow": {
+        "cta": "启动工作流"
+      },
+      "session": {
+        "cta": "新建会话"
+      },
+      "deliberation": {
+        "title": "暂无数据",
+        "hint": "启动审议以收集统计数据。"
+      }
+    },
+    "metrics": {
+      "co2e_aria": "碳足迹 (gCO₂e)",
+      "water_aria": "水足迹 (mL)",
+      "tokens_in_aria": "输入令牌",
+      "tokens_out_aria": "输出令牌",
+      "model_aria": "使用的模型（所选智能体）"
+    }
+  },
+  "checkpoint": {
+    "drawer": {
+      "submitted_title": "已记录回复",
+      "submitted_desc": "您的回复已成功保存。"
+    }
+  },
+  "sidebar": {
+    "nav_section": {
+      "workspace": "工作区",
+      "account": "账户"
+    },
+    "tabs": {
+      "session_active": "当前会话",
+      "settings": "设置",
+      "workflows": "工作流"
+    },
+    "section": {
+      "staff": "团队",
+      "library": "文库",
+      "roles": "角色与智能体"
+    },
+    "staff": {
+      "empty": "暂无专家",
+      "mention_hint": "在消息中插入提及",
+      "switch_hint": "切换到此智能体"
+    },
+    "library": {
+      "docs": "文档",
+      "feuillets": "片段",
+      "subtitle": "{docs} 文档 · {feuillets} 片段",
+      "inactive": "未启用 — 无嵌入模型"
+    }
+  },
+  "admin": {
+    "config": {
+      "budget": {
+        "free-first": "免费优先",
+        "low": "低",
+        "medium": "中",
+        "high": "高"
+      },
+      "providers": "已配置的提供商",
+      "default": "默认"
+    },
+    "logs": {
+      "level_changed_title": "日志级别已更新",
+      "level_changed_desc": "日志级别已更改为 {level}。",
+      "live": "实时"
+    },
+    "stats": {
+      "messages": "条消息",
+      "carbon": "碳足迹",
+      "water": "用水量",
+      "cost": "成本"
+    },
+    "footprint": {
+      "error": "加载足迹数据出错。",
+      "no_data": "暂无足迹数据 — 运行一次审议以填充。",
+      "method": "估算方法",
+      "method_body": "环境影响采用 EcoLogits 方法（ISO 14044 生命周期评估）计算，涵盖使用阶段（GPU、数据中心 PUE）以及硬件制造的隐含影响。",
+      "estimate": "估算",
+      "measured": "实测",
+      "zone_label": "碳强度区域",
+      "col": {
+        "agent": "智能体",
+        "calls": "调用",
+        "co2e": "CO₂e",
+        "water": "水",
+        "type": "类型"
+      },
+      "zone": {
+        "wor": "全球 — 全球平均碳强度",
+        "unknown": "未知区域"
+      }
+    }
+  },
+  "workflow": {
+    "history": {
+      "status": {
+        "queued": "⋯",
+        "working": "⏳",
+        "running": "⏳",
+        "completed": "✓",
+        "failed": "✗",
+        "cancelled": "⊘",
+        "canceled": "⊘"
+      }
+    },
+    "empty": {
+      "title": "尚未设计工作流。",
+      "hint": "在聊天中让 Kim 设计一个。"
+    },
+    "picker": {
+      "quick_title": "快速视角",
+      "quick_desc": "使用关键基准快速验证主要假设。",
+      "deep_title": "彻底的、经过质疑的分析",
+      "deep_desc": "通过结构化辩论严格评估并质疑所有论断。",
+      "mode_interactive": "交互式",
+      "mode_autonomous": "自主",
+      "hint_interactive": "Mona 将在关键决策节点征求你的意见。",
+      "hint_autonomous": "Mona 以自主检查点运行以交付综合结论。",
+      "launch": "启动"
+    },
+    "runs": {
+      "title": "历史运行"
+    },
+    "launch": {
+      "started": "已启动运行：{id}",
+      "error": "无法启动运行。",
+      "in_progress": "启动中…"
+    }
+  },
+  "chat": {
+    "agents": {
+      "label": "对话对象",
+      "switch_aria": "切换到",
+      "switched": "您的对话者: {name}"
+    },
+    "error": {
+      "turn_failed": "响应失败，请重试。"
+    }
+  },
+  "library": {
+    "toast": {
+      "imported": "文档已导入",
+      "indexing": "已开始索引…",
+      "indexing_all": "正在索引所有文档…",
+      "loading": "正在加载到上下文…"
+    },
+    "feuillets_count": "{n} 个片段",
+    "feuillets_total_aria": "已索引片段总数"
+  },
+  "session": {
+    "selector": {
+      "title": "会话（最新优先）",
+      "empty": "没有以往会话",
+      "summary": "{turns} 轮 · ~{tokens} tk",
+      "locked_aria": "当前会话（首条消息后锁定）",
+      "id_label": "会话 ID"
+    }
+  }
+}

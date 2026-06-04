@@ -88,6 +88,9 @@ transport/
   events.py / local.py In-process event bus
 client/
   tui/                Textual app — chat, sidebar, claims, workflow view
+web/
+  backend/            FastAPI server — translates services into REST endpoints & event streams
+  frontend/           Next.js 16 (App Router) + React 19 Belle Époque client
 nls_catalogues/
   en.yaml / fr.yaml   Translation catalogues (single source of truth for
                       all user-facing strings outside agent prompts)
@@ -95,7 +98,13 @@ protocols/            Caveman protocol prompts (ultra/lite/full)
 templates/            WeasyPrint stylesheet
 ```
 
-### 2.3 The big files you'll touch first
+### 2.3 The Web Layer Architecture
+
+The web platform is designed around a fully decoupled interface and transport paradigm:
+- **FastAPI Transport Layer (`src/armance/web/backend/`)**: Ships *inside* the `armance` package so `armance web` runs after a plain `pip install`. Mounts lightweight HTTP routers (`.../backend/routes/`) that translate core models and service operations to REST. A FastAPI lifespan context (`backend/state.py::AppState`) holds the active `SessionRegistry` and `EventBus`. SSE via `sse-starlette` powers live workflow status. Routes are exposed at both root (offline test suite) and `/api` (browser); the app also serves the static frontend bundle for `Accept: text/html` navigations, so one process is the whole API + UI. See `backend/main.py::create_app` / `_install_spa`.
+- **Next.js Frontend (`web/frontend/`)**: Next.js 16 + React 19 with premium design tokens. React Query for data. Pages are thin server shells (`page.tsx`, with `generateStaticParams` for the static export) that render `"use client"` View components reading route ids from the live URL via `lib/routeParams.ts` (`useRouteParams`) — never from the static-export sentinel. `ARMANCE_STATIC_EXPORT=1 pnpm build` emits `out/`, copied into `src/armance/web_dist/` (gitignored) for packaging via `armance web --build`.
+
+### 2.4 The big files you'll touch first
 
 | File | LOC | Why it's big | Plan |
 |---|---|---|---|
@@ -106,6 +115,7 @@ templates/            WeasyPrint stylesheet
 | `service/agents/host_agent.py` | ~990 | Armance dialogue + intent detection + state | Extract intent/state helpers when you touch it |
 
 Other modules respect the ~300-line target.
+
 
 ---
 
