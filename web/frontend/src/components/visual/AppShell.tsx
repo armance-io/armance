@@ -267,7 +267,7 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
         <span style={{ fontFamily: "var(--ff-sans,sans-serif)", fontSize: "12px", color: "var(--ink-soft,#5b5145)" }}>
           {t("visual:shell.footer_motto")}
         </span>
-        <span style={{ color: "var(--rule,#d6c8ad)" }} aria-hidden="true">·</span>
+        <span style={{ color: "var(--rule,#d6c8ad)" }} aria-hidden="true"> · </span>
         <a
           href="https://armance.io"
           target="_blank"
@@ -276,7 +276,7 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
         >
           armance.io
         </a>
-        <span style={{ color: "var(--rule,#d6c8ad)" }} aria-hidden="true">·</span>
+        <span style={{ color: "var(--rule,#d6c8ad)" }} aria-hidden="true"> · </span>
         <span style={{ ...inlineMono, fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint,#9c8e7e)" }}>
           {t("visual:shell.footer_line")}
         </span>

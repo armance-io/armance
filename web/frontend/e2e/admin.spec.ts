@@ -112,7 +112,7 @@ test.describe("G.10 — Admin page tabs E2E", () => {
     await page.goto(ADMIN_URL);
     await page.getByRole("tab", { name: /logs/i }).click();
     await expect(page.getByTestId("log-viewer")).toBeVisible();
-    await expect(page.getByTestId("log-viewer").getByText("Armance").first()).toBeVisible();
+    await expect(page.getByTestId("log-viewer").locator("span").getByText("Armance").first()).toBeVisible();
   });
 
   test("clicking Stats tab renders StatsDashboard", async ({ page }) => {
