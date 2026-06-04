@@ -224,13 +224,14 @@ class TestTier5ProviderDefault:
 
 
 # ---------------------------------------------------------------------------
-# Tier 6 — unknown / None (never fabricate)
+# Tier 6 — dynamic bounding (never fabricate a point value, never show "?")
 # ---------------------------------------------------------------------------
 
-class TestTier6Unknown:
-    """':free' id with no params → None; never return a fabricated figure."""
+class TestTier6Bounded:
+    """':free' id with no params → bounded Footprint; never None."""
 
-    def test_free_model_no_params_returns_none(self) -> None:
+    def test_free_model_no_params_returns_bounded(self) -> None:
+        # NEW contract: :free with no params returns a dynamic-bounded estimate.
         result = estimate_footprint(
             provider="openrouter",
             model="some-vendor/mystery-model:free",
@@ -238,7 +239,10 @@ class TestTier6Unknown:
             latency_s=4.0,
             zone="WOR",
         )
-        assert result is None
+        assert result is not None
+        assert result.tier == "bounded"
+        assert result.estimate is True
+        assert result.gco2e_min is not None and result.gco2e_max is not None
 
     def test_free_model_with_params_bypasses_unknown(self) -> None:
         # Supplying params → tier 3, not tier 6
