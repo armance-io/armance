@@ -132,6 +132,124 @@ async def test_footprint_missing_logs_no_500(
     assert body["by_agent"] == {}
 
 
+def _resp_bounded(
+    agent: str,
+    gco2e: float,
+    gco2e_min: float,
+    gco2e_max: float,
+    water_ml: float,
+    water_ml_min: float,
+    water_ml_max: float,
+    ts: str = "2026-05-29T10:00:00",
+) -> dict:
+    """A D1-era record carrying explicit min/max bounds."""
+    return {
+        "event": "response",
+        "agent": agent,
+        "timestamp": ts,
+        "gco2e": gco2e,
+        "gco2e_min": gco2e_min,
+        "gco2e_max": gco2e_max,
+        "water_ml": water_ml,
+        "water_ml_min": water_ml_min,
+        "water_ml_max": water_ml_max,
+        "estimate": True,
+        "tier": "estimate",
+        "zone": "WOR",
+    }
+
+
+@pytest.mark.asyncio
+async def test_footprint_buckets_carry_bounds(
+    client: AsyncClient, armance_root: Path
+) -> None:
+    """Every bucket exposes gco2e_min/max + water bounds; response has equiv."""
+    from armance.web.backend.routes.admin import _footprint_cache
+    _footprint_cache.clear()
+
+    logs_dir = armance_root / "logs"
+    _write_log(logs_dir / "sid1-llm_exchanges.jsonl", [
+        _resp_bounded("alice", 0.4, 0.2, 0.6, 2.0, 1.0, 3.0),
+    ])
+    resp = await client.get("/projects/default/admin/footprint?group_by=agent")
+    assert resp.status_code == 200
+    body = resp.json()
+    for bucket in body["by_agent"].values():
+        assert "gco2e_min" in bucket and "gco2e_max" in bucket
+        assert "water_ml_min" in bucket and "water_ml_max" in bucket
+    alice = body["by_agent"]["alice"]
+    assert alice["gco2e_min"] == pytest.approx(0.2)
+    assert alice["gco2e_max"] == pytest.approx(0.6)
+    assert alice["water_ml_min"] == pytest.approx(1.0)
+    assert alice["water_ml_max"] == pytest.approx(3.0)
+    # equiv is a top-level ADEME equivalence on the midpoint total.
+    assert "equiv" in body
+    assert "phone_charges" in body["equiv"]
+    assert "car_km" in body["equiv"]
+    assert "water_glasses" in body["equiv"]
+
+
+@pytest.mark.asyncio
+async def test_footprint_bounds_fallback_old_records(
+    client: AsyncClient, armance_root: Path
+) -> None:
+    """Old records without bound fields fall back to the midpoint value."""
+    from armance.web.backend.routes.admin import _footprint_cache
+    _footprint_cache.clear()
+
+    logs_dir = armance_root / "logs"
+    # _resp has no gco2e_min/max — must fall back to gco2e/water_ml.
+    _write_log(logs_dir / "sid1-llm_exchanges.jsonl", [
+        _resp("alice", 0.3, 1.0),
+    ])
+    resp = await client.get("/projects/default/admin/footprint?group_by=agent")
+    assert resp.status_code == 200
+    alice = resp.json()["by_agent"]["alice"]
+    assert alice["gco2e_min"] == pytest.approx(0.3)
+    assert alice["gco2e_max"] == pytest.approx(0.3)
+    assert alice["water_ml_min"] == pytest.approx(1.0)
+    assert alice["water_ml_max"] == pytest.approx(1.0)
+
+
+@pytest.mark.asyncio
+async def test_footprint_explicit_null_bound_falls_back(
+    client: AsyncClient, armance_root: Path
+) -> None:
+    """A record with gco2e set but an explicit-null bound falls back, no crash."""
+    from armance.web.backend.routes.admin import _footprint_cache
+    _footprint_cache.clear()
+
+    logs_dir = armance_root / "logs"
+    rec = _resp("alice", 0.3, 1.0)
+    rec["gco2e_min"] = None  # explicit null bound (partial D1 record)
+    rec["gco2e_max"] = None
+    _write_log(logs_dir / "sid1-llm_exchanges.jsonl", [rec])
+    resp = await client.get("/projects/default/admin/footprint?group_by=agent")
+    assert resp.status_code == 200
+    alice = resp.json()["by_agent"]["alice"]
+    assert alice["gco2e_min"] == pytest.approx(0.3)
+    assert alice["gco2e_max"] == pytest.approx(0.3)
+
+
+@pytest.mark.asyncio
+async def test_footprint_session_buckets_carry_bounds(
+    client: AsyncClient, armance_root: Path
+) -> None:
+    """by_session buckets also carry bound fields."""
+    from armance.web.backend.routes.admin import _footprint_cache
+    _footprint_cache.clear()
+
+    logs_dir = armance_root / "logs"
+    _write_log(logs_dir / "abc123-llm_exchanges.jsonl", [
+        _resp_bounded("alice", 0.4, 0.2, 0.6, 2.0, 1.0, 3.0),
+    ])
+    resp = await client.get("/projects/default/admin/footprint?group_by=session")
+    assert resp.status_code == 200
+    sess = resp.json()["by_session"]["abc123"]
+    assert sess["gco2e_min"] == pytest.approx(0.2)
+    assert sess["gco2e_max"] == pytest.approx(0.6)
+
+
 @pytest.mark.asyncio
 async def test_footprint_cache_second_call_no_recompute(
     client: AsyncClient, armance_root: Path
