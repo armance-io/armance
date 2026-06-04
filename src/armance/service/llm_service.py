@@ -261,6 +261,12 @@ def log_exchange_details(
             entry["estimate"] = data.get("estimate")
             entry["tier"] = data.get("tier")
             entry["zone"] = data.get("zone")
+            # Carry the carbon/water confidence bounds too — without these the
+            # live range collapses to a flat midpoint in footprint_stats.
+            entry["gco2e_min"] = data.get("gco2e_min")
+            entry["gco2e_max"] = data.get("gco2e_max")
+            entry["water_ml_min"] = data.get("water_ml_min")
+            entry["water_ml_max"] = data.get("water_ml_max")
         elif event_type == "failure":
             entry["error_type"] = data.get("error_type")
             entry["error_message"] = data.get("error_message")
