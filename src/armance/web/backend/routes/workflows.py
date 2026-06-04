@@ -179,9 +179,10 @@ def _require_workflow(ws, name: str):
 
 class RunIn(BaseModel):
     mode: str = "interactive"
+    depth: str = "quick"
 
 
-async def _dispatch_run(ws, name: str, mode: str) -> dict[str, Any]:
+async def _dispatch_run(ws, name: str, mode: str, depth: str = "quick") -> dict[str, Any]:
     """Run the workflow on the web path.
 
     Unlike the TUI/Kim flow, the web run must NOT block on the interactive
@@ -216,6 +217,7 @@ async def _dispatch_run(ws, name: str, mode: str) -> dict[str, Any]:
         skip_preflight=True,
         user_prompt_override=scope or name,
         run_mode=mode,
+        depth=depth,
     )
 
     # Derive the run_id from the index (create_run wrote it up-front).
@@ -263,7 +265,7 @@ async def run_workflow(
 
     async def _runner() -> object:
         try:
-            return await _dispatch_run(ws, name, body.mode)
+            return await _dispatch_run(ws, name, body.mode, body.depth)
         except Exception:  # noqa: BLE001 — log, never crash the event loop
             logger.exception("workflow run failed sid=%s name=%s", sid, name)
             return {"ack": False}
