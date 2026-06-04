@@ -365,17 +365,22 @@ const StatsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => 
 
       const merged: AgentStat[] = allAgentNames.map((name) => {
         const s = statsMap[name] ?? { tokens_in: 0, tokens_out: 0, cost_usd: 0, msg_count: 0 };
-        const f = footprintMap[name] ?? { gco2e: 0, water_ml: 0, has_estimate: false };
+        const f: Partial<import("@/lib/footprint").FootprintBucket> =
+          footprintMap[name] ?? {};
         return {
           agent: name,
           tokens_in: s.tokens_in,
           tokens_out: s.tokens_out,
           cost: s.cost_usd,
           messages: s.msg_count,
-          gco2e: f.gco2e,
-          water_ml: f.water_ml,
-          has_estimate: f.has_estimate,
-        };
+          gco2e: f.gco2e ?? 0,
+          water_ml: f.water_ml ?? 0,
+          has_estimate: f.has_estimate ?? false,
+          gco2e_min: f.gco2e_min,
+          gco2e_max: f.gco2e_max,
+          water_ml_min: f.water_ml_min,
+          water_ml_max: f.water_ml_max,
+        } satisfies AgentStat;
       });
 
       setAgents(merged);
