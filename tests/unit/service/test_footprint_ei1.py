@@ -167,3 +167,27 @@ class TestEstimateFootprintExactTier:
         )
         assert r is not None
         assert r.gco2e > 0.0
+
+
+class TestFootprintRangeFields:
+    def test_min_max_fields_default_to_none(self) -> None:
+        from armance.core.models.footprint import Footprint
+        fp = Footprint(
+            energy_wh=1.0, gco2e=2.0, water_ml=3.0, embodied_gco2e=0.5,
+            estimate=False, tier="exact", proxy_model=None, zone="WOR",
+        )
+        assert fp.gco2e_min is None
+        assert fp.gco2e_max is None
+        assert fp.water_ml_min is None
+        assert fp.water_ml_max is None
+        assert fp.energy_wh_min is None
+        assert fp.energy_wh_max is None
+
+    def test_min_max_fields_accepted(self) -> None:
+        from armance.core.models.footprint import Footprint
+        fp = Footprint(
+            energy_wh=1.0, gco2e=2.0, water_ml=3.0, embodied_gco2e=0.5,
+            estimate=False, tier="exact", proxy_model=None, zone="WOR",
+            gco2e_min=1.5, gco2e_max=2.5,
+        )
+        assert fp.gco2e_min == 1.5 and fp.gco2e_max == 2.5
