@@ -27,7 +27,7 @@ export default function RunDetailView() {
   return (
     <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
       {/* Sidebar / Left Column for Run history */}
-      <div style={{
+      <aside style={{
         width: "280px",
         flexShrink: 0,
         borderRight: "1px solid var(--rule, #d6c8ad)",
@@ -55,7 +55,7 @@ export default function RunDetailView() {
             workflowName={workflowName}
           />
         </div>
-      </div>
+      </aside>
 
       <div style={{ flex: 1, display: "flex", height: "100%", overflow: "hidden" }}>
         {/* Left Column */}

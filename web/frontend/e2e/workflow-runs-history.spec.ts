@@ -2,6 +2,22 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Workflow Runs History E2E", () => {
   test("displays historical runs, allows navigating, deleting completed runs, and blocks active deletions", async ({ page }) => {
+    // Mock workflows list so the launcher renders (workflow exists)
+    await page.route(
+      "**/api/projects/*/sessions/*/workflows",
+      async (route) => {
+        if (route.request().method() === "GET" && !route.request().url().includes("/runs")) {
+          await route.fulfill({
+            status: 200,
+            contentType: "application/json",
+            body: JSON.stringify({ workflows: [{ name: "my-workflow", scope: "", step_count: 1 }] }),
+          });
+        } else {
+          await route.continue();
+        }
+      }
+    );
+
     // 1. Mock active workflow run is idle
     await page.route(
       "**/api/projects/*/sessions/*/active-workflow",

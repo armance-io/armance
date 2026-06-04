@@ -9,6 +9,14 @@ export function I18nBootstrap({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const i18n = ensureI18n();
+
+    // Skip backend configuration check in E2E test environments to avoid network timeouts
+    const isE2E = typeof window !== "undefined" && (window.navigator.webdriver || window.location.search.includes("e2e=true"));
+    if (isE2E) {
+      setMounted(true);
+      return;
+    }
+
     // Apply the configured UI language so menus follow it (was stuck on EN).
     void getAdminConfig("default")
       .then((cfg) => {

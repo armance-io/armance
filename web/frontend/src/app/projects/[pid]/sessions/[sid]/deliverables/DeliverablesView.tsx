@@ -97,7 +97,7 @@ export default function DeliverablesView() {
 
   return (
     <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
-      <div style={{
+      <aside style={{
         width: "280px",
         flexShrink: 0,
         borderRight: "1px solid var(--rule, #d6c8ad)",
@@ -123,7 +123,7 @@ export default function DeliverablesView() {
             onOpen={(id) => setSelectedId(id)}
           />
         </div>
-      </div>
+      </aside>
 
       <div style={{ flex: 1, height: "100%", overflow: "hidden", display: "flex", flexDirection: "column" }}>
         {loadingContent ? (
