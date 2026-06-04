@@ -36,3 +36,22 @@ describe("StatsDashboard — carbon range", () => {
     expect(screen.queryByText(/\[/)).toBeNull();
   });
 });
+
+describe("StatsDashboard — ADEME equivalences", () => {
+  it("renders human-scale equivalences when provided", () => {
+    const agents = [agent({ gco2e: 8.3, water_ml: 250 })];
+    render(
+      <StatsDashboard
+        agents={agents}
+        t={t}
+        equiv={{ phone_charges: 1, car_km: 0.04, water_glasses: 1 }}
+      />,
+    );
+    expect(screen.getByTestId("footprint-equiv")).toBeTruthy();
+  });
+
+  it("omits the equivalences block when none provided", () => {
+    render(<StatsDashboard agents={[agent({ gco2e: 0.06 })]} t={t} />);
+    expect(screen.queryByTestId("footprint-equiv")).toBeNull();
+  });
+});

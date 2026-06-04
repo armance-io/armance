@@ -1,6 +1,7 @@
 import { type CSSProperties, type FC, useMemo, useState } from "react";
 import { tokens } from "../_shared/armance-tokens";
 import { displayAgentName } from "@/lib/agentNames";
+import type { FootprintEquiv } from "@/lib/footprint";
 
 export interface AgentStat {
   agent: string;
@@ -37,6 +38,8 @@ function formatCo2(
 export interface StatsDashboardProps {
   agents: AgentStat[];
   currency?: string;
+  /** ADEME human-scale equivalences for the project total (optional). */
+  equiv?: FootprintEquiv | undefined;
   t: (key: string) => string;
 }
 
@@ -45,6 +48,7 @@ const fmt = (n: number) => n.toLocaleString("fr-FR");
 export const StatsDashboard: FC<StatsDashboardProps> = ({
   agents,
   currency = "€",
+  equiv,
   t,
 }) => {
   const totals = useMemo(
@@ -121,6 +125,25 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
           accentColor="#2e6f40"
         />
       </div>
+
+      {/* ADEME human-scale equivalences — make the abstract gCO₂e tangible. */}
+      {equiv && totals.gco2e > 0 && (
+        <div
+          data-testid="footprint-equiv"
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 24,
+            fontSize: 13,
+            color: tokens.inkSoft,
+            fontFamily: tokens.ffSans,
+          }}
+        >
+          <Equiv label={t("admin:stats.equiv.phone_charges")} value={equiv.phone_charges} />
+          <Equiv label={t("admin:stats.equiv.car_km")} value={equiv.car_km} />
+          <Equiv label={t("admin:stats.equiv.water_glasses")} value={equiv.water_glasses} />
+        </div>
+      )}
 
       {/* Monetary & Token Statistics */}
       <div style={cards}>
@@ -339,6 +362,17 @@ const Card: FC<{ label: string; value: string; accent?: boolean; accentColor?: s
     </span>
   </div>
 );
+
+/** One "≈ N · label" human-scale equivalence chip. */
+const Equiv: FC<{ label: string; value: number }> = ({ label, value }) => {
+  const n = value >= 1 ? Math.round(value) : value.toFixed(1);
+  return (
+    <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6 }}>
+      <span style={{ fontWeight: 600, color: tokens.ink, fontFamily: tokens.ffMono }}>≈ {n}</span>
+      <span>{label}</span>
+    </span>
+  );
+};
 
 const Section: FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <section>
