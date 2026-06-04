@@ -9,4 +9,4 @@ export default function RunDetailPage() {
   return <RunDetailView />;
 }
 
-export const dynamicParams = true;
+export const dynamicParams = false;
