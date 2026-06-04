@@ -403,3 +403,8 @@ staff:
     conductor: "orchestratrice"
     distiller: "distillatrice"
     critic: "critique"
+
+boost:
+  confirm_upgrade: "L'agent {agent} demande un boost vers {boost} (au lieu de {base}). Autoriser ? [Y/n]"
+  confirm_downgrade: "L'agent {agent} a terminé et souhaite repasser à {base}. Autoriser ? [Y/n]"
+  workflow_notice: "Note : {count} agent(s) seront automatiquement boostés pendant ce run de workflow intense."
