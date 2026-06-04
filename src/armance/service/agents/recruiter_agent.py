@@ -174,6 +174,7 @@ jobs:
             ],
             self.agent.model,
             ledger=None,
+            provider=self.agent.provider,
         )
 
         # Parse YAML from response
@@ -409,6 +410,7 @@ agents:
                     ],
                     self.agent.model,
                     ledger=None,
+                    provider=self.agent.provider,
                 )
                 agents = self._parse_agents_yaml(response.text, role)
                 # Run validations

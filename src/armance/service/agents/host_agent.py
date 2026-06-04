@@ -382,6 +382,7 @@ class HostAgentService:
                 self.agent.model,
                 ledger=None,
                 on_token=effective_on_token,
+                provider=self.agent.provider,
             )
         finally:
             await emitter.end()
@@ -412,6 +413,7 @@ class HostAgentService:
         client = get_client(self.agent.provider, self.config)
         response = await call_with_ledger(
             client, self.agent.name, messages, self.agent.model, ledger=None,
+            provider=self.agent.provider,
         )
         return response.text.strip()
 
@@ -504,6 +506,7 @@ Preserve all factual content. Skip conversational filler. Output ONLY raw Markdo
                     ],
                     self.agent.model,
                     ledger=None,
+                    provider=self.agent.provider,
                 )
                 body = response.text.strip()
             except Exception:
