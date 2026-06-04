@@ -348,6 +348,7 @@ const LogsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
 
 const StatsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
   const [agents, setAgents] = useState<AgentStat[]>([]);
+  const [equiv, setEquiv] = useState<import("@/lib/footprint").FootprintEquiv | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -358,6 +359,7 @@ const StatsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => 
     ]).then(([statsData, footprintData]) => {
       const statsMap = statsData?.agents ?? {};
       const footprintMap = footprintData?.by_agent ?? {};
+      setEquiv(footprintData?.equiv);
 
       const allAgentNames = Array.from(
         new Set([...Object.keys(statsMap), ...Object.keys(footprintMap)]),
@@ -397,7 +399,7 @@ const StatsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => 
 
   return (
     <div data-testid="stats-dashboard">
-      <StatsDashboard agents={agents} t={t} />
+      <StatsDashboard agents={agents} equiv={equiv} t={t} />
     </div>
   );
 };

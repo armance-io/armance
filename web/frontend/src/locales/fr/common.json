@@ -482,7 +482,12 @@
       "carbon": "Empreinte carbone",
       "water": "Consommation d'eau",
       "carbon_total": "Empreinte carbone totale",
-      "water_total": "Consommation d'eau totale"
+      "water_total": "Consommation d'eau totale",
+      "equiv": {
+        "phone_charges": "recharges de smartphone",
+        "car_km": "km en voiture",
+        "water_glasses": "verres d'eau"
+      }
     },
     "agents": {
       "title": "Agents",

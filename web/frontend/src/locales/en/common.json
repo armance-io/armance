@@ -482,7 +482,12 @@
       "carbon": "Carbon footprint",
       "water": "Water use",
       "carbon_total": "Total carbon footprint",
-      "water_total": "Total water use"
+      "water_total": "Total water use",
+      "equiv": {
+        "phone_charges": "phone charges",
+        "car_km": "km by car",
+        "water_glasses": "glasses of water"
+      }
     },
     "agents": {
       "title": "Agents",
