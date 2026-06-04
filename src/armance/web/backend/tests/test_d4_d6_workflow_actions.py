@@ -36,7 +36,7 @@ async def test_run_launches_in_background_and_returns_immediately(
 
     dispatched = asyncio.Event()
 
-    async def _fake_dispatch(ws, name, mode):  # noqa: ANN001
+    async def _fake_dispatch(ws, name, mode, depth="quick"):  # noqa: ANN001
         dispatched.set()
         return {"ack": True, "run_id": "run-X"}
 
@@ -69,7 +69,7 @@ async def test_run_refuses_concurrent_run(
 
     release = asyncio.Event()
 
-    async def _slow_dispatch(ws, name, mode):  # noqa: ANN001
+    async def _slow_dispatch(ws, name, mode, depth="quick"):  # noqa: ANN001
         await release.wait()
         return {"ack": True, "run_id": "run-X"}
 
