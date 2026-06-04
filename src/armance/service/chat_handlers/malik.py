@@ -11,10 +11,12 @@ import logging
 import re
 
 from armance.nls import t
+from armance.providers.model_discovery import order_models_by_effort
 from armance.service.agent_sandbox import scrub_reply
 from armance.service.agent_visibility import visible_turns
 from armance.service.agents.specialist_runner import run_specialist
 from armance.service.chat_handlers.common import resolve_agent_path, set_status
+from armance.service.footprint import estimate_footprint
 from armance.service.library_ops import intercept_library_status
 from armance.service.loop_context import LoopContext
 
@@ -176,6 +178,43 @@ async def _build_roster_table(created: list, cfg) -> str:
     return "\n".join(lines)
 
 
+# Representative request profile used to score models by carbon when the
+# user's budget is `optimised`. 600 output tokens / 4.0s latency is a
+# typical single specialist reply; absolute values don't matter — only the
+# relative ordering between candidate models does.
+_FOOTPRINT_TOKENS_OUT = 600
+_FOOTPRINT_LATENCY_S = 4.0
+
+
+def _order_for_budget(models: list, budget: str, cfg) -> list:
+    """Order a provider's candidate models for the active budget tier.
+
+    For `optimised`, sort greenest-first by estimated gCO2e using a
+    `gco2e_lookup` closure over `estimate_footprint` (kept here in the
+    `service` layer so the providers leaf stays import-clean). All other
+    budgets return `models` unchanged — the discovery catalogue has already
+    ordered them by cost.
+    """
+    if budget != "optimised":
+        return models
+    zone = getattr(getattr(cfg, "footprint", None), "electricity_mix_zone", "WOR")
+
+    def _co2(m) -> float:
+        # `m` is a ModelSpec; score its representative response.
+        fp = estimate_footprint(
+            m.provider,
+            m.id,
+            _FOOTPRINT_TOKENS_OUT,
+            _FOOTPRINT_LATENCY_S,
+            zone=zone,
+        )
+        # estimate_footprint never returns None (Task B2), but code
+        # defensively: unknown → sort LAST instead of crashing.
+        return fp.gco2e if fp is not None else float("inf")
+
+    return order_models_by_effort(models, "optimised", _co2)
+
+
 async def _build_models_context(ctx: LoopContext) -> str:
     """Build the [SYSTEM CONTEXT] addon injected into Malik's prompt.
 
@@ -250,20 +289,33 @@ async def _build_models_context(ctx: LoopContext) -> str:
         if not models:
             lines.append(f"\nProvider `{prov}`: (no models discovered)")
             continue
-        by_tier: dict[str, list[str]] = {"free": [], "low": [], "medium": [], "high": []}
-        for m in models:
-            by_tier[m.tier].append(m.id)
+        # `optimised` budget: order the whole provider list greenest-first by
+        # estimated carbon, crossing tier boundaries. Other budgets keep the
+        # cost-ordered, tier-grouped view below.
+        models = _order_for_budget(models, budget, ctx.cfg)
         lines.append(f"\nProvider `{prov}`:")
-        for tier in ("free", "low", "medium", "high"):
-            ids = by_tier[tier]
-            if not ids:
-                continue
-            # Cap only at very large counts (50+) to keep the prompt sane.
-            # Otherwise list ALL available models so Malik sees the full
-            # menu — users complained they were only offered a fraction.
+        if budget == "optimised":
+            ids = [m.id for m in models]
             shown = ids if len(ids) <= 50 else ids[:50]
             suffix = f" (+{len(ids) - 50} more)" if len(ids) > 50 else ""
-            lines.append(f"  - {tier}: {', '.join(shown)}{suffix}")
+            lines.append(
+                f"  - greenest first (lowest estimated gCO2e): "
+                f"{', '.join(shown)}{suffix}"
+            )
+        else:
+            by_tier: dict[str, list[str]] = {"free": [], "low": [], "medium": [], "high": []}
+            for m in models:
+                by_tier[m.tier].append(m.id)
+            for tier in ("free", "low", "medium", "high"):
+                ids = by_tier[tier]
+                if not ids:
+                    continue
+                # Cap only at very large counts (50+) to keep the prompt sane.
+                # Otherwise list ALL available models so Malik sees the full
+                # menu — users complained they were only offered a fraction.
+                shown = ids if len(ids) <= 50 else ids[:50]
+                suffix = f" (+{len(ids) - 50} more)" if len(ids) > 50 else ""
+                lines.append(f"  - {tier}: {', '.join(shown)}{suffix}")
         reasoning_ids = [m.id for m in models if m.supports_reasoning][:8]
         if reasoning_ids:
             lines.append(f"  - Reasoning-effort supported: {', '.join(reasoning_ids)}")
