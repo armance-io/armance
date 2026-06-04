@@ -322,6 +322,7 @@ async def _cmd_workflow_run(
     skip_preflight: bool = False,
     user_prompt_override: str | None = None,
     run_mode: str | None = None,
+    depth: str = "quick",
 ) -> str:
     from armance.service.checkpoint import Checkpoint
     # Check both .armance/workflows/ (Kim's dir) and legacy workflows/
@@ -332,6 +333,17 @@ async def _cmd_workflow_run(
         return t("workflow.not_found", name=name)
     from armance.core.models.workflow import load_workflow, execute_workflow
     wf = load_workflow(wf_path)
+
+    # Auto-boost all boostable agents at run start if the depth mode is deep (meaning intense)
+    is_intense = (depth == "deep")
+    if is_intense:
+        step_agent_names = set()
+        for step in wf.steps:
+            if getattr(step, "agents", None):
+                step_agent_names.update(step.agents)
+        for agent in ctx.agents:
+            if agent.name in step_agent_names and agent.is_boostable:
+                ctx.state.boosted_agents.add(agent.name)
 
     # ── Pre-run health check ────────────────────────────────────────────────
     # Block the run if any required agent is known-unhealthy on disk
@@ -360,13 +372,15 @@ async def _cmd_workflow_run(
     if not skip_preflight:
         from armance.service.cost import estimate_workflow
         prices_override = getattr(ctx.cfg, "prices", None) or {}
-        estimate = estimate_workflow(wf, ctx.agents, user_prompt, prices_override=prices_override)
+        estimate = estimate_workflow(wf, ctx.agents, user_prompt, prices_override=prices_override, intense=is_intense)
         total = estimate["total_usd"]
         lines = [
             t("prompts.cost_estimate", total=f"{total:.4f}", steps=len(estimate["steps"]))
         ]
         for provider, cost in estimate["by_provider"].items():
             lines.append(f"  {provider}: ${cost:.4f}")
+        if is_intense and estimate.get("boosted_count", 0) > 0:
+            lines.append(t("boost.workflow_notice", count=estimate["boosted_count"]))
         ctx.append("\n".join(lines))
         if ctx.checkpoint_handler is None:
             return t("common.error", error="no checkpoint handler")
@@ -672,7 +686,8 @@ async def _cmd_workflow(args: list[str], ctx: LoopContext) -> str:
             if idx + 1 < len(args):
                 enrich_sid = args[idx + 1]
         skip_preflight = "--yes" in args
-        return await _cmd_workflow_run(name, enrich_sid, ctx, skip_preflight=skip_preflight)
+        depth = "deep" if "--deep" in args or "--intense" in args else "quick"
+        return await _cmd_workflow_run(name, enrich_sid, ctx, skip_preflight=skip_preflight, depth=depth)
     if sub == "design":
         if len(args) < 2:
             return t("workflow.usage_design")
