@@ -733,6 +733,12 @@ agents:
                 entry["provider"], entry["model"],
                 default_provider=self.config.default_provider,
             )
+            if entry.get("boost_model"):
+                boost_prov = entry.get("boost_provider") or entry.get("provider") or self.config.default_provider
+                entry["boost_provider"], entry["boost_model"] = _normalise_provider_model(
+                    boost_prov, entry["boost_model"],
+                    default_provider=self.config.default_provider,
+                )
 
             agents.append(Agent.model_validate(entry))
 
@@ -773,7 +779,12 @@ persona: {persona}
 provider: {agent.provider}
 model: {agent.model}
 reasoning: {agent.reasoning or 'none'}
----
+"""
+        if agent.boost_provider:
+            md += f"boost_provider: {agent.boost_provider}\n"
+        if agent.boost_model:
+            md += f"boost_model: {agent.boost_model}\n"
+        md += f"""---
 You are {name}, a {persona} {role}. Your role is to challenge assumptions about {role} selection, techniques, and methods for {role} projects.
 """
         # Append any additional system prompt content
