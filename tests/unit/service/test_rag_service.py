@@ -1,6 +1,5 @@
 import pytest
-from pathlib import Path
-from armance.storage.rag_index import RagService, Chunk
+from armance.storage.rag_index import RagService
 from armance.service.events import LocalEventBus
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * PanelCardsHost — subscribes to `agents_proposed` SSE events and
+ * PanelCardsHost — subscribes to `agents.proposed` SSE events and
  * renders Malik's recruited panel as cards.
  *
  * Approval posts a chat turn back to Malik (so the user's approval is
@@ -72,7 +72,7 @@ export const PanelCardsHost: FC<PanelCardsHostProps> = ({ pid, sid, onAskAlterna
   const [panel, setPanel] = useState<PanelMemberView[]>([]);
 
   const handleEvent = useCallback((evt: SseEvent) => {
-    if (evt.name !== "agents_proposed") return;
+    if (evt.name !== "agents.proposed") return;
     const attrs = (evt.data["attributes"] as Record<string, unknown> | undefined) ?? {};
     const agents = attrs["agents"];
     if (!Array.isArray(agents)) return;

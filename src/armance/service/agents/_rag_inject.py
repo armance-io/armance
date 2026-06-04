@@ -38,6 +38,15 @@ async def inject_rag_section(
         if not getattr(config, "embedding_provider", "") or not getattr(config, "embedding_model", ""):
             return ""
 
+    # Nothing indexed → skip retrieval entirely. This avoids embedding the
+    # query (a needless provider call) on every turn when the library is empty.
+    try:
+        from armance.storage.rag_status import has_indexed_chunks
+        if not has_indexed_chunks(armance_root):
+            return ""
+    except Exception:
+        logger.debug("RAG index probe failed; proceeding", exc_info=True)
+
     try:
         from armance.storage.rag_index import RagService, Chunk
     except Exception:

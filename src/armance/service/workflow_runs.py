@@ -100,12 +100,18 @@ def create_run(armance_root: Path, workflow_name: str) -> RunArtefact:
     safe_wf = re.sub(r"[^\w-]", "_", workflow_name)[:64]
     run_dir = armance_root / "exports" / safe_wf / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
-    return RunArtefact(
+    artefact = RunArtefact(
         workflow_name=workflow_name,
         run_id=run_id,
         run_dir=run_dir,
         started_at=datetime.now(timezone.utc).isoformat(),
     )
+    # Register the run as in-flight up-front: an initial manifest + a runs.json
+    # entry so /active-workflow reports it immediately and the web UI can switch
+    # to the live view before the first step completes.
+    write_running_manifest(artefact)
+    _append_runs_index(run_dir.parent, _build_manifest(artefact, status="working", finalising=False))
+    return artefact
 
 
 def write_step_output(artefact: RunArtefact, step_id: str, content: str) -> Path:
@@ -125,6 +131,7 @@ def mark_step_started(artefact: RunArtefact, step_id: str) -> None:
     rec.started_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     if step_id not in artefact.step_ids:
         artefact.step_ids.append(step_id)
+    write_running_manifest(artefact)
 
 
 def mark_step_completed(
@@ -142,6 +149,7 @@ def mark_step_completed(
     rec.tokens_in = tokens_in
     rec.tokens_out = tokens_out
     rec.cost_usd = cost_usd
+    write_running_manifest(artefact)
 
 
 def mark_step_failed(artefact: RunArtefact, step_id: str, error: str) -> None:
@@ -150,6 +158,7 @@ def mark_step_failed(artefact: RunArtefact, step_id: str, error: str) -> None:
     rec.ended_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     rec.duration_ms = _ms_between(rec.started_at, rec.ended_at)
     rec.error = error[:500]
+    write_running_manifest(artefact)
 
 
 def mark_step_skipped(artefact: RunArtefact, step_id: str, reason: str) -> None:
@@ -158,6 +167,7 @@ def mark_step_skipped(artefact: RunArtefact, step_id: str, reason: str) -> None:
     rec.error = reason[:200]
     if step_id not in artefact.step_ids:
         artefact.step_ids.append(step_id)
+    write_running_manifest(artefact)
 
 
 def _ms_between(started_iso: str | None, ended_iso: str | None) -> int | None:
@@ -198,6 +208,50 @@ def write_assumptions(artefact: RunArtefact, content: str) -> Path:
 
 
 
+def _build_manifest(artefact: RunArtefact, *, status: str, finalising: bool) -> dict[str, Any]:
+    """Assemble the manifest dict for *artefact* at the current state.
+
+    When *finalising*, a queued step with an output path is upgraded to
+    completed (defensive backfill for steps that bypassed mark_step_*).
+    """
+    step_records: list[dict[str, Any]] = []
+    for sid in artefact.step_ids:
+        rec = artefact.record(sid)
+        if finalising and rec.status == "queued":
+            rec.status = "completed" if rec.output_path else "unknown"
+        step_records.append(rec.to_dict())
+
+    return {
+        "workflow": artefact.workflow_name,
+        "run_id": artefact.run_id,
+        "status": status,
+        "started_at": artefact.started_at,
+        "ended_at": artefact.ended_at,
+        "duration_ms": _ms_between(artefact.started_at, artefact.ended_at),
+        "steps": step_records,
+        "totals": _aggregate(artefact),
+        "assumptions_present": artefact.assumptions_path().exists(),
+        "synthesis_present": artefact.synthesis_path().exists(),
+        "trace_present": artefact.trace_path().exists(),
+    }
+
+
+def write_running_manifest(artefact: RunArtefact) -> None:
+    """Persist a live snapshot of the manifest (status='working').
+
+    Called after every step transition so the web UI (which polls
+    manifest.json) sees steps go queued → working → completed in real time.
+    Does NOT touch runs.json — that index is bumped once, by finalise().
+    """
+    manifest = _build_manifest(artefact, status="working", finalising=False)
+    try:
+        artefact.manifest_path().write_text(
+            json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8"
+        )
+    except OSError:
+        logger.warning("could not write running manifest for %s", artefact.run_id, exc_info=True)
+
+
 def finalise(artefact: RunArtefact, *, status: str = "completed") -> None:
     """Write the per-run manifest + bump the workflow-level runs.json.
 
@@ -206,31 +260,7 @@ def finalise(artefact: RunArtefact, *, status: str = "completed") -> None:
     it stays None if the provider didn't return hard pricing numbers.
     """
     artefact.ended_at = datetime.now(timezone.utc).isoformat()
-
-    # Build step list in the order they appeared on disk; backfill records
-    # for any step that ran without going through mark_step_* (defensive).
-    step_records: list[dict[str, Any]] = []
-    for sid in artefact.step_ids:
-        rec = artefact.record(sid)
-        if rec.status == "queued":
-            rec.status = "completed" if rec.output_path else "unknown"
-        step_records.append(rec.to_dict())
-
-    totals = _aggregate(artefact)
-
-    manifest = {
-        "workflow": artefact.workflow_name,
-        "run_id": artefact.run_id,
-        "status": status,
-        "started_at": artefact.started_at,
-        "ended_at": artefact.ended_at,
-        "duration_ms": _ms_between(artefact.started_at, artefact.ended_at),
-        "steps": step_records,
-        "totals": totals,
-        "assumptions_present": artefact.assumptions_path().exists(),
-        "synthesis_present": artefact.synthesis_path().exists(),
-        "trace_present": artefact.trace_path().exists(),
-    }
+    manifest = _build_manifest(artefact, status=status, finalising=True)
     artefact.manifest_path().write_text(
         json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8"
     )
@@ -265,7 +295,12 @@ def _aggregate(artefact: RunArtefact) -> dict[str, Any]:
 
 
 def _append_runs_index(workflow_dir: Path, manifest: dict[str, Any]) -> None:
-    """Update `<workflow>/runs.json` with a compact entry per run."""
+    """Upsert `<workflow>/runs.json` with a compact entry for this run.
+
+    Upsert (not blind append) so a run can be registered as in-flight when it
+    starts and updated in place to 'completed'/'failed' when it finishes —
+    without creating duplicate entries.
+    """
     runs_path = workflow_dir / "runs.json"
     entries: list[dict[str, Any]] = []
     if runs_path.exists():
@@ -273,14 +308,20 @@ def _append_runs_index(workflow_dir: Path, manifest: dict[str, Any]) -> None:
             entries = json.loads(runs_path.read_text(encoding="utf-8")) or []
         except Exception:
             entries = []
-    entries.append({
+    entry = {
         "run_id": manifest["run_id"],
         "started_at": manifest["started_at"],
         "ended_at": manifest["ended_at"],
         "duration_ms": manifest.get("duration_ms"),
         "status": manifest["status"],
         "totals": manifest.get("totals", {}),
-    })
+    }
+    for i, e in enumerate(entries):
+        if e.get("run_id") == entry["run_id"]:
+            entries[i] = entry
+            break
+    else:
+        entries.append(entry)
     runs_path.write_text(json.dumps(entries, indent=2, sort_keys=True), encoding="utf-8")
 
 

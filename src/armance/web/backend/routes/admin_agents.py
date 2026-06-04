@@ -25,7 +25,7 @@ _SAFE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 router = APIRouter()
 
 _PERSONA_ERROR = {"error": "persona_via_malik_only"}
-_WRITABLE_FIELDS = {"model", "reasoning"}
+_WRITABLE_FIELDS = {"provider", "model", "reasoning"}
 
 
 def _persona_text(agent: Agent) -> str:
@@ -130,6 +130,8 @@ async def patch_agent(
         on_disk = agent
 
     updated_data = on_disk.model_dump()
+    if "provider" in patch:
+        updated_data["provider"] = patch["provider"]
     if "model" in patch:
         updated_data["model"] = patch["model"]
     if "reasoning" in patch:
@@ -140,6 +142,7 @@ async def patch_agent(
 
     return {
         "name": updated.name,
+        "provider": updated.provider,
         "model": updated.model,
         "reasoning": updated.reasoning,
     }

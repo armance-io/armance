@@ -6,7 +6,6 @@ emit a confrontation_detected event.
 """
 from __future__ import annotations
 
-import pytest
 
 from armance.service.agents.confrontation import (
     detect_confrontation,

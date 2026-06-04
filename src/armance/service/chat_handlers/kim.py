@@ -313,27 +313,24 @@ def _inject_design_tag_if_yaml_only(reply: str, user_text: str) -> str:
     return reply
 
 
-_YAML_BLOCK_RE = re.compile(r"```(?:yaml)?\s*\n.*?\n```", re.DOTALL)
-
-
 def _intercept_design(reply: str, ctx: LoopContext, SkillCls) -> str:
     if _DESIGN_TAG not in reply:
         return reply
     kim_full_reply = reply
-    reply = reply.replace(_DESIGN_TAG, "").strip()
-    # Strip fenced YAML block from visible reply — user never needs raw YAML
-    reply = _YAML_BLOCK_RE.sub("", reply).strip()
     non_meta = [a for a in ctx.agents if not a.name.startswith("system-")]
     if not non_meta:
-        return reply + "\n\n" + t("workflow.design_blocked_no_team")
+        # No team: drop Kim's prose + YAML, show only the blocked notice.
+        return t("workflow.design_blocked_no_team")
     skill = SkillCls(
         armance_root=ctx.armance_root.parent,
         config=ctx.cfg,
         agents=ctx.agents,
         project_brief=ctx.state.project_brief or "",
     )
-    skill_reply = skill.run(args=kim_full_reply, ctx={})
-    return reply + ("\n\n" if reply else "") + skill_reply
+    # Show ONLY the skill's clean, structured summary. Kim's surrounding prose
+    # ("Saving workflow.", "Workflow built. Ready to launch.") plus the raw
+    # YAML block is redundant with the summary and reads as duplicated noise.
+    return skill.run(args=kim_full_reply, ctx={})
 
 
 async def _intercept_run(

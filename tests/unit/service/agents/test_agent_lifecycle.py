@@ -14,13 +14,11 @@ from __future__ import annotations
 import json
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
 from armance.core.models.agent import Agent
 from armance.service.agents.agent_lifecycle_service import (
-    AgentLifecycleError,
     AgentLifecycleService,
     AgentNotFoundError,
     DuplicateAgentError,
