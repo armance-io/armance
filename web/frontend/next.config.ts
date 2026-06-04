@@ -17,6 +17,7 @@ const config: NextConfig = isExport
       },
     }
   : {
+      allowedDevOrigins: ["127.0.0.1", "localhost"],
       experimental: {
         optimizePackageImports: ["@xyflow/react", "i18next", "react-i18next", "@tanstack/react-query"],
       },

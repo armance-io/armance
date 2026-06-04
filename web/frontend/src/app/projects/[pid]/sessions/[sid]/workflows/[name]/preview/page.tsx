@@ -8,3 +8,5 @@ export function generateStaticParams() {
 export default function WorkflowPreviewPage() {
   return <WorkflowPreviewView />;
 }
+
+export const dynamicParams = true;

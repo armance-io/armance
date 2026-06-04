@@ -8,3 +8,5 @@ export function generateStaticParams() {
 export default function DeliverablesPage() {
   return <DeliverablesView />;
 }
+
+export const dynamicParams = true;

@@ -593,6 +593,8 @@ export interface AdminAgent {
   reasoning: string | null;
   persona?: string;
   staff?: boolean;
+  boosted?: boolean;
+  effective_model?: string;
 }
 
 export async function getAdminAgents(pid: string, sid: string): Promise<AdminAgent[]> {

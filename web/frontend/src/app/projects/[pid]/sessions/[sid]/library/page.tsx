@@ -8,3 +8,5 @@ export function generateStaticParams() {
 export default function LibraryPage() {
   return <LibraryView />;
 }
+
+export const dynamicParams = true;

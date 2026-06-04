@@ -4,6 +4,7 @@ import SessionView from "./SessionView";
 export function generateStaticParams() {
   return [{ pid: "_", sid: "_" }];
 }
+export const dynamicParams = true;
 
 export default function SessionPage() {
   return <SessionView />;

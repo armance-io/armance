@@ -52,6 +52,12 @@ async def get_agent_details(
     if persona is not None:
         persona_label = getattr(persona, "label", "") or ""
 
+    boosted = (name in ws.session.state.boosted_agents) and agent.is_boostable
+    eff_mod = agent.model
+    if boosted:
+        from armance.service.boost_ops import boosted_model_for
+        _, eff_mod = boosted_model_for(agent, ws.session.state.boosted_agents)
+
     return {
         "name": agent.name,
         "role": agent.role or agent.domain or "",
@@ -63,4 +69,6 @@ async def get_agent_details(
         "tokens_in": tokens_in,
         "tokens_out": tokens_out,
         "cost_usd": cost_usd,
+        "boosted": boosted,
+        "effective_model": eff_mod,
     }
