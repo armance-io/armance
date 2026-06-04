@@ -10,4 +10,4 @@ export default function AdminPage() {
   return <AdminView />;
 }
 
-export const dynamicParams = true;
+export const dynamicParams = false;

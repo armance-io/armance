@@ -9,4 +9,4 @@ export default function WorkflowPreviewPage() {
   return <WorkflowPreviewView />;
 }
 
-export const dynamicParams = true;
+export const dynamicParams = false;
