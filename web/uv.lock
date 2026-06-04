@@ -63,6 +63,7 @@ dependencies = [
 requires-dist = [
     { name = "claude-agent-sdk", marker = "extra == 'claude'", specifier = ">=0.1" },
     { name = "ecologits", specifier = ">=0.6" },
+    { name = "fastapi", marker = "extra == 'web'", specifier = ">=0.115" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "markdown-it-py", specifier = ">=3.0" },
     { name = "prompt-toolkit", specifier = ">=3.0" },
@@ -70,13 +71,16 @@ requires-dist = [
     { name = "pypdf", specifier = ">=4.0" },
     { name = "python-docx", specifier = ">=1.1" },
     { name = "python-dotenv", specifier = ">=1.0" },
+    { name = "python-multipart", marker = "extra == 'web'", specifier = ">=0.0.12" },
     { name = "python-pptx", specifier = ">=0.6" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "questionary", specifier = ">=2.0" },
     { name = "rich", specifier = ">=13.0" },
     { name = "sqlite-vec", specifier = ">=0.1.6" },
+    { name = "sse-starlette", marker = "extra == 'web'", specifier = ">=2.1" },
     { name = "textual", specifier = ">=1.0" },
     { name = "tiktoken", specifier = ">=0.7" },
+    { name = "uvicorn", extras = ["standard"], marker = "extra == 'web'", specifier = ">=0.30" },
     { name = "weasyprint", specifier = ">=60.0" },
 ]
 

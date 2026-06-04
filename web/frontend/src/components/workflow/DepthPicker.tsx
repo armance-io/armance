@@ -164,7 +164,15 @@ export const DepthPicker: FC<DepthPickerProps> = ({
                 "var(--rule, #d6c8ad)";
           }}
         >
-          <div style={{ fontSize: "18px" }}>🟢</div>
+          <div style={{
+            width: "12px",
+            height: "12px",
+            borderRadius: "50%",
+            background: "hsl(120, 15%, 55%)",
+            border: "1px solid hsl(120, 15%, 45%)",
+            display: "inline-block",
+            flexShrink: 0,
+          }} />
           <h4 style={cardTitleStyle}>
             {t("workflow:picker.quick_title")}
           </h4>
@@ -193,7 +201,15 @@ export const DepthPicker: FC<DepthPickerProps> = ({
                 "var(--rule, #d6c8ad)";
           }}
         >
-          <div style={{ fontSize: "18px" }}>🔴</div>
+          <div style={{
+            width: "12px",
+            height: "12px",
+            borderRadius: "50%",
+            background: "hsl(0, 30%, 65%)",
+            border: "1px solid hsl(0, 30%, 55%)",
+            display: "inline-block",
+            flexShrink: 0,
+          }} />
           <h4 style={cardTitleStyle}>
             {t("workflow:picker.deep_title")}
           </h4>

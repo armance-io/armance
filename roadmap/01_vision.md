@@ -70,7 +70,7 @@ These are non-negotiable. Every feature is judged against them.
 
 ## The web layer, framed
 
-The forthcoming web UI ([`04_roadmap.md`](04_roadmap.md)) is the **same
+The forthcoming web UI is the **same
 firm**, multiplayer, browser-accessible. It does not change the invariants.
 A team can watch Armance frame the room, Malik cast the panel, Kim run the
 workflow — in real time. The files written remain the source of truth.

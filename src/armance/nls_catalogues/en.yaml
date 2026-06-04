@@ -413,3 +413,13 @@ footprint:
   zone_note: "Electricity zone: {zone}"
   by_day: "By day"
   by_month: "By month"
+
+# Staff roles
+# ---------------------------------------------------------------------------
+staff:
+  role:
+    weaver: "weaver"
+    scout: "scout"
+    conductor: "conductor"
+    distiller: "distiller"
+    critic: "critic"

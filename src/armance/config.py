@@ -95,6 +95,12 @@ def load_config(repo_root: Path) -> Config:
 
     cfg = Config(**raw)
 
+    # Guarantee the default provider is present so agent calls never crash with
+    # `provider not configured` when a config lists it only as default_provider
+    # (e.g. claude-code). It still receives its env overlay below.
+    if cfg.default_provider and all(p.name != cfg.default_provider for p in cfg.providers):
+        cfg.providers.append(ProviderConfig(name=cfg.default_provider))
+
     env: dict[str, str | None] = dict(dotenv_values(env_path)) if env_path.exists() else {}
     env.update({k: v for k, v in os.environ.items() if v is not None})
 

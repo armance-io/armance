@@ -22,33 +22,120 @@
       "brand_domain": "armance.io",
       "sidebar_collapse_aria": "Replier la barre latérale",
       "footer_motto": "Une maison d'agents qui pensent.",
-      "footer_line": "armance.io · 2026 · établi en France"
+      "footer_line": "2026 · établi en France"
     },
-    "theme": { "toggle_aria": "Basculer le thème" },
+    "theme": {
+      "toggle_aria": "Basculer le thème"
+    },
     "empty": {
-      "library": { "title": "Aucun document encore", "hint": "Importez un fichier pour commencer.", "cta": "Importer" },
-      "workflow": { "title": "Aucun workflow en cours", "hint": "Lancez-en un via Kim." },
-      "session": { "title": "Une nouvelle séance commence", "hint": "Décrivez une décision que vous pesez, ou déposez un document." },
-      "shell": { "title": "Choisissez une séance", "hint": "Ouvrez-en une dans la barre latérale, ou démarrez un projet." }
+      "library": {
+        "title": "Aucun document encore",
+        "hint": "Importez un fichier pour commencer.",
+        "cta": "Importer"
+      },
+      "workflow": {
+        "title": "Aucun workflow en cours",
+        "hint": "Lancez-en un via Kim.",
+        "cta": "Lancer le workflow"
+      },
+      "session": {
+        "title": "Une nouvelle séance commence",
+        "hint": "Décrivez une décision que vous pesez, ou déposez un document.",
+        "cta": "Nouvelle session",
+        "suggestion_decision": "décrivez une décision que vous pesez",
+        "suggestion_document": "déposez un document que vous voulez examiner"
+      },
+      "shell": {
+        "title": "Choisissez une séance",
+        "hint": "Ouvrez-en une dans la barre latérale, ou démarrez un projet."
+      },
+      "deliberation": {
+        "title": "Aucune donnée pour l'instant",
+        "hint": "Lancez une délibération pour recueillir des statistiques."
+      }
+    },
+    "metrics": {
+      "co2e_aria": "Empreinte carbone (gCO₂e)",
+      "water_aria": "Empreinte eau (mL)",
+      "tokens_in_aria": "Jetons entrants",
+      "tokens_out_aria": "Jetons sortants",
+      "model_aria": "Modèle utilisé (agent sélectionné)"
     }
   },
   "library": {
     "title": "Bibliothèque",
-    "import": "Importer",
-    "import_all": "Tout indexer",
-    "search_placeholder": "Filtrer par nom",
-    "status_pending": "en attente",
-    "status_indexed": "indexé",
-    "status_loaded": "chargé",
-    "actions": { "load": "Charger", "unload": "Décharger", "unindex": "Désindexer", "delete": "Supprimer" },
-    "confirm_delete": "Supprimer {{name}} ?",
-    "reader": { "download": "Télécharger", "opened_from": "Ouvert depuis : {{path}}" }
+    "list_aria": "Bibliothèque de documents",
+    "toolbar": {
+      "search_placeholder": "Filtrer par nom",
+      "index_all": "Tout indexer",
+      "import": "Importer"
+    },
+    "status": {
+      "pending": "en attente",
+      "indexed": "indexé",
+      "loaded": "chargé"
+    },
+    "action": {
+      "index": "Indexer",
+      "load": "Charger",
+      "unload": "Décharger",
+      "unindex": "Désindexer",
+      "delete": "Supprimer"
+    },
+    "confirm": {
+      "delete_title": "Supprimer le document",
+      "delete_hint": "Êtes-vous sûr de vouloir supprimer ce document ?",
+      "cancel": "Annuler",
+      "confirm": "Confirmer"
+    },
+    "reader": {
+      "download": "Télécharger",
+      "download_label": "Télécharger",
+      "download_aria": "Télécharger ce livrable",
+      "opened_from": "Ouvert depuis : {{path}}"
+    },
+    "toast": {
+      "imported": "Document importé",
+      "indexing": "Indexation lancée…",
+      "indexing_all": "Indexation de tous les documents…",
+      "loading": "Chargement en contexte…"
+    },
+    "feuillets_count": "{n} feuillets",
+    "feuillets_total_aria": "Total des feuillets indexés",
+    "no_embedding_tooltip": "Configurez un modèle d'embedding pour activer l'indexation (Admin → Config)"
   },
   "chat": {
-    "input": { "placeholder": "Parlez librement.", "busy_label": "{{name}} réfléchit…", "send_aria": "Envoyer le message" },
-    "bubble": { "streaming_aria": "{{name}} répond" },
-    "tooltip": { "tokens_in": "Tokens entrants", "tokens_out": "Tokens sortants", "cost": "Coût", "cost_na": "n/a" },
-    "bottom": { "thinking": "{{name}} réfléchit…" }
+    "input": {
+      "placeholder": "Parlez librement.",
+      "busy_label": "{{name}} réfléchit…",
+      "send_aria": "Envoyer le message"
+    },
+    "bubble": {
+      "streaming_aria": "{{name}} répond"
+    },
+    "tooltip": {
+      "tokens_in": "Tokens entrants",
+      "tokens_out": "Tokens sortants",
+      "cost": "Coût",
+      "cost_na": "n/a"
+    },
+    "bottom": {
+      "thinking": "{{name}} réfléchit…"
+    },
+    "agents": {
+      "label": "Interlocuteur",
+      "switch_aria": "Basculer vers",
+      "switched": "Votre interlocuteur : {name}"
+    },
+    "error": {
+      "turn_failed": "La réponse a échoué. Veuillez réessayer."
+    },
+    "copy": {
+      "label": "copier",
+      "done": "copié",
+      "aria": "Copier le message dans le presse-papiers"
+    },
+    "you": "Vous"
   },
   "checkpoint": {
     "drawer": {
@@ -56,7 +143,9 @@
       "submit": "Envoyer",
       "abort": "Annuler",
       "yes": "Oui",
-      "no": "Non"
+      "no": "Non",
+      "submitted_title": "Réponse enregistrée",
+      "submitted_desc": "Votre réponse a été enregistrée avec succès."
     }
   },
   "panel": {
@@ -64,19 +153,44 @@
     "ask_alternative": "Demander une autre vue"
   },
   "render": {
-    "code": { "copy": "Copier", "copied": "Copié", "lang_aria": "Langage : {{lang}}" },
-    "mermaid": { "error_title": "Diagramme non rendu", "error_hint": "Source affichée à la place." },
-    "svg": { "error_title": "SVG rejeté", "error_hint": "Retiré pour des raisons de sécurité." },
-    "image": { "lightbox_aria": "Ouvrir l'image", "close_aria": "Fermer" },
-    "md": { "fallback_table": "Tableau" }
+    "code": {
+      "copy": "Copier",
+      "copied": "Copié",
+      "download": "Télécharger",
+      "downloaded": "Téléchargé",
+      "lang_aria": "Langage : {{lang}}"
+    },
+    "mermaid": {
+      "error_title": "Diagramme non rendu",
+      "error_hint": "Source affichée à la place."
+    },
+    "svg": {
+      "error_title": "SVG rejeté",
+      "error_hint": "Retiré pour des raisons de sécurité."
+    },
+    "image": {
+      "lightbox_aria": "Ouvrir l'image",
+      "close_aria": "Fermer"
+    },
+    "md": {
+      "fallback_table": "Tableau"
+    }
   },
   "runs": {
     "detail": {
       "duration": "Durée",
       "tokens": "Tokens",
       "cost": "Coût",
+      "cost_na": "n/a",
       "steps": "Étapes",
-      "status": { "running": "en cours", "completed": "terminé", "failed": "échoué", "cancelled": "annulé", "skipped": "passé" }
+      "step": "Étape",
+      "status": {
+        "running": "en cours",
+        "completed": "terminé",
+        "failed": "échoué",
+        "cancelled": "annulé",
+        "skipped": "passé"
+      }
     }
   },
   "run": {
@@ -87,7 +201,18 @@
       "hypotheses": "Hypothèses",
       "mode": "Mode",
       "mode_interactive": "interactif",
-      "mode_autonomous": "autonome"
+      "mode_autonomous": "autonome",
+      "loading": "Chargement…",
+      "compiling": "Compilation du livrable…",
+      "compiling_desc": "L'équipe assemble ses conclusions.",
+      "downloads": "Téléchargements"
+    },
+    "mode": {
+      "title_aria": "Mode d'exécution"
+    },
+    "sources": {
+      "empty": "Aucune source citée pour l'instant.",
+      "open_aria": "Ouvrir la source"
     },
     "ledger": {
       "retained": "Retenus",
@@ -98,15 +223,90 @@
     }
   },
   "workflow": {
-    "graph": { "empty": "Ce workflow n'a pas encore d'étapes." },
-    "step": { "status": { "queued": "en attente", "working": "en cours", "completed": "terminé", "failed": "échoué", "cancelled": "annulé", "skipped": "passé" } },
-    "run": { "label": "Run", "status": { "running": "en cours", "completed": "terminé", "failed": "échoué", "cancelled": "annulé" } },
+    "graph": {
+      "empty": "Ce workflow n'a pas encore d'étapes."
+    },
+    "step": {
+      "status": {
+        "queued": "en attente",
+        "working": "en cours",
+        "completed": "terminé",
+        "failed": "échoué",
+        "cancelled": "annulé",
+        "skipped": "passé"
+      }
+    },
+    "run": {
+      "label": "Run",
+      "status": {
+        "running": "en cours",
+        "completed": "terminé",
+        "failed": "échoué",
+        "cancelled": "annulé"
+      }
+    },
     "picker": {
       "quick": "Un avis rapide",
       "deep": "Une analyse approfondie, challengée",
+      "quick_title": "Une perspective rapide",
+      "quick_desc": "Vérification rapide des hypothèses principales à l'aide d'indicateurs clés.",
+      "deep_title": "Une analyse approfondie et contradictoire",
+      "deep_desc": "Évaluation rigoureuse remettant en cause chaque assertion par un débat structuré.",
+      "hint_interactive": "Mona sollicitera votre avis aux seuils de décision clés.",
+      "hint_autonomous": "Mona gère des points de contrôle autonomes pour livrer la synthèse.",
       "mode_interactive": "interactif",
       "mode_autonomous": "autonome",
       "launch": "Lancer"
+    },
+    "history": {
+      "title": "Exécutions passées",
+      "empty": "Aucune exécution passée pour l'instant.",
+      "duration_aria": "Durée de l'exécution",
+      "time_just_now": "à l'instant",
+      "time_mins": "il y a {count} min",
+      "time_hours": "il y a {count} h",
+      "time_days": "il y a {count} j",
+      "status": {
+        "queued": "⋯",
+        "working": "⏳",
+        "running": "⏳",
+        "completed": "✓",
+        "failed": "✗",
+        "cancelled": "⊘",
+        "canceled": "⊘"
+      }
+    },
+    "delete": {
+      "error": "Impossible de supprimer cette exécution.",
+      "aria": "Supprimer l'exécution",
+      "blocked_active": "Impossible de supprimer une exécution en cours.",
+      "confirm_title": "Supprimer cette exécution ?",
+      "confirm_hint": "Cela supprime définitivement l'exécution et ses résultats.",
+      "confirm_no": "Annuler",
+      "confirm_yes": "Supprimer"
+    },
+    "interrupt": {
+      "error": "Impossible d'interrompre cette exécution.",
+      "label": "Interrompre",
+      "confirm_title": "Interrompre cette exécution ?",
+      "confirm_no": "Continuer",
+      "confirm_yes": "Interrompre"
+    },
+    "empty": {
+      "title": "Aucun workflow conçu.",
+      "hint": "Demandez à Kim d'en concevoir un via le chat."
+    },
+    "list": {
+      "title": "Workflows",
+      "steps": "{count} étapes"
+    },
+    "runs": {
+      "title": "Exécutions passées"
+    },
+    "launch": {
+      "started": "Exécution lancée : {id}",
+      "error": "Impossible de lancer l'exécution.",
+      "in_progress": "Lancement…"
     }
   },
   "hypotheses": {
@@ -114,27 +314,175 @@
     "marker": "Hypothèse",
     "invalidator": "invalidant"
   },
+  "roles": {
+    "weaver": "tisserande",
+    "scout": "dénicheur",
+    "conductor": "orchestratrice",
+    "distiller": "distillatrice",
+    "critic": "critique"
+  },
   "sidebar": {
-    "tabs": { "agents": "Agents", "workflows": "Workflows", "library": "Bibliothèque", "deliverables": "Livrables" },
+    "nav_section": {
+      "workspace": "Espace de travail",
+      "account": "Compte"
+    },
+    "tabs": {
+      "agents": "Agents",
+      "workflows": "Workflows",
+      "library": "Bibliothèque",
+      "deliverables": "Livrables",
+      "session_active": "Session en cours",
+      "settings": "Paramètres"
+    },
     "deliverables": {
       "empty": "Aucun livrable encore.",
-      "filter_workflow": "Workflow",
-      "filter_format": "Format",
+      "filter": {
+        "workflow": "Workflow",
+        "all_workflows": "Tous les workflows"
+      },
       "starred_first": "Étoilés en premier",
-      "star_aria": "Mettre {{name}} en favori"
+      "star_aria": "Mettre en favori"
+    },
+    "section": {
+      "staff": "Équipe",
+      "library": "Bibliothèque",
+      "roles": "Rôles & agents"
+    },
+    "staff": {
+      "empty": "Aucun spécialiste pour l'instant",
+      "mention_hint": "Insérer une mention dans votre message",
+      "switch_hint": "Basculer sur cet agent"
+    },
+    "library": {
+      "docs": "Documents",
+      "feuillets": "Feuillets",
+      "subtitle": "{docs} docs · {feuillets} feuillets",
+      "inactive": "inactif — aucun modèle d'embedding"
     }
   },
   "admin": {
-    "tabs": { "config": "Configuration", "secrets": "Secrets", "logs": "Logs", "stats": "Statistiques", "agents": "Agents" },
-    "config": { "title": "Configuration", "save": "Sauvegarder" },
-    "secrets": { "title": "Secrets", "masked": "•••• {{last4}}", "edit": "Modifier", "delete": "Supprimer" },
-    "logs": { "title": "Journaux", "level": "Niveau", "search": "Rechercher" },
-    "stats": { "title": "Statistiques", "tokens_in": "Tokens entrants", "tokens_out": "Tokens sortants", "cost": "Coût", "messages": "Messages" },
-    "agents": { "title": "Agents", "model": "Modèle", "reasoning": "Effort de raisonnement" }
+    "tabs": {
+      "config": "Configuration",
+      "secrets": "Secrets",
+      "logs": "Journaux",
+      "stats": "Statistiques",
+      "agents": "Agents",
+      "empreinte": "Empreinte"
+    },
+    "config": {
+      "title": "Configuration",
+      "save": "Sauvegarder",
+      "saving": "Sauvegarde…",
+      "default_provider": "Fournisseur par défaut",
+      "default_model": "Modèle par défaut",
+      "budget_effort": "Effort budgétaire",
+      "budget": {
+        "free-first": "Gratuit en priorité",
+        "low": "Faible",
+        "medium": "Moyen",
+        "high": "Élevé"
+      },
+      "language": "Langue",
+      "log_level": "Niveau de journalisation",
+      "err": {
+        "required": "Requis"
+      },
+      "providers": "Fournisseurs configurés",
+      "default": "Par défaut"
+    },
+    "secrets": {
+      "title": "Secrets",
+      "masked": "•••• {{last4}}",
+      "edit": "Modifier",
+      "delete": "Supprimer",
+      "empty": "Aucun secret configuré.",
+      "col": {
+        "key": "Clé",
+        "value": "Valeur",
+        "actions": "Actions"
+      },
+      "action": {
+        "edit": "Modifier",
+        "delete": "Supprimer",
+        "reveal": "Révéler",
+        "save": "Sauvegarder",
+        "cancel": "Annuler"
+      },
+      "confirm_delete": "Supprimer ce secret ?",
+      "localhost_only": "Les secrets ne sont gérables que depuis des origines localhost / loopback.",
+      "offline": "Les secrets ne sont pas disponibles hors ligne.",
+      "error_loading": "Échec du chargement des secrets."
+    },
+    "logs": {
+      "title": "Journaux",
+      "level": "Niveau",
+      "search": "Rechercher",
+      "empty": "Aucune entrée de journal.",
+      "loading_more": "Chargement…",
+      "filter": {
+        "agent": "Agent",
+        "all_agents": "Tous les agents",
+        "from": "De",
+        "to": "À",
+        "search": "Rechercher"
+      },
+      "level_changed_title": "Niveau de log mis à jour",
+      "level_changed_desc": "Le niveau de log a été changé en {level}.",
+      "live": "En direct"
+    },
+    "stats": {
+      "title": "Statistiques",
+      "tokens_in": "Tokens entrants",
+      "tokens_out": "Tokens sortants",
+      "cost": "Coût",
+      "messages": "messages",
+      "per_agent": "Par agent",
+      "top5_cost": "Top 5 par coût",
+      "carbon": "Empreinte carbone",
+      "water": "Consommation d'eau"
+    },
+    "agents": {
+      "title": "Agents",
+      "model": "Modèle",
+      "reasoning": "Effort de raisonnement",
+      "provider": "Fournisseur",
+      "persona": "Personnalité",
+      "persona_hint": "Modifiez la personnalité via le chat Malik.",
+      "save": "Sauvegarder",
+      "saving": "Sauvegarde…"
+    },
+    "footprint": {
+      "error": "Erreur de chargement de l'empreinte.",
+      "no_data": "Aucune donnée d'empreinte pour l'instant — lancez une délibération pour la renseigner.",
+      "method": "Méthode d'estimation",
+      "method_body": "L'impact environnemental est calculé avec la méthodologie EcoLogits (ACV ISO 14044), prenant en compte la phase d'usage (GPU, PUE des centres de données) et l'impact incorporé de la fabrication du matériel.",
+      "estimate": "Estimation",
+      "measured": "Mesure réelle",
+      "zone_label": "Zone d'intensité carbone",
+      "col": {
+        "agent": "Agent",
+        "calls": "Requêtes",
+        "co2e": "CO₂e",
+        "water": "Eau",
+        "type": "Type"
+      },
+      "zone": {
+        "wor": "Monde — intensité carbone moyenne mondiale",
+        "unknown": "Zone inconnue"
+      }
+    }
   },
   "audio": {
-    "voice": { "idle_aria": "Maintenez pour parler", "recording": "Enregistrement…", "error": "Échec de l'enregistrement" },
-    "play": { "play_aria": "Lire", "pause_aria": "Pause", "error": "Échec de la lecture" }
+    "voice": {
+      "idle_aria": "Maintenez pour parler",
+      "recording": "Enregistrement…",
+      "error": "Échec de l'enregistrement"
+    },
+    "play": {
+      "play_aria": "Lire",
+      "pause_aria": "Pause",
+      "error": "Échec de la lecture"
+    }
   },
   "setup": {
     "title": "Bienvenue",
@@ -143,5 +491,14 @@
     "step_budget": "Choisissez un budget",
     "step_language": "Choisissez une langue",
     "continue": "Continuer"
+  },
+  "session": {
+    "selector": {
+      "title": "Sessions (plus récentes d'abord)",
+      "empty": "Aucune session précédente",
+      "summary": "{turns} tours · ~{tokens} jetons",
+      "locked_aria": "Session active (verrouillée après le premier message)",
+      "id_label": "Session ID"
+    }
   }
 }

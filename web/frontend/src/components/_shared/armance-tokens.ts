@@ -20,6 +20,17 @@ export const tokens = {
   ffSerif: "var(--ff-serif)",
   ffSans: "var(--ff-sans)",
   ffMono: "var(--ff-mono)",
+  shadowLift: "var(--shadow-lift)",
+  shadowPop: "var(--shadow-pop)",
+  // Layout rhythm — keep every surface aligned (no per-component magic numbers).
+  headerH: "var(--header-h)",
+  tabPadX: "var(--tab-pad-x)",
+  tabPadY: "var(--tab-pad-y)",
+  radiusSm: "var(--radius-sm)",
+  radiusMd: "var(--radius-md)",
+  radiusPop: "var(--radius-pop)",
+  controlH: "var(--control-h)",
+  sidebarW: "var(--sidebar-w)",
 } as const;
 
 export type Tokens = typeof tokens;

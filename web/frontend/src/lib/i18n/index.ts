@@ -8,6 +8,7 @@ import fr from "@/locales/fr/common.json";
 
 const NAMESPACES = [
   "common",
+  "app",
   "visual",
   "library",
   "chat",
@@ -18,10 +19,12 @@ const NAMESPACES = [
   "run",
   "workflow",
   "hypotheses",
+  "roles",
   "sidebar",
   "admin",
   "audio",
   "setup",
+  "session",
 ] as const;
 
 export type Namespace = typeof NAMESPACES[number];
@@ -37,10 +40,16 @@ export function ensureI18n(language: string = "en"): typeof i18n {
     defaultNS: "common",
     interpolation: { escapeValue: false },
     resources: {
-      en: { common: en },
-      fr: { common: fr },
+      en: NAMESPACES.reduce((acc, ns) => {
+        acc[ns] = (en as unknown as Record<string, unknown>)[ns] || {};
+        return acc;
+      }, {} as Record<string, unknown>),
+      fr: NAMESPACES.reduce((acc, ns) => {
+        acc[ns] = (fr as unknown as Record<string, unknown>)[ns] || {};
+        return acc;
+      }, {} as Record<string, unknown>),
     },
-  });
+  } as unknown as import("i18next").InitOptions);
   initialised = true;
   return i18n;
 }
