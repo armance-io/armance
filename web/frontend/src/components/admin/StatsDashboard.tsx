@@ -11,6 +11,27 @@ export interface AgentStat {
   gco2e?: number;
   water_ml?: number;
   has_estimate?: boolean;
+  /** EcoLogits carbon confidence bounds (optional; render a range). */
+  gco2e_min?: number | undefined;
+  gco2e_max?: number | undefined;
+  water_ml_min?: number | undefined;
+  water_ml_max?: number | undefined;
+}
+
+const EN_DASH = "–";
+
+/** `~[min – max] gCO₂e` when the bounds differ, else a flat `~mid gCO₂e`. */
+function formatCo2(
+  mid: number,
+  min: number | undefined,
+  max: number | undefined,
+  estimate: boolean,
+): string {
+  const tilde = estimate ? "~" : "";
+  if (min != null && max != null && Math.abs(max - min) > 1e-9) {
+    return `${tilde}[${min.toFixed(1)} ${EN_DASH} ${max.toFixed(1)}] gCO₂e`;
+  }
+  return `${tilde}${mid.toFixed(1)} gCO₂e`;
 }
 
 export interface StatsDashboardProps {
@@ -36,8 +57,15 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
           messages: acc.messages + a.messages,
           gco2e: acc.gco2e + (a.gco2e ?? 0),
           water_ml: acc.water_ml + (a.water_ml ?? 0),
+          // Bounds fall back to the midpoint when a record carries no range.
+          gco2e_min: acc.gco2e_min + (a.gco2e_min ?? a.gco2e ?? 0),
+          gco2e_max: acc.gco2e_max + (a.gco2e_max ?? a.gco2e ?? 0),
+          has_estimate: acc.has_estimate || Boolean(a.has_estimate),
         }),
-        { tokens_in: 0, tokens_out: 0, cost: 0, messages: 0, gco2e: 0, water_ml: 0 },
+        {
+          tokens_in: 0, tokens_out: 0, cost: 0, messages: 0,
+          gco2e: 0, water_ml: 0, gco2e_min: 0, gco2e_max: 0, has_estimate: false,
+        },
       ),
     [agents],
   );
@@ -78,7 +106,11 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
       <div style={{ ...cards, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
         <Card
           label={`🌱 ${t("admin:stats.carbon_total")}`}
-          value={totals.gco2e > 0 ? `~${totals.gco2e.toFixed(1)} gCO₂e` : t("visual:empty.deliberation.title")}
+          value={
+            totals.gco2e > 0
+              ? formatCo2(totals.gco2e, totals.gco2e_min, totals.gco2e_max, totals.has_estimate)
+              : t("visual:empty.deliberation.title")
+          }
           accent
           accentColor="var(--accent-deep, #4a3666)"
         />
@@ -146,7 +178,9 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
                     🌱 {t("admin:stats.carbon")}
                   </span>
                   <span style={{ fontSize: 15, fontWeight: 600, color: tokens.ink }}>
-                    {a.gco2e && a.gco2e > 0 ? `${a.has_estimate ? "~" : ""}${a.gco2e.toFixed(1)} gCO₂e` : "—"}
+                    {a.gco2e && a.gco2e > 0
+                      ? formatCo2(a.gco2e, a.gco2e_min, a.gco2e_max, Boolean(a.has_estimate))
+                      : "—"}
                   </span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
