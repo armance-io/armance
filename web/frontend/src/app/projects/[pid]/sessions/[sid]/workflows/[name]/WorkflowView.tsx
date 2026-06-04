@@ -44,6 +44,7 @@ export default function WorkflowView() {
 
   const activeRunId = activeData?.active?.run_id;
   const [launching, setLaunching] = useState(false);
+  const [launchResult, setLaunchResult] = useState<string | null>(null);
 
   // The right panel is drag-resizable (left-edge handle) and remembers its width.
   const panel = useResizableWidth({
@@ -56,12 +57,14 @@ export default function WorkflowView() {
 
   const handleLaunch = async (mode: "interactive" | "autonomous", depth: "quick" | "deep") => {
     setLaunching(true);
+    setLaunchResult(null);
     try {
       const result = await launchWorkflow(pid, sid, workflowName, { mode, depth });
       const msg = result.run_id
         ? t("workflow:launch.started").replace("{id}", result.run_id)
         : t("workflow:launch.started_no_id");
       toast(msg, "success");
+      setLaunchResult(result.run_id || null);
       refetchActive();
     } catch {
       toast(t("workflow:launch.error"), "error");
@@ -105,7 +108,7 @@ export default function WorkflowView() {
   return (
     <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
         {/* Centre */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 24, padding: `${tokens.tabPadY} ${tokens.tabPadX}`, overflow: "auto" }}>
+        <aside style={{ flex: 1, display: "flex", flexDirection: "column", gap: 24, padding: `${tokens.tabPadY} ${tokens.tabPadX}`, overflow: "auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h3 style={heading}>{workflowName}</h3>
             {activeRunId && (
@@ -119,7 +122,7 @@ export default function WorkflowView() {
           </section>
 
           <WorkflowGraphContainer pid={pid} sid={sid} workflowName={workflowName} runId={activeRunId} />
-        </div>
+        </aside>
 
         {/* Drag handle to resize the right panel */}
         <div
@@ -144,6 +147,11 @@ export default function WorkflowView() {
               {launching && (
                 <div style={{ marginTop: 20, textAlign: "center", fontFamily: tokens.ffMono, fontSize: 13, color: tokens.accent }} data-testid="launch-status">
                   {t("workflow:launch.in_progress")}
+                </div>
+              )}
+              {!launching && launchResult && (
+                <div style={{ marginTop: 20, textAlign: "center", fontFamily: tokens.ffMono, fontSize: 13, color: tokens.accent }} data-testid="launch-status">
+                  {t("workflow:launch.started").replace("{id}", launchResult)}
                 </div>
               )}
             </div>

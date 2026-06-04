@@ -10,6 +10,7 @@ import { onViewChange, type ViewType } from "@/lib/navigationBus";
 import SessionView from "./sessions/[sid]/SessionView";
 import LibraryView from "./sessions/[sid]/library/LibraryView";
 import WorkflowView from "./sessions/[sid]/workflows/[name]/WorkflowView";
+import DeliverablesView from "./sessions/[sid]/deliverables/DeliverablesView";
 import AdminPageContainer from "@/components/admin/AdminPageContainer";
 
 export default function ProjectLayout({ children: _children }: { children: ReactNode }) {
@@ -21,6 +22,7 @@ export default function ProjectLayout({ children: _children }: { children: React
     if (pathname.includes("/library")) return "library";
     if (pathname.includes("/workflows")) return "workflows";
     if (pathname.includes("/admin")) return "admin";
+    if (pathname.includes("/deliverables")) return "deliverables";
     return "chat";
   }, [pathname]);
 
@@ -40,6 +42,9 @@ export default function ProjectLayout({ children: _children }: { children: React
   const pidMatch = pathname.match(/\/projects\/([^/]+)/);
   const pid = pidMatch ? pidMatch[1] : "default";
 
+  const isSubpage = pathname.includes("/runs/") || pathname.includes("/preview");
+  const isChatActive = activeView === "chat" && !isSubpage;
+
   return (
     <AppShell t={t}>
       {/* Chat stays mounted across tab switches: this preserves its local state
@@ -50,12 +55,19 @@ export default function ProjectLayout({ children: _children }: { children: React
           resolves against <main>; when inactive it is fully removed from layout
           with `none`. The other views carry no ephemeral state and refetch on
           mount, so they stay conditionally mounted. */}
-      <div style={{ display: activeView === "chat" ? "contents" : "none" }}>
-        <SessionView />
+      <div style={{ display: isChatActive ? "contents" : "none" }}>
+        <SessionView active={isChatActive} />
       </div>
-      {activeView === "library" && <LibraryView />}
-      {activeView === "workflows" && <WorkflowView />}
-      {activeView === "admin" && <AdminPageContainer pid={pid || "default"} t={t} />}
+      {isSubpage ? (
+        _children
+      ) : (
+        <>
+          {activeView === "library" && <LibraryView />}
+          {activeView === "workflows" && <WorkflowView />}
+          {activeView === "deliverables" && <DeliverablesView />}
+          {activeView === "admin" && <AdminPageContainer pid={pid || "default"} t={t} />}
+        </>
+      )}
     </AppShell>
   );
 }

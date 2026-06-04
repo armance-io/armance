@@ -4,7 +4,10 @@
 > fixing a bug reported by the user during V1 convergence testing.
 > You may be smart, you may be small. Either way, **respect the rules
 > below or your patch will be rejected.**
->
+
+> [!IMPORTANT]
+> **Canonical Issues & Handoff Logs**: The canonical index of all active bugs, epic features, roadmaps, and the chronological handoff log ([convergence.md](convergence.md)) is maintained in the sibling private repository [armance-strategie](file://~/dev/armance-strategie) at `../armance-strategie/`. Before starting work on any bug or feature, check [ISSUES.md](ISSUES.md) and the latest entries in [convergence.md](convergence.md) in that repository.
+
 This file is the contract. Read it before touching code. If you don't
 understand a rule, do not "fix it your way" — flag it back to the user.
 
