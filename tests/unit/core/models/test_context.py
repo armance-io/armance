@@ -180,7 +180,6 @@ def test_load_context_max_level_filter(tmp_path: Path) -> None:
 
 
 def test_context_with_rag_returns_empty_when_no_docs(tmp_path: Path) -> None:
-    from armance.storage.rag_index import context_with_rag
 
     root = tmp_path / ".armance"
     root.mkdir()
@@ -190,7 +189,6 @@ def test_context_with_rag_returns_empty_when_no_docs(tmp_path: Path) -> None:
 
 def test_context_with_rag_returns_formatted_chunks(tmp_path: Path) -> None:
     from armance.storage.ingestion import sync_docs
-    from armance.storage.rag_index import context_with_rag
 
     root = tmp_path / ".armance"
     docs = root / "docs"

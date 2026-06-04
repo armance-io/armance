@@ -1,8 +1,6 @@
 """Tests for armance.storage.ingestion document loaders."""
 from __future__ import annotations
 
-import io
-import struct
 from pathlib import Path
 
 import pytest

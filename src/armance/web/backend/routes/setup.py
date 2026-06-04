@@ -28,6 +28,8 @@ class SetupInitIn(BaseModel):
     model: str
     budget: Literal["free-first", "low", "medium", "high", "adaptive"] = "free-first"
     language: Literal["en", "fr", "es", "de", "zh", "ja"] = "en"
+    embedding_provider: Optional[str] = None
+    embedding_model: Optional[str] = None
 
 
 @router.get("/status")
@@ -66,6 +68,10 @@ async def setup_init(
     if body.provider not in providers_dict and primary_key:
         providers_dict[body.provider] = primary_key
 
+    # Extract metadata keys (e.g. custom-openai_base_url) before iterating
+    # so only real provider names are processed.
+    custom_base_url = providers_dict.pop("custom-openai_base_url", None)
+
     providers_list = []
     for prov_name, k in providers_dict.items():
         if prov_name not in ALL_PROVIDERS:
@@ -76,6 +82,9 @@ async def setup_init(
         )
         if prov_name in _DEFAULT_BASE_URLS:
             prov.base_url = _DEFAULT_BASE_URLS[prov_name]
+        # Apply the custom base URL if it was provided for custom-openai
+        if prov_name == "custom-openai" and custom_base_url:
+            prov.base_url = custom_base_url
         providers_list.append(prov)
 
     # In case no providers keys dictionary was sent, make sure at least the primary is added
@@ -94,12 +103,16 @@ async def setup_init(
         default_model=body.model,
         budget_effort=body.budget,
         language=body.language,
+        embedding_provider=body.embedding_provider or "",
+        embedding_model=body.embedding_model or "",
     )
 
     try:
         ensure_armance_tree(app_state.armance_root.parent, cfg)
         save_config(app_state.armance_root.parent, cfg)
         write_env(app_state.armance_root.parent, providers_list)
+        from armance.providers.discovery import reset_cache
+        reset_cache()
     except Exception as exc:
         logger.exception("Failed to initialise config from setup wizard")
         raise HTTPException(status_code=500, detail=str(exc))

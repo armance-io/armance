@@ -9,7 +9,7 @@ function render(ui: ReactElement) {
   return rtlRender(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
 }
 import { ConfigForm, type ConfigValues } from "../ConfigForm";
-import { SecretsList, type SecretEntry } from "../SecretsList";
+
 import { AgentEditor, type AgentRecord } from "../AgentEditor";
 import { AdminPageContainer } from "../AdminPageContainer";
 import * as api from "@/lib/api";
@@ -32,6 +32,7 @@ vi.mock("@/lib/api", () => ({
   getAdminAgents: vi.fn(),
   patchAdminAgent: vi.fn(),
   getProviders: vi.fn(),
+  getEmbeddingModels: vi.fn(),
 }));
 
 vi.mock("@/lib/useLatestSession", () => ({
@@ -52,10 +53,6 @@ describe("<ConfigForm />", () => {
       <ConfigForm
         values={defaultValues}
         providerOptions={["openrouter", "claude-code"]}
-        modelOptionsByProvider={{
-          openrouter: ["gpt-4o", "claude-3-5"],
-          "claude-code": ["claude-3-5-sonnet"],
-        }}
         languageOptions={["en", "fr"]}
         onSave={vi.fn()}
         t={mockT}
@@ -65,7 +62,6 @@ describe("<ConfigForm />", () => {
     expect(screen.getByText("admin:config.title")).toBeDefined();
     // Provider id is shown via providerLabel (openrouter → "OpenRouter").
     expect(screen.getAllByText("OpenRouter").length).toBeGreaterThan(0);
-    expect(screen.getByDisplayValue("gpt-4o")).toBeDefined();
     expect(screen.getByDisplayValue("en")).toBeDefined();
   });
 
@@ -73,9 +69,8 @@ describe("<ConfigForm />", () => {
     const handleSave = vi.fn();
     render(
       <ConfigForm
-        values={{ ...defaultValues, default_model: "", language: "" }}
+        values={{ ...defaultValues, language: "" }}
         providerOptions={["openrouter"]}
-        modelOptionsByProvider={{ openrouter: [] }}
         languageOptions={[]}
         onSave={handleSave}
         t={mockT}
@@ -87,7 +82,7 @@ describe("<ConfigForm />", () => {
 
     expect(handleSave).not.toHaveBeenCalled();
     const errors = screen.getAllByText("admin:config.err.required");
-    expect(errors.length).toBe(2);
+    expect(errors.length).toBe(1);
   });
 
   it("calls onSave when form is submitted successfully", async () => {
@@ -96,7 +91,6 @@ describe("<ConfigForm />", () => {
       <ConfigForm
         values={defaultValues}
         providerOptions={["openrouter"]}
-        modelOptionsByProvider={{ openrouter: ["gpt-4o"] }}
         languageOptions={["en"]}
         onSave={handleSave}
         t={mockT}
@@ -116,7 +110,6 @@ describe("<ConfigForm />", () => {
       <ConfigForm
         values={defaultValues}
         providerOptions={["openrouter"]}
-        modelOptionsByProvider={{ openrouter: [] }}
         languageOptions={[]}
         onSave={vi.fn()}
         t={mockT}
@@ -126,137 +119,253 @@ describe("<ConfigForm />", () => {
     const highChip = screen.getByText("admin:config.budget.high");
     fireEvent.click(highChip);
   });
-});
 
-describe("<SecretsList />", () => {
-  const mockSecrets: SecretEntry[] = [
-    { key: "OPENROUTER_API_KEY", value: "sk-or-v1-abcdef", last4: "cdef" },
-  ];
-
-  it("renders secret key and masked value", () => {
+  it("expands a provider to show inline secrets", () => {
+    const secrets = [
+      { name: "OPENROUTER_API_KEY", value: "sk-or-abc", set: true },
+    ];
     render(
-      <SecretsList
-        secrets={mockSecrets}
-        onEdit={vi.fn()}
-        onDelete={vi.fn()}
-        onReveal={vi.fn()}
+      <ConfigForm
+        values={defaultValues}
+        providerOptions={["openrouter"]}
+        languageOptions={["en"]}
+        onSave={vi.fn()}
+        secrets={secrets}
         t={mockT}
       />
     );
 
+    // Provider row should be present with collapse arrow
+    const expandBtns = screen.getAllByText("▸");
+    expect(expandBtns.length).toBeGreaterThan(0);
+    fireEvent.click(expandBtns[0]!);
+
+    // After expanding, the secret key name should be visible
     expect(screen.getByText("OPENROUTER_API_KEY")).toBeDefined();
-    expect(screen.getByText("sk-***…cdef")).toBeDefined();
   });
 
-  it("shows empty state when no secrets provided", () => {
+  it("does not show trash icon when only one provider configured", () => {
     render(
-      <SecretsList
+      <ConfigForm
+        values={defaultValues}
+        providerOptions={["openrouter", "gemini"]}
+        languageOptions={["en"]}
+        onSave={vi.fn()}
+        t={mockT}
+      />
+    );
+
+    // With only 1 provider, the trash icon should not appear
+    const trashButtons = screen.queryAllByTitle("admin:config.delete_provider");
+    expect(trashButtons.length).toBe(0);
+  });
+
+  it("shows the add provider button when unregistered providers exist", () => {
+    render(
+      <ConfigForm
+        values={defaultValues}
+        providerOptions={["openrouter", "gemini", "claude-code"]}
+        languageOptions={["en"]}
+        onSave={vi.fn()}
+        t={mockT}
+      />
+    );
+
+    // Button to add a new provider should be visible
+    const addBtn = screen.getByText("admin:config.add_provider");
+    expect(addBtn).toBeDefined();
+    fireEvent.click(addBtn);
+
+    // The inline form should now be visible with a select
+    expect(screen.getByText("Select Provider")).toBeDefined();
+  });
+
+  it("renders claude-code provider without API key fields", () => {
+    const valuesWithClaude: ConfigValues = {
+      ...defaultValues,
+      providers: [
+        { name: "openrouter", base_url: "https://openrouter.ai" },
+        { name: "claude-code" },
+      ],
+    };
+    render(
+      <ConfigForm
+        values={valuesWithClaude}
+        providerOptions={["openrouter", "claude-code"]}
+        languageOptions={["en"]}
+        onSave={vi.fn()}
+        t={mockT}
+      />
+    );
+
+    // Expand the claude-code provider
+    const expandBtns = screen.getAllByText("▸");
+    // Claude Subscription should be second
+    fireEvent.click(expandBtns[1]!);
+
+    // Should show the subscription auth message
+    expect(screen.getByText(/No API Key required/)).toBeDefined();
+  });
+
+  it("shows trash icon when multiple providers are configured", () => {
+    const multiProvValues: ConfigValues = {
+      ...defaultValues,
+      providers: [
+        { name: "openrouter", base_url: "https://openrouter.ai" },
+        { name: "gemini" },
+      ],
+    };
+    render(
+      <ConfigForm
+        values={multiProvValues}
+        providerOptions={["openrouter", "gemini"]}
+        languageOptions={["en"]}
+        onSave={vi.fn()}
+        t={mockT}
+      />
+    );
+
+    const trashButtons = screen.queryAllByTitle("admin:config.delete_provider");
+    expect(trashButtons.length).toBe(2);
+  });
+
+  it("allows editing a secret inline and saving", async () => {
+    const secrets = [
+      { name: "OPENROUTER_API_KEY", value: "sk-or-abc", set: true },
+    ];
+    const onEditSecret = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ConfigForm
+        values={defaultValues}
+        providerOptions={["openrouter"]}
+        languageOptions={["en"]}
+        onSave={vi.fn()}
+        secrets={secrets}
+        onEditSecret={onEditSecret}
+        t={mockT}
+      />
+    );
+
+    // Expand the provider
+    fireEvent.click(screen.getAllByText("▸")[0]!);
+
+    // Click the edit button (✎)
+    const editBtns = screen.getAllByTitle("admin:secrets.action.edit");
+    fireEvent.click(editBtns[0]!);
+
+    // Save button (✓) and cancel (✕) should appear
+    expect(screen.getByTitle("admin:secrets.action.save")).toBeDefined();
+    expect(screen.getByTitle("admin:secrets.action.cancel")).toBeDefined();
+
+    // Click save
+    fireEvent.click(screen.getByTitle("admin:secrets.action.save"));
+    await waitFor(() => {
+      expect(onEditSecret).toHaveBeenCalled();
+    });
+  });
+
+  it("reveals a secret in ElegantPopup on eye icon click", async () => {
+    const secrets = [
+      { name: "OPENROUTER_API_KEY", value: "sk-or-v1-fullkey123", set: true },
+    ];
+    render(
+      <ConfigForm
+        values={defaultValues}
+        providerOptions={["openrouter"]}
+        languageOptions={["en"]}
+        onSave={vi.fn()}
+        secrets={secrets}
+        t={mockT}
+      />
+    );
+
+    // Expand the provider
+    fireEvent.click(screen.getAllByText("▸")[0]!);
+
+    // Click the reveal button
+    const revealBtns = screen.getAllByTitle("admin:secrets.action.reveal");
+    fireEvent.click(revealBtns[0]!);
+
+    // The ElegantPopup should show the full value
+    await waitFor(() => {
+      expect(screen.getByText("sk-or-v1-fullkey123")).toBeDefined();
+    });
+  });
+
+  it("adds a provider via the inline form and calls onAddProviderSecrets", async () => {
+    const onAddProviderSecrets = vi.fn().mockResolvedValue(undefined);
+    render(
+      <ConfigForm
+        values={defaultValues}
+        providerOptions={["openrouter", "gemini"]}
+        languageOptions={["en"]}
+        onSave={vi.fn()}
+        onAddProviderSecrets={onAddProviderSecrets}
+        t={mockT}
+      />
+    );
+
+    // Click "Add Provider"
+    const addBtn = screen.getByText("admin:config.add_provider");
+    fireEvent.click(addBtn);
+
+    // Select Gemini from the dropdown
+    const select = screen.getAllByRole("combobox")[0]!;
+    fireEvent.change(select, { target: { value: "gemini" } });
+
+    // Click the "+ Add Provider" submit button
+    const submitBtn = screen.getByText("+ Add Provider");
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(onAddProviderSecrets).toHaveBeenCalled();
+    });
+  });
+
+  it("cancel button in edit mode returns to display mode", () => {
+    const secrets = [
+      { name: "OPENROUTER_API_KEY", value: "sk-or-abc", set: true },
+    ];
+    render(
+      <ConfigForm
+        values={defaultValues}
+        providerOptions={["openrouter"]}
+        languageOptions={["en"]}
+        onSave={vi.fn()}
+        secrets={secrets}
+        t={mockT}
+      />
+    );
+
+    // Expand and enter edit mode
+    fireEvent.click(screen.getAllByText("▸")[0]!);
+    fireEvent.click(screen.getAllByTitle("admin:secrets.action.edit")[0]!);
+
+    // Click cancel
+    fireEvent.click(screen.getByTitle("admin:secrets.action.cancel"));
+
+    // Should be back to display mode — edit buttons visible again
+    expect(screen.getAllByTitle("admin:secrets.action.edit").length).toBeGreaterThan(0);
+  });
+
+  it("shows placeholder for unconfigured secret", () => {
+    // Secrets array is empty — the provider has no configured API key
+    render(
+      <ConfigForm
+        values={defaultValues}
+        providerOptions={["openrouter"]}
+        languageOptions={["en"]}
+        onSave={vi.fn()}
         secrets={[]}
-        onEdit={vi.fn()}
-        onDelete={vi.fn()}
-        onReveal={vi.fn()}
         t={mockT}
       />
     );
 
-    expect(screen.getByText("admin:secrets.empty")).toBeDefined();
-  });
+    // Expand the provider
+    fireEvent.click(screen.getAllByText("▸")[0]!);
 
-  it("allows revealing value on click toggle", async () => {
-    const handleReveal = vi.fn().mockResolvedValue("sk-or-v1-abcdef");
-    render(
-      <SecretsList
-        secrets={mockSecrets}
-        onEdit={vi.fn()}
-        onDelete={vi.fn()}
-        onReveal={handleReveal}
-        t={mockT}
-      />
-    );
-
-    const revealBtn = screen.getByLabelText("admin:secrets.action.reveal");
-    
-    fireEvent.click(revealBtn);
-    await waitFor(() => {
-      expect(handleReveal).toHaveBeenCalledWith("OPENROUTER_API_KEY");
-      expect(screen.getByText("sk-or-v1-abcdef")).toBeDefined();
-    });
-
-    fireEvent.click(revealBtn);
-    expect(screen.queryByText("sk-or-v1-abcdef")).toBeNull();
-  });
-
-  it("allows initiating edit and saving new value", async () => {
-    const handleEdit = vi.fn().mockResolvedValue(undefined);
-    render(
-      <SecretsList
-        secrets={mockSecrets}
-        onEdit={handleEdit}
-        onDelete={vi.fn()}
-        onReveal={vi.fn()}
-        t={mockT}
-      />
-    );
-
-    const editBtn = screen.getByLabelText("admin:secrets.action.edit");
-    fireEvent.click(editBtn);
-
-    const input = screen.getByRole("textbox");
-    fireEvent.change(input, { target: { value: "new-value-key" } });
-
-    const saveBtn = screen.getByLabelText("admin:secrets.action.save");
-    fireEvent.click(saveBtn);
-
-    await waitFor(() => {
-      expect(handleEdit).toHaveBeenCalledWith("OPENROUTER_API_KEY", "new-value-key");
-    });
-  });
-
-  it("allows cancelling editing", () => {
-    render(
-      <SecretsList
-        secrets={mockSecrets}
-        onEdit={vi.fn()}
-        onDelete={vi.fn()}
-        onReveal={vi.fn()}
-        t={mockT}
-      />
-    );
-
-    const editBtn = screen.getByLabelText("admin:secrets.action.edit");
-    fireEvent.click(editBtn);
-
-    expect(screen.getByRole("textbox")).toBeDefined();
-
-    const cancelBtn = screen.getByLabelText("admin:secrets.action.cancel");
-    fireEvent.click(cancelBtn);
-
-    expect(screen.queryByRole("textbox")).toBeNull();
-  });
-
-  it("opens delete confirm modal and executes delete on confirm", async () => {
-    const handleDelete = vi.fn().mockResolvedValue(undefined);
-    render(
-      <SecretsList
-        secrets={mockSecrets}
-        onEdit={vi.fn()}
-        onDelete={handleDelete}
-        onReveal={vi.fn()}
-        t={mockT}
-      />
-    );
-
-    const deleteBtn = screen.getByLabelText("admin:secrets.action.delete");
-    fireEvent.click(deleteBtn);
-
-    expect(screen.getByText("admin:secrets.confirm_delete")).toBeDefined();
-
-    const confirmBtn = screen.getByText("admin:secrets.action.delete");
-    fireEvent.click(confirmBtn);
-
-    await waitFor(() => {
-      expect(handleDelete).toHaveBeenCalledWith("OPENROUTER_API_KEY");
-    });
+    // Should show "(not configured)" placeholder
+    expect(screen.getByText("(not configured)")).toBeDefined();
   });
 });
 
@@ -272,6 +381,7 @@ describe("<AgentEditor />", () => {
       model: "gpt-4o",
       reasoning: "low",
       supportsReasoning: true,
+      staff: false,
     },
   ];
 
@@ -326,7 +436,7 @@ describe("<AdminPageContainer />", () => {
     log_level: "info",
   };
 
-  const mockSecretsList = [
+  const mockSecrets = [
     { name: "API_KEY_1", value: "sk-abcdef", set: true },
   ];
 
@@ -363,7 +473,7 @@ describe("<AdminPageContainer />", () => {
   beforeEach(() => {
     vi.mocked(api.getAdminConfig).mockResolvedValue(mockConfig);
     vi.mocked(api.patchAdminConfig).mockResolvedValue(mockConfig);
-    vi.mocked(api.getAdminSecrets).mockResolvedValue(mockSecretsList);
+    vi.mocked(api.getAdminSecrets).mockResolvedValue(mockSecrets);
     vi.mocked(api.putAdminSecret).mockResolvedValue({ name: "NEW", set: true });
     vi.mocked(api.deleteAdminSecret).mockResolvedValue({ deleted: true });
     vi.mocked(api.getAdminLogs).mockResolvedValue(mockLogs);
@@ -371,6 +481,7 @@ describe("<AdminPageContainer />", () => {
     vi.mocked(api.getAdminStats).mockResolvedValue(mockStats);
     vi.mocked(api.getAdminAgents).mockResolvedValue(mockAgents);
     vi.mocked(api.getProviders).mockResolvedValue(mockProviderCatalogue);
+    vi.mocked(api.getEmbeddingModels).mockResolvedValue({ models: [] });
   });
 
   it("switches tabs and fetches corresponding backend data", async () => {
@@ -381,29 +492,21 @@ describe("<AdminPageContainer />", () => {
       expect(api.getAdminConfig).toHaveBeenCalledWith("default");
     });
 
-    // 1. Secrets Tab
-    const secretsTabBtn = screen.getByRole("tab", { name: "admin:tabs.secrets" });
-    fireEvent.click(secretsTabBtn);
-    await waitFor(() => {
-      expect(api.getAdminSecrets).toHaveBeenCalledWith("default");
-    });
-    expect(screen.getByText("API_KEY_1")).toBeDefined();
-
-    // 2. Logs Tab
+    // 1. Logs Tab
     const logsTabBtn = screen.getByRole("tab", { name: "admin:tabs.logs" });
     fireEvent.click(logsTabBtn);
     await waitFor(() => {
       expect(api.getAdminLogs).toHaveBeenCalledWith("default", { limit: 50 });
     });
 
-    // 3. Stats Tab
+    // 2. Stats Tab
     const statsTabBtn = screen.getByRole("tab", { name: "admin:tabs.stats" });
     fireEvent.click(statsTabBtn);
     await waitFor(() => {
       expect(api.getAdminStats).toHaveBeenCalledWith("default");
     });
 
-    // 4. Agents Tab
+    // 3. Agents Tab
     const agentsTabBtn = screen.getByRole("tab", { name: "admin:tabs.agents" });
     fireEvent.click(agentsTabBtn);
     await waitFor(() => {
@@ -411,38 +514,12 @@ describe("<AdminPageContainer />", () => {
     });
   });
 
-  it("handles loopback only 403 error gracefully in Secrets tab", async () => {
-    vi.mocked(api.getAdminSecrets).mockRejectedValue({ status: 403 });
+  it("loads secrets alongside config on the Config tab", async () => {
     render(<AdminPageContainer pid="default" t={mockT} />);
 
-    const secretsTabBtn = screen.getByRole("tab", { name: "admin:tabs.secrets" });
-    fireEvent.click(secretsTabBtn);
-
+    // The Config tab is default — it should fetch secrets as part of its mount.
     await waitFor(() => {
-      expect(screen.getByText("admin:secrets.localhost_only")).toBeDefined();
-    });
-  });
-
-  it("handles offline state gracefully in Secrets tab", async () => {
-    // Simulate non-loopback window hostname and navigator.onLine as false
-    Object.defineProperty(window, "location", {
-      value: { hostname: "app.armance.io" },
-      writable: true,
-      configurable: true,
-    });
-    Object.defineProperty(navigator, "onLine", {
-      value: false,
-      writable: true,
-      configurable: true,
-    });
-
-    render(<AdminPageContainer pid="default" t={mockT} />);
-
-    const secretsTabBtn = screen.getByRole("tab", { name: "admin:tabs.secrets" });
-    fireEvent.click(secretsTabBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText("admin:secrets.offline")).toBeDefined();
+      expect(api.getAdminSecrets).toHaveBeenCalled();
     });
   });
 });

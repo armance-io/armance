@@ -5,18 +5,15 @@ import { useTranslation } from "react-i18next";
 import { Fleuron } from "@/components/visual/Fleuron";
 import { ThemeToggle } from "@/components/visual/ThemeToggle";
 import {
-  getProviders,
   initSetup,
   createSession,
+  getProviders,
+  getEmbeddingModels,
+  type EmbeddingModel,
   type SetupInitIn,
 } from "@/lib/api";
-
-interface SetupModel {
-  id: string;
-  display_name?: string;
-  context_window?: number;
-  tier: string;
-}
+import { EMBEDDING_PROVIDERS } from "@/lib/embeddingProviders";
+import { providerLabel } from "@/lib/providerLabels";
 
 const PROVIDERS = [
   {
@@ -28,6 +25,19 @@ const PROVIDERS = [
     fallbackModels: [
       { id: "gemini-2.5-flash", display_name: "Gemini 2.5 Flash", context_window: 1000000, tier: "low" },
       { id: "gemini-2.5-pro", display_name: "Gemini 2.5 Pro", context_window: 2000000, tier: "medium" },
+    ],
+  },
+  {
+    id: "claude-code",
+    name: "Claude Subscription",
+    description: "Anthropic Claude Pro/Max subscription model via claude-agent-sdk. No API Key required.",
+    envName: "",
+    placeholder: "",
+    requiresKey: false,
+    fallbackModels: [
+      { id: "claude-opus-4-7", display_name: "Claude Opus 4.7", context_window: 200000, tier: "high" },
+      { id: "claude-sonnet-4-6", display_name: "Claude Sonnet 4.6", context_window: 200000, tier: "medium" },
+      { id: "claude-haiku-4-5", display_name: "Claude Haiku 4.5", context_window: 200000, tier: "low" },
     ],
   },
   {
@@ -92,8 +102,38 @@ const LANGUAGES = [
   { id: "ja" as const, label: "日本語", emoji: "🇯🇵" },
 ];
 
-// Patterns that identify non-text chat models (audio, vision, embedding) matching backend discovery patterns
-const NON_TEXT_PATTERNS = /(ocr|vision|audio|tts|speech|whisper|embed|image|video|multimodal|diffus|sdxl|dall-e|guard|moderat)/i;
+// Soft cost-tier pill (DESIGN.md: muted gems, no saturated colours).
+const TIER_COLOURS: Record<string, string> = {
+  free: "hsl(120, 15%, 45%)",
+  low: "hsl(160, 18%, 42%)",
+  medium: "hsl(35, 30%, 45%)",
+  high: "hsl(0, 28%, 50%)",
+};
+
+function TierBadge({ tier, t }: { tier: string; t: (k: string) => string }) {
+  const colour = TIER_COLOURS[tier];
+  if (!colour) return null;
+  return (
+    <span
+      style={{
+        fontSize: "9px",
+        textTransform: "uppercase",
+        letterSpacing: "0.06em",
+        fontFamily: "var(--ff-mono)",
+        fontWeight: 600,
+        color: colour,
+        border: `1px solid ${colour}`,
+        borderRadius: "3px",
+        padding: "1px 5px",
+        background: `color-mix(in srgb, ${colour} 10%, transparent)`,
+      }}
+    >
+      {t(`setup:tier.${tier}`)}
+    </span>
+  );
+}
+
+
 
 export default function SetupPage() {
   const { t, i18n } = useTranslation();
@@ -108,10 +148,69 @@ export default function SetupPage() {
   const [budget, setBudget] = useState<SetupInitIn["budget"]>("medium");
 
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
-  const [discoveredModels, setDiscoveredModels] = useState<Record<string, SetupModel[]>>({});
-  const [loadingModels, setLoadingModels] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  // Live model catalogue per provider, discovered from the provider APIs.
+  // OpenRouter enumerates keyless, so its full list shows even before keys
+  // are saved — this is what fixes the "only a handful of models" bug. The
+  // curated fallbackModels stay as seeds for providers that can't enumerate
+  // keyless (Gemini, Claude) and are merged (deduped) below.
+  const [liveModels, setLiveModels] = useState<Record<string, Array<{ id: string; display_name: string; tier: string }>>>({});
+
+  // Optional embedding model for the library (step 3). Free-text + type-ahead.
+  const [embeddingModel, setEmbeddingModel] = useState("");
+  const [embeddingProvider, setEmbeddingProvider] = useState("");
+  const [embeddingOptions, setEmbeddingOptions] = useState<EmbeddingModel[]>([]);
+
+  // Embedding-capable providers among those selected at step 2. claude-code
+  // has no embeddings endpoint, so it is excluded.
+  const embeddingProviderChoices = selectedProviders.filter((p) =>
+    (EMBEDDING_PROVIDERS as readonly string[]).includes(p),
+  );
+  // Keep the chosen embedding provider within the available set.
+  useEffect(() => {
+    if (embeddingProviderChoices.length === 0) return;
+    if (!embeddingProviderChoices.includes(embeddingProvider)) {
+      setEmbeddingProvider(embeddingProviderChoices[0] ?? "");
+    }
+  }, [embeddingProviderChoices, embeddingProvider]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getEmbeddingModels()
+      .then((res) => {
+        if (!cancelled) setEmbeddingOptions(res.models ?? []);
+      })
+      .catch(() => {
+        /* best-effort — free-text still works */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getProviders()
+      .then((res) => {
+        if (cancelled) return;
+        const provs = (res.providers ?? {}) as Record<string, Array<{ id?: string; display_name?: string; tier?: string }>>;
+        const mapped: Record<string, Array<{ id: string; display_name: string; tier: string }>> = {};
+        for (const [name, models] of Object.entries(provs)) {
+          mapped[name] = models
+            .map((m) => ({ id: m.id ?? "", display_name: m.display_name || m.id || "", tier: m.tier || "" }))
+            .filter((m) => m.id);
+        }
+        setLiveModels(mapped);
+      })
+      .catch(() => {
+        /* keep fallbackModels only — discovery is best-effort */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Sync language with i18n
   const handleLanguageChange = (lang: SetupInitIn["language"]) => {
@@ -139,25 +238,6 @@ export default function SetupPage() {
     setErrorMsg("");
   }, [primaryProvider]);
 
-  // Fetch model catalogs when reaching the Model Selection step (Step 4)
-  useEffect(() => {
-    if (step === 4) {
-      setLoadingModels(true);
-      getProviders()
-        .then((cat) => {
-          if (cat && cat.providers) {
-            setDiscoveredModels(cat.providers as unknown as Record<string, SetupModel[]>);
-          }
-        })
-        .catch((err) => {
-          console.error("Failed to load live catalogues", err);
-        })
-        .finally(() => {
-          setLoadingModels(false);
-        });
-    }
-  }, [step]);
-
   const handleProviderToggle = (provId: string) => {
     if (selectedProviders.includes(provId)) {
       if (selectedProviders.length > 1) {
@@ -168,22 +248,12 @@ export default function SetupPage() {
     }
   };
 
-  const getFilteredActiveModels = () => {
-    const liveList = discoveredModels[primaryProvider];
-    const listToFilter = (liveList && liveList.length > 0) 
-      ? liveList 
-      : (PROVIDERS.find((p) => p.id === primaryProvider)?.fallbackModels || []);
-      
-    // strictly exclude audio, video, embeddings, image models
-    return listToFilter.filter((m) => !NON_TEXT_PATTERNS.test(m.id));
-  };
-
   const handleNext = () => {
     if (step === 2) {
       // Validate that all selected providers requiring keys have keys input
       const missingKey = selectedProviders.find((pId) => {
         const p = PROVIDERS.find((prov) => prov.id === pId);
-        return p && p.id !== "custom-openai" && !(apiKeys[pId] || "").trim();
+        return p && p.requiresKey !== false && p.id !== "custom-openai" && !(apiKeys[pId] || "").trim();
       });
       if (missingKey) {
         setErrorMsg("API Key is required for " + PROVIDERS.find((p) => p.id === missingKey)?.name);
@@ -199,19 +269,62 @@ export default function SetupPage() {
     setStep((s) => Math.max(s - 1, 1));
   };
 
+  const getModelOptions = () => {
+    const opts: Array<{ id: string; display_name: string; provider: string; tier: string }> = [];
+    const seen = new Set<string>();
+    const push = (id: string, display_name: string, provider: string, tier: string) => {
+      if (!id || seen.has(id)) return;
+      seen.add(id);
+      opts.push({ id, display_name, provider, tier });
+    };
+    selectedProviders.forEach((pId) => {
+      // Live catalogue first (full OpenRouter list), then curated seeds.
+      (liveModels[pId] ?? []).forEach((m) => push(m.id, m.display_name, pId, m.tier));
+      const p = PROVIDERS.find((prov) => prov.id === pId);
+      p?.fallbackModels?.forEach((m) => push(m.id, m.display_name, pId, m.tier ?? ""));
+    });
+    if (selectedProviders.includes("custom-openai")) {
+      push("gpt-4o", "Local/Custom default (gpt-4o)", "custom-openai", "");
+    }
+    return opts;
+  };
+
+  // Sync model option when selected providers change
+  useEffect(() => {
+    const opts = getModelOptions();
+    if (opts.length > 0 && opts[0] && !opts.some((o) => o.id === model)) {
+      setModel(opts[0].id);
+      setPrimaryProvider(opts[0].provider);
+    }
+  }, [selectedProviders, liveModels]);
+
   const handleFinish = async () => {
     setSubmitting(true);
     setErrorMsg("");
     try {
+      const keysPayload: Record<string, string> = {};
+      selectedProviders.forEach((pId) => {
+        keysPayload[pId] = apiKeys[pId] || "";
+      });
+
+      // Special case: include custom base url in keysPayload if configured
+      if (selectedProviders.includes("custom-openai") && baseUrl) {
+        keysPayload["custom-openai_base_url"] = baseUrl;
+      }
+
       const payload: SetupInitIn = {
         provider: primaryProvider,
-        providers_keys: apiKeys,
+        providers_keys: keysPayload,
         model,
         budget,
         language,
       };
       if (apiKeys[primaryProvider] && apiKeys[primaryProvider].trim()) {
         payload.api_key = apiKeys[primaryProvider].trim();
+      }
+      if (embeddingModel.trim()) {
+        payload.embedding_model = embeddingModel.trim();
+        payload.embedding_provider = embeddingProvider || embeddingProviderChoices[0] || "";
       }
 
       await initSetup(payload);
@@ -227,26 +340,7 @@ export default function SetupPage() {
     }
   };
 
-  const getGemStyle = (tier: string): CSSProperties => {
-    switch (tier) {
-      case "free":
-        return { background: "var(--ink-soft, #5b5145)", color: "var(--bg-paper-card)" };
-      case "low":
-        return { background: "rgba(33, 150, 243, 0.15)", color: "#2196f3" };
-      case "medium":
-        return { background: "rgba(156, 39, 176, 0.15)", color: "#9c27b0" };
-      case "high":
-        return { background: "rgba(255, 87, 34, 0.15)", color: "#ff5722" };
-      default:
-        return { background: "var(--accent)", color: "var(--bg-paper)" };
-    }
-  };
 
-  const formatContextWindow = (ctx: number) => {
-    if (!ctx) return "N/A";
-    if (ctx >= 1000000) return `${ctx / 1000000}M tokens`;
-    return `${ctx / 1000}k tokens`;
-  };
 
   // Styles
   const containerStyle: CSSProperties = {
@@ -512,12 +606,27 @@ export default function SetupPage() {
               })}
             </div>
 
-            {/* API Keys and Custom URL inputs vertically list for each selected provider */}
             <div style={{ maxHeight: "200px", overflowY: "auto", paddingRight: "4px" }}>
               {selectedProviders.map((pId) => {
                 const p = PROVIDERS.find((prov) => prov.id === pId);
                 if (!p) return null;
+                const requiresKey = p.requiresKey !== false;
                 const showKey = showKeys[pId] || false;
+
+                if (!requiresKey) {
+                  return (
+                    <div key={pId} style={{ marginTop: "16px", padding: "14px", border: "1px solid var(--rule-soft)", borderRadius: "6px", background: "var(--bg-paper)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: "11px", fontWeight: 600, textTransform: "uppercase", color: "var(--accent)" }}>
+                          {p.name}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: "11px", color: "var(--ink-soft)", marginTop: "6px", marginBottom: 0 }}>
+                        Uses subscription auth via local CLI tools. No API Key required.
+                      </p>
+                    </div>
+                  );
+                }
 
                 return (
                   <div key={pId} style={{ marginTop: "16px", padding: "14px", border: "1px solid var(--rule-soft)", borderRadius: "6px", background: "var(--bg-paper)" }}>
@@ -577,8 +686,131 @@ export default function SetupPage() {
           </div>
         )}
 
-        {/* Step 3: Budget selection */}
+        {/* Step 3: Model selection */}
         {step === 3 && (
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <h3 style={formLabel}>{t("setup:step_model")}</h3>
+            <p style={{ fontSize: "12px", color: "var(--ink-soft)", marginBottom: "14px" }}>
+              {t("setup:model_hint")}
+            </p>
+
+            {/* Free-type model id with typeahead over the discovered catalogue. */}
+            <input
+              list="setup-model-list"
+              value={model}
+              onChange={(e) => {
+                const v = e.target.value;
+                setModel(v);
+                const match = getModelOptions().find((o) => o.id === v);
+                if (match) setPrimaryProvider(match.provider);
+              }}
+              placeholder={t("setup:model_placeholder")}
+              style={{ ...inputStyle, marginBottom: "14px" }}
+            />
+            <datalist id="setup-model-list">
+              {getModelOptions().map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.display_name}
+                </option>
+              ))}
+            </datalist>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "10px",
+                maxHeight: "280px",
+                overflowY: "auto",
+                paddingRight: "4px",
+              }}
+            >
+              {getModelOptions().map((m) => {
+                const selected = model === m.id;
+                return (
+                  <div
+                    key={m.id}
+                    onClick={() => {
+                      setModel(m.id);
+                      setPrimaryProvider(m.provider);
+                    }}
+                    style={{
+                      padding: "12px 16px",
+                      borderRadius: "6px",
+                      border: `1.5px solid ${selected ? "var(--accent)" : "var(--rule-soft)"}`,
+                      background: selected ? "var(--bg-paper)" : "var(--bg-paper-card)",
+                      cursor: "pointer",
+                      transition: "border-color 0.2s, background 0.2s",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                      <span style={{ fontWeight: 600, fontSize: "13px" }}>{m.display_name}</span>
+                      <span style={{ fontSize: "10px", color: "var(--ink-faint)", fontFamily: "var(--ff-mono)" }}>
+                        {m.id}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      {m.tier && <TierBadge tier={m.tier} t={t} />}
+                      <span style={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--accent)", fontWeight: 600, fontFamily: "var(--ff-mono)" }}>
+                        {PROVIDERS.find((p) => p.id === m.provider)?.name}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Optional: embedding model for the library. Provider picked from
+                the step-2 selection; model is a free-text field with type-ahead
+                over the detected embedding catalogue for that provider. */}
+            {embeddingProviderChoices.length > 0 && (
+              <div style={{ marginTop: "20px" }}>
+                <label style={{ ...formLabel, marginBottom: "6px" }}>
+                  {t("setup:embedding_label")}
+                </label>
+                <p style={{ fontSize: "11px", color: "var(--ink-soft)", marginBottom: "8px" }}>
+                  {t("setup:embedding_hint")}
+                </p>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <select
+                    value={embeddingProvider || embeddingProviderChoices[0]}
+                    onChange={(e) => {
+                      setEmbeddingProvider(e.target.value);
+                      setEmbeddingModel("");
+                    }}
+                    style={{ ...inputStyle, flex: "0 0 42%", cursor: "pointer" }}
+                  >
+                    {embeddingProviderChoices.map((p) => (
+                      <option key={p} value={p}>{providerLabel(p)}</option>
+                    ))}
+                  </select>
+                  <input
+                    list="setup-embedding-list"
+                    value={embeddingModel}
+                    onChange={(e) => setEmbeddingModel(e.target.value)}
+                    placeholder={t("setup:embedding_placeholder")}
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                </div>
+                <datalist id="setup-embedding-list">
+                  {embeddingOptions
+                    .filter((m) => m.provider === (embeddingProvider || embeddingProviderChoices[0]))
+                    .map((m) => (
+                      <option key={`${m.provider}:${m.id}`} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                </datalist>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Step 4: Budget selection */}
+        {step === 4 && (
           <div style={{ display: "flex", flexDirection: "column" }}>
             <h3 style={formLabel}>{t("setup:step_budget")}</h3>
             <div
@@ -633,141 +865,6 @@ export default function SetupPage() {
                 );
               })}
             </div>
-          </div>
-        )}
-
-        {/* Step 4: Model selection with Primary Default selector */}
-        {step === 4 && (
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <h3 style={formLabel}>{t("setup:step_model")}</h3>
-            
-            {/* If multiple providers are configured, let them select the default primary one */}
-            {selectedProviders.length > 1 && (
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ ...formLabel, fontSize: "10px", display: "block", marginBottom: "6px" }}>
-                  Primary Default Provider
-                </label>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  {selectedProviders.map((pId) => {
-                    const p = PROVIDERS.find((prov) => prov.id === pId);
-                    if (!p) return null;
-                    const isPrimary = primaryProvider === pId;
-                    return (
-                      <button
-                        key={pId}
-                        type="button"
-                        onClick={() => setPrimaryProvider(pId)}
-                        style={{
-                          padding: "6px 12px",
-                          borderRadius: "4px",
-                          border: `1.5px solid ${isPrimary ? "var(--accent)" : "var(--rule-soft)"}`,
-                          background: isPrimary ? "var(--accent)" : "transparent",
-                          color: isPrimary ? "var(--bg-paper)" : "var(--ink-soft)",
-                          fontSize: "12px",
-                          fontWeight: 500,
-                          cursor: "pointer",
-                        }}
-                      >
-                        {p.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {primaryProvider === "custom-openai" ? (
-              <div style={{ marginBottom: "20px" }}>
-                <p style={{ fontSize: "13px", color: "var(--ink-soft)", marginBottom: "12px" }}>
-                  Type the exact model identifier exposed by your custom endpoint:
-                </p>
-                <input
-                  type="text"
-                  value={model}
-                  onChange={(e) => setModel(e.target.value)}
-                  style={inputStyle}
-                  placeholder="e.g. Llama-3, Qwen-2.5-Coder"
-                />
-              </div>
-            ) : loadingModels ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px" }}>
-                <div
-                  style={{
-                    width: "24px",
-                    height: "24px",
-                    border: "2px solid var(--rule-soft)",
-                    borderTop: "2px solid var(--accent)",
-                    borderRadius: "50%",
-                    animation: "armance-spin 0.8s linear infinite",
-                    marginBottom: "12px",
-                  }}
-                />
-                <span style={{ fontSize: "13px", color: "var(--ink-soft)" }}>
-                  Discovering provider catalogue...
-                </span>
-              </div>
-            ) : (
-              <div
-                style={{
-                  maxHeight: "220px",
-                  overflowY: "auto",
-                  border: "1px solid var(--rule-soft)",
-                  borderRadius: "6px",
-                  background: "var(--bg-paper)",
-                  padding: "6px",
-                  marginBottom: "20px",
-                }}
-              >
-                {getFilteredActiveModels().map((m) => {
-                  const selected = model === m.id;
-                  return (
-                    <div
-                      key={m.id}
-                      onClick={() => setModel(m.id)}
-                      style={{
-                        padding: "10px 14px",
-                        borderRadius: "4px",
-                        background: selected ? "var(--bg-paper-deep)" : "transparent",
-                        borderLeft: `3px solid ${selected ? "var(--accent)" : "transparent"}`,
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        transition: "background 0.2s",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      <div style={{ display: "flex", flexDirection: "column" }}>
-                        <span style={{ fontSize: "13px", fontWeight: 600 }}>
-                          {m.display_name || m.id}
-                        </span>
-                        <span style={{ fontSize: "11px", color: "var(--ink-soft)", fontFamily: "var(--ff-mono)" }}>
-                          {m.id}
-                        </span>
-                      </div>
-                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                        {m.context_window && (
-                          <span style={{ fontSize: "10px", color: "var(--ink-faint)" }}>
-                            {formatContextWindow(m.context_window)}
-                          </span>
-                        )}
-                        <span
-                          style={{
-                            fontSize: "10px",
-                            padding: "2px 6px",
-                            borderRadius: "4px",
-                            fontWeight: 500,
-                            ...getGemStyle(m.tier),
-                          }}
-                        >
-                          {m.tier}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
           </div>
         )}
 

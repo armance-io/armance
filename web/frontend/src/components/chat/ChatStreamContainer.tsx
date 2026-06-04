@@ -2,7 +2,7 @@
 
 import { type FC, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { submitTurn, getSession, getMessages } from "@/lib/api";
 import { useEventStream, type SseEvent } from "@/lib/sse";
@@ -47,6 +47,7 @@ interface AgentInfo {
 
 export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, active = true }) => {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<Message[]>([]);
   const [busy, setBusy] = useState<BusyAgent | null>(null);
   const [sending, setSending] = useState(false);
@@ -108,14 +109,29 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, ac
   // Mirror the active agent to the sidebar bus so the L2 row highlights.
   useEffect(() => { publishCurrentAgent(currentAgent); }, [currentAgent]);
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom on new messages AND when the thinking spinner
+  // appears/disappears — the spinner sits below the scroll area and shrinks
+  // it, which would otherwise clip the bottom of the just-sent message.
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [messages]);
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+      // Scroll again after transition completes to prevent overlap/clipping
+      const t = setTimeout(() => {
+        el.scrollTop = el.scrollHeight;
+      }, 210);
+      return () => clearTimeout(t);
+    }
+  }, [messages, busy]);
 
   const handleEvent = useCallback((evt: SseEvent) => {
     const attrs = (evt.data["attributes"] as Record<string, unknown> | undefined) ?? {};
+
+    // Refresh the roster when Malik recruits new specialists
+    if (evt.name === "agents.proposed") {
+      void queryClient.invalidateQueries({ queryKey: ["session", pid, sid] });
+      return;
+    }
 
     // Thinking is shown ONLY by the BottomSpinner (outside the input). No
     // placeholder MessageBubble, no in-input busy bar — the full reply lands
@@ -141,11 +157,19 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, ac
     if (evt.name === "turn.completed") {
       const reply = String(attrs["reply"] ?? "");
       const agent = String(attrs["agent"] ?? "Armance");
-      setCurrentAgent((prev) => {
+
+      // Invalidate session query if the agent is unknown (e.g. newly recruited)
+      const known = agents.some((a) => a.first_name === agent || a.name === agent);
+      if (!known && agent !== "system") {
+        void queryClient.invalidateQueries({ queryKey: ["session", pid, sid] });
+      }
+
+      setCurrentAgent((_prev) => {
         const agentInfo = agents.find(
           (a) => a.first_name === agent || a.name === agent,
         );
-        const next = agentInfo?.name ?? prev;
+        // Fall back to agent name (e.g. specialist name) if not found in stale agents roster
+        const next = agentInfo?.name ?? agent;
         publishCurrentAgent(next);
         return next;
       });
@@ -194,7 +218,7 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, ac
         },
       ]);
     }
-  }, [nextId, t, agents]);
+  }, [nextId, t, agents, queryClient, pid, sid]);
 
   useEventStream(pid, sid, handleEvent);
 
@@ -240,15 +264,17 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, ac
         },
       ]);
       try {
-        // The backend switch is fire-and-forget: the 202 response confirms
-        // the turn was enqueued; the turn.completed SSE event will unlock
-        // sending via setSending(false).
+        // The switch is lightweight (no streamed reply). The separator is
+        // already shown locally, so unlock the input as soon as the POST
+        // returns instead of waiting for the turn.completed SSE ack — a
+        // switch to the already-current agent produces no ack, which left the
+        // input frozen "every other click".
         await submitTurn(pid, sid, `@${firstName}`);
       } catch (err) {
         console.error("Failed to switch agent:", err);
+      } finally {
+        setSending(false);
       }
-      // Don't setSending(false) here — wait for turn.completed SSE event.
-      // The safety timer (60 s) armed by startSending guarantees unlock.
     },
     [pid, sid, agents, nextId, t, startSending],
   );
@@ -325,18 +351,22 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, ac
         {messages.length === 0 ? (
           <EmptySession t={t} />
         ) : (
-          messages.map((m) => (
-            <MessageBubble
-              key={m.id}
-              role={m.role}
-              agentName={m.agentName}
-              agentColour={m.agentColour}
-              markdown={m.markdown}
-              timestamp={m.timestamp}
-              streaming={m.streaming}
-              t={t}
-            />
-          ))
+          <>
+            {messages.map((m) => (
+              <MessageBubble
+                key={m.id}
+                role={m.role}
+                agentName={m.agentName}
+                agentColour={m.agentColour}
+                markdown={m.markdown}
+                timestamp={m.timestamp}
+                streaming={m.streaming}
+                t={t}
+              />
+            ))}
+            {/* Spacer to prevent overlap/clipping by the BottomSpinner */}
+            <div style={{ height: busy ? "36px" : "0px", transition: "height 200ms ease" }} />
+          </>
         )}
       </div>
       <BottomSpinner busy={bottom} t={t} />

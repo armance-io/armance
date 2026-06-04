@@ -17,14 +17,48 @@ export interface MessageBubbleProps {
 
 function isSwitchMessage(markdown: string): boolean {
   if (!markdown) return false;
-  const lc = markdown.toLowerCase();
-  return ["votre interlocuteur", "your interlocutor", "gesprächspartner", "su interlocutor", "対話相手", "您的对话者", "basculé sur", "switched to", "gewechselt", "cambiado a", "切り替えました", "已切换到"].some(kw => lc.includes(kw));
+  const lc = markdown.toLowerCase().trim();
+  // Check if it starts with OK prefix or is a direct switch confirmation
+  const isMatch = [
+    "ok — basculé sur",
+    "ok - basculé sur",
+    "ok — switched to",
+    "ok - switched to",
+    "basculé sur l'agent",
+    "switched to agent",
+    "votre interlocuteur",
+    "your interlocutor",
+    "gesprächspartner",
+    "su interlocutor",
+    "対話相手",
+    "您的对话者",
+  ].some(kw => lc.startsWith(kw));
+  return isMatch;
 }
 
 function formatSwitchMessage(markdown: string, t: (k: string) => string): string {
   if (!markdown) return markdown;
   const lc = markdown.toLowerCase();
-  if (["votre interlocuteur", "your interlocutor", "gesprächspartner", "su interlocutor", "対話相手", "您的对话者"].some(kw => lc.includes(kw))) return markdown;
+
+  if (["votre interlocuteur", "your interlocutor", "gesprächspartner", "su interlocutor", "対話相手", "您的对话者"].some(kw => lc.includes(kw))) {
+    return markdown;
+  }
+
+  // Try to parse the name dynamically
+  // Supports:
+  // "OK - basculé sur Aisha · woodworker. A vous"
+  // "OK — basculé sur Aisha. À vous."
+  // "OK — switched to Aisha. Go ahead."
+  // "OK — switched to Aisha."
+  const match = markdown.match(/(?:basculé sur|switched to)\s+([^.·\n]+)/i);
+  if (match && match[1]) {
+    const name = match[1].trim();
+    if (name) {
+      return t("chat:agents.switched").replace("{name}", name);
+    }
+  }
+
+  // Fallback to legacy behavior if regex fails
   const names = ["Malik", "Kim", "Serge", "Mona", "Armance"];
   const matched = names.find(name => markdown.includes(name));
   return matched ? t("chat:agents.switched").replace("{name}", matched) : markdown;
@@ -123,7 +157,7 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
   };
 
   const proseStyle: CSSProperties = {
-    fontFamily: "var(--ff-sans, 'Inter', sans-serif)", fontSize: "13px", lineHeight: 1.55, color: "var(--ink, #2a2520)",
+    fontFamily: "var(--ff-sans, 'Inter', sans-serif)", fontSize: "12.5px", lineHeight: 1.55, color: "var(--ink, #2a2520)",
   };
 
   const footerStyle: CSSProperties = {
@@ -131,22 +165,27 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
   };
 
   const timeStyle: CSSProperties = {
-    fontFamily: "var(--ff-mono, 'JetBrains Mono', monospace)", fontSize: "9px", color: "var(--ink-faint, #9c8e7e)",
+    fontFamily: "var(--ff-mono, 'JetBrains Mono', monospace)", fontSize: "8.5px", color: "var(--ink-faint, #9c8e7e)", opacity: 0.7,
   };
 
   const copyBtnStyle: CSSProperties = {
-    display: "flex", alignItems: "center", justifyContent: "center", width: "18px", height: "18px",
+    display: "flex", alignItems: "center", justifyContent: "center", width: "14px", height: "14px",
     padding: 0, border: "none", borderRadius: "3px", background: "transparent",
     color: copied ? "var(--accent, #6b4f8a)" : "var(--ink-faint, #9c8e7e)",
-    cursor: "pointer", transition: "color 0.15s ease, background 0.15s ease", flexShrink: 0,
+    cursor: "pointer", transition: "color 0.15s ease, opacity 0.15s ease", flexShrink: 0,
   };
 
   const formatTimestamp = (ts: string): string => {
     try {
       const d = new Date(ts);
       if (isNaN(d.getTime())) return ts;
-      const pad = (n: number) => String(n).padStart(2, "0");
-      return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} · ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      const locale = typeof window !== "undefined" ? window.navigator.language : undefined;
+      return d.toLocaleString(locale, {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
     } catch {
       return ts;
     }
@@ -165,7 +204,8 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
         .msg-bubble-prose a { color: var(--accent, #6b4f8a); text-decoration: underline; }
         .msg-bubble-prose ul, .msg-bubble-prose ol { margin: 4px 0 8px; padding-left: 20px; }
         .msg-bubble-prose li { margin: 2px 0; }
-        .prose-copy-btn:hover { background: var(--bg-paper-deep, #e8dfcd) !important; color: var(--accent, #6b4f8a) !important; }
+        .prose-copy-btn { opacity: 0.5; }
+        .prose-copy-btn:hover { background: var(--bg-paper-deep, #e8dfcd) !important; color: var(--accent, #6b4f8a) !important; opacity: 1 !important; }
         @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
       `}</style>
 
@@ -204,13 +244,13 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
                 title={copied ? t("chat:copy.done") : t("chat:copy.label")}
               >
                 {copied ? (
-                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M2.5 7.5l3 3 6-7" />
                   </svg>
                 ) : (
-                  <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <rect x="5" y="5" width="8" height="8" rx="1" />
-                    <path d="M3 11V3a1 1 0 0 1 1-1h8" />
+                  <svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="1" y="1" width="8" height="8" rx="1" />
+                    <rect x="4" y="4" width="8" height="8" rx="1" fill={isAgent ? "var(--bg-paper-card, #faf6ef)" : "color-mix(in srgb, var(--accent) 7%, var(--bg-paper-deep, #e8dfcd))"} />
                   </svg>
                 )}
               </button>

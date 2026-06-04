@@ -1,11 +1,11 @@
 "use client";
 
-import { type CSSProperties, type FC, useEffect, useState } from "react";
+import { type CSSProperties, type FC, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLatestSession } from "@/lib/useLatestSession";
-import { getAdminAgents, getLibrary } from "@/lib/api";
-import { emitMention } from "@/lib/mentionBus";
+import { getAdminAgents, getLibrary, listWorkflows } from "@/lib/api";
+import { useEventStream, type SseEvent } from "@/lib/sse";
 import { requestAgentSwitch, useCurrentAgent, useBusyAgent } from "@/lib/agentBus";
 import { tokens } from "../_shared/armance-tokens";
 import { PulseDot } from "../_shared/PulseDot";
@@ -35,10 +35,23 @@ function usePersistedOpen(key: string, fallback: boolean): [boolean, () => void]
 export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
   const { pid, sid } = useLatestSession();
   const [activeView, setActiveView] = useState<ViewType>("chat");
+  // Which workflow is open (from the URL), so its sidebar sub-link highlights
+  // instead of the parent "Workflows" entry.
+  const [activeWorkflow, setActiveWorkflow] = useState<string>("");
+
+  const readWorkflowFromPath = () => {
+    if (typeof window === "undefined") return "";
+    const segs = window.location.pathname.split("/").filter(Boolean);
+    const i = segs.indexOf("workflows");
+    const n = i >= 0 ? segs[i + 1] : "";
+    return n && n !== "_" ? decodeURIComponent(n) : "";
+  };
 
   useEffect(() => {
+    setActiveWorkflow(readWorkflowFromPath());
     return onViewChange((v) => {
       setActiveView(v);
+      setActiveWorkflow(v === "workflows" ? readWorkflowFromPath() : "");
     });
   }, []);
 
@@ -48,11 +61,23 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
   const currentAgent = useCurrentAgent();
   const busyAgent = useBusyAgent();
 
+  const queryClient = useQueryClient();
+
   const { data: agents = [] } = useQuery({
     queryKey: ["sidebar-agents", pid, sid],
     enabled: Boolean(pid && sid),
     queryFn: () => getAdminAgents(pid, sid as string).catch(() => []),
   });
+
+  // Refresh the roster when Malik recruits — otherwise the sidebar only
+  // updated on a full page reload. The backend emits `agents.proposed` once
+  // the specialist files are written.
+  const handleSse = useCallback((evt: SseEvent) => {
+    if (evt.name === "agents.proposed") {
+      void queryClient.invalidateQueries({ queryKey: ["sidebar-agents", pid, sid] });
+    }
+  }, [queryClient, pid, sid]);
+  useEventStream(pid, sid || "", handleSse);
 
   const staff = agents.filter((a) => a.staff);
   const specialists = agents.filter((a) => !a.staff);
@@ -63,6 +88,17 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
     refetchInterval: 4000,
     queryFn: () => getLibrary(pid, sid as string).catch(() => null),
   });
+
+  // Designed workflows, listed under the Workflows section as shortcuts to
+  // their visualization. Polled so a freshly designed workflow appears
+  // without a reload (no dedicated workflow-created event exists).
+  const { data: workflowsData } = useQuery({
+    queryKey: ["sidebar-workflows", pid, sid],
+    enabled: Boolean(pid && sid),
+    refetchInterval: 4000,
+    queryFn: () => listWorkflows(pid, sid as string).catch(() => null),
+  });
+  const workflows = workflowsData?.workflows ?? [];
 
   const onConversation = activeView === "chat";
 
@@ -127,8 +163,17 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
     requestAgentSwitch(firstName);
   };
 
+  // Open a specific workflow's visualization (mirrors WorkflowsList nav).
+  const openWorkflow = (e: React.MouseEvent, name: string) => {
+    e.preventDefault();
+    if (!sid) return;
+    window.history.pushState(null, "", sessionPath(`/workflows/${encodeURIComponent(name)}`));
+    setActiveWorkflow(name);
+    emitViewChange("workflows");
+  };
+
   const agentRow = (a: { name: string; slug?: string; role: string; model?: string }, isStaff: boolean) => {
-    const active = isStaff && (currentAgent === (a.slug ?? a.name) || currentAgent === a.name);
+    const active = currentAgent === (a.slug ?? a.name) || currentAgent === a.name;
     const thinking = busyAgent === a.name;
     const reachable = Boolean(a.model);
     const agentColour = assignAgentColour(a.name);
@@ -140,8 +185,11 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
       <button
         key={a.slug ?? a.name}
         style={{ ...link(active), display: "flex", alignItems: "center", gap: 8, background: active ? undefined : "none", border: "none", width: "100%" }}
-        onClick={() => (isStaff ? onAgentClick(a.name) : emitMention(a.name))}
-        title={isStaff ? t("sidebar:staff.switch_hint") : t("sidebar:staff.mention_hint")}
+        // Both staff and specialists switch the conversation (with the
+        // "Your interlocutor: X" separator) — clicking a specialist used to
+        // only drop an @mention into the input.
+        onClick={() => onAgentClick(a.name)}
+        title={t("sidebar:staff.switch_hint")}
         aria-pressed={active}
       >
         <PulseDot size={8} color={discColour} active={thinking} />
@@ -177,7 +225,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
       {/* 2 · Staff — permanent team; click = switch + go to conversation */}
       <button style={collapsibleHeader} onClick={toggleStaff} aria-expanded={staffOpen}>
         <span>{t("sidebar:section.staff")}</span>
-        <span aria-hidden="true" style={{ fontSize: "14px", fontWeight: "bold", display: "inline-block" }}>{staffOpen ? "▾" : "▸"}</span>
+        <span aria-hidden="true" style={{ fontSize: "18px", fontWeight: "bold", display: "inline-flex", alignItems: "center", transform: "translateY(-2px)" }}>{staffOpen ? "▾" : "▸"}</span>
       </button>
       {staffOpen && (
         <nav style={navContainer}>
@@ -195,7 +243,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
         <>
           <button style={collapsibleHeader} onClick={toggleRoles} aria-expanded={rolesOpen}>
             <span>{t("sidebar:section.roles")}</span>
-            <span aria-hidden="true" style={{ fontSize: "14px", fontWeight: "bold", display: "inline-block" }}>{rolesOpen ? "▾" : "▸"}</span>
+            <span aria-hidden="true" style={{ fontSize: "18px", fontWeight: "bold", display: "inline-flex", alignItems: "center", transform: "translateY(-2px)" }}>{rolesOpen ? "▾" : "▸"}</span>
           </button>
           {rolesOpen && (
             <nav style={navContainer}>
@@ -210,17 +258,43 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
       <nav style={navContainer}>
         <Link
           href={sid ? sessionPath("/workflows/_") : "#"}
-          style={link(isTabActive("workflows"))}
+          // Parent highlights only on the workflows index (no specific workflow).
+          style={link(isTabActive("workflows") && !activeWorkflow)}
           onClick={(e) => {
             if (!sid) {
               e.preventDefault();
               return;
             }
+            setActiveWorkflow("");
             handleNav(e, sessionPath("/workflows/_"), "workflows");
           }}
         >
           {t("sidebar:tabs.workflows")}
         </Link>
+        {workflows.map((w) => {
+          const wfActive = isTabActive("workflows") && activeWorkflow === w.name;
+          return (
+            <a
+              key={w.name}
+              href={sid ? sessionPath(`/workflows/${encodeURIComponent(w.name)}`) : "#"}
+              onClick={(e) => openWorkflow(e, w.name)}
+              data-testid={`sidebar-workflow-${w.name}`}
+              title={w.scope || w.name}
+              aria-current={wfActive ? "page" : undefined}
+              style={{
+                ...link(wfActive),
+                paddingLeft: 28,
+                fontSize: "12px",
+                color: wfActive ? tokens.accent : tokens.inkSoft,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {w.name}
+            </a>
+          );
+        })}
       </nav>
 
       {/* 5 · Admin */}

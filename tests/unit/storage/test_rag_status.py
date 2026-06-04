@@ -5,7 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from armance.storage.rag_status import get_rag_status, format_rag_status_markdown
+from armance.storage.rag_status import (
+    get_rag_status,
+    format_rag_status_markdown,
+    has_indexed_chunks,
+)
 
 
 @pytest.fixture()
@@ -15,6 +19,11 @@ def armance_root(tmp_path: Path) -> Path:
     (root / "docs").mkdir()
     (root / "vector").mkdir()
     return root
+
+
+def test_has_indexed_chunks_false_when_no_db(armance_root: Path) -> None:
+    # No vector DB / no chunks → False (so RAG retrieval is skipped, no embed).
+    assert has_indexed_chunks(armance_root) is False
 
 
 def test_empty_docs(armance_root: Path) -> None:

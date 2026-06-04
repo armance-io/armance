@@ -4,7 +4,6 @@ Spec: docs/spec/19_claim_ledger.md § TUI surfacing
 """
 from __future__ import annotations
 
-import pytest
 
 from armance.client.tui.widgets.workflow_view import (
     render_dag_ascii,

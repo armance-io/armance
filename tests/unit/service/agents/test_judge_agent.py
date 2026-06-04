@@ -6,14 +6,12 @@ Recommendation refs claims, unsourced in dedicated block, verdicts persisted.
 """
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from armance.config import Config
-from armance.core.models.agent import Agent
 from armance.service.claim_ledger_service import ClaimLedgerService
 from armance.service.agents.judge_agent import JudgeAgent, Synthesis
 

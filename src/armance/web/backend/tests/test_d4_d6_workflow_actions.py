@@ -25,23 +25,69 @@ def _seed_workflow(armance_root: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_run_accepts_mode_and_returns_run_id(
+async def test_run_launches_in_background_and_returns_immediately(
     client: AsyncClient, armance_root: Path
 ) -> None:
+    import asyncio
+
     cr = await client.post("/projects/default/sessions")
     sid = cr.json()["id"]
     _seed_workflow(armance_root)
+
+    dispatched = asyncio.Event()
+
+    async def _fake_dispatch(ws, name, mode):  # noqa: ANN001
+        dispatched.set()
+        return {"ack": True, "run_id": "run-X"}
+
     with patch(
         "armance.web.backend.routes.workflows._dispatch_run",
-        new=AsyncMock(return_value={"ack": True, "run_id": "run-X"}),
+        new=_fake_dispatch,
     ):
         resp = await client.post(
             f"/projects/default/sessions/{sid}/workflows/wf/run",
             json={"mode": "interactive"},
         )
-    assert resp.status_code == 202
-    body = resp.json()
-    assert body["run_id"] == "run-X"
+        # Returns immediately (run executes in the background).
+        assert resp.status_code == 202
+        body = resp.json()
+        assert body["started"] is True
+        assert body["run_id"] == ""
+        # The background dispatch actually fired.
+        await asyncio.wait_for(dispatched.wait(), timeout=2.0)
+
+
+@pytest.mark.asyncio
+async def test_run_refuses_concurrent_run(
+    client: AsyncClient, armance_root: Path
+) -> None:
+    import asyncio
+
+    cr = await client.post("/projects/default/sessions")
+    sid = cr.json()["id"]
+    _seed_workflow(armance_root)
+
+    release = asyncio.Event()
+
+    async def _slow_dispatch(ws, name, mode):  # noqa: ANN001
+        await release.wait()
+        return {"ack": True, "run_id": "run-X"}
+
+    with patch(
+        "armance.web.backend.routes.workflows._dispatch_run",
+        new=_slow_dispatch,
+    ):
+        first = await client.post(
+            f"/projects/default/sessions/{sid}/workflows/wf/run",
+            json={"mode": "interactive"},
+        )
+        assert first.status_code == 202
+        second = await client.post(
+            f"/projects/default/sessions/{sid}/workflows/wf/run",
+            json={"mode": "interactive"},
+        )
+        assert second.status_code == 409
+        release.set()
 
 
 @pytest.mark.asyncio
