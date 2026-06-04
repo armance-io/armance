@@ -70,10 +70,12 @@ def _load_aliases() -> dict[tuple[str, str], tuple[str, str]]:
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _mean(v: _ValueOrRange) -> float:
+def _bounds(v: _ValueOrRange) -> tuple[float, float, float]:
+    """Return (min, mid, max). Scalars collapse to three equal values."""
     if isinstance(v, RangeValue):
-        return (v.min + v.max) / 2
-    return float(v)
+        return (float(v.min), (v.min + v.max) / 2, float(v.max))
+    f = float(v)
+    return (f, f, f)
 
 
 def _build_footprint(
@@ -140,15 +142,23 @@ def _build_footprint(
         ttft=deployment_ttft if active_params is None else None,
     )
 
+    e_min, e_mid, e_max = _bounds(impacts.energy.value)
+    g_min, g_mid, g_max = _bounds(impacts.gwp.value)
+    w_min, w_mid, w_max = _bounds(impacts.wcf.value)
+    emb_mid = _bounds(impacts.embodied.gwp.value)[1]
+
     return Footprint(
-        energy_wh=_mean(impacts.energy.value) * 1_000,
-        gco2e=_mean(impacts.gwp.value) * 1_000,
-        water_ml=_mean(impacts.wcf.value) * 1_000,
-        embodied_gco2e=_mean(impacts.embodied.gwp.value) * 1_000,
+        energy_wh=e_mid * 1_000,
+        gco2e=g_mid * 1_000,
+        water_ml=w_mid * 1_000,
+        embodied_gco2e=emb_mid * 1_000,
         estimate=estimate,
         tier=tier,
         proxy_model=proxy_model,
         zone=zone,
+        energy_wh_min=e_min * 1_000, energy_wh_max=e_max * 1_000,
+        gco2e_min=g_min * 1_000, gco2e_max=g_max * 1_000,
+        water_ml_min=w_min * 1_000, water_ml_max=w_max * 1_000,
     )
 
 

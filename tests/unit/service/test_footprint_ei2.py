@@ -318,3 +318,29 @@ class TestAliasTableIntegrity:
         assert result.estimate is False
         assert result.proxy_model is None
         assert result.gco2e > 0.0
+
+
+# ---------------------------------------------------------------------------
+# Task A2 — RangeValue bounds preserved (min/max, not collapsed to mean)
+# ---------------------------------------------------------------------------
+
+class TestRangePreserved:
+    def test_moe_model_yields_distinct_bounds(self) -> None:
+        # A registry MoE model returns RangeValue impacts → min < mid < max.
+        # claude-sonnet-4-6 is aliased AND has RangeValue params (active=[44..132]).
+        from armance.service.footprint import estimate_footprint
+        fp = estimate_footprint(
+            "openrouter", "anthropic/claude-sonnet-4-6",
+            tokens_out=600, latency_s=4.0, zone="WOR",
+        )
+        assert fp is not None
+        # Must populate bounds for a MoE/RangeValue model — not None.
+        assert fp.gco2e_min is not None, "gco2e_min should be set for a RangeValue model"
+        assert fp.gco2e_max is not None, "gco2e_max should be set for a RangeValue model"
+        assert fp.gco2e_min <= fp.gco2e <= fp.gco2e_max
+        # midpoint is the legacy scalar (totalisation API unchanged)
+        assert abs(fp.gco2e - (fp.gco2e_min + fp.gco2e_max) / 2) < 1e-6
+        if fp.energy_wh_min is not None and fp.energy_wh_max is not None:
+            assert fp.energy_wh_min <= fp.energy_wh <= fp.energy_wh_max
+        if fp.water_ml_min is not None and fp.water_ml_max is not None:
+            assert fp.water_ml_min <= fp.water_ml <= fp.water_ml_max
