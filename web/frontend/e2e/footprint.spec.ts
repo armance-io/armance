@@ -160,7 +160,7 @@ test.describe("EI.8 — Footprint chip + Empreinte admin tab", () => {
     async ({ page }) => {
       await page.goto(ADMIN_URL);
       await page.getByRole("tab", { name: /empreinte/i }).click();
-      await page.getByRole("button", { name: /méthode/i }).click();
+      await page.getByRole("button", { name: /méthode|method/i }).click();
       await expect(page.getByTestId("methode-panel")).toContainText("EcoLogits");
       await expect(page.getByTestId("methode-panel")).toContainText("ISO 14044");
     },
