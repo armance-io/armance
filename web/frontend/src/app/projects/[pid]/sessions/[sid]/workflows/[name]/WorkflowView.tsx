@@ -43,12 +43,15 @@ export default function WorkflowView() {
 
   const activeRunId = activeData?.active?.run_id;
   const [launching, setLaunching] = useState(false);
+  const [launchResult, setLaunchResult] = useState<string | null>(null);
 
   const handleLaunch = async (mode: "interactive" | "autonomous", depth: "quick" | "deep") => {
     setLaunching(true);
+    setLaunchResult(null);
     try {
       const result = await launchWorkflow(pid, sid, workflowName, { mode, depth });
       toast(t("workflow:launch.started").replace("{id}", result.run_id), "success");
+      setLaunchResult(result.run_id);
       refetchActive();
     } catch {
       toast(t("workflow:launch.error"), "error");
@@ -92,7 +95,7 @@ export default function WorkflowView() {
   return (
     <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
         {/* Centre */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 24, padding: `${tokens.tabPadY} ${tokens.tabPadX}`, overflow: "auto" }}>
+        <aside style={{ flex: 1, display: "flex", flexDirection: "column", gap: 24, padding: `${tokens.tabPadY} ${tokens.tabPadX}`, overflow: "auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h3 style={heading}>{workflowName}</h3>
             {activeRunId && (
@@ -106,7 +109,7 @@ export default function WorkflowView() {
           </section>
 
           <WorkflowGraphContainer pid={pid} sid={sid} workflowName={workflowName} runId={activeRunId} />
-        </div>
+        </aside>
 
         {/* Right panel */}
         <div style={{ width: 420, height: "100%", borderLeft: `1px solid ${tokens.rule}`, display: "flex", flexDirection: "column", overflow: "auto" }}>
@@ -118,6 +121,11 @@ export default function WorkflowView() {
               {launching && (
                 <div style={{ marginTop: 20, textAlign: "center", fontFamily: tokens.ffMono, fontSize: 13, color: tokens.accent }} data-testid="launch-status">
                   {t("workflow:launch.in_progress")}
+                </div>
+              )}
+              {!launching && launchResult && (
+                <div style={{ marginTop: 20, textAlign: "center", fontFamily: tokens.ffMono, fontSize: 13, color: tokens.accent }} data-testid="launch-status">
+                  {t("workflow:launch.started").replace("{id}", launchResult)}
                 </div>
               )}
             </div>

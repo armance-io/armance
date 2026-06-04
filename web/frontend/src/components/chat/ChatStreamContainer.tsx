@@ -34,6 +34,7 @@ interface BusyAgent {
 export interface ChatStreamContainerProps {
   pid: string;
   sid: string;
+  active?: boolean;
 }
 
 interface AgentInfo {
@@ -44,7 +45,7 @@ interface AgentInfo {
 
 /* ─── Main container ────────────────────────────────────────────────────────── */
 
-export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) => {
+export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, active = true }) => {
   const { t } = useTranslation();
   const [messages, setMessages] = useState<Message[]>([]);
   const [busy, setBusy] = useState<BusyAgent | null>(null);
@@ -313,6 +314,8 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid }) 
     () => (busy === null ? null : { name: busy.name, colour: busy.colour }),
     [busy],
   );
+
+  if (!active) return null;
 
   return (
     <section style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
