@@ -1,11 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export interface SseEvent {
   name: string;
   data: Record<string, unknown>;
 }
+
+// All named SSE event types emitted by the backend.
+const SSE_EVENT_NAMES = [
+  "turn.completed",
+  "turn.error",
+  "agent.streaming.started",
+  "agent.streaming",
+  "agent.streaming.end",
+  "checkpoint.requested",
+  "checkpoint.resolved",
+  "workflow.step_started",
+  "workflow.step_completed",
+  "workflow.completed",
+] as const;
 
 export function useEventStream(
   pid: string,
@@ -15,27 +29,45 @@ export function useEventStream(
   const [connected, setConnected] = useState(false);
   const [lastEvent, setLastEvent] = useState<SseEvent | null>(null);
 
+  // Keep the latest callback in a ref so the EventSource is NOT torn down and
+  // recreated whenever onEvent's identity changes (e.g. once `agents` loads).
+  // A reconnect mid-turn used to drop turn.completed → the input stayed stuck.
+  const cbRef = useRef(onEvent);
+  cbRef.current = onEvent;
+
   useEffect(() => {
     if (!sid) return;
     const url = `/api/projects/${pid}/sessions/${sid}/events`;
     const source = new EventSource(url, { withCredentials: true });
     source.onopen = () => setConnected(true);
     source.onerror = () => setConnected(false);
-    source.onmessage = (msg) => {
+
+    function handleRaw(msg: MessageEvent) {
       try {
-        const parsed = JSON.parse(msg.data) as Record<string, unknown>;
+        const parsed = JSON.parse(msg.data as string) as Record<string, unknown>;
         const evt: SseEvent = {
           name: String(parsed.name ?? "message"),
           data: parsed,
         };
         setLastEvent(evt);
-        onEvent?.(evt);
+        cbRef.current?.(evt);
       } catch {
         /* malformed payload — ignore */
       }
+    }
+
+    for (const name of SSE_EVENT_NAMES) {
+      source.addEventListener(name, handleRaw);
+    }
+    source.onmessage = handleRaw;
+
+    return () => {
+      for (const name of SSE_EVENT_NAMES) {
+        source.removeEventListener(name, handleRaw);
+      }
+      source.close();
     };
-    return () => source.close();
-  }, [pid, sid, onEvent]);
+  }, [pid, sid]);
 
   return { connected, lastEvent };
 }

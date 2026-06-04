@@ -5,6 +5,7 @@ import {
 } from "react";
 import { DeliverableReader } from "@/components/library/DeliverableReader";
 import { ArgumentLedger } from "@/components/run/ArgumentLedger";
+import { SourceList } from "@/components/run/SourceList";
 import { HypothesisList } from "@/components/hypotheses/HypothesisList";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
@@ -30,7 +31,7 @@ interface Argument {
 
 interface Source {
   id: string;
-  kind: string;
+  kind: "doc" | "user_msg" | "web";
   ref: string;
   label: string;
 }
@@ -178,6 +179,24 @@ export const LivePanel: FC<LivePanelProps> = ({
   downloads,
   t,
 }) => {
+  const [highlightedSourceId, setHighlightedSourceId] = useState<string | null>(null);
+
+  const handleSourceClick = (sourceId: string) => {
+    const element = document.getElementById(`source-row-${sourceId}`);
+    if (element) {
+      const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      element.scrollIntoView({
+        behavior: prefersReduced ? "auto" : "smooth",
+        block: "nearest",
+      });
+
+      setHighlightedSourceId(sourceId);
+      setTimeout(() => {
+        setHighlightedSourceId(null);
+      }, 600);
+    }
+  };
+
   const sourcesById = Object.fromEntries(
     sources.map((s) => [s.id, { kind: s.kind, ref: s.ref, label: s.label }]),
   );
@@ -229,31 +248,7 @@ export const LivePanel: FC<LivePanelProps> = ({
     transition: "background 120ms ease, border-color 120ms ease",
   };
 
-  const sourceRowStyle: CSSProperties = {
-    display: "flex",
-    flexDirection: "column",
-    gap: "6px",
-  };
-
-  const sourceItemStyle: CSSProperties = {
-    fontFamily: "var(--ff-sans, 'Inter', sans-serif)",
-    fontSize: "13px",
-    color: "var(--ink-soft, #5b5145)",
-    padding: "6px 0",
-    borderBottom: "1px solid var(--rule-soft, #e8dfcd)",
-    display: "flex",
-    gap: "8px",
-    alignItems: "baseline",
-  };
-
-  const sourceKindStyle: CSSProperties = {
-    fontFamily: "var(--ff-mono, 'JetBrains Mono', monospace)",
-    fontSize: "10px",
-    letterSpacing: "0.06em",
-    textTransform: "uppercase",
-    color: "var(--ink-faint, #9c8e7e)",
-    flexShrink: 0,
-  };
+  // Removed unused inline source list styles
 
   return (
     <div style={rootStyle}>
@@ -292,7 +287,7 @@ export const LivePanel: FC<LivePanelProps> = ({
         <ArgumentLedger
           arguments={args}
           sourcesById={sourcesById}
-          onClickSource={() => {}}
+          onClickSource={handleSourceClick}
           t={t}
         />
       </Section>
@@ -301,14 +296,12 @@ export const LivePanel: FC<LivePanelProps> = ({
 
       {/* 4. Sources */}
       <Section title={t("run:panel.sources")}>
-        <div style={sourceRowStyle}>
-          {sources.map((s) => (
-            <div key={s.id} style={sourceItemStyle}>
-              <span style={sourceKindStyle}>{s.kind}</span>
-              <span>{s.label}</span>
-            </div>
-          ))}
-        </div>
+        <SourceList
+          sources={sources}
+          onClickSource={(src) => handleSourceClick(src.id)}
+          highlightedId={highlightedSourceId}
+          t={t}
+        />
       </Section>
 
       <Fleuron />

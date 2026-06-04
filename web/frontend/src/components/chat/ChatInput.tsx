@@ -8,14 +8,14 @@ import {
   type KeyboardEvent,
   type ChangeEvent,
 } from "react";
+import { onMention } from "@/lib/mentionBus";
+import { onPrefill } from "@/lib/prefillBus";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
 export interface ChatInputProps {
   placeholder: string;
   disabled?: boolean;
-  busyAgentName?: string;
-  busyAgentColour?: string;
   onSubmit: (text: string) => void;
   t: (key: string) => string;
 }
@@ -25,15 +25,13 @@ export interface ChatInputProps {
 export const ChatInput: FC<ChatInputProps> = ({
   placeholder,
   disabled = false,
-  busyAgentName,
-  busyAgentColour,
   onSubmit,
   t,
 }) => {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const isBusy = !!busyAgentName;
+  // Thinking is shown only by the BottomSpinner, never inside the input.
   const canSend = value.trim().length > 0 && !disabled;
 
   /* Auto-grow textarea */
@@ -49,11 +47,23 @@ export const ChatInput: FC<ChatInputProps> = ({
     if (!canSend) return;
     onSubmit(value.trim());
     setValue("");
+    setTimeout(() => {
+      textareaRef.current?.focus();
+    }, 10);
   }, [canSend, onSubmit, value]);
+
+  // Re-focus the input once it becomes enabled again (e.g. after agent thinking)
+  useEffect(() => {
+    if (!disabled) {
+      textareaRef.current?.focus();
+    }
+  }, [disabled]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      // Enter sends; Shift+Enter inserts a newline (so ``` fences, inline
+      // `code`, and "- bullet" lists are easy to type over multiple lines).
+      if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         handleSubmit();
       }
@@ -63,6 +73,25 @@ export const ChatInput: FC<ChatInputProps> = ({
 
   const handleChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
     setValue(e.target.value);
+  }, []);
+
+  /* Sidebar Staff click → inject `@Agent ` and focus, no navigation. */
+  useEffect(() => {
+    return onMention((mention) => {
+      setValue((prev) => {
+        const sep = prev && !prev.endsWith(" ") ? " " : "";
+        return `${prev}${sep}${mention}`;
+      });
+      textareaRef.current?.focus();
+    });
+  }, []);
+
+  /* Prefill suggestion text */
+  useEffect(() => {
+    return onPrefill((text) => {
+      setValue(text);
+      textareaRef.current?.focus();
+    });
   }, []);
 
   /* ── Styles ── */
@@ -75,29 +104,12 @@ export const ChatInput: FC<ChatInputProps> = ({
     padding: "0",
   };
 
-  const busyBarStyle: CSSProperties = {
-    display: isBusy ? "flex" : "none",
-    alignItems: "center",
-    gap: "8px",
-    padding: "6px 16px",
-    fontFamily: "var(--ff-sans, 'Inter', sans-serif)",
-    fontSize: "13px",
-    fontStyle: "italic",
-    color: "var(--ink-soft, #5b5145)",
-  };
 
-  const busyDotStyle: CSSProperties = {
-    width: "6px",
-    height: "6px",
-    borderRadius: "999px",
-    background: busyAgentColour ?? "var(--accent, #6b4f8a)",
-    animation: "chatinput-pulse 1.4s ease-in-out infinite",
-    flexShrink: 0,
-  };
-
+  // BUG-08: send button vertically centred with the input; wrapper background
+  // matches the page (rootStyle uses --bg-paper), no contrasting box.
   const inputRowStyle: CSSProperties = {
     display: "flex",
-    alignItems: "flex-end",
+    alignItems: "center",
     gap: "10px",
     padding: "10px 16px 14px",
   };
@@ -149,16 +161,6 @@ export const ChatInput: FC<ChatInputProps> = ({
           * { animation: none !important; transition: none !important; }
         }
       `}</style>
-
-      <div style={busyBarStyle} aria-live="polite">
-        <span style={busyDotStyle} aria-hidden="true" />
-        <span>
-          {t("chat:input.busy_label").replace(
-            "{name}",
-            busyAgentName ?? "",
-          )}
-        </span>
-      </div>
 
       <div style={inputRowStyle}>
         <textarea

@@ -30,27 +30,27 @@ logger = logging.getLogger(__name__)
 
 # System agents: stem -> (display_name, role_title)
 # Personas (figés):
-#   Armance — host (cultured butler, welcomes/orients user, never recruits himself)
-#   Malik  — recruiter (drafts and recruits diverse roles)
-#   Kim    — operator (workflow/process owner)
-#   Mona   — vice-president (user's right-hand, strategic challenger, synthesises)
-#   Serge  — criticalist (red-teams Mona's syntheses, sighs first)
+#   Armance — weaver (tisserande, frames projects, weaves tempo)
+#   Malik  — scout (dénicheur, recruits diverse specialist panels)
+#   Kim    — conductor (orchestratrice, orchestrates process/workflows)
+#   Mona   — distiller (distillatrice, bridges vision/production, extracts quintessence)
+#   Serge  — critic (critique, stress-tests syntheses)
 SYSTEM_AGENT_PERSONAS: dict[str, tuple[str, str]] = {
-    "system-context":      ("Armance", "host"),
-    "system-hr":           ("Malik",   "recruiter"),
-    "system-orchestrator": ("Kim",     "operator"),
-    "system-judge":        ("Mona",    "vice-president"),
-    "system-challenger":   ("Serge",   "criticalist"),
+    "system-context":      ("Armance", "weaver"),
+    "system-hr":           ("Malik",   "scout"),
+    "system-orchestrator": ("Kim",     "conductor"),
+    "system-judge":        ("Mona",    "distiller"),
+    "system-challenger":   ("Serge",   "critic"),
 }
 
 # All meta-agent display ids (used by sidebar to show Hosts & Staff section)
 META_AGENTS: list[tuple[str, str, str]] = [
     # (canonical_name, first_name, title)
-    ("system-context",      "Armance", "host"),
-    ("system-hr",           "Malik",   "recruiter"),
-    ("system-orchestrator", "Kim",     "operator"),
-    ("system-judge",        "Mona",    "vice-president"),
-    ("system-challenger",   "Serge",   "criticalist"),
+    ("system-context",      "Armance", "weaver"),
+    ("system-hr",           "Malik",   "scout"),
+    ("system-orchestrator", "Kim",     "conductor"),
+    ("system-judge",        "Mona",    "distiller"),
+    ("system-challenger",   "Serge",   "critic"),
 ]
 
 # First-names reserved for permanent staff — user agents cannot use these.

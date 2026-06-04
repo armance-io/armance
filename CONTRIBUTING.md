@@ -197,6 +197,23 @@ issue, summarise the trade-off you considered.
 
 ---
 
+## Releasing (bundling the web UI)
+
+The static web UI (`src/armance/web_dist/`) is a **build artifact** and is
+gitignored. A plain `uv build` or `pip install git+…` therefore produces an
+**API-only** wheel. Release wheels (the ones published to PyPI) must bundle
+the UI so `pip install armance && armance web` serves it with Python only:
+
+```bash
+scripts/build_release.sh        # pnpm build → web_dist → uv build → verify
+```
+
+This needs Node + pnpm on the build machine (CI), never on the user's. The
+script fails loudly if the bundle is missing from the resulting wheel.
+Publish the `dist/*.whl` and `dist/*.tar.gz` it produces.
+
+---
+
 ## Reporting bugs
 
 Open a GitHub issue with:

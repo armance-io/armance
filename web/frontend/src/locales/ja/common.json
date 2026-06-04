@@ -1,1 +1,164 @@
-{}
+{
+  "visual": {
+    "empty": {
+      "workflow": {
+        "cta": "ワークフローを開始"
+      },
+      "session": {
+        "cta": "新規セッション"
+      },
+      "deliberation": {
+        "title": "データがありません",
+        "hint": "統計データを収集するには討議を開始してください。"
+      }
+    },
+    "metrics": {
+      "co2e_aria": "カーボンフットプリント (gCO₂e)",
+      "water_aria": "ウォーターフットプリント (mL)",
+      "tokens_in_aria": "入力トークン",
+      "tokens_out_aria": "出力トークン",
+      "model_aria": "使用中のモデル（選択中のエージェント）"
+    }
+  },
+  "checkpoint": {
+    "drawer": {
+      "submitted_title": "回答が記録されました",
+      "submitted_desc": "回答が正常に保存されました。"
+    }
+  },
+  "sidebar": {
+    "nav_section": {
+      "workspace": "ワークスペース",
+      "account": "アカウント"
+    },
+    "tabs": {
+      "session_active": "現在のセッション",
+      "settings": "設定",
+      "workflows": "ワークフロー"
+    },
+    "section": {
+      "staff": "チーム",
+      "library": "ライブラリ",
+      "roles": "ロールとエージェント"
+    },
+    "staff": {
+      "empty": "専門家はまだいません",
+      "mention_hint": "メッセージにメンションを挿入",
+      "switch_hint": "このエージェントに切替"
+    },
+    "library": {
+      "docs": "ドキュメント",
+      "feuillets": "スリップ",
+      "subtitle": "{docs} 文書 · {feuillets} スリップ",
+      "inactive": "無効 — 埋め込みモデルなし"
+    }
+  },
+  "admin": {
+    "config": {
+      "budget": {
+        "free-first": "無料優先",
+        "low": "低",
+        "medium": "中",
+        "high": "高"
+      },
+      "providers": "構成されたプロバイダー",
+      "default": "デフォルト"
+    },
+    "logs": {
+      "level_changed_title": "ログレベルが更新されました",
+      "level_changed_desc": "ログレベルが {level} に変更されました。",
+      "live": "ライブ"
+    },
+    "stats": {
+      "messages": "メッセージ",
+      "carbon": "カーボンフットプリント",
+      "water": "水使用量",
+      "cost": "コスト"
+    },
+    "footprint": {
+      "error": "フットプリントの読み込みエラー。",
+      "no_data": "フットプリントデータはまだありません — 審議を実行して取得してください。",
+      "method": "推定方法",
+      "method_body": "環境負荷は EcoLogits 手法（ISO 14044 LCA）で計算され、使用段階（GPU、データセンター PUE）とハードウェア製造の内包的影響を考慮します。",
+      "estimate": "推定",
+      "measured": "実測",
+      "zone_label": "炭素強度ゾーン",
+      "col": {
+        "agent": "エージェント",
+        "calls": "呼び出し",
+        "co2e": "CO₂e",
+        "water": "水",
+        "type": "種別"
+      },
+      "zone": {
+        "wor": "世界 — 全球平均炭素強度",
+        "unknown": "不明なゾーン"
+      }
+    }
+  },
+  "workflow": {
+    "history": {
+      "status": {
+        "queued": "⋯",
+        "working": "⏳",
+        "running": "⏳",
+        "completed": "✓",
+        "failed": "✗",
+        "cancelled": "⊘",
+        "canceled": "⊘"
+      }
+    },
+    "empty": {
+      "title": "ワークフローが未設計です。",
+      "hint": "チャットで Kim にデザインを依頼してください。"
+    },
+    "picker": {
+      "quick_title": "迅速な視点",
+      "quick_desc": "主要な前提を主要指標で迅速に検証します。",
+      "deep_title": "徹底的で精査された分析",
+      "deep_desc": "構造化された議論を通じてすべての主張を精査する厳密な評価。",
+      "mode_interactive": "対話的",
+      "mode_autonomous": "自律",
+      "hint_interactive": "Mona は重要な意思決定の節目であなたの指示を求めます。",
+      "hint_autonomous": "Mona は自律的なチェックポイントで統合を提供します。",
+      "launch": "開始"
+    },
+    "runs": {
+      "title": "過去の実行"
+    },
+    "launch": {
+      "started": "実行を開始: {id}",
+      "error": "実行を開始できませんでした。",
+      "in_progress": "開始中…"
+    }
+  },
+  "chat": {
+    "agents": {
+      "label": "話し相手",
+      "switch_aria": "切り替え",
+      "switched": "対話相手: {name}"
+    },
+    "error": {
+      "turn_failed": "応答に失敗しました。もう一度お試しください。"
+    }
+  },
+  "library": {
+    "toast": {
+      "imported": "ドキュメントをインポートしました",
+      "indexing": "インデックス作成を開始…",
+      "indexing_all": "すべてのドキュメントをインデックス中…",
+      "loading": "コンテキストに読み込み中…"
+    },
+    "feuillets_count": "{n} スリップ",
+    "feuillets_total_aria": "インデックス済みスリップ総数"
+  },
+  "session": {
+    "selector": {
+      "title": "セッション（新しい順）",
+      "empty": "以前のセッションはありません",
+      "summary": "{turns} ターン · ~{tokens} tk",
+      "locked_aria": "アクティブなセッション（最初のメッセージ後にロック）",
+      "id_label": "セッション ID"
+    }
+  }
+}

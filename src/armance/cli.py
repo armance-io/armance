@@ -859,6 +859,53 @@ def cmd_doctor(repo_root: Path | None = None) -> int:
     return 0 if ok else 1
 
 
+def _build_web_bundle() -> int:
+    """Build the Next.js static export and copy it into armance/web_dist.
+
+    Repo/dev only: needs Node + pnpm and the web/frontend sources. The
+    resulting bundle is what `armance web` serves same-origin.
+    """
+    import os
+    import shutil
+    import subprocess
+
+    repo_root = Path(__file__).resolve().parents[2]
+    frontend = repo_root / "web" / "frontend"
+    if not (frontend / "package.json").exists():
+        print(
+            "Cannot build the UI: frontend sources (web/frontend) are not "
+            "present in this install.\n\n"
+            "  --build only works from a repo checkout, not from "
+            "`uv tool install`/`pipx`/`pip install` (those ship code, not the\n"
+            "  frontend toolchain). To get the UI either:\n"
+            "    • install a release wheel — the UI is already bundled:\n"
+            "        pip install armance\n"
+            "    • or build from a clone:\n"
+            "        git clone https://github.com/armance-io/armance.git\n"
+            "        cd armance && uv sync && uv pip install -e '.[web]'\n"
+            "        uv run armance web --build",
+            file=sys.stderr,
+        )
+        return 1
+    env = {**os.environ, "ARMANCE_STATIC_EXPORT": "1"}
+    for cmd in (["pnpm", "install", "--frozen-lockfile"], ["pnpm", "build"]):
+        try:
+            subprocess.run(cmd, cwd=str(frontend), env=env, check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError) as e:
+            print(f"UI build failed ({' '.join(cmd)}): {e}", file=sys.stderr)
+            return 1
+    out = frontend / "out"
+    dest = repo_root / "src" / "armance" / "web_dist"
+    if not (out / "index.html").exists():
+        print("UI build produced no out/index.html.", file=sys.stderr)
+        return 1
+    if dest.exists():
+        shutil.rmtree(dest)
+    shutil.copytree(out, dest)
+    print(f"UI bundle built → {dest}")
+    return 0
+
+
 def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -> int:
     """Start the Armance web UI (FastAPI backend + optional browser open)."""
     import argparse
@@ -872,10 +919,37 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
                             help="Alias for --bind (deprecated, use --bind)")
     web_parser.add_argument("--port", type=int, default=8000)
     web_parser.add_argument("--no-browser", action="store_true")
+    web_parser.add_argument(
+        "--build", action="store_true",
+        help="Rebuild the static UI bundle (needs Node + pnpm; dev/repo only).",
+    )
     web_args, _ = web_parser.parse_known_args(remaining or [])
+
+    if web_args.build:
+        rc = _build_web_bundle()
+        if rc != 0:
+            return rc
 
     # --host is a legacy alias for --bind
     bind = web_args.host or web_args.bind
+
+    # Port discovery / port hunting: if specified port is in use, try the next ones.
+    port = web_args.port
+    import socket
+    while port < web_args.port + 100:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                s.bind((bind, port))
+                break
+            except socket.error:
+                port += 1
+    else:
+        print(f"error: could not find an available port starting from {web_args.port}", file=sys.stderr)
+        return 1
+
+    if port != web_args.port:
+        print(f"⚠  Port {web_args.port} is occupied. Discovered available port: {port}", file=sys.stderr)
 
     _missing = [m for m in ("fastapi", "uvicorn", "sse_starlette") if __import__("importlib").util.find_spec(m) is None]
     if _missing:
@@ -900,29 +974,62 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
 
     if not web_args.no_browser:
         import threading
-        import webbrowser
         import time
+        import urllib.error
+        import urllib.request
+        import webbrowser
 
-        def _open() -> None:
-            time.sleep(1.5)
-            webbrowser.open(f"http://127.0.0.1:{web_args.port}")
+        url = f"http://127.0.0.1:{port}/"
+        # Probe the API health endpoint, not `/`: the SPA shell is only served
+        # for `Accept: text/html`, but urllib sends `*/*`, so `/` would 404
+        # even when the server is up. /api/healthz always answers 200 once ready.
+        ready_url = f"http://127.0.0.1:{port}/api/healthz"
 
-        threading.Thread(target=_open, daemon=True).start()
+        def _open_when_ready() -> None:
+            # BUG-15: wait until the server actually answers before opening the
+            # browser, so the first load never shows a connection error.
+            deadline = time.time() + 15.0
+            while time.time() < deadline:
+                try:
+                    with urllib.request.urlopen(ready_url, timeout=1) as resp:
+                        if resp.status == 200:
+                            webbrowser.open(url)
+                            return
+                except (urllib.error.URLError, OSError):
+                    pass
+                time.sleep(0.2)
+            print(
+                f"web server did not become ready within 15s — open {url} manually.",
+                file=sys.stderr,
+            )
+
+        threading.Thread(target=_open_when_ready, daemon=True).start()
 
     import os
 
-    # Locate the web/ directory (sibling of src/ in the repo root).
-    web_dir = Path(__file__).parent.parent.parent / "web"
+    # The backend ships inside the armance package; serve it directly. The
+    # bundled frontend (armance/web_dist) is served same-origin by the app,
+    # so this single process is the whole UI + API.
+    from armance.web.backend import main as _web_main  # noqa: F401
+
+    if _web_main._resolve_static_dir() is None:
+        print(
+            f"Note: no bundled UI found — running API only on http://{bind}:{port}.\n"
+            "  The web UI is a build artifact, not shipped in git installs. To get it:\n"
+            "    • pip install a release wheel (UI bundled), then `armance web`; or\n"
+            "    • from a repo clone: `uv run armance web --build` (needs Node + pnpm).",
+            file=sys.stderr,
+        )
+
     env = {**os.environ, "ARMANCE_ROOT": str(root)}
     try:
         subprocess.run(
             [
                 sys.executable, "-m", "uvicorn",
-                "backend.main:app",
+                "armance.web.backend.main:app",
                 "--host", bind,
-                "--port", str(web_args.port),
+                "--port", str(port),
             ],
-            cwd=str(web_dir),
             env=env,
             check=True,
         )

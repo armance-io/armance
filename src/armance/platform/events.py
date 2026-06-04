@@ -51,6 +51,17 @@ class LocalEventBus:
     """In-process EventBus that writes JSONL to a local log file.
 
     Moved from armance.service.events (J.3).  No behaviour change.
+
+    SINGLE-CONSUMER: there is one `queue`, and `asyncio.Queue.get()` hands each
+    event to exactly one waiting getter. The web SSE `/events` route is today's
+    only consumer; with the chat view kept mounted across tabs, its EventSource
+    stays open continuously. This is fine while only `turn.*` / `agents_proposed`
+    / `checkpoint.requested` are emitted (a single logical reader). BEFORE live
+    workflow events (`workflow.step_*`, `workflow.completed`) ship and a second
+    component subscribes concurrently, switch to per-subscriber fan-out
+    (`subscribe()` returning its own queue) — otherwise the two consumers would
+    steal each other's events. No replay needed for fan-out (replay is what
+    risks duplicate bubbles; distributing future events does not).
     """
 
     def __init__(self, log_path: Path) -> None:

@@ -389,3 +389,13 @@ footprint:
   zone_note: "Zone électrique : {zone}"
   by_day: "Par jour"
   by_month: "Par mois"
+
+# Rôles du personnel
+# ---------------------------------------------------------------------------
+staff:
+  role:
+    weaver: "tisserande"
+    scout: "dénicheur"
+    conductor: "orchestratrice"
+    distiller: "distillatrice"
+    critic: "critique"

@@ -1,4 +1,4 @@
-import { type FC, type ReactNode, useMemo } from "react";
+import { type CSSProperties, type FC, type ReactNode, useMemo } from "react";
 import { marked, type Tokens } from "marked";
 import { tokens } from "../_shared/armance-tokens";
 import { CodeBlock } from "./CodeBlock";
@@ -27,8 +27,16 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     [markdown],
   );
 
+  const containerStyle: CSSProperties = {
+    color: tokens.ink,
+    display: "flex",
+    flexDirection: "column",
+  };
+
+  // No copy button here — MessageBubble owns the single message-level copy
+  // (on the timestamp line). Code blocks keep their own copy via CodeBlock.
   return (
-    <div className={`prose ${className ?? ""}`} style={{ color: tokens.ink }}>
+    <div className={`prose ${className ?? ""}`} style={containerStyle}>
       <style>{PROSE_CSS}</style>
       {blocks.map((tok, i) => renderBlock(tok, i, t))}
     </div>

@@ -601,25 +601,39 @@ agents:
         return None
 
     def _parse_agents_yaml(self, text: str, role_name: str) -> List[Agent]:
-        """Parse YAML response containing agents."""
-        # Strategy 1: Try code fences
+        """Parse YAML response containing agents.
+
+        Robust to the output styles smaller models emit, mirroring
+        `_parse_jobs_yaml`: fenced ```yaml```, a bare `agents:` block, or a
+        free-form numbered/bulleted list. A YAML that fails to load (e.g. an
+        unquoted colon in a description on haiku) no longer hard-raises — we
+        fall back to free-form extraction so recruit still produces a team.
+        """
+        # Strategy 1: code fences. Strategy 2: bare `agents:` block.
+        yaml_text: str | None = None
         fence_match = re.search(r"```(?:yaml)?\s*\n(.*?)\n```", text, re.DOTALL)
         if fence_match:
             yaml_text = fence_match.group(1).strip()
         else:
-            # Strategy 2: Find "agents:" and extract everything after it
             idx = text.find("agents:")
-            if idx == -1:
+            if idx != -1:
+                yaml_text = text[idx:].strip()
+
+        data: object = None
+        if yaml_text is not None:
+            try:
+                data = yaml.safe_load(yaml_text)
+            except yaml.YAMLError:
+                data = None  # recover via free-form extraction below
+
+        # Strategy 3: free-form list fallback (covers both "no agents: key" and
+        # "YAML didn't load"). Build synthetic agent entries from the named
+        # lines; the entry-building loop fills provider/model/persona defaults.
+        if not isinstance(data, dict) or "agents" not in data:
+            free = self._extract_free_form_jobs(text)
+            if not free:
                 raise ValueError("Could not parse agents from response")
-            yaml_text = text[idx:].strip()
-
-        try:
-            data = yaml.safe_load(yaml_text)
-        except yaml.YAMLError as e:
-            raise ValueError(f"Failed to parse agents YAML: {e}")
-
-        if not data or "agents" not in data:
-            raise ValueError("Response missing 'agents' key")
+            data = {"agents": [{"name": j.name, "persona": j.description[:60]} for j in free]}
 
         # Names already taken in repo (avoid global collisions)
         used: set[str] = set()

@@ -316,6 +316,30 @@ This is the canonical demo. Time + tokens + cost should appear in the ledger tot
 2. **Expect**: Armance refuses + redirects to Kim/specialists. No stack proposal, no tables, no roadmap.
 3. Same with `@Malik`, `@Kim` → both refuse. Only `@Mona` engages with project content.
 
+## S31 — Web Client E2E Launch
+
+**Goal:** The Web Client starts successfully and allows interaction with the full feature set (sessions, workflow runs, deliverables, and admin footprint).
+
+1. Ensure backend requirements are met and run `armance web --port 8000 --no-browser`.
+2. Start the frontend Next.js server with `pnpm dev` in `web/frontend/`.
+3. Open `http://localhost:3000` in a browser.
+4. Verify the landing screen lists existing sessions and projects, or allows initializing a new one.
+5. Enter a session (e.g., `/projects/default/sessions/session-1`).
+   - Observe the AppShell layout (creamy Belle Époque palette, matching Instrument Serif headers, custom sidebar rails, and subtle reveals).
+   - Test toggling Light/Dark themes using the icon button in the top-right. Verify the theme preference persists in `localStorage` across page reloads.
+6. Verify the sidebar tabs:
+   - `Agents`: lists recruited staff/specialists.
+   - `Workflows`: displays configured workflows and launches new runs.
+   - `Library`: manages active/inactive document slips.
+   - `Deliverables`: lists compiled md/pdf deliverables, toggles starring, and renders markdown content in the central reader pane.
+7. Navigate to the Admin view (`http://localhost:3000/projects/default/admin` or via the admin gear icon).
+   - Click the new **Empreinte** tab.
+   - Verify the per-agent environmental footprint rollup table renders correctly.
+   - Verify that rows using estimated metrics feature a stylized "Estimation" badge.
+   - Click the "Méthode d'estimation" button to expand the methodology panel. Verify that it cites **EcoLogits** and ACV standard **ISO 14044** compliance.
+
+**Expect:** Smooth transitions, responsive layout, full feature integration, zero raw console errors in DevTools, and a premium visual aesthetic.
+
 ---
 
 ## Reporting bugs

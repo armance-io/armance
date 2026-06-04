@@ -1,14 +1,7 @@
-/**
- * FootprintChip — skeleton for the live 🌱 gCO₂e chip in the web header.
- *
- * DATA DEPENDENCY: blocked on Epic C (SSE ledger-snapshot channel).
- * The SSE event stream (events.py) does not yet emit ledger snapshots;
- * Epic C must add that channel before this chip can go live.
- *
- * Visual content comes from the Claude Design hand-off.
- * Props mirror the TUI chip: gco2e, estimate, unknown, show_water.
- */
-import type { FC } from "react";
+"use client";
+
+import { type CSSProperties, type FC } from "react";
+import { tokens } from "../_shared/armance-tokens";
 
 export interface FootprintChipProps {
   /** Total gCO₂e for the session (null = unknown / no data yet). */
@@ -19,16 +12,52 @@ export interface FootprintChipProps {
   showWater: boolean;
 }
 
-/**
- * FootprintChip renders 🌱{gco2e}gCO₂e (· 💧{water_ml}mL).
- * ~ prefix when hasEstimate; 🌱? when gco2e is null.
- *
- * @skeleton — blocked on Epic C SSE ledger-snapshot; replace `return null`
- * after Epic C ships the live data channel + Design delivers the visual.
- */
-export const FootprintChip: FC<FootprintChipProps> = (_props) => {
-  // TODO: unblock after Epic C adds ledger-snapshot SSE event
-  return null;
+export const FootprintChip: FC<FootprintChipProps> = ({
+  gco2e,
+  water_ml,
+  hasEstimate,
+  showWater,
+}) => {
+  const container: CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: 4,
+    color: tokens.inkSoft,
+    fontSize: 13,
+    fontFamily: tokens.ffMono,
+    background: "rgba(107, 79, 138, 0.08)",
+    border: `1px solid ${tokens.ruleSoft || "rgba(0,0,0,0.05)"}`,
+    padding: "2px 8px",
+    borderRadius: 999,
+  };
+
+  if (gco2e === null) {
+    return (
+      <div data-testid="footprint-chip" style={container} title="Empreinte environnementale inconnue">
+        <span>🌱?</span>
+      </div>
+    );
+  }
+
+  const formattedCo2 = gco2e.toFixed(1);
+
+  return (
+    <div
+      data-testid="footprint-chip"
+      style={container}
+      title="Empreinte environnementale (EcoLogits)"
+    >
+      <span>
+        {hasEstimate ? "~" : ""}🌱{formattedCo2}gCO₂e
+      </span>
+      {showWater && water_ml !== null && (
+        <>
+          <span style={{ color: tokens.inkFaint }}>·</span>
+          <span>💧{Math.round(water_ml)}mL</span>
+        </>
+      )}
+    </div>
+  );
 };
 
 export default FootprintChip;

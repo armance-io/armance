@@ -1,5 +1,6 @@
 import { type CSSProperties, type FC, useState } from "react";
 import { tokens } from "../_shared/armance-tokens";
+import { ElegantPopup } from "../_shared/ElegantPopup";
 
 export interface SecretEntry {
   key: string;
@@ -13,6 +14,7 @@ export interface SecretsListProps {
   secrets: SecretEntry[];
   onEdit: (key: string, newValue: string) => Promise<void>;
   onDelete: (key: string) => Promise<void>;
+  onReveal: (key: string) => Promise<string>;
   t: (key: string) => string;
 }
 
@@ -20,12 +22,36 @@ export const SecretsList: FC<SecretsListProps> = ({
   secrets,
   onEdit,
   onDelete,
+  onReveal,
   t,
 }) => {
-  const [revealed, setRevealed] = useState<string | null>(null);
+  const [popupSecret, setPopupSecret] = useState<{ key: string; value: string } | null>(null);
+  const [clearValues, setClearValues] = useState<Record<string, string>>({});
+  const [loadingReveal, setLoadingReveal] = useState<string | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+
+  const handleRevealClick = async (key: string) => {
+    if (popupSecret?.key === key) {
+      setPopupSecret(null);
+      return;
+    }
+    if (clearValues[key]) {
+      setPopupSecret({ key, value: clearValues[key] });
+    } else {
+      setLoadingReveal(key);
+      try {
+        const val = await onReveal(key);
+        setClearValues((prev) => ({ ...prev, [key]: val }));
+        setPopupSecret({ key, value: val });
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingReveal(null);
+      }
+    }
+  };
 
   const wrap: CSSProperties = {
     background: tokens.bgPaperCard,
@@ -35,7 +61,7 @@ export const SecretsList: FC<SecretsListProps> = ({
   };
   const head: CSSProperties = {
     display: "grid",
-    gridTemplateColumns: "1fr 1.4fr auto",
+    gridTemplateColumns: "260px 1fr auto",
     padding: "12px 20px",
     borderBottom: `1px solid ${tokens.rule}`,
     background: tokens.bgPaperDeep,
@@ -47,7 +73,7 @@ export const SecretsList: FC<SecretsListProps> = ({
   };
   const row: CSSProperties = {
     display: "grid",
-    gridTemplateColumns: "1fr 1.4fr auto",
+    gridTemplateColumns: "260px 1fr auto",
     padding: "12px 20px",
     borderBottom: `1px solid ${tokens.rule}`,
     alignItems: "center",
@@ -68,88 +94,99 @@ export const SecretsList: FC<SecretsListProps> = ({
         </div>
       )}
 
-      {secrets.map((s) => (
-        <div key={s.key} style={row}>
-          <code style={{ fontFamily: tokens.ffMono, fontSize: 13, color: tokens.ink }}>
-            {s.key}
-          </code>
+      {secrets.map((s) => {
+        const isBaseUrl = s.key.endsWith("_BASE_URL");
+        const displayedValue = isBaseUrl ? s.value : `sk-***…${s.last4}`;
 
-          {editing === s.key ? (
-            <input
-              autoFocus
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              style={{
-                padding: "6px 10px",
-                border: `1px solid ${tokens.accent}`,
-                background: tokens.bgPaper,
-                fontFamily: tokens.ffMono,
-                fontSize: 13,
-                color: tokens.ink,
-              }}
-            />
-          ) : (
-            <code
-              style={{
-                fontFamily: tokens.ffMono,
-                fontSize: 13,
-                color: tokens.inkSoft,
-              }}
-            >
-              {revealed === s.key ? s.value : `sk-***…${s.last4}`}
+        return (
+          <div key={s.key} style={row}>
+            <code style={{ fontFamily: tokens.ffMono, fontSize: 13, color: tokens.ink }}>
+              {s.key}
             </code>
-          )}
 
-          <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
             {editing === s.key ? (
-              <>
-                <IconBtn
-                  label={t("admin:secrets.action.save")}
-                  onClick={async () => {
-                    await onEdit(s.key, editValue);
-                    setEditing(null);
-                  }}
-                >
-                  ✓
-                </IconBtn>
-                <IconBtn
-                  label={t("admin:secrets.action.cancel")}
-                  onClick={() => setEditing(null)}
-                >
-                  ✕
-                </IconBtn>
-              </>
+              <input
+                autoFocus
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                style={{
+                  padding: "6px 10px",
+                  border: `1px solid ${tokens.accent}`,
+                  background: tokens.bgPaper,
+                  fontFamily: tokens.ffMono,
+                  fontSize: 13,
+                  color: tokens.ink,
+                }}
+              />
             ) : (
-              <>
-                <IconBtn
-                  label={t("admin:secrets.action.reveal")}
-                  onMouseDown={() => setRevealed(s.key)}
-                  onMouseUp={() => setRevealed(null)}
-                  onMouseLeave={() => setRevealed(null)}
-                >
-                  <EyeIcon />
-                </IconBtn>
-                <IconBtn
-                  label={t("admin:secrets.action.edit")}
-                  onClick={() => {
-                    setEditing(s.key);
-                    setEditValue(s.value);
-                  }}
-                >
-                  ✎
-                </IconBtn>
-                <IconBtn
-                  label={t("admin:secrets.action.delete")}
-                  onClick={() => setConfirmingDelete(s.key)}
-                  danger
-                >
-                  🗑
-                </IconBtn>
-              </>
+              <code
+                style={{
+                  fontFamily: tokens.ffMono,
+                  fontSize: 13,
+                  color: tokens.inkSoft,
+                  textAlign: "left",
+                  justifySelf: "start",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {loadingReveal === s.key ? "…" : displayedValue}
+              </code>
             )}
+
+            <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
+              {editing === s.key ? (
+                <>
+                  <IconBtn
+                    label={t("admin:secrets.action.save")}
+                    onClick={async () => {
+                      await onEdit(s.key, editValue);
+                      setEditing(null);
+                    }}
+                  >
+                    ✓
+                  </IconBtn>
+                  <IconBtn
+                    label={t("admin:secrets.action.cancel")}
+                    onClick={() => setEditing(null)}
+                  >
+                    ✕
+                  </IconBtn>
+                </>
+              ) : (
+                <>
+                  {!isBaseUrl && (
+                    <IconBtn
+                      label={t("admin:secrets.action.reveal")}
+                      onClick={() => handleRevealClick(s.key)}
+                      active={popupSecret?.key === s.key}
+                    >
+                      <EyeIcon crossed={popupSecret?.key === s.key} />
+                    </IconBtn>
+                  )}
+                  <IconBtn
+                    label={t("admin:secrets.action.edit")}
+                    onClick={() => {
+                      setEditing(s.key);
+                      setEditValue(isBaseUrl ? s.value : (clearValues[s.key] || ""));
+                    }}
+                  >
+                    ✎
+                  </IconBtn>
+                  <IconBtn
+                    label={t("admin:secrets.action.delete")}
+                    onClick={() => setConfirmingDelete(s.key)}
+                    danger
+                  >
+                    🗑
+                  </IconBtn>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {confirmingDelete && (
         <ConfirmModal
@@ -166,26 +203,49 @@ export const SecretsList: FC<SecretsListProps> = ({
           }}
         />
       )}
+
+      {popupSecret && (
+        <ElegantPopup
+          open={true}
+          title={popupSecret.key}
+          onClose={() => setPopupSecret(null)}
+          cancelLabel={t("common:close") || "Close"}
+        >
+          <div
+            style={{
+              wordBreak: "break-all",
+              fontFamily: tokens.ffMono,
+              fontSize: 13,
+              color: tokens.ink,
+              padding: "8px 0",
+            }}
+          >
+            {popupSecret.value}
+          </div>
+        </ElegantPopup>
+      )}
     </div>
   );
 };
 
-const EyeIcon: FC = () => (
+const EyeIcon: FC<{ crossed?: boolean }> = ({ crossed }) => (
   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
     <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" />
     <circle cx="8" cy="8" r="2" />
+    {crossed && <line x1="3" y1="3" x2="13" y2="13" stroke="currentColor" strokeWidth="1.5" />}
   </svg>
 );
 
 const IconBtn: FC<{
   label: string;
   danger?: boolean;
+  active?: boolean;
   children: React.ReactNode;
   onClick?: () => void;
   onMouseDown?: () => void;
   onMouseUp?: () => void;
   onMouseLeave?: () => void;
-}> = ({ label, danger, children, ...handlers }) => (
+}> = ({ label, danger, active, children, ...handlers }) => (
   <button
     type="button"
     aria-label={label}
@@ -196,11 +256,12 @@ const IconBtn: FC<{
       height: 28,
       display: "grid",
       placeItems: "center",
-      border: `1px solid ${tokens.rule}`,
-      background: "transparent",
-      color: danger ? "var(--danger, #a44141)" : tokens.inkSoft,
+      border: `1px solid ${active ? "var(--accent, #6b4f8a)" : tokens.rule}`,
+      background: active ? "color-mix(in srgb, var(--accent, #6b4f8a) 12%, transparent)" : "transparent",
+      color: danger ? "var(--danger, #a44141)" : (active ? "var(--accent, #6b4f8a)" : tokens.inkSoft),
       cursor: "pointer",
       borderRadius: 4,
+      transition: "all 0.15s ease",
     }}
   >
     {children}

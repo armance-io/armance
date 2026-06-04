@@ -117,3 +117,18 @@ Le symbole du fleuron (`❦`) est utilisé comme séparateur de section majeur. 
 - **Jamais** d'émojis criards modernes dans la copie visible ou les statuts, sauf cas fonctionnel imposé par les gems doux.
 - **Jamais** d'exclamation dans le contenu rédigé pour préserver un ton de recherche noble et posé.
 - **Jamais** de fenêtres d'alerte natives du navigateur (`alert()` ou `confirm()`), jugées indignes de l'esthétique soignée de l'Atelier.
+
+---
+
+## 7. Development & Aesthetics Verification
+
+To ensure that the visual aesthetics remain premium and robust across updates:
+
+### Dev Commands
+Run inside `web/frontend/`:
+- **Local Dev Server**: `pnpm dev` starts the server on `http://localhost:3000`.
+- **Type Checking**: `pnpm typecheck` (`tsc --noEmit`) to verify all React and TypeScript typings.
+- **Lint Check**: `pnpm lint` to ensure strict coding styles and prevent hardcoded string leakage.
+- **Unit Testing**: `pnpm test` triggers fast modular component testing via Vitest and Testing Library.
+- **E2E Visual Tests**: `pnpm playwright test` validates visual-regression rendering and full user flows against expected layout baselines under both `parchment` light mode and dark mode.
+
