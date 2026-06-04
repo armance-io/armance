@@ -71,21 +71,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - name: Set up Node 20
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-
-      - name: Install pnpm
-        run: npm install -g pnpm
+          cache: "pnpm"
+          cache-dependency-path: "web/frontend/pnpm-lock.yaml"
 
       - name: Install frontend dependencies
         run: |
           if [ -d "web/frontend" ]; then
-            cd web/frontend && pnpm install
-          else
-            echo "No web frontend yet — skipping"
-            exit 0
+            cd web/frontend && pnpm install --frozen-lockfile
           fi
 
       - name: Lint + build frontend
@@ -100,10 +101,36 @@ jobs:
             cd web/frontend && pnpm test
           fi
 
+      - name: Get Playwright version
+        id: playwright-version
+        run: |
+          if [ -d "web/frontend" ]; then
+            PLAYWRIGHT_VERSION=$(node -e "console.log(require('./package.json').devDependencies['@playwright/test'])")
+            echo "version=$PLAYWRIGHT_VERSION" >> $GITHUB_OUTPUT
+          fi
+        working-directory: web/frontend
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ steps.playwright-version.outputs.version }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: |
           if [ -d "web/frontend/e2e" ]; then
             cd web/frontend && pnpm exec playwright install --with-deps chromium
+          fi
+
+      - name: Install Playwright system dependencies (if cached)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: |
+          if [ -d "web/frontend/e2e" ]; then
+            cd web/frontend && pnpm exec playwright install-deps chromium
           fi
 
       - name: Playwright E2E
