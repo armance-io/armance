@@ -296,3 +296,45 @@ class TestCmdFootprintOutput:
         ctx.armance_root = tmp_path
         result = await cmd_footprint([], ctx)
         assert "alice" in result
+
+
+# ---------------------------------------------------------------------------
+# D2 — range rendering + ADEME phone-charges equivalence
+# ---------------------------------------------------------------------------
+
+class TestSubTitleRange:
+    def _snap(self, gmin: float, gmid: float, gmax: float) -> dict:
+        return {"total": {
+            "tokens_in": 1, "tokens_out": 1, "cost_usd": 0.0, "calls": 1,
+            "gco2e": gmid, "gco2e_min": gmin, "gco2e_max": gmax,
+            "water_ml": 0.0, "water_ml_min": 0.0, "water_ml_max": 0.0,
+            "has_estimate": True, "has_unknown": False,
+        }}
+
+    def test_range_rendered_when_bounds_differ(self) -> None:
+        out = format_token_subtitle(self._snap(0.05, 6.4, 12.8), show_water=False)
+        assert "[" in out and "]" in out and "–" in out
+        assert "~" in out  # estimate marker
+
+    def test_single_value_when_bounds_equal(self) -> None:
+        out = format_token_subtitle(self._snap(4.2, 4.2, 4.2), show_water=False)
+        # no range brackets when min == max
+        assert "[" not in out
+
+    def test_phone_charges_equiv_appended(self) -> None:
+        # A mid-point of 6.4 gCO₂e → humanise should yield some phone_charges
+        # value; we just check the translated label appears.
+        out = format_token_subtitle(self._snap(0.05, 6.4, 12.8), show_water=False)
+        assert "phone charges" in out or "recharges" in out or "phone" in out
+
+    def test_no_equiv_on_unknown(self) -> None:
+        # 🌱? path: has_unknown=True, gco2e==0.0 → chip is just "🌱?" — no equiv.
+        snap = {"total": {
+            "tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0, "calls": 1,
+            "gco2e": 0.0, "gco2e_min": 0.0, "gco2e_max": 0.0,
+            "water_ml": 0.0, "water_ml_min": 0.0, "water_ml_max": 0.0,
+            "has_estimate": False, "has_unknown": True,
+        }}
+        out = format_token_subtitle(snap, show_water=False)
+        assert "🌱?" in out
+        assert "phone" not in out

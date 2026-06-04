@@ -413,6 +413,10 @@ footprint:
   zone_note: "Electricity zone: {zone}"
   by_day: "By day"
   by_month: "By month"
+  equiv:
+    phone_charges: "phone charges"
+    car_km: "car km"
+    water_glasses: "glasses of water"
 
 # Staff roles
 # ---------------------------------------------------------------------------
