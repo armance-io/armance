@@ -9,4 +9,4 @@ export default function DeliverablesPage() {
   return <DeliverablesView />;
 }
 
-export const dynamicParams = true;
+export const dynamicParams = false;
