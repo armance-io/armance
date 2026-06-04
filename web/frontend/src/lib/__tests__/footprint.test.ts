@@ -6,7 +6,12 @@
  * after the Design hand-off delivers the visual components.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getFootprint, type FootprintBucket, type FootprintResponse } from "../footprint";
+import {
+  getFootprint,
+  type FootprintBucket,
+  type FootprintEquiv,
+  type FootprintResponse,
+} from "../footprint";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -109,5 +114,60 @@ describe("FootprintResponse type", () => {
     expect(r.by_session).toBeDefined();
     // dominant_zone is string | null
     expect(r.dominant_zone === null || typeof r.dominant_zone === "string").toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Bounds + equivalence (D3)
+// ---------------------------------------------------------------------------
+
+describe("FootprintBucket bounds (D3)", () => {
+  it("carries optional carbon and water range bounds", () => {
+    const b: FootprintBucket = {
+      gco2e: 0.4,
+      water_ml: 2.0,
+      calls: 2,
+      has_estimate: true,
+      has_unknown: false,
+      gco2e_min: 0.2,
+      gco2e_max: 0.6,
+      water_ml_min: 1.0,
+      water_ml_max: 3.0,
+    };
+    expect(b.gco2e_min).toBe(0.2);
+    expect(b.gco2e_max).toBe(0.6);
+    expect(b.water_ml_min).toBe(1.0);
+    expect(b.water_ml_max).toBe(3.0);
+  });
+
+  it("allows bounds to be absent (pre-D1 records)", () => {
+    const b: FootprintBucket = SAMPLE_BUCKET;
+    expect(b.gco2e_min).toBeUndefined();
+    expect(b.gco2e_max).toBeUndefined();
+  });
+});
+
+describe("FootprintResponse equiv (D3)", () => {
+  it("carries an optional ADEME equivalence on the total", () => {
+    const equiv: FootprintEquiv = {
+      phone_charges: 1.2,
+      car_km: 0.05,
+      water_glasses: 0.8,
+    };
+    const r: FootprintResponse = { ...SAMPLE_RESPONSE, equiv };
+    expect(r.equiv?.phone_charges).toBe(1.2);
+    expect(r.equiv?.car_km).toBe(0.05);
+    expect(r.equiv?.water_glasses).toBe(0.8);
+  });
+
+  it("returns equiv from getFootprint when present in the payload", async () => {
+    const equiv: FootprintEquiv = {
+      phone_charges: 2.0,
+      car_km: 0.1,
+      water_glasses: 1.5,
+    };
+    mockFetch({ ...SAMPLE_RESPONSE, equiv });
+    const result = await getFootprint("default", "agent");
+    expect(result.equiv).toEqual(equiv);
   });
 });

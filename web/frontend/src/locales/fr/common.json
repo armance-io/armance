@@ -502,6 +502,10 @@
       "method_body": "L'impact environnemental est calculé avec la méthodologie EcoLogits (ACV ISO 14044), prenant en compte la phase d'usage (GPU, PUE des centres de données) et l'impact incorporé de la fabrication du matériel.",
       "estimate": "Estimation",
       "measured": "Mesure réelle",
+      "title": "Empreinte environnementale (EcoLogits)",
+      "unknown_title": "Empreinte environnementale inconnue",
+      "range_aria": "Fourchette estimée de l'empreinte carbone, borne basse à borne haute",
+      "estimate_badge": "est.",
       "zone_label": "Zone d'intensité carbone",
       "col": {
         "agent": "Agent",

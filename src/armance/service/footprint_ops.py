@@ -25,6 +25,48 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
+# Bucket helpers — shared bound accumulation
+# ---------------------------------------------------------------------------
+
+def _empty_footprint_bucket() -> dict[str, Any]:
+    """Seed a footprint bucket with carbon, water, bound and flag fields."""
+    return {
+        "gco2e": 0.0, "water_ml": 0.0, "calls": 0,
+        "has_estimate": False, "has_unknown": False,
+        "gco2e_min": 0.0, "gco2e_max": 0.0,
+        "water_ml_min": 0.0, "water_ml_max": 0.0,
+    }
+
+
+def _bound(rec: dict[str, Any], key: str, midpoint: float) -> float:
+    """Return a bound field, falling back to ``midpoint`` if absent or null.
+
+    Records predating D1 carry no ``*_min``/``*_max`` keys; some D1 records
+    may carry an explicit ``null`` bound. Both fall back to the midpoint so
+    old/partial logs contribute a degenerate range rather than crashing.
+    """
+    val = rec.get(key)
+    return midpoint if val is None else val
+
+
+def _accumulate_bounds(bucket: dict[str, Any], rec: dict[str, Any]) -> None:
+    """Add the record's carbon/water midpoint plus its min/max bounds.
+
+    The caller has already verified ``gco2e`` is not None (unknown records
+    are handled separately).
+    """
+    gco2e = rec.get("gco2e")
+    water_ml = rec.get("water_ml")
+    bucket["gco2e"] += gco2e
+    bucket["gco2e_min"] += _bound(rec, "gco2e_min", gco2e)
+    bucket["gco2e_max"] += _bound(rec, "gco2e_max", gco2e)
+    if water_ml is not None:
+        bucket["water_ml"] += water_ml
+        bucket["water_ml_min"] += _bound(rec, "water_ml_min", water_ml)
+        bucket["water_ml_max"] += _bound(rec, "water_ml_max", water_ml)
+
+
+# ---------------------------------------------------------------------------
 # footprint_stats — shared with EI.7 web route
 # ---------------------------------------------------------------------------
 
@@ -41,7 +83,10 @@ def footprint_stats(logs_dir: Path, project_id: str) -> dict[str, Any]:
             "dominant_zone": str | None,
         }
 
-    Each bucket: {gco2e, water_ml, calls, has_estimate, has_unknown}.
+    Each bucket: {gco2e, water_ml, calls, has_estimate, has_unknown,
+    gco2e_min, gco2e_max, water_ml_min, water_ml_max}. The bound fields
+    accumulate the per-record EcoLogits range; records that predate D1
+    (no ``gco2e_min``/``gco2e_max`` keys) fall back to the midpoint value.
 
     ``by_session`` is keyed by the session-id prefix of the filename
     (``{sid}-llm_exchanges.jsonl``); the bare ``llm_exchanges.jsonl``
@@ -59,11 +104,7 @@ def footprint_stats(logs_dir: Path, project_id: str) -> dict[str, Any]:
     base = aggregate_footprint_records(log_files)
 
     # by_session — keyed by filename-derived sid
-    def _empty() -> dict[str, Any]:
-        return {"gco2e": 0.0, "water_ml": 0.0, "calls": 0,
-                "has_estimate": False, "has_unknown": False}
-
-    by_session: dict[str, dict[str, Any]] = defaultdict(lambda: _empty())
+    by_session: dict[str, dict[str, Any]] = defaultdict(_empty_footprint_bucket)
 
     for log_file in log_files:
         name = log_file.name  # e.g. "abc123-llm_exchanges.jsonl"
@@ -89,16 +130,13 @@ def footprint_stats(logs_dir: Path, project_id: str) -> dict[str, Any]:
                 continue
 
             gco2e = rec.get("gco2e")
-            water_ml = rec.get("water_ml")
             estimate = rec.get("estimate")
             bucket = by_session[sid]
             bucket["calls"] += 1
             if gco2e is None:
                 bucket["has_unknown"] = True
             else:
-                bucket["gco2e"] += gco2e
-                if water_ml is not None:
-                    bucket["water_ml"] += water_ml
+                _accumulate_bounds(bucket, rec)
                 if estimate:
                     bucket["has_estimate"] = True
 
@@ -194,23 +232,24 @@ def aggregate_footprint_records(log_files: list[Path]) -> dict[str, Any]:
     Returns::
 
         {
-            "by_agent":  {name: {gco2e, water_ml, calls, has_estimate, has_unknown}},
-            "by_day":    {"YYYY-MM-DD": {gco2e, water_ml, calls, has_estimate}},
-            "by_month":  {"YYYY-MM": {gco2e, water_ml, calls, has_estimate}},
+            "by_agent":  {name: bucket},
+            "by_day":    {"YYYY-MM-DD": bucket},
+            "by_month":  {"YYYY-MM": bucket},
             "dominant_zone": str | None,
         }
+
+    Each bucket carries ``{gco2e, water_ml, calls, has_estimate, has_unknown,
+    gco2e_min, gco2e_max, water_ml_min, water_ml_max}``. The bound fields
+    accumulate the per-record EcoLogits range, falling back to the midpoint
+    for records that predate D1.
 
     Only ``event == "response"`` lines are processed; others are skipped.
     ``gco2e=null`` entries count toward ``has_unknown`` but contribute 0 gco2e.
     """
 
-    def _empty_bucket() -> dict[str, Any]:
-        return {"gco2e": 0.0, "water_ml": 0.0, "calls": 0,
-                "has_estimate": False, "has_unknown": False}
-
-    by_agent: dict[str, dict[str, Any]] = defaultdict(lambda: _empty_bucket())
-    by_day: dict[str, dict[str, Any]] = defaultdict(lambda: _empty_bucket())
-    by_month: dict[str, dict[str, Any]] = defaultdict(lambda: _empty_bucket())
+    by_agent: dict[str, dict[str, Any]] = defaultdict(_empty_footprint_bucket)
+    by_day: dict[str, dict[str, Any]] = defaultdict(_empty_footprint_bucket)
+    by_month: dict[str, dict[str, Any]] = defaultdict(_empty_footprint_bucket)
     zone_counter: Counter[str] = Counter()
 
     for log_file in log_files:
@@ -234,7 +273,6 @@ def aggregate_footprint_records(log_files: list[Path]) -> dict[str, Any]:
             day = ts[:10] if len(ts) >= 10 else "unknown"
             month = ts[:7] if len(ts) >= 7 else "unknown"
             gco2e = rec.get("gco2e")
-            water_ml = rec.get("water_ml")
             estimate = rec.get("estimate")
             zone = rec.get("zone")
 
@@ -246,9 +284,7 @@ def aggregate_footprint_records(log_files: list[Path]) -> dict[str, Any]:
                 if gco2e is None:
                     bucket["has_unknown"] = True
                 else:
-                    bucket["gco2e"] += gco2e
-                    if water_ml is not None:
-                        bucket["water_ml"] += water_ml
+                    _accumulate_bounds(bucket, rec)
                     if estimate:
                         bucket["has_estimate"] = True
 

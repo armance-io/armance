@@ -502,6 +502,10 @@
       "method_body": "Environmental impact is computed with the EcoLogits methodology (ISO 14044 LCA), accounting for the usage phase (GPU, data-centre PUE) and the embodied impact of hardware manufacturing.",
       "estimate": "Estimate",
       "measured": "Measured",
+      "title": "Environmental footprint (EcoLogits)",
+      "unknown_title": "Environmental footprint unknown",
+      "range_aria": "Estimated carbon footprint range, lower to upper bound",
+      "estimate_badge": "est.",
       "zone_label": "Carbon-intensity zone",
       "col": {
         "agent": "Agent",

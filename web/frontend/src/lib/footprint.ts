@@ -22,6 +22,19 @@ export interface FootprintBucket {
   calls: number;
   has_estimate: boolean;
   has_unknown: boolean;
+  /** EcoLogits carbon range bounds (absent on pre-D1 records). */
+  gco2e_min?: number;
+  gco2e_max?: number;
+  /** EcoLogits water range bounds (absent on pre-D1 records). */
+  water_ml_min?: number;
+  water_ml_max?: number;
+}
+
+/** ADEME human-scale equivalences for the project total (midpoint). */
+export interface FootprintEquiv {
+  phone_charges: number;
+  car_km: number;
+  water_glasses: number;
 }
 
 export type GroupBy = "agent" | "day" | "month" | "session";
@@ -32,6 +45,7 @@ export interface FootprintResponse {
   by_month: Record<string, FootprintBucket>;
   by_session: Record<string, FootprintBucket>;
   dominant_zone: string | null;
+  equiv?: FootprintEquiv;
 }
 
 // ---------------------------------------------------------------------------
