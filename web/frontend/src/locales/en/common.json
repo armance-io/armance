@@ -134,7 +134,8 @@
       "label": "copy",
       "done": "copied",
       "aria": "Copy message to clipboard"
-    }
+    },
+    "you": "You"
   },
   "checkpoint": {
     "drawer": {
