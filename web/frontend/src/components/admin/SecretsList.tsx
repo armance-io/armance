@@ -33,6 +33,10 @@ export const SecretsList: FC<SecretsListProps> = ({
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
 
   const handleRevealClick = async (key: string) => {
+    if (popupSecret?.key === key) {
+      setPopupSecret(null);
+      return;
+    }
     if (clearValues[key]) {
       setPopupSecret({ key, value: clearValues[key] });
     } else {
@@ -205,7 +209,7 @@ export const SecretsList: FC<SecretsListProps> = ({
           open={true}
           title={popupSecret.key}
           onClose={() => setPopupSecret(null)}
-          cancelLabel={t("common.close") || "Close"}
+          cancelLabel={t("common:close") || "Close"}
         >
           <div
             style={{

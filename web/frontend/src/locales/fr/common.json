@@ -134,7 +134,8 @@
       "label": "copier",
       "done": "copié",
       "aria": "Copier le message dans le presse-papiers"
-    }
+    },
+    "you": "Vous"
   },
   "checkpoint": {
     "drawer": {
