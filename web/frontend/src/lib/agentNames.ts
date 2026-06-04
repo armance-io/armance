@@ -16,6 +16,9 @@ const STAFF_DISPLAY: Record<string, string> = {
   "system-challenger": "Serge",
   "challenger": "Serge",
   embedding: "Library",
+  // Persona-writing is part of Malik's recruitment pass; attribute it to him
+  // rather than surfacing the internal worker key.
+  "persona-writer": "Malik",
 };
 
 export function displayAgentName(rawKey: string): string {
