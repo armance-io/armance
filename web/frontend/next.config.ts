@@ -17,6 +17,9 @@ const config: NextConfig = isExport
       },
     }
   : {
+      // Next 16 blocks cross-origin dev resources (/_next/*) by default. The
+      // Playwright E2E suite and local dev both hit the server via 127.0.0.1
+      // and localhost; allow both so HMR + JS chunks load and the app hydrates.
       allowedDevOrigins: ["127.0.0.1", "localhost"],
       experimental: {
         optimizePackageImports: ["@xyflow/react", "i18next", "react-i18next", "@tanstack/react-query"],
