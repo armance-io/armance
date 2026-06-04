@@ -69,8 +69,8 @@ test.describe("H.3 — Deliverables tab E2E", () => {
     await expect(page.getByText("Deliverables").first()).toBeVisible();
 
     // Verify synthesis row is present
-    await expect(page.getByText("Synthesis A")).toBeVisible();
-    await expect(page.getByText("Report A")).toBeVisible();
+    await expect(page.getByRole("complementary").getByText("Synthesis A")).toBeVisible();
+    await expect(page.getByRole("complementary").getByText("Report A")).toBeVisible();
 
     // The first item content is fetched and displayed in reader
     await expect(page.locator(".deliverable-reader").getByRole("heading", { name: "Synthesis A" }).first()).toBeVisible();
