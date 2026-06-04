@@ -8,3 +8,5 @@ export function generateStaticParams() {
 export default function RunPage() {
   return <RunView />;
 }
+
+export const dynamicParams = true;

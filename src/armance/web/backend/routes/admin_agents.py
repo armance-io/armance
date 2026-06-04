@@ -51,7 +51,15 @@ def _agent_row(
     default_model: str,
     display_name: str | None = None,
     role_override: str | None = None,
+    boosted_names: set[str] | None = None,
 ) -> dict[str, Any]:
+    boosted = False
+    eff_mod = agent.model
+    if boosted_names and agent.name in boosted_names and agent.is_boostable:
+        boosted = True
+        from armance.service.boost_ops import boosted_model_for
+        _, eff_mod = boosted_model_for(agent, boosted_names)
+
     # Staff files often leave provider/model blank to inherit the project
     # defaults at runtime; surface the effective values, never a blank "-".
     return {
@@ -64,6 +72,8 @@ def _agent_row(
         "reasoning": agent.reasoning,
         "persona": _persona_text(agent),
         "staff": staff,
+        "boosted": boosted,
+        "effective_model": eff_mod or default_model,
     }
 
 
@@ -82,6 +92,7 @@ async def list_agents(
     dm = getattr(cfg, "default_model", "") or ""
     result: list[dict[str, Any]] = []
     seen: set[str] = set()
+    boosted_names = ws.session.state.boosted_agents
     for slug, first_name, _role in META_AGENTS:
         path = agent_path(ws.ctx.armance_root, slug)
         if not path.exists():
@@ -90,12 +101,12 @@ async def list_agents(
             agent = Agent.load(path)
         except Exception:  # noqa: BLE001 — skip an unreadable staff file
             continue
-        result.append(_agent_row(agent, staff=True, default_provider=dp, default_model=dm, display_name=first_name, role_override=_role))
+        result.append(_agent_row(agent, staff=True, default_provider=dp, default_model=dm, display_name=first_name, role_override=_role, boosted_names=boosted_names))
         seen.add(agent.name)
     for agent in ws.ctx.agents:
         if agent.name in seen:
             continue
-        result.append(_agent_row(agent, staff=False, default_provider=dp, default_model=dm))
+        result.append(_agent_row(agent, staff=False, default_provider=dp, default_model=dm, boosted_names=boosted_names))
     return result
 
 
