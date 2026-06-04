@@ -53,7 +53,7 @@ class Config(BaseModel):
     chunk_max_tokens: int = DEFAULT_CHUNK_MAX_TOKENS
     caveman_protocol_path: str = DEFAULT_CAVEMAN_PROTOCOL
     budget_cap_usd: float | None = None
-    budget_effort: str = "free-first"  # free-first (default), low, medium, high, adaptive
+    budget_effort: str = "free-first"  # free-first (default), low, medium, high, adaptive, optimised
     embedding_provider: str = ""
     embedding_model: str = ""
     log_level: str = "INFO"  # INFO, DEBUG, etc
