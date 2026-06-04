@@ -10,10 +10,11 @@ V3 SaaS wires real project isolation on top without touching this module.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from armance.platform.sessions import InMemorySessionRegistry
 
@@ -38,6 +39,10 @@ class WebSession:
     handler: "WebCheckpointHandler"
     # driver_client_id: the client that initiated the session (read-along guard)
     driver_client_id: str | None = None
+    # The in-flight workflow run task (None when idle). A workflow run executes
+    # in the background so POST /run returns immediately and HITL checkpoints can
+    # be resolved by separate POST /checkpoint requests while the run is paused.
+    run_task: Optional["asyncio.Task[object]"] = field(default=None)
 
 
 class AppState:

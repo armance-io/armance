@@ -1,8 +1,8 @@
-"""C.6 — Malik emits `agents_proposed` event on `[EXECUTE:/recruit]`.
+"""C.6 — Malik emits `agents.proposed` event on `[EXECUTE:/recruit]`.
 
 When the Malik chat handler intercepts a `[EXECUTE:/recruit]` tag, it
 parses the YAML, writes the agent files via RecruiterAgentService, and
-then — if `ctx.event_bus` is set — emits an `agents_proposed` event so
+then — if `ctx.event_bus` is set — emits an `agents.proposed` event so
 the web frontend can render a recruitment confirmation panel.
 
 The event carries the structured list of newly-created agents (name,
@@ -18,7 +18,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from armance.client.tui.types import LoopContext, AgentStatus
+from armance.client.tui.types import LoopContext
 from armance.config import Config
 from armance.core.models.agent import Agent
 
@@ -94,7 +94,7 @@ def _build_created_agents() -> list[Agent]:
 
 @pytest.mark.asyncio
 async def test_malik_emits_agents_proposed_when_bus_present(tmp_armance: Path) -> None:
-    """When ctx.event_bus is set, `agents_proposed` is emitted with the parsed list."""
+    """When ctx.event_bus is set, `agents.proposed` is emitted with the parsed list."""
     from armance.service.chat_handlers.malik import _handle_recruit
 
     bus = MagicMock()
@@ -117,13 +117,13 @@ async def test_malik_emits_agents_proposed_when_bus_present(tmp_armance: Path) -
     ):
         await _handle_recruit(reply, ctx, hr)
 
-    # The bus.emit was called with the agents_proposed event name.
+    # The bus.emit was called with the agents.proposed event name.
     assert bus.emit.await_count >= 1
     names_emitted = [c.args[0] for c in bus.emit.await_args_list]
-    assert "agents_proposed" in names_emitted
+    assert "agents.proposed" in names_emitted
 
-    # Inspect the agents_proposed payload.
-    call = next(c for c in bus.emit.await_args_list if c.args[0] == "agents_proposed")
+    # Inspect the agents.proposed payload.
+    call = next(c for c in bus.emit.await_args_list if c.args[0] == "agents.proposed")
     attrs = call.kwargs.get("attributes") or {}
     agents_payload = attrs.get("agents")
     assert isinstance(agents_payload, list)

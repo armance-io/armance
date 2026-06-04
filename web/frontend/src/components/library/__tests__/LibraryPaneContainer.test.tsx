@@ -15,7 +15,9 @@ vi.mock("@/lib/api", () => ({
   getLibrary: vi.fn(),
   importDoc: vi.fn(),
   deleteDoc: vi.fn(),
-  submitTurn: vi.fn(),
+  libraryAction: vi.fn(),
+  getEmbeddingModels: vi.fn(),
+  patchAdminConfig: vi.fn(),
 }));
 
 // Mock LibraryPane to easily trigger callbacks and test container integration
@@ -58,12 +60,14 @@ describe("LibraryPaneContainer", () => {
   };
 
   it("renders loading state initially", () => {
+    vi.mocked(api.getEmbeddingModels).mockResolvedValue({ models: [] });
     vi.mocked(api.getLibrary).mockReturnValue(new Promise(() => {})); // pending
     renderComponent();
     expect(screen.getByText("app:loading")).toBeDefined();
   });
 
   it("renders error state when fetch fails", async () => {
+    vi.mocked(api.getEmbeddingModels).mockResolvedValue({ models: [] });
     vi.mocked(api.getLibrary).mockRejectedValue(new Error("Failed"));
     renderComponent();
     expect(await screen.findByText("common:error")).toBeDefined();
@@ -74,7 +78,9 @@ describe("LibraryPaneContainer", () => {
     vi.mocked(api.getLibrary).mockResolvedValue({ docs: mockDocs, total_feuillets: 0, doc_count: mockDocs.length });
     vi.mocked(api.importDoc).mockResolvedValue({ imported: "test.txt" });
     vi.mocked(api.deleteDoc).mockResolvedValue({ deleted: "test.pdf" });
-    vi.mocked(api.submitTurn).mockResolvedValue({ ack: true });
+    vi.mocked(api.libraryAction).mockResolvedValue({ ok: true, message: "ok", error: null });
+    vi.mocked(api.getEmbeddingModels).mockResolvedValue({ models: [] });
+    vi.mocked(api.patchAdminConfig).mockResolvedValue({} as never);
 
     renderComponent();
 
@@ -96,31 +102,31 @@ describe("LibraryPaneContainer", () => {
     // 3. Test onIndex
     fireEvent.click(screen.getByTestId("btn-index"));
     await waitFor(() => {
-      expect(api.submitTurn).toHaveBeenCalledWith("default", "session-1", "/library-index test.pdf");
+      expect(api.libraryAction).toHaveBeenCalledWith("default", "session-1", "index", "test.pdf");
     });
 
     // 4. Test onLoad
     fireEvent.click(screen.getByTestId("btn-load"));
     await waitFor(() => {
-      expect(api.submitTurn).toHaveBeenCalledWith("default", "session-1", "/library-load test.pdf");
+      expect(api.libraryAction).toHaveBeenCalledWith("default", "session-1", "load", "test.pdf");
     });
 
     // 5. Test onUnload
     fireEvent.click(screen.getByTestId("btn-unload"));
     await waitFor(() => {
-      expect(api.submitTurn).toHaveBeenCalledWith("default", "session-1", "/library-unload test.pdf");
+      expect(api.libraryAction).toHaveBeenCalledWith("default", "session-1", "unload", "test.pdf");
     });
 
     // 6. Test onUnindex
     fireEvent.click(screen.getByTestId("btn-unindex"));
     await waitFor(() => {
-      expect(api.submitTurn).toHaveBeenCalledWith("default", "session-1", "/library-unindex test.pdf");
+      expect(api.libraryAction).toHaveBeenCalledWith("default", "session-1", "unindex", "test.pdf");
     });
 
     // 7. Test onIndexAll
     fireEvent.click(screen.getByTestId("btn-index-all"));
     await waitFor(() => {
-      expect(api.submitTurn).toHaveBeenCalledWith("default", "session-1", "/library-index");
+      expect(api.libraryAction).toHaveBeenCalledWith("default", "session-1", "index", undefined);
     });
 
     // Refetching is triggered after callbacks (import/delete refetch

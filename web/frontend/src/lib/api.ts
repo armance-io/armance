@@ -167,6 +167,17 @@ export async function getProviders(): Promise<ProvidersCatalogue> {
   return api.get<ProvidersCatalogue>(`/providers`);
 }
 
+export interface EmbeddingModel {
+  provider: string;
+  id: string;
+  name: string;
+  free: boolean;
+}
+
+export async function getEmbeddingModels(): Promise<{ models: EmbeddingModel[] }> {
+  return api.get<{ models: EmbeddingModel[] }>(`/embedding-models`);
+}
+
 export interface HypothesisEntry {
   step_id: string;
   text: string;
@@ -249,6 +260,26 @@ export async function deleteDoc(
   );
 }
 
+export interface LibraryActionResult {
+  ok: boolean;
+  message: string;
+  error: string | null;
+  /** Names of documents (re)indexed — for per-doc completion toasts. */
+  indexed_docs?: string[];
+}
+
+export async function libraryAction(
+  pid: string,
+  sid: string,
+  action: "index" | "load" | "unload" | "unindex",
+  name?: string,
+): Promise<LibraryActionResult> {
+  return api.post<LibraryActionResult>(
+    `/projects/${pid}/sessions/${sid}/library/action`,
+    { action, name },
+  );
+}
+
 export type RunStatus = "running" | "completed" | "failed" | "cancelled";
 
 export interface RunItem {
@@ -315,16 +346,23 @@ export async function listWorkflows(
 
 export interface Workflow {
   name: string;
-  nodes: Array<{ id: string; data: Record<string, unknown> }>;
-  edges: Array<{ id: string; source: string; target: string }>;
+  scope: string;
+  strategy: string;
+  steps: Array<{ id: string; kind: string; role: string; depends_on: string[] }>;
+  graph: {
+    nodes: Array<{ id: string; position?: { x: number; y: number }; data: Record<string, unknown> }>;
+    edges: Array<{ id: string; source: string; target: string }>;
+  };
 }
 
 export async function getWorkflow(
-  _pid: string,
-  _sid: string,
-  _name: string,
+  pid: string,
+  sid: string,
+  name: string,
 ): Promise<Workflow> {
-  throw new Error("NotImplemented");
+  return api.get<Workflow>(
+    `/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(name)}`,
+  );
 }
 
 export interface ActiveWorkflow {
@@ -402,6 +440,9 @@ export async function getRunHypotheses(
 
 export interface RunLaunched {
   run_id: string;
+  /** True when the run was launched in the background (run_id discovered via
+   * /active-workflow once the run dir is minted). */
+  started?: boolean;
 }
 
 export async function launchWorkflow(
@@ -562,9 +603,9 @@ export async function patchAdminAgent(
   pid: string,
   sid: string,
   name: string,
-  patch: { model?: string; reasoning?: string | null },
-): Promise<{ name: string; model: string; reasoning: string | null }> {
-  return api.patch<{ name: string; model: string; reasoning: string | null }>(
+  patch: { provider?: string; model?: string; reasoning?: string | null },
+): Promise<{ name: string; provider: string; model: string; reasoning: string | null }> {
+  return api.patch<{ name: string; provider: string; model: string; reasoning: string | null }>(
     `/projects/${pid}/sessions/${sid}/agents/${encodeURIComponent(name)}`,
     patch,
   );
@@ -586,6 +627,8 @@ export interface SetupInitIn {
   model: string;
   budget: "free-first" | "low" | "medium" | "high" | "adaptive";
   language: "en" | "fr" | "es" | "de" | "zh" | "ja";
+  embedding_provider?: string;
+  embedding_model?: string;
 }
 
 export async function getSetupStatus(): Promise<SetupStatusResponse> {

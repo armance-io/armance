@@ -47,4 +47,6 @@ async def patch_config(
     except ConfigValidationError as exc:
         raise HTTPException(status_code=422, detail={"fields": exc.fields}) from exc
     save_config(repo_root, updated)
+    from armance.providers.discovery import reset_cache
+    reset_cache()
     return _config_to_dict_safe(updated)

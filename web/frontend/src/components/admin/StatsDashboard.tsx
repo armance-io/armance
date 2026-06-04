@@ -1,4 +1,4 @@
-import { type CSSProperties, type FC, useMemo } from "react";
+import { type CSSProperties, type FC, useMemo, useState } from "react";
 import { tokens } from "../_shared/armance-tokens";
 import { displayAgentName } from "@/lib/agentNames";
 
@@ -47,6 +47,9 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
     [agents],
   );
 
+  // Footprint estimation methodology, folded in from the former Empreinte tab.
+  const [methodOpen, setMethodOpen] = useState(false);
+
   const root: CSSProperties = {
     fontFamily: tokens.ffSans,
     color: tokens.ink,
@@ -74,13 +77,13 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
       {/* Environmental Footprint Cards (Top Priority) */}
       <div style={{ ...cards, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
         <Card
-          label="🌱 Empreinte Carbone Totale"
+          label={`🌱 ${t("admin:stats.carbon_total")}`}
           value={totals.gco2e > 0 ? `~${totals.gco2e.toFixed(1)} gCO₂e` : t("visual:empty.deliberation.title")}
           accent
           accentColor="var(--accent-deep, #4a3666)"
         />
         <Card
-          label="💧 Consommation d'Eau Totale"
+          label={`💧 ${t("admin:stats.water_total")}`}
           value={totals.water_ml > 0 ? `~${Math.round(totals.water_ml)} mL` : t("visual:empty.deliberation.title")}
           accent
           accentColor="#2e6f40"
@@ -217,6 +220,48 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
           ))}
         </ol>
       </Section>
+
+      <div>
+        <button
+          type="button"
+          onClick={() => setMethodOpen((v) => !v)}
+          aria-expanded={methodOpen}
+          style={{
+            background: "transparent",
+            border: `1px solid ${tokens.rule}`,
+            padding: "8px 16px",
+            borderRadius: 4,
+            cursor: "pointer",
+            fontSize: 13,
+            fontWeight: 500,
+            color: tokens.inkSoft,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontFamily: tokens.ffSans,
+          }}
+        >
+          <span aria-hidden="true">{methodOpen ? "▾" : "▸"}</span>
+          <span>{t("admin:footprint.method")}</span>
+        </button>
+        {methodOpen && (
+          <div
+            data-testid="methode-panel"
+            style={{
+              marginTop: 12,
+              padding: 16,
+              background: tokens.bgPaperCard,
+              border: `1px solid ${tokens.rule}`,
+              borderRadius: 6,
+              fontSize: 13,
+              color: tokens.inkSoft,
+              lineHeight: 1.6,
+            }}
+          >
+            {t("admin:footprint.method_body")}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

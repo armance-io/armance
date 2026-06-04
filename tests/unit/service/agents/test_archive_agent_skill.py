@@ -17,7 +17,6 @@ import pytest
 from armance.core.models.agent import Agent
 from armance.service.agents.agent_lifecycle_service import (
     AgentLifecycleService,
-    AgentNotFoundError,
 )
 from armance.service.agents.archive_agent_skill import ArchiveAgentSkill
 

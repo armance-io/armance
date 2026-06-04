@@ -9,6 +9,7 @@ Spec: web-d-pipeline.md
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -181,12 +182,43 @@ class RunIn(BaseModel):
 
 
 async def _dispatch_run(ws, name: str, mode: str) -> dict[str, Any]:
-    """Thin seam — patched in unit tests.  Forwards to Kim via /workflow-run."""
-    reply, _agent = await dispatch_input(
-        f"/workflow run {name} {mode}",
+    """Run the workflow on the web path.
+
+    Unlike the TUI/Kim flow, the web run must NOT block on the interactive
+    user-prompt + cost-confirm checkpoints: those fire *before* the run dir is
+    created, and the web HITL surface only mounts once the run is reported via
+    /active-workflow — a deadlock. So we feed the workflow's own scope as the
+    prompt and skip the cost preflight. Any IN-run checkpoints still pause and
+    surface through the Flux tab. current_workflow is set so /active-workflow
+    reports the run while it is in flight.
+    """
+    wf_path = ws.ctx.armance_root / "workflows" / f"{name}.yaml"
+    if not wf_path.exists():
+        wf_path = ws.ctx.armance_root / ".armance" / "workflows" / f"{name}.yaml"
+    scope = ""
+    try:
+        wf = _load_workflow_safe(wf_path)
+        scope = (getattr(wf, "scope", "") or "") if wf else ""
+    except Exception:  # noqa: BLE001
+        scope = ""
+
+    try:
+        ws.session.state.current_workflow = name
+        ws.session.save()
+    except Exception:  # noqa: BLE001
+        logger.debug("could not set current_workflow", exc_info=True)
+
+    from armance.service.handlers import _cmd_workflow_run
+    reply = await _cmd_workflow_run(
+        name,
+        None,
         ws.ctx,
+        skip_preflight=True,
+        user_prompt_override=scope or name,
+        run_mode=mode,
     )
-    # Backend doesn't return a run_id directly; derive from current state.
+
+    # Derive the run_id from the index (create_run wrote it up-front).
     safe = _safe_wf(name)
     runs_index = ws.ctx.armance_root / "exports" / safe / "runs.json"
     run_id = ""
@@ -211,13 +243,35 @@ async def run_workflow(
     user: str = Depends(get_current_user),
     app_state: AppState = Depends(get_app_state),
 ) -> dict:
+    """Launch a workflow run in the background and return immediately.
+
+    The run executes as a detached asyncio task so this request returns at
+    once: the run can then pause on HITL checkpoints (resolved by separate
+    POST /checkpoint requests) and the frontend tracks progress via
+    GET /active-workflow + the run manifest. ``run_id`` is empty here — the
+    client discovers it from /active-workflow once the run dir is minted.
+    """
     if body.mode not in ("interactive", "autonomous"):
         raise HTTPException(status_code=400, detail="invalid_mode")
     ws = app_state.get(sid)
     if ws is None:
         raise HTTPException(status_code=404, detail="session_not_found")
     _require_workflow(ws, name)
-    return await _dispatch_run(ws, name, body.mode)
+
+    if ws.run_task is not None and not ws.run_task.done():
+        raise HTTPException(status_code=409, detail={"error": "run_already_active"})
+
+    async def _runner() -> object:
+        try:
+            return await _dispatch_run(ws, name, body.mode)
+        except Exception:  # noqa: BLE001 — log, never crash the event loop
+            logger.exception("workflow run failed sid=%s name=%s", sid, name)
+            return {"ack": False}
+        finally:
+            ws.run_task = None
+
+    ws.run_task = asyncio.create_task(_runner())
+    return {"ack": True, "run_id": "", "started": True}
 
 
 # --- D.5 -----------------------------------------------------------------

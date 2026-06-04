@@ -198,6 +198,9 @@ test.describe("Workflow Assembly & Transition E2E (D-WIRE.8)", () => {
     await launchBtn.click();
 
     // 5. Assert seamless dynamic transition to live deliberation panel
+    // Switch to the Report tab to display the LivePanel content
+    await page.getByRole("tab", { name: /report|compte rendu/i }).click();
+
     // Wait for LivePanel component contents to render and become visible
     const deliverableTab = page.getByRole("button", { name: /deliverable/i });
     await expect(deliverableTab).toBeVisible();

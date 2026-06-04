@@ -4,7 +4,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
 
 from armance.core.models.agent import Agent
 from armance.service.shared_memory_service import RosterService

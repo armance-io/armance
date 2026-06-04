@@ -835,7 +835,7 @@ Preserve all factual content. Skip conversational filler. Output ONLY raw Markdo
         return "\n".join(lines)
 
     def _is_confirmation(self, text: str) -> bool:
-        """User says yes / go / vas-y / OK / d'accord etc."""
+        """User says yes / go / vas-y / OK / d'accord / "oui, fige", etc."""
         t = text.strip().lower().rstrip(" .!?,;:")
         if not t:
             return False
@@ -848,9 +848,19 @@ Preserve all factual content. Skip conversational filler. Output ONLY raw Markdo
         }
         if t in affirmations:
             return True
-        # Short affirmative phrases
-        for prefix in ("oui ", "ok ", "yes ", "go ", "vas-y ", "fais "):
-            if t.startswith(prefix):
+        # Affirmative opener: the first word is an affirmation, regardless of
+        # trailing punctuation ("oui, tu peux figer" → first token "oui").
+        # Splitting on non-word chars means the comma after "oui" no longer
+        # defeats the match (the old `startswith("oui ")` did).
+        first = re.split(r"[\s,.;:!?]+", t, maxsplit=1)[0]
+        openers = {"oui", "ok", "okay", "yes", "yep", "yeah", "go", "ouais",
+                   "carrément", "carrement", "parfait", "exactement", "exact"}
+        if first in openers:
+            return True
+        # Imperative confirmations: user tells Armance to go ahead / freeze.
+        # Match verb stems (figer/fige/figez, valider/valide…) at a word start.
+        for stem in ("fais", "fig", "fixe", "valid", "confirm", "enregistr"):
+            if re.search(r"\b" + stem, t):
                 return True
         return False
 

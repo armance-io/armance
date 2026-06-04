@@ -502,7 +502,23 @@ async def _cmd_workflow_run(
         _run_aborted["flag"] = True
         _run_aborted["reason"] = f"user aborted at checkpoint `{step_id}`"
 
+    async def _emit_qa(step, question: str, answer: str, by: str) -> None:
+        """Record a checkpoint Q/A on the run + emit it so the web Flux tab can
+        show the question and who answered (the user, or Mona in autonomous)."""
+        bus = getattr(ctx, "event_bus", None)
+        if bus is not None:
+            try:
+                await bus.emit("checkpoint.answered", attributes={
+                    "step_id": getattr(step, "id", "?"),
+                    "question": question,
+                    "answer": answer,
+                    "answered_by": by,
+                })
+            except Exception:  # noqa: BLE001 — never let telemetry break the run
+                logger.debug("checkpoint.answered emit failed", exc_info=True)
+
     async def checkpoint_handler(step, prior_outputs: dict[str, str]) -> str:
+        question = getattr(step, "prompt", "") or ""
         # In autonomous mode, Mona speaks on behalf of the CEO. We ask the
         # mona meta-agent to answer the checkpoint based on the project
         # brief + upstream outputs, no TTY prompt to the user.
@@ -522,7 +538,9 @@ async def _cmd_workflow_run(
                     _mark_aborted(step.id)
                     ctx.append(f"[abort] workflow aborted at checkpoint '{step.id}'")
                     return t("workflow.aborted")
+                await _emit_qa(step, question, response.content, "user")
                 return response.content
+            await _emit_qa(step, question, proxy_res, "Mona")
             return proxy_res
 
         if ctx.checkpoint_handler is None:
@@ -538,6 +556,7 @@ async def _cmd_workflow_run(
             _mark_aborted(step.id)
             ctx.append(f"[abort] workflow aborted at checkpoint '{step.id}'")
             return t("workflow.aborted")
+        await _emit_qa(step, question, response.content, "user")
         return response.content
 
     # Safety-net hooks: cross-family advisory + Serge consensus auto-invoke.
