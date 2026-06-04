@@ -11,8 +11,8 @@ class Footprint:
     All values are the mean of EcoLogits' confidence interval when a RangeValue
     is returned (MoE models and ranged datacenter PUE/WUE).
 
-    ``estimate`` is True only for tiers 4–5 (similar-model / provider-default
-    fallback).  EcoLogits' inherent RangeValue uncertainty does NOT set this flag.
+    ``estimate`` is True for the similar / provider-default fallback tiers AND
+    the dynamic bounding tier.  EcoLogits' inherent RangeValue uncertainty does NOT set this flag.
     ``proxy_model`` names the borrowed registry entry for tiers 4–5; None otherwise.
     ``zone`` records the electricity-mix zone used (EcoLogits ISO 3166-1 alpha-3).
     """
