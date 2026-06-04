@@ -8,6 +8,7 @@ import fr from "@/locales/fr/common.json";
 
 const NAMESPACES = [
   "common",
+  "app",
   "visual",
   "library",
   "chat",
