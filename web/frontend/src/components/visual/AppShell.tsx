@@ -8,12 +8,16 @@ import {
 } from "react";
 
 import { ThemeToggle } from "./ThemeToggle";
+import { SidebarNav } from "./SidebarNav";
+import { HeaderMetrics } from "./HeaderMetrics";
+import { HeaderModel } from "./HeaderModel";
+import { SessionSelector } from "./SessionSelector";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
 export interface AppShellProps {
   /** Content rendered inside the collapsible left sidebar. */
-  sidebar: ReactNode;
+  sidebar?: ReactNode;
   /** Page body — fills the main content area. */
   children: ReactNode;
   /**
@@ -65,6 +69,8 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
   const [sidebarW,    setSidebarW]    = useState(W_DEFAULT);
   const [handleHover, setHandleHover] = useState(false);
   const [dragging,    setDragging]    = useState(false);
+  const [toggleHover, setToggleHover] = useState(false);
+
 
   const motion = useRef(
     typeof window !== "undefined"
@@ -116,9 +122,11 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
   const actualW = collapsed ? 0 : sidebarW;
   const ease    = "cubic-bezier(0.4,0,0.2,1)";
 
+  // height (not minHeight): bound the column to the viewport so the chat
+  // scroll area is constrained and scrolls, instead of growing forever.
   const shellStyle: CSSProperties = {
     display: "flex", flexDirection: "column",
-    minHeight: "100vh",
+    height: "100vh",
     background: "var(--bg-paper,#f4ede0)",
   };
 
@@ -130,13 +138,19 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
     position: "sticky", top: 0, zIndex: 50,
   };
 
+  // BUG-07: no border, same background as the header; the only separation is
+  // a thin vertical rule on the right. A subtle ink shift signals hover.
   const toggleStyle: CSSProperties = {
     width: `${HEADER_H}px`, height: `${HEADER_H}px`,
     flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
-    color: "var(--ink-soft,#5b5145)",
+    color: toggleHover ? "var(--ink,#2a2520)" : "var(--ink-soft,#5b5145)",
+    border: "none",
     borderRight: "1px solid var(--rule,#d6c8ad)",
     transition: motion ? "none" : "color 0.15s ease",
     padding: 0,
+    background: "var(--bg-paper-deep,#e8dfcd)",
+    cursor: "pointer",
+    outline: "none",
   };
 
   const sidebarStyle: CSSProperties = {
@@ -164,18 +178,20 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
     marginLeft: "-1px", zIndex: 1,
   };
 
+  // No padding here — each page owns its content rhythm (TabContent / the
+  // admin outer / full-bleed chat) so every surface starts at the same offset.
   const mainStyle: CSSProperties = {
     flex: 1, overflowY: "auto",
     background: "var(--bg-paper-deep,#e8dfcd)",
-    padding: "32px",
   };
 
+  // BUG-09: compact footer — one line, minimal vertical padding.
   const footerStyle: CSSProperties = {
     borderTop: "1px solid var(--rule,#d6c8ad)",
-    padding: "28px 24px",
+    padding: "8px 24px",
     background: "var(--bg-paper-deep,#e8dfcd)",
-    display: "flex", flexDirection: "column",
-    alignItems: "center", gap: "6px",
+    display: "flex",
+    alignItems: "center", justifyContent: "center", gap: "10px",
   };
 
   const inlineSerif  = { fontFamily: "var(--ff-serif,'Instrument Serif',serif)" } as const;
@@ -187,6 +203,8 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
       <header style={headerStyle}>
         <button type="button" style={toggleStyle}
           onClick={toggleSidebar}
+          onMouseEnter={() => setToggleHover(true)}
+          onMouseLeave={() => setToggleHover(false)}
           aria-label={t("visual:shell.sidebar_collapse_aria")}
           aria-expanded={!collapsed}
         >
@@ -196,19 +214,39 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
         <div style={{ display: "flex", alignItems: "baseline", marginLeft: "20px" }}>
           <span style={{ ...inlineSerif, fontStyle: "italic", fontSize: "18px", color: "var(--ink,#2a2520)" }}>Armance</span>
           <span style={{ color: "var(--rule,#d6c8ad)", margin: "0 8px" }}>·</span>
-          <span style={{ ...inlineMono, fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint,#9c8e7e)" }}>
+          <a
+            href="https://armance.io"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ ...inlineMono, fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint,#9c8e7e)", textDecoration: "none" }}
+          >
             {t("visual:shell.brand_domain")}
-          </span>
+          </a>
         </div>
 
-        <div style={{ marginLeft: "auto" }}>
+        {/* Centred session selector (TUI resume parity). */}
+        <div style={{ position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
+          <SessionSelector t={t} />
+        </div>
+
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "16px" }}>
+          <HeaderModel t={t} />
+          <HeaderMetrics t={t} />
           <ThemeToggle t={t} />
         </div>
       </header>
 
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <aside style={sidebarStyle} aria-hidden={collapsed}>
-          <div style={sidebarInnerStyle}>{sidebar}</div>
+          <div style={sidebarInnerStyle}>
+            <SidebarNav t={t} />
+            {sidebar && (
+              <>
+                <div style={{ borderTop: "1px solid var(--rule, #d6c8ad)", margin: "12px 12px 0" }} />
+                {sidebar}
+              </>
+            )}
+          </div>
         </aside>
 
         {!collapsed && (
@@ -225,13 +263,23 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
       </div>
 
       <footer style={footerStyle}>
-        <span style={{ ...inlineSerif, fontSize: "16px", color: "var(--accent,#6b4f8a)", lineHeight: 1 }} aria-hidden="true">❦</span>
-        <p style={{ fontFamily: "var(--ff-sans,sans-serif)", fontSize: "13px", color: "var(--ink-soft,#5b5145)", margin: 0, textAlign: "center" }}>
+        <span style={{ ...inlineSerif, fontSize: "13px", color: "var(--accent,#6b4f8a)", lineHeight: 1 }} aria-hidden="true">❦</span>
+        <span style={{ fontFamily: "var(--ff-sans,sans-serif)", fontSize: "12px", color: "var(--ink-soft,#5b5145)" }}>
           {t("visual:shell.footer_motto")}
-        </p>
-        <p style={{ ...inlineMono, fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint,#9c8e7e)", margin: 0 }}>
+        </span>
+        <span style={{ color: "var(--rule,#d6c8ad)" }} aria-hidden="true"> · </span>
+        <a
+          href="https://armance.io"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ ...inlineMono, fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint,#9c8e7e)", textDecoration: "none" }}
+        >
+          armance.io
+        </a>
+        <span style={{ color: "var(--rule,#d6c8ad)" }} aria-hidden="true"> · </span>
+        <span style={{ ...inlineMono, fontSize: "10px", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-faint,#9c8e7e)" }}>
           {t("visual:shell.footer_line")}
-        </p>
+        </span>
       </footer>
 
     </div>

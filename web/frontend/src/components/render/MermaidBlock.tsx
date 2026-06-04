@@ -68,19 +68,67 @@ export const MermaidBlock: FC<MermaidBlockProps> = ({ source, t }) => {
     };
   }, [source]);
 
-  const wrap: CSSProperties = {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(source);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* noop */
+    }
+  };
+
+  const container: CSSProperties = {
     border: `1px solid ${tokens.rule}`,
     background: tokens.bgPaperDeep,
-    padding: 16,
+    borderRadius: 2,
     margin: "20px 0",
+    overflow: "hidden",
+  };
+
+  const header: CSSProperties = {
+    height: 28,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "0 10px",
+    borderBottom: `1px solid ${tokens.rule}`,
+    background: tokens.bgPaperCard,
+  };
+
+  const pill: CSSProperties = {
+    fontFamily: tokens.ffMono,
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: "0.1em",
+    color: tokens.inkSoft,
+  };
+
+  const copyBtn: CSSProperties = {
+    border: `1px solid ${tokens.rule}`,
+    background: "transparent",
+    color: tokens.inkSoft,
+    fontFamily: tokens.ffMono,
+    fontSize: 10,
+    textTransform: "uppercase",
+    letterSpacing: "0.08em",
+    padding: "2px 8px",
+    cursor: "pointer",
+    borderRadius: 2,
+  };
+
+  const wrap: CSSProperties = {
+    background: tokens.bgPaperDeep,
+    padding: 16,
     overflowX: "auto",
     textAlign: "center",
-    borderRadius: 2,
   };
 
   if (error) {
     return (
-      <div style={wrap}>
+      <div style={{ ...wrap, border: `1px solid ${tokens.rule}`, borderRadius: 2, margin: "20px 0" }}>
         <Chip label={t("render:mermaid.error_title")} />
         <pre
           style={{
@@ -111,7 +159,17 @@ export const MermaidBlock: FC<MermaidBlockProps> = ({ source, t }) => {
     );
   }
 
-  return <div style={wrap} ref={ref} />;
+  return (
+    <div style={container}>
+      <div style={header}>
+        <span style={pill}>MERMAID</span>
+        <button type="button" style={copyBtn} onClick={handleCopy}>
+          {copied ? t("render:code.copied") : t("render:code.copy")}
+        </button>
+      </div>
+      <div style={wrap} ref={ref} />
+    </div>
+  );
 };
 
 const Chip: FC<{ label: string }> = ({ label }) => (

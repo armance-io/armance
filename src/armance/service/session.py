@@ -10,7 +10,6 @@ validated state transitions and atomic persist.
 from __future__ import annotations
 
 import logging
-import uuid as _uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -47,7 +46,20 @@ class SessionState(BaseModel):
 
     @classmethod
     def new(cls, parent_id: str | None = None) -> "SessionState":
-        sid = _uuid.uuid4().hex[:12]
+        import random
+        words = [
+            "parapluies", "chimères", "silences", "secrets", "songes", "miroirs",
+            "cahiers", "soupirs", "étoiles", "nuages", "plumes", "livres",
+            "pensées", "mots", "ombres", "lumières", "flammes", "pages",
+            "mystères", "horloges", "chemins", "voyages", "rêves", "jardins",
+            "clefs", "lettres", "portraits", "souvenirs", "murmures", "vagues",
+            "brises", "parfums", "instants", "dialogues", "esprits", "reflets",
+            "ciels", "horizons", "architectures", "bibliothèques", "ateliers"
+        ]
+        num = random.randint(10, 999)
+        word = random.choice(words)
+        sid = f"{num}-{word}"
+        
         now = datetime.now(timezone.utc).isoformat()
         return cls(
             id=sid,

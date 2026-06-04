@@ -1,9 +1,9 @@
 """C.8 — `agent_streaming_*` events from SpecialistRunner + meta chat shells.
 
 When an agent starts producing tokens, the runtime emits:
-  - `agent_streaming_started`  { agent_name, step_id?: str }
+  - `agent.streaming.started`  { agent_name, step_id?: str }
   - `agent_streaming`          { agent_name, chunk?: str }  (throttled)
-  - `agent_streaming_end`      { agent_name }              (on completion)
+  - `agent.streaming.end`      { agent_name }              (on completion)
 
 When `ctx.event_bus` is None (TUI), emissions are no-ops.
 
@@ -35,7 +35,7 @@ async def test_emitter_emits_started_and_end_with_no_tokens() -> None:
     await emitter.start()
     await emitter.end()
     names = [c.args[0] for c in bus.emit.await_args_list]
-    assert names == ["agent_streaming_started", "agent_streaming_end"]
+    assert names == ["agent.streaming.started", "agent.streaming.end"]
     # Every event carries agent_name.
     for call in bus.emit.await_args_list:
         attrs = call.kwargs.get("attributes") or {}
@@ -55,11 +55,11 @@ async def test_emitter_throttles_streaming_events() -> None:
     await emitter.end()
 
     names = [c.args[0] for c in bus.emit.await_args_list]
-    streaming_count = sum(1 for n in names if n == "agent_streaming")
+    streaming_count = sum(1 for n in names if n == "agent.streaming")
     # 50 tokens in zero wall-clock → at most 1 throttled emit + the bookends.
     assert streaming_count <= 2
-    assert names[0] == "agent_streaming_started"
-    assert names[-1] == "agent_streaming_end"
+    assert names[0] == "agent.streaming.started"
+    assert names[-1] == "agent.streaming.end"
 
 
 @pytest.mark.asyncio

@@ -1,1 +1,164 @@
-{}
+{
+  "visual": {
+    "empty": {
+      "workflow": {
+        "cta": "Iniciar flujo de trabajo"
+      },
+      "session": {
+        "cta": "Nueva sesión"
+      },
+      "deliberation": {
+        "title": "No hay datos aún",
+        "hint": "Inicie una deliberación para recopilar estadísticas."
+      }
+    },
+    "metrics": {
+      "co2e_aria": "Huella de carbono (gCO₂e)",
+      "water_aria": "Huella hídrica (mL)",
+      "tokens_in_aria": "Tokens de entrada",
+      "tokens_out_aria": "Tokens de salida",
+      "model_aria": "Modelo en uso (agente seleccionado)"
+    }
+  },
+  "checkpoint": {
+    "drawer": {
+      "submitted_title": "Respuesta registrada",
+      "submitted_desc": "Su respuesta ha sido guardada exitosamente."
+    }
+  },
+  "sidebar": {
+    "nav_section": {
+      "workspace": "Espacio de trabajo",
+      "account": "Cuenta"
+    },
+    "tabs": {
+      "session_active": "Sesión activa",
+      "settings": "Ajustes",
+      "workflows": "Flujos"
+    },
+    "section": {
+      "staff": "Equipo",
+      "library": "Biblioteca",
+      "roles": "Roles y agentes"
+    },
+    "staff": {
+      "empty": "Aún no hay especialistas",
+      "mention_hint": "Insertar una mención en tu mensaje",
+      "switch_hint": "Cambiar a este agente"
+    },
+    "library": {
+      "docs": "Documentos",
+      "feuillets": "Fragmentos",
+      "subtitle": "{docs} docs · {feuillets} fragmentos",
+      "inactive": "inactivo — sin modelo de embedding"
+    }
+  },
+  "admin": {
+    "config": {
+      "budget": {
+        "free-first": "Gratuito primero",
+        "low": "Bajo",
+        "medium": "Medio",
+        "high": "Alto"
+      },
+      "providers": "Proveedores configurados",
+      "default": "Por defecto"
+    },
+    "logs": {
+      "level_changed_title": "Nivel de registro actualizado",
+      "level_changed_desc": "El nivel de registro se ha cambiado a {level}.",
+      "live": "En vivo"
+    },
+    "stats": {
+      "messages": "mensajes",
+      "carbon": "Huella de carbono",
+      "water": "Uso de agua",
+      "cost": "Coste"
+    },
+    "footprint": {
+      "error": "Error al cargar la huella.",
+      "no_data": "Aún no hay datos de huella — ejecuta una deliberación para llenarlos.",
+      "method": "Método de estimación",
+      "method_body": "El impacto ambiental se calcula con la metodología EcoLogits (ACV ISO 14044), considerando la fase de uso (GPU, PUE de centros de datos) y el impacto incorporado de la fabricación del hardware.",
+      "estimate": "Estimación",
+      "measured": "Medición real",
+      "zone_label": "Zona de intensidad de carbono",
+      "col": {
+        "agent": "Agente",
+        "calls": "Llamadas",
+        "co2e": "CO₂e",
+        "water": "Agua",
+        "type": "Tipo"
+      },
+      "zone": {
+        "wor": "Mundo — intensidad de carbono media global",
+        "unknown": "Zona desconocida"
+      }
+    }
+  },
+  "workflow": {
+    "history": {
+      "status": {
+        "queued": "⋯",
+        "working": "⏳",
+        "running": "⏳",
+        "completed": "✓",
+        "failed": "✗",
+        "cancelled": "⊘",
+        "canceled": "⊘"
+      }
+    },
+    "empty": {
+      "title": "No hay workflow diseñado.",
+      "hint": "Pide a Kim que diseñe uno desde el chat."
+    },
+    "picker": {
+      "quick_title": "Una perspectiva rápida",
+      "quick_desc": "Verificación rápida de las hipótesis principales con indicadores clave.",
+      "deep_title": "Un análisis exhaustivo y cuestionado",
+      "deep_desc": "Evaluación rigurosa que cuestiona cada afirmación mediante un debate estructurado.",
+      "mode_interactive": "interactivo",
+      "mode_autonomous": "autónomo",
+      "hint_interactive": "Mona pedirá tu orientación en los umbrales de decisión clave.",
+      "hint_autonomous": "Mona gestiona puntos de control autónomos para entregar la síntesis.",
+      "launch": "Lanzar"
+    },
+    "runs": {
+      "title": "Ejecuciones anteriores"
+    },
+    "launch": {
+      "started": "Ejecución lanzada: {id}",
+      "error": "No se pudo lanzar la ejecución.",
+      "in_progress": "Lanzando…"
+    }
+  },
+  "chat": {
+    "agents": {
+      "label": "Hablando con",
+      "switch_aria": "Cambiar a",
+      "switched": "Su interlocutor: {name}"
+    },
+    "error": {
+      "turn_failed": "La respuesta falló. Por favor, inténtelo de nuevo."
+    }
+  },
+  "library": {
+    "toast": {
+      "imported": "Documento importado",
+      "indexing": "Indexación iniciada…",
+      "indexing_all": "Indexando todos los documentos…",
+      "loading": "Cargando en contexto…"
+    },
+    "feuillets_count": "{n} fragmentos",
+    "feuillets_total_aria": "Total de fragmentos indexados"
+  },
+  "session": {
+    "selector": {
+      "title": "Sesiones (más recientes primero)",
+      "empty": "Sin sesiones anteriores",
+      "summary": "{turns} turnos · ~{tokens} tk",
+      "locked_aria": "Sesión activa (bloqueada tras el primer mensaje)",
+      "id_label": "ID de sesión"
+    }
+  }
+}

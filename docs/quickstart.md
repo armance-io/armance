@@ -73,6 +73,6 @@ By completing this walkthrough, you've:
 
 ## Next Steps
 
-- Try the [coffee-table scenario](spec/13_scenarios.md) for more details
-- Explore workflows in Phase 2
+- Try the end-to-end [scenarios](../SCENARIOS.md) for more detail
+- Launch the web UI with `armance web` (see [install guide](install.md#web-ui))
 - Add more documents to `.armance/docs/` for RAG context

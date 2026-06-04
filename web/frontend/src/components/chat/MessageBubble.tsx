@@ -1,4 +1,4 @@
-import { type CSSProperties, type FC } from "react";
+import { type CSSProperties, type FC, useCallback, useState } from "react";
 
 import { MarkdownRenderer } from "@/components/render/MarkdownRenderer";
 
@@ -15,6 +15,21 @@ export interface MessageBubbleProps {
   t: (key: string) => string;
 }
 
+function isSwitchMessage(markdown: string): boolean {
+  if (!markdown) return false;
+  const lc = markdown.toLowerCase();
+  return ["votre interlocuteur", "your interlocutor", "gesprächspartner", "su interlocutor", "対話相手", "您的对话者", "basculé sur", "switched to", "gewechselt", "cambiado a", "切り替えました", "已切换到"].some(kw => lc.includes(kw));
+}
+
+function formatSwitchMessage(markdown: string, t: (k: string) => string): string {
+  if (!markdown) return markdown;
+  const lc = markdown.toLowerCase();
+  if (["votre interlocuteur", "your interlocutor", "gesprächspartner", "su interlocutor", "対話相手", "您的对话者"].some(kw => lc.includes(kw))) return markdown;
+  const names = ["Malik", "Kim", "Serge", "Mona", "Armance"];
+  const matched = names.find(name => markdown.includes(name));
+  return matched ? t("chat:agents.switched").replace("{name}", matched) : markdown;
+}
+
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
 export const MessageBubble: FC<MessageBubbleProps> = ({
@@ -28,128 +43,130 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
   t,
 }) => {
   const isAgent = role === "agent";
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    void navigator.clipboard.writeText(markdown).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    });
+  }, [markdown]);
+
+  const isSystemSwitch = (agentName === "system" && !markdown.startsWith("⚠")) || (role === "agent" && isSwitchMessage(markdown));
+  const displayMarkdown = isSystemSwitch ? formatSwitchMessage(markdown, t) : markdown;
+
+  if (isSystemSwitch) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          width: "100%",
+          padding: "16px 24px 16px 16px",
+          userSelect: "none",
+        }}
+      >
+        <div style={{ flex: 1, height: "1px", background: "var(--rule, #d6c8ad)", opacity: 0.8 }} />
+        <span
+          style={{
+            padding: "0 16px",
+            fontFamily: "var(--ff-sans, 'Inter', sans-serif)",
+            fontSize: "12px",
+            fontStyle: "italic",
+            color: "var(--ink-soft, #5b5145)",
+            letterSpacing: "0.03em",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {displayMarkdown}
+        </span>
+        <div style={{ flex: 1, height: "1px", background: "var(--rule, #d6c8ad)", opacity: 0.8 }} />
+      </div>
+    );
+  }
 
   /* ── Styles ── */
-
   const wrapStyle: CSSProperties = {
-    display: "flex",
-    justifyContent: isAgent ? "flex-start" : "flex-end",
-    padding: "6px 0",
+    display: "flex", justifyContent: isAgent ? "flex-start" : "flex-end", padding: "6px 0",
   };
 
   const outerStyle: CSSProperties = {
-    display: "flex",
-    gap: "10px",
-    maxWidth: "72%",
-    minWidth: 0,
-    flexDirection: isAgent ? "row" : "row-reverse",
-    alignItems: "flex-start",
+    display: "flex", gap: "10px", maxWidth: "72%", minWidth: 0,
+    flexDirection: isAgent ? "row" : "row-reverse", alignItems: "flex-start",
   };
 
   const portraitStyle: CSSProperties = {
-    width: "32px",
-    height: "32px",
-    borderRadius: "999px",
-    overflow: "hidden",
-    flexShrink: 0,
-    border: "1px solid var(--rule, #d6c8ad)",
-    background: agentColour,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontFamily: "var(--ff-serif, 'Instrument Serif', serif)",
-    fontSize: "16px",
-    color: "oklch(0.97 0.012 82)",
+    width: "32px", height: "32px", borderRadius: "999px", overflow: "hidden", flexShrink: 0,
+    border: "1px solid var(--rule, #d6c8ad)", background: agentColour, display: "flex",
+    alignItems: "center", justifyContent: "center", fontFamily: "var(--ff-serif, 'Instrument Serif', serif)",
+    fontSize: "16px", color: "oklch(0.97 0.012 82)",
   };
 
   const bubbleStyle: CSSProperties = {
-    background: isAgent
-      ? "var(--bg-paper, #f4ede0)"
-      : "var(--bg-paper-deep, #e8dfcd)",
-    border: isAgent ? "1px solid var(--rule, #d6c8ad)" : "none",
-    borderRadius: "6px",
-    padding: "12px 16px",
-    minWidth: 0,
+    background: isAgent ? "var(--bg-paper-card, #faf6ef)" : "color-mix(in srgb, var(--accent) 7%, var(--bg-paper-deep, #e8dfcd))",
+    border: `1px solid ${isAgent ? `color-mix(in srgb, ${agentColour} 40%, var(--rule, #d6c8ad))` : "var(--rule, #d6c8ad)"}`,
+    borderRadius: "6px", padding: "10px 14px", minWidth: W_BUBBLE_MIN,
   };
 
   const headerStyle: CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    marginBottom: "6px",
+    display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "6px", width: "100%",
   };
 
   const bulletStyle: CSSProperties = {
-    width: "8px",
-    height: "8px",
-    borderRadius: "999px",
-    background: agentColour,
-    flexShrink: 0,
-    animation: streaming
-      ? "msgbubble-pulse 220ms ease-in-out infinite alternate"
-      : "none",
+    width: "8px", height: "8px", borderRadius: "999px", background: agentColour, flexShrink: 0,
+    animation: streaming ? "msgbubble-pulse 220ms ease-in-out infinite alternate" : "none",
   };
 
   const nameStyle: CSSProperties = {
-    fontFamily: "var(--ff-sans, 'Inter', sans-serif)",
-    fontSize: "12px",
-    fontWeight: 500,
-    color: "var(--ink-soft, #5b5145)",
-    letterSpacing: "0.02em",
-  };
-
-  const spinnerStyle: CSSProperties = {
-    width: "12px",
-    height: "12px",
-    border: "1.5px solid var(--rule, #d6c8ad)",
-    borderTopColor: agentColour,
-    borderRadius: "999px",
-    animation: "msgbubble-spin 600ms linear infinite",
-    flexShrink: 0,
+    fontFamily: "var(--ff-sans, 'Inter', sans-serif)", fontSize: "11px", fontWeight: 600,
+    color: "var(--ink-soft, #5b5145)", letterSpacing: "0.03em", textTransform: "uppercase",
   };
 
   const proseStyle: CSSProperties = {
-    fontFamily: "var(--ff-sans, 'Inter', sans-serif)",
-    fontSize: "14px",
-    lineHeight: 1.6,
-    color: "var(--ink, #2a2520)",
+    fontFamily: "var(--ff-sans, 'Inter', sans-serif)", fontSize: "13px", lineHeight: 1.55, color: "var(--ink, #2a2520)",
+  };
+
+  const footerStyle: CSSProperties = {
+    display: "flex", justifyContent: "flex-end", marginTop: "4px",
   };
 
   const timeStyle: CSSProperties = {
-    fontFamily: "var(--ff-mono, 'JetBrains Mono', monospace)",
-    fontSize: "10px",
-    color: "var(--ink-faint, #9c8e7e)",
-    marginTop: "6px",
+    fontFamily: "var(--ff-mono, 'JetBrains Mono', monospace)", fontSize: "9px", color: "var(--ink-faint, #9c8e7e)",
+  };
+
+  const copyBtnStyle: CSSProperties = {
+    display: "flex", alignItems: "center", justifyContent: "center", width: "18px", height: "18px",
+    padding: 0, border: "none", borderRadius: "3px", background: "transparent",
+    color: copied ? "var(--accent, #6b4f8a)" : "var(--ink-faint, #9c8e7e)",
+    cursor: "pointer", transition: "color 0.15s ease, background 0.15s ease", flexShrink: 0,
+  };
+
+  const formatTimestamp = (ts: string): string => {
+    try {
+      const d = new Date(ts);
+      if (isNaN(d.getTime())) return ts;
+      const pad = (n: number) => String(n).padStart(2, "0");
+      return `${pad(d.getDate())}/${pad(d.getMonth() + 1)} · ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    } catch {
+      return ts;
+    }
   };
 
   return (
     <div style={wrapStyle}>
       <style>{`
-        @keyframes msgbubble-pulse {
-          0% { opacity: 1; transform: scale(1); }
-          100% { opacity: 0.5; transform: scale(0.85); }
-        }
-        @keyframes msgbubble-spin {
-          to { transform: rotate(360deg); }
-        }
+        @keyframes msgbubble-pulse { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0.5; transform: scale(0.85); } }
+        @keyframes msgbubble-spin { to { transform: rotate(360deg); } }
         .msg-bubble-prose p { margin: 0 0 8px; }
         .msg-bubble-prose p:last-child { margin-bottom: 0; }
-        .msg-bubble-prose code {
-          font-family: var(--ff-mono, "JetBrains Mono", monospace);
-          font-size: 0.88em;
-          padding: 1px 5px;
-          border-radius: 3px;
-          background: var(--bg-paper-deep, #e8dfcd);
-          color: var(--accent-deep, #4a3666);
-        }
+        .msg-bubble-prose code { font-family: var(--ff-mono, "JetBrains Mono", monospace); font-size: 0.88em; padding: 1px 5px; border-radius: 3px; background: var(--bg-paper-deep, #e8dfcd); color: var(--accent-deep, #4a3666); }
         .msg-bubble-prose strong { font-weight: 600; }
         .msg-bubble-prose em { font-style: italic; }
         .msg-bubble-prose a { color: var(--accent, #6b4f8a); text-decoration: underline; }
         .msg-bubble-prose ul, .msg-bubble-prose ol { margin: 4px 0 8px; padding-left: 20px; }
         .msg-bubble-prose li { margin: 2px 0; }
-        @media (prefers-reduced-motion: reduce) {
-          * { animation: none !important; }
-        }
+        .prose-copy-btn:hover { background: var(--bg-paper-deep, #e8dfcd) !important; color: var(--accent, #6b4f8a) !important; }
+        @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
       `}</style>
 
       <div style={outerStyle}>
@@ -172,29 +189,47 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
         )}
 
         <div style={bubbleStyle}>
-          {isAgent && (
-            <div style={headerStyle}>
-              <span style={bulletStyle} aria-hidden="true" />
-              <span style={nameStyle}>{agentName}</span>
-              {streaming && (
-                <>
-                  <span
-                    style={spinnerStyle}
-                    role="status"
-                    aria-label={t("chat:bubble.streaming_aria")}
-                  />
-                </>
-              )}
+          <div style={headerStyle}>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              {isAgent && <span style={bulletStyle} aria-hidden="true" />}
+              <span style={nameStyle}>{isAgent ? agentName : (t("chat:you") || "you")}</span>
             </div>
-          )}
+            {markdown && !streaming && (
+              <button
+                type="button"
+                className="prose-copy-btn"
+                style={copyBtnStyle}
+                onClick={handleCopy}
+                aria-label={t("chat:copy.aria")}
+                title={copied ? t("chat:copy.done") : t("chat:copy.label")}
+              >
+                {copied ? (
+                  <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M2.5 7.5l3 3 6-7" />
+                  </svg>
+                ) : (
+                  <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="5" y="5" width="8" height="8" rx="1" />
+                    <path d="M3 11V3a1 1 0 0 1 1-1h8" />
+                  </svg>
+                )}
+              </button>
+            )}
+          </div>
+
           <div className="msg-bubble-prose" style={proseStyle}>
             <MarkdownRenderer markdown={markdown} t={t} />
           </div>
-          <div style={timeStyle}>{timestamp}</div>
+
+          <div style={footerStyle}>
+            <span style={timeStyle}>{formatTimestamp(timestamp)}</span>
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
+const W_BUBBLE_MIN = "120px";
 
 export default MessageBubble;

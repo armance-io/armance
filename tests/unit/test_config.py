@@ -102,3 +102,41 @@ def test_round_trip_with_env_override(tmp_path: Path, monkeypatch) -> None:
     loaded2 = load_config(tmp_path)
     assert loaded2.providers[0].api_key == "from-os-env"
 
+
+
+def test_default_provider_always_listed(tmp_path: Path, monkeypatch) -> None:
+    """A default_provider missing from providers[] is auto-added on load.
+
+    Regression: a config with `default_provider: claude-code` but an empty
+    `providers` list crashed agent calls with
+    `KeyError: provider not configured: claude-code` because
+    `Config.provider()` only looked at the list. load_config now guarantees
+    the default provider is present (and gets its env overlay).
+    """
+    monkeypatch.delenv("CLAUDE_CODE_API_KEY", raising=False)
+    (tmp_path / ".armance").mkdir()
+    (tmp_path / ".armance" / "config.yaml").write_text(
+        "default_provider: claude-code\nproviders: []\n", encoding="utf-8"
+    )
+
+    cfg = load_config(tmp_path)
+
+    names = [p.name for p in cfg.providers]
+    assert "claude-code" in names
+    # And .provider() resolves it without raising.
+    assert cfg.provider("claude-code").name == "claude-code"
+
+
+def test_default_provider_gets_env_overlay(tmp_path: Path, monkeypatch) -> None:
+    """The auto-added default provider still receives its env api_key/base_url."""
+    (tmp_path / ".armance").mkdir()
+    (tmp_path / ".armance" / "config.yaml").write_text(
+        "default_provider: custom-openai\nproviders: []\n", encoding="utf-8"
+    )
+    monkeypatch.setenv("CUSTOM_OPENAI_API_KEY", "k-123")
+    monkeypatch.setenv("CUSTOM_OPENAI_BASE_URL", "http://localhost:11434/v1")
+
+    cfg = load_config(tmp_path)
+    p = cfg.provider("custom-openai")
+    assert p.api_key == "k-123"
+    assert p.base_url == "http://localhost:11434/v1"

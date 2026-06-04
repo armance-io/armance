@@ -32,25 +32,40 @@ export const CheckpointDrawer: FC<CheckpointDrawerProps> = ({
   const [selected, setSelected] = useState<string>(options[0] ?? "");
   const [open, setOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [submittedValue, setSubmittedValue] = useState("");
 
   /* Slide in on mount */
   useEffect(() => {
     requestAnimationFrame(() => setOpen(true));
   }, []);
 
+  const handleConfirmSubmit = useCallback((val: string) => {
+    setSubmittedValue(val);
+    setShowConfirm(true);
+  }, []);
+
+  useEffect(() => {
+    if (!showConfirm) return;
+    const timer = setTimeout(() => {
+      onSubmit(submittedValue);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [showConfirm, submittedValue, onSubmit]);
+
   const handleSubmit = useCallback(() => {
     if (kind === "text") {
-      onSubmit(textValue.trim());
+      handleConfirmSubmit(textValue.trim());
     } else if (kind === "select") {
-      onSubmit(selected);
+      handleConfirmSubmit(selected);
     } else {
-      onSubmit("yes");
+      handleConfirmSubmit("yes");
     }
-  }, [kind, textValue, selected, onSubmit]);
+  }, [kind, textValue, selected, handleConfirmSubmit]);
 
   const handleNo = useCallback(() => {
-    onSubmit("no");
-  }, [onSubmit]);
+    handleConfirmSubmit("no");
+  }, [handleConfirmSubmit]);
 
   /* ── Styles ── */
 
@@ -276,6 +291,60 @@ export const CheckpointDrawer: FC<CheckpointDrawerProps> = ({
           )}
         </footer>
       </div>
+
+      {showConfirm && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => onSubmit(submittedValue)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 10000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(42, 37, 32, 0.15)",
+            backdropFilter: "blur(2px)",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "var(--bg-paper-card, #faf6ef)",
+              border: "1px solid var(--rule, #d6c8ad)",
+              padding: "24px 32px",
+              borderRadius: "2px",
+              boxShadow: "0 12px 28px rgba(0,0,0,0.12)",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "12px",
+              maxWidth: "90%",
+              width: "360px",
+              textAlign: "center",
+            }}
+          >
+            <span style={{ fontSize: "24px", color: "var(--accent, #6b4f8a)" }}>❦</span>
+            <h3 style={{
+              fontFamily: "var(--ff-serif, 'Instrument Serif', serif)",
+              fontSize: "20px",
+              margin: 0,
+              color: "var(--ink, #2a2520)",
+            }}>
+              {t("checkpoint:drawer.submitted_title")}
+            </h3>
+            <p style={{
+              fontFamily: "var(--ff-sans, 'Inter', sans-serif)",
+              fontSize: "14px",
+              color: "var(--ink-soft, #5b5145)",
+              margin: 0,
+            }}>
+              {t("checkpoint:drawer.submitted_desc")}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -22,33 +22,120 @@
       "brand_domain": "armance.io",
       "sidebar_collapse_aria": "Collapse sidebar",
       "footer_motto": "A house of thinking agents.",
-      "footer_line": "armance.io · 2026 · made in France"
+      "footer_line": "2026 · made in France"
     },
-    "theme": { "toggle_aria": "Toggle theme" },
+    "theme": {
+      "toggle_aria": "Toggle theme"
+    },
     "empty": {
-      "library": { "title": "No documents yet", "hint": "Import a file to begin.", "cta": "Import" },
-      "workflow": { "title": "No workflow running", "hint": "Launch one through Kim." },
-      "session": { "title": "A new session begins", "hint": "Describe a decision you're weighing, or drop a document." },
-      "shell": { "title": "Choose a session", "hint": "Pick one in the sidebar, or open a new project." }
+      "library": {
+        "title": "No documents yet",
+        "hint": "Import a file to begin.",
+        "cta": "Import"
+      },
+      "workflow": {
+        "title": "No workflow running",
+        "hint": "Launch one through Kim.",
+        "cta": "Launch workflow"
+      },
+      "session": {
+        "title": "A new session begins",
+        "hint": "Describe a decision you're weighing, or drop a document.",
+        "cta": "New session",
+        "suggestion_decision": "Describe a decision you are weighing",
+        "suggestion_document": "Drop a document you want to examine"
+      },
+      "shell": {
+        "title": "Choose a session",
+        "hint": "Pick one in the sidebar, or open a new project."
+      },
+      "deliberation": {
+        "title": "No data yet",
+        "hint": "Launch a deliberation to gather statistics."
+      }
+    },
+    "metrics": {
+      "co2e_aria": "Carbon footprint (gCO₂e)",
+      "water_aria": "Water footprint (mL)",
+      "tokens_in_aria": "Tokens in",
+      "tokens_out_aria": "Tokens out",
+      "model_aria": "Model in use (selected agent)"
     }
   },
   "library": {
     "title": "Library",
-    "import": "Import",
-    "import_all": "Index all",
-    "search_placeholder": "Search by name",
-    "status_pending": "pending",
-    "status_indexed": "indexed",
-    "status_loaded": "loaded",
-    "actions": { "load": "Load", "unload": "Unload", "unindex": "Unindex", "delete": "Delete" },
-    "confirm_delete": "Delete {{name}}?",
-    "reader": { "download": "Download", "opened_from": "Opened from: {{path}}" }
+    "list_aria": "Document library",
+    "toolbar": {
+      "search_placeholder": "Search by name",
+      "index_all": "Index all",
+      "import": "Import"
+    },
+    "status": {
+      "pending": "pending",
+      "indexed": "indexed",
+      "loaded": "loaded"
+    },
+    "action": {
+      "index": "Index",
+      "load": "Load",
+      "unload": "Unload",
+      "unindex": "Unindex",
+      "delete": "Delete"
+    },
+    "confirm": {
+      "delete_title": "Delete document",
+      "delete_hint": "Are you sure you want to delete this document?",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "reader": {
+      "download": "Download",
+      "download_label": "Download",
+      "download_aria": "Download this deliverable",
+      "opened_from": "Opened from: {{path}}"
+    },
+    "toast": {
+      "imported": "Document imported",
+      "indexing": "Indexing started…",
+      "indexing_all": "Indexing all documents…",
+      "loading": "Loading into context…"
+    },
+    "feuillets_count": "{n} slips",
+    "feuillets_total_aria": "Total indexed slips",
+    "no_embedding_tooltip": "Configure an embedding model to enable indexing (Admin → Config)"
   },
   "chat": {
-    "input": { "placeholder": "Speak freely.", "busy_label": "{{name}} is thinking…", "send_aria": "Send message" },
-    "bubble": { "streaming_aria": "{{name}} is replying" },
-    "tooltip": { "tokens_in": "Tokens in", "tokens_out": "Tokens out", "cost": "Cost", "cost_na": "n/a" },
-    "bottom": { "thinking": "{{name}} is thinking…" }
+    "input": {
+      "placeholder": "Speak freely.",
+      "busy_label": "{{name}} is thinking…",
+      "send_aria": "Send message"
+    },
+    "bubble": {
+      "streaming_aria": "{{name}} is replying"
+    },
+    "tooltip": {
+      "tokens_in": "Tokens in",
+      "tokens_out": "Tokens out",
+      "cost": "Cost",
+      "cost_na": "n/a"
+    },
+    "bottom": {
+      "thinking": "{{name}} is thinking…"
+    },
+    "agents": {
+      "label": "Talking to",
+      "switch_aria": "Switch to",
+      "switched": "Your interlocutor: {name}"
+    },
+    "error": {
+      "turn_failed": "The response failed. Please try again."
+    },
+    "copy": {
+      "label": "copy",
+      "done": "copied",
+      "aria": "Copy message to clipboard"
+    },
+    "you": "You"
   },
   "checkpoint": {
     "drawer": {
@@ -56,7 +143,9 @@
       "submit": "Send",
       "abort": "Cancel",
       "yes": "Yes",
-      "no": "No"
+      "no": "No",
+      "submitted_title": "Response Recorded",
+      "submitted_desc": "Your response has been successfully saved."
     }
   },
   "panel": {
@@ -64,19 +153,44 @@
     "ask_alternative": "Ask for another perspective"
   },
   "render": {
-    "code": { "copy": "Copy", "copied": "Copied", "lang_aria": "Language: {{lang}}" },
-    "mermaid": { "error_title": "Diagram not rendered", "error_hint": "Showing source instead." },
-    "svg": { "error_title": "SVG rejected", "error_hint": "Removed for safety." },
-    "image": { "lightbox_aria": "Open image", "close_aria": "Close" },
-    "md": { "fallback_table": "Table" }
+    "code": {
+      "copy": "Copy",
+      "copied": "Copied",
+      "download": "Download",
+      "downloaded": "Downloaded",
+      "lang_aria": "Language: {{lang}}"
+    },
+    "mermaid": {
+      "error_title": "Diagram not rendered",
+      "error_hint": "Showing source instead."
+    },
+    "svg": {
+      "error_title": "SVG rejected",
+      "error_hint": "Removed for safety."
+    },
+    "image": {
+      "lightbox_aria": "Open image",
+      "close_aria": "Close"
+    },
+    "md": {
+      "fallback_table": "Table"
+    }
   },
   "runs": {
     "detail": {
       "duration": "Duration",
       "tokens": "Tokens",
       "cost": "Cost",
+      "cost_na": "n/a",
       "steps": "Steps",
-      "status": { "running": "running", "completed": "done", "failed": "failed", "cancelled": "cancelled", "skipped": "skipped" }
+      "step": "Step",
+      "status": {
+        "running": "running",
+        "completed": "done",
+        "failed": "failed",
+        "cancelled": "cancelled",
+        "skipped": "skipped"
+      }
     }
   },
   "run": {
@@ -87,7 +201,18 @@
       "hypotheses": "Hypotheses",
       "mode": "Mode",
       "mode_interactive": "interactive",
-      "mode_autonomous": "autonomous"
+      "mode_autonomous": "autonomous",
+      "loading": "Loading…",
+      "compiling": "Compiling the deliverable…",
+      "compiling_desc": "The team is assembling its findings.",
+      "downloads": "Downloads"
+    },
+    "mode": {
+      "title_aria": "Run mode"
+    },
+    "sources": {
+      "empty": "No sources cited yet.",
+      "open_aria": "Open source"
     },
     "ledger": {
       "retained": "Retained",
@@ -98,15 +223,90 @@
     }
   },
   "workflow": {
-    "graph": { "empty": "This workflow has no steps yet." },
-    "step": { "status": { "queued": "queued", "working": "working", "completed": "done", "failed": "failed", "cancelled": "cancelled", "skipped": "skipped" } },
-    "run": { "label": "Run", "status": { "running": "running", "completed": "done", "failed": "failed", "cancelled": "cancelled" } },
+    "graph": {
+      "empty": "This workflow has no steps yet."
+    },
+    "step": {
+      "status": {
+        "queued": "queued",
+        "working": "working",
+        "completed": "done",
+        "failed": "failed",
+        "cancelled": "cancelled",
+        "skipped": "skipped"
+      }
+    },
+    "run": {
+      "label": "Run",
+      "status": {
+        "running": "running",
+        "completed": "done",
+        "failed": "failed",
+        "cancelled": "cancelled"
+      }
+    },
     "picker": {
       "quick": "A quick perspective",
       "deep": "A thorough, challenged analysis",
+      "quick_title": "A quick perspective",
+      "quick_desc": "Rapid verification of primary assumptions using key benchmarks.",
+      "deep_title": "A thorough, challenged analysis",
+      "deep_desc": "Rigorous evaluation challenging all assertions through structural debate.",
+      "hint_interactive": "Mona will ask for your guidance at key decision thresholds.",
+      "hint_autonomous": "Mona operates autonomous checkpoints to deliver the synthesis.",
       "mode_interactive": "interactive",
       "mode_autonomous": "autonomous",
       "launch": "Launch"
+    },
+    "history": {
+      "title": "Past runs",
+      "empty": "No past runs yet.",
+      "duration_aria": "Run duration",
+      "time_just_now": "just now",
+      "time_mins": "{count} min ago",
+      "time_hours": "{count} h ago",
+      "time_days": "{count} d ago",
+      "status": {
+        "queued": "⋯",
+        "working": "⏳",
+        "running": "⏳",
+        "completed": "✓",
+        "failed": "✗",
+        "cancelled": "⊘",
+        "canceled": "⊘"
+      }
+    },
+    "delete": {
+      "error": "Could not delete this run.",
+      "aria": "Delete run",
+      "blocked_active": "Cannot delete a running run.",
+      "confirm_title": "Delete this run?",
+      "confirm_hint": "This permanently removes the run and its outputs.",
+      "confirm_no": "Cancel",
+      "confirm_yes": "Delete"
+    },
+    "interrupt": {
+      "error": "Could not interrupt this run.",
+      "label": "Interrupt",
+      "confirm_title": "Interrupt this run?",
+      "confirm_no": "Keep running",
+      "confirm_yes": "Interrupt"
+    },
+    "empty": {
+      "title": "No workflow designed yet.",
+      "hint": "Ask Kim to design one by typing your request in the chat."
+    },
+    "list": {
+      "title": "Workflows",
+      "steps": "{count} steps"
+    },
+    "runs": {
+      "title": "Past runs"
+    },
+    "launch": {
+      "started": "Run launched: {id}",
+      "error": "Could not launch the run.",
+      "in_progress": "Launching…"
     }
   },
   "hypotheses": {
@@ -114,27 +314,175 @@
     "marker": "Hypothesis",
     "invalidator": "invalidator"
   },
+  "roles": {
+    "weaver": "weaver",
+    "scout": "scout",
+    "conductor": "conductor",
+    "distiller": "distiller",
+    "critic": "critic"
+  },
   "sidebar": {
-    "tabs": { "agents": "Agents", "workflows": "Workflows", "library": "Library", "deliverables": "Deliverables" },
+    "nav_section": {
+      "workspace": "Workspace",
+      "account": "Account"
+    },
+    "tabs": {
+      "agents": "Agents",
+      "workflows": "Workflows",
+      "library": "Library",
+      "deliverables": "Deliverables",
+      "session_active": "Current session",
+      "settings": "Settings"
+    },
     "deliverables": {
       "empty": "No deliverables yet.",
-      "filter_workflow": "Workflow",
-      "filter_format": "Format",
+      "filter": {
+        "workflow": "Workflow",
+        "all_workflows": "All workflows"
+      },
       "starred_first": "Starred first",
-      "star_aria": "Star {{name}}"
+      "star_aria": "Star deliverable"
+    },
+    "section": {
+      "staff": "Staff",
+      "library": "Library",
+      "roles": "Roles & agents"
+    },
+    "staff": {
+      "empty": "No specialists yet",
+      "mention_hint": "Insert a mention in your message",
+      "switch_hint": "Switch to this agent"
+    },
+    "library": {
+      "docs": "Documents",
+      "feuillets": "Slips",
+      "subtitle": "{docs} docs · {feuillets} slips",
+      "inactive": "inactive — no embedding model"
     }
   },
   "admin": {
-    "tabs": { "config": "Configuration", "secrets": "Secrets", "logs": "Logs", "stats": "Statistics", "agents": "Agents" },
-    "config": { "title": "Configuration", "save": "Save" },
-    "secrets": { "title": "Secrets", "masked": "•••• {{last4}}", "edit": "Edit", "delete": "Delete" },
-    "logs": { "title": "Logs", "level": "Level", "search": "Search" },
-    "stats": { "title": "Statistics", "tokens_in": "Tokens in", "tokens_out": "Tokens out", "cost": "Cost", "messages": "Messages" },
-    "agents": { "title": "Agents", "model": "Model", "reasoning": "Reasoning effort" }
+    "tabs": {
+      "config": "Configuration",
+      "secrets": "Secrets",
+      "logs": "Logs",
+      "stats": "Statistics",
+      "agents": "Agents",
+      "empreinte": "Empreinte"
+    },
+    "config": {
+      "title": "Configuration",
+      "save": "Save",
+      "saving": "Saving…",
+      "default_provider": "Default provider",
+      "default_model": "Default model",
+      "budget_effort": "Budget effort",
+      "budget": {
+        "free-first": "Free first",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      },
+      "language": "Language",
+      "log_level": "Log level",
+      "err": {
+        "required": "Required"
+      },
+      "providers": "Configured Providers",
+      "default": "Default"
+    },
+    "secrets": {
+      "title": "Secrets",
+      "masked": "•••• {{last4}}",
+      "edit": "Edit",
+      "delete": "Delete",
+      "empty": "No secrets configured.",
+      "col": {
+        "key": "Key",
+        "value": "Value",
+        "actions": "Actions"
+      },
+      "action": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "reveal": "Reveal",
+        "save": "Save",
+        "cancel": "Cancel"
+      },
+      "confirm_delete": "Delete this secret?",
+      "localhost_only": "Secrets are only manageable from localhost / loopback origins.",
+      "offline": "Secrets are unavailable while offline.",
+      "error_loading": "Failed to load secrets."
+    },
+    "logs": {
+      "title": "Logs",
+      "level": "Level",
+      "search": "Search",
+      "empty": "No log entries.",
+      "loading_more": "Loading…",
+      "filter": {
+        "agent": "Agent",
+        "all_agents": "All agents",
+        "from": "From",
+        "to": "To",
+        "search": "Search"
+      },
+      "level_changed_title": "Log level updated",
+      "level_changed_desc": "Log level has been changed to {level}.",
+      "live": "Live"
+    },
+    "stats": {
+      "title": "Statistics",
+      "tokens_in": "Tokens in",
+      "tokens_out": "Tokens out",
+      "cost": "Cost",
+      "messages": "messages",
+      "per_agent": "Per agent",
+      "top5_cost": "Top 5 by cost",
+      "carbon": "Carbon footprint",
+      "water": "Water use"
+    },
+    "agents": {
+      "title": "Agents",
+      "model": "Model",
+      "reasoning": "Reasoning effort",
+      "provider": "Provider",
+      "persona": "Persona",
+      "persona_hint": "Edit persona via Malik chat.",
+      "save": "Save",
+      "saving": "Saving…"
+    },
+    "footprint": {
+      "error": "Error loading footprint stats.",
+      "no_data": "No footprint data yet — run a deliberation to populate it.",
+      "method": "Estimation method",
+      "method_body": "Environmental impact is computed with the EcoLogits methodology (ISO 14044 LCA), accounting for the usage phase (GPU, data-centre PUE) and the embodied impact of hardware manufacturing.",
+      "estimate": "Estimate",
+      "measured": "Measured",
+      "zone_label": "Carbon-intensity zone",
+      "col": {
+        "agent": "Agent",
+        "calls": "Calls",
+        "co2e": "CO₂e",
+        "water": "Water",
+        "type": "Type"
+      },
+      "zone": {
+        "wor": "World — global average carbon intensity",
+        "unknown": "Unknown zone"
+      }
+    }
   },
   "audio": {
-    "voice": { "idle_aria": "Hold to talk", "recording": "Recording…", "error": "Recording failed" },
-    "play": { "play_aria": "Play", "pause_aria": "Pause", "error": "Playback failed" }
+    "voice": {
+      "idle_aria": "Hold to talk",
+      "recording": "Recording…",
+      "error": "Recording failed"
+    },
+    "play": {
+      "play_aria": "Play",
+      "pause_aria": "Pause",
+      "error": "Playback failed"
+    }
   },
   "setup": {
     "title": "Welcome",
@@ -143,5 +491,14 @@
     "step_budget": "Pick a budget",
     "step_language": "Pick a language",
     "continue": "Continue"
+  },
+  "session": {
+    "selector": {
+      "title": "Sessions (newest first)",
+      "empty": "No previous sessions",
+      "summary": "{turns} turns · ~{tokens} tk",
+      "locked_aria": "Active session (locked after first message)",
+      "id_label": "Session ID"
+    }
   }
 }
