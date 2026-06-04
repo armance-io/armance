@@ -22,4 +22,20 @@ if (typeof window !== "undefined" && !window.matchMedia) {
   });
 }
 
+// jsdom does not implement EventSource. Provide an inert stub so components
+// that open an SSE stream at mount (sidebar roster refresh, workflow graph)
+// can render in tests without a real connection.
+if (typeof globalThis !== "undefined" && !("EventSource" in globalThis)) {
+  class EventSourceStub {
+    onopen: ((this: EventSource, ev: Event) => unknown) | null = null;
+    onerror: ((this: EventSource, ev: Event) => unknown) | null = null;
+    onmessage: ((this: EventSource, ev: MessageEvent) => unknown) | null = null;
+    addEventListener = vi.fn();
+    removeEventListener = vi.fn();
+    close = vi.fn();
+    constructor(public url: string) {}
+  }
+  (globalThis as unknown as { EventSource: unknown }).EventSource = EventSourceStub;
+}
+
 // jsdom ships localStorage; reset between test files via global hook.

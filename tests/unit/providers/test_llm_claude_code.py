@@ -181,3 +181,40 @@ async def test_claude_code_maps_tools_and_avoids_type_error(
     # Wait, because in the stub has_var_keyword is True, unsupported_param_to_filter is passed through
     assert captured["options"].kwargs["unsupported_param_to_filter"] == "some-val"
 
+
+@pytest.mark.asyncio
+async def test_claude_code_ignores_success_pseudo_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict = {}
+
+    async def fake_query(*, prompt: str, options: Any) -> AsyncIterator[Any]:
+        captured["prompt"] = prompt
+        captured["options"] = options
+        yield _StubAssistant(content=[_StubText(text="Workflow designed successfully.")])
+        raise Exception("Claude Code returned an error result: success")
+
+    fake_module = type(
+        "FakeSDK",
+        (),
+        {
+            "AssistantMessage": _StubAssistant,
+            "ResultMessage": _StubResult,
+            "TextBlock": _StubText,
+            "ClaudeAgentOptions": _StubOptions,
+            "query": fake_query,
+        },
+    )
+    monkeypatch.setitem(__import__("sys").modules, "claude_agent_sdk", fake_module)
+
+    client = cc_module.ClaudeCodeClient(ProviderConfig(name="claude-code"))
+    resp = await client.complete(
+        [
+            {"role": "user", "content": "design workflow"},
+        ],
+        "claude-sonnet-4-6",
+    )
+    assert resp.text == "Workflow designed successfully."
+    assert resp.finish_reason == "stop"
+
+

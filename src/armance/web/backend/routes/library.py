@@ -57,9 +57,11 @@ async def library_status(
         read_set = set()
 
     db_names: set[str] = {d["name"] for d in status.get("docs_in_db", [])}
-    # Per-doc feuillet (chunk) counts from the vector DB, keyed by source name.
+    # Per-doc feuillet (chunk) counts from the vector DB, keyed by doc name.
+    # get_rag_status emits docs_in_db items as {"name", "chunks"} — keying on
+    # "source" here silently produced 0 feuillets for every doc.
     chunks_by_doc: dict[str, int] = {
-        d.get("source", ""): int(d.get("chunks", 0))
+        d.get("name", ""): int(d.get("chunks", 0))
         for d in status.get("docs_in_db", [])
     }
 

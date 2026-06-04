@@ -3,11 +3,15 @@
 import { type FC } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { useEffect, useState } from "react";
 import {
   getLibrary,
   importDoc,
   deleteDoc,
-  submitTurn,
+  libraryAction,
+  getEmbeddingModels,
+  patchAdminConfig,
+  type EmbeddingModel,
 } from "@/lib/api";
 import { LibraryPane } from "./LibraryPane";
 import { useToast } from "@/components/_shared/Toast";
@@ -38,10 +42,34 @@ export const LibraryPaneContainer: FC<LibraryPaneContainerProps> = ({
   const totalFeuillets = data?.total_feuillets ?? 0;
   const embeddingAvailable = Boolean(data?.embedding_model);
 
-  // Indexing runs asynchronously (agent turn), so poll a few times to catch
-  // the status flip pending→indexed without forcing a manual refresh.
-  const refetchSoon = () => {
-    [800, 2000, 4000, 7000].forEach((ms) => setTimeout(() => refetch(), ms));
+  // Embedding catalogue for the inline picker shown when no model is set yet,
+  // so the user can enable indexing from the library without leaving for admin.
+  const [embeddingOptions, setEmbeddingOptions] = useState<EmbeddingModel[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    void getEmbeddingModels()
+      .then((res) => {
+        if (!cancelled) setEmbeddingOptions(res.models ?? []);
+      })
+      .catch(() => {
+        /* best-effort — free text still works */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const onSetEmbedding = async (provider: string, model: string) => {
+    try {
+      await patchAdminConfig(pid, {
+        embedding_provider: provider,
+        embedding_model: model,
+      });
+      toast(t("library:toast.embedding_set"), "success");
+      refetch();
+    } catch {
+      toast(t("common:error"), "error");
+    }
   };
 
   const onImport = async (file: File) => {
@@ -55,33 +83,44 @@ export const LibraryPaneContainer: FC<LibraryPaneContainerProps> = ({
     refetch();
   };
 
-  const onIndex = async (name: string) => {
-    await submitTurn(pid, sid, `/library-index ${name}`);
-    toast(t("library:toast.indexing"), "info");
-    refetchSoon();
+  // Prominent "indexing in progress" state — the per-row spinner alone was too
+  // discreet. Drives a banner in the library while an index action runs.
+  const [indexing, setIndexing] = useState(false);
+
+  // Library mutations now run synchronously via the dedicated action route
+  // (no LLM turn, no conversation entry). Returns the ok flag so the button
+  // can flash an ephemeral check on success; errors surface as elegant toasts.
+  const run = async (
+    action: "index" | "load" | "unload" | "unindex",
+    name?: string,
+  ): Promise<boolean> => {
+    const isIndex = action === "index";
+    if (isIndex) setIndexing(true);
+    try {
+      const res = await libraryAction(pid, sid, action, name);
+      if (!res.ok) {
+        toast(res.message || t("common:error"), "error");
+        return false;
+      }
+      // One elegant toast per (re)indexed document.
+      (res.indexed_docs ?? []).forEach((doc) =>
+        toast(t("library:toast.doc_indexed").replace("{name}", doc), "success"),
+      );
+      refetch();
+      return true;
+    } catch {
+      toast(t("common:error"), "error");
+      return false;
+    } finally {
+      if (isIndex) setIndexing(false);
+    }
   };
 
-  const onLoad = async (name: string) => {
-    await submitTurn(pid, sid, `/library-load ${name}`);
-    toast(t("library:toast.loading"), "info");
-    refetchSoon();
-  };
-
-  const onUnload = async (name: string) => {
-    await submitTurn(pid, sid, `/library-unload ${name}`);
-    refetchSoon();
-  };
-
-  const onUnindex = async (name: string) => {
-    await submitTurn(pid, sid, `/library-unindex ${name}`);
-    refetchSoon();
-  };
-
-  const onIndexAll = async () => {
-    await submitTurn(pid, sid, `/library-index`);
-    toast(t("library:toast.indexing_all"), "info");
-    refetchSoon();
-  };
+  const onIndex = (name: string) => run("index", name);
+  const onLoad = (name: string) => run("load", name);
+  const onUnload = (name: string) => run("unload", name);
+  const onUnindex = (name: string) => run("unindex", name);
+  const onIndexAll = () => run("index");
 
   if (isLoading) {
     return (
@@ -111,6 +150,9 @@ export const LibraryPaneContainer: FC<LibraryPaneContainerProps> = ({
       onUnload={onUnload}
       onUnindex={onUnindex}
       onIndexAll={onIndexAll}
+      embeddingOptions={embeddingOptions}
+      onSetEmbedding={onSetEmbedding}
+      indexing={indexing}
       t={t}
     />
   );

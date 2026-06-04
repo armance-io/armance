@@ -76,7 +76,7 @@ def cfg() -> Config:
 def _make_ctx(
     armance_root: Path, cfg: Config, current_agent: str, agents: list[Agent]
 ) -> LoopContext:
-    from armance.service.session import Session, SessionState
+    from armance.service.session import Session
     state = SessionState.new()
     state.current_agent = current_agent
     session = Session(state, armance_root)

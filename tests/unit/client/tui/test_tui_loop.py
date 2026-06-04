@@ -5,7 +5,6 @@ All LLM / meeting calls are stubbed — no real network or I/O.
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -27,13 +26,11 @@ from armance.service.handlers import (
     _cmd_switch,
     _cmd_task,
     _cmd_workflow,
-    _set_status,
 )
 from armance.config import Config, ProviderConfig
 from armance.service.llm_service import TokenLedger
 from armance.service.report import Report
 from armance.service.session import SessionState, save_state
-from armance.client.tui.types import AgentStatus
 
 
 # ---------------------------------------------------------------------------
@@ -411,7 +408,6 @@ async def test_chat_saves_state(tmp_path: Path) -> None:
 @pytest.mark.asyncio
 async def test_quit_persists_state(tmp_path: Path) -> None:
     """Session state is saved on exit via save_state."""
-    from armance.service.session import save_state
     armance_root = tmp_path / ".armance"
     armance_root.mkdir(parents=True, exist_ok=True)
     state = SessionState.new()
@@ -445,7 +441,7 @@ def test_handler_keys_match_commands() -> None:
 # ---------------------------------------------------------------------------
 
 def test_render_template_prior_session_notes() -> None:
-    from armance.core.models.workflow import render_template, StepResult
+    from armance.core.models.workflow import render_template
     tmpl = "Notes: {{prior_session.notes}}\nPrompt: {{user_prompt}}"
     result = render_template(
         tmpl,

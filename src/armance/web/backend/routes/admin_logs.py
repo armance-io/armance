@@ -48,6 +48,7 @@ async def get_logs(
 ) -> dict[str, Any]:
     logs_dir = app_state.armance_root / "logs"
     all_lines = _read_all_lines(logs_dir)
+    all_lines.reverse()
 
     if agent:
         filtered = [ln for ln in all_lines if ln.get("agent") == agent]

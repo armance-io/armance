@@ -98,11 +98,21 @@
       "imported": "Document importé",
       "indexing": "Indexation lancée…",
       "indexing_all": "Indexation de tous les documents…",
-      "loading": "Chargement en contexte…"
+      "loading": "Chargement en contexte…",
+      "embedding_set": "Modèle d'embedding défini",
+      "doc_indexed": "{name} indexé"
     },
     "feuillets_count": "{n} feuillets",
     "feuillets_total_aria": "Total des feuillets indexés",
-    "no_embedding_tooltip": "Configurez un modèle d'embedding pour activer l'indexation (Admin → Config)"
+    "no_embedding_tooltip": "Configurez un modèle d'embedding pour activer l'indexation (Admin → Config)",
+    "embedding": {
+      "prompt": "Aucun modèle d'embedding défini — choisissez-en un pour activer l'indexation.",
+      "placeholder": "Saisissez ou choisissez un modèle d'embedding…",
+      "set": "Activer"
+    },
+    "indexing": {
+      "in_progress": "Indexation en cours…"
+    }
   },
   "chat": {
     "input": {
@@ -120,7 +130,7 @@
       "cost_na": "n/a"
     },
     "bottom": {
-      "thinking": "{{name}} réfléchit…"
+      "thinking": "{name} réfléchit…"
     },
     "agents": {
       "label": "Interlocuteur",
@@ -220,6 +230,29 @@
       "proposed_by": "Proposé par",
       "rejected_by": "Rejeté par",
       "weight": "poids"
+    },
+    "tabs": {
+      "flow": "Flux",
+      "report": "Compte rendu"
+    },
+    "flow": {
+      "waiting": "En attente du démarrage de l'exécution…",
+      "status": {
+        "queued": "en file",
+        "working": "en cours",
+        "completed": "terminé",
+        "failed": "échec",
+        "skipped": "ignoré",
+        "cancelled": "annulé",
+        "awaiting": "en attente"
+      },
+      "answer_placeholder": "Saisissez votre réponse…",
+      "answer_send": "Envoyer",
+      "awaiting_answer": "En attente de votre réponse",
+      "question_notif": "Un agent vous pose une question",
+      "qa_question": "Q :",
+      "qa_mona_answered": "Mona a répondu :",
+      "qa_you_answered": "Vous avez répondu :"
     }
   },
   "workflow": {
@@ -306,7 +339,11 @@
     "launch": {
       "started": "Exécution lancée : {id}",
       "error": "Impossible de lancer l'exécution.",
-      "in_progress": "Lancement…"
+      "in_progress": "Lancement…",
+      "started_no_id": "Exécution du workflow lancée."
+    },
+    "panel": {
+      "resize": "Glisser pour redimensionner"
     }
   },
   "hypotheses": {
@@ -366,8 +403,7 @@
       "secrets": "Secrets",
       "logs": "Journaux",
       "stats": "Statistiques",
-      "agents": "Agents",
-      "empreinte": "Empreinte"
+      "agents": "Agents"
     },
     "config": {
       "title": "Configuration",
@@ -388,7 +424,12 @@
         "required": "Requis"
       },
       "providers": "Fournisseurs configurés",
-      "default": "Par défaut"
+      "default": "Par défaut",
+      "delete_provider": "Supprimer le fournisseur",
+      "add_provider": "+ Ajouter un fournisseur",
+      "embedding": "Modèle d'embedding",
+      "embedding_placeholder": "Saisissez ou choisissez un identifiant de modèle d'embedding…",
+      "embedding_hint": "Sert à indexer votre bibliothèque. Choisissez parmi vos fournisseurs ou saisissez un identifiant de modèle."
     },
     "secrets": {
       "title": "Secrets",
@@ -439,7 +480,9 @@
       "per_agent": "Par agent",
       "top5_cost": "Top 5 par coût",
       "carbon": "Empreinte carbone",
-      "water": "Consommation d'eau"
+      "water": "Consommation d'eau",
+      "carbon_total": "Empreinte carbone totale",
+      "water_total": "Consommation d'eau totale"
     },
     "agents": {
       "title": "Agents",
@@ -449,7 +492,8 @@
       "persona": "Personnalité",
       "persona_hint": "Modifiez la personnalité via le chat Malik.",
       "save": "Sauvegarder",
-      "saving": "Sauvegarde…"
+      "saving": "Sauvegarde…",
+      "saved": "Agent sauvegardé."
     },
     "footprint": {
       "error": "Erreur de chargement de l'empreinte.",
@@ -490,7 +534,18 @@
     "step_model": "Choisissez un modèle",
     "step_budget": "Choisissez un budget",
     "step_language": "Choisissez une langue",
-    "continue": "Continuer"
+    "continue": "Continuer",
+    "model_hint": "Choisissez un modèle par défaut. Il initialise vos agents permanents (Malik, Kim, Mona, etc.). Vous pouvez saisir l'identifiant de n'importe quel modèle.",
+    "model_placeholder": "Saisissez ou choisissez un identifiant de modèle…",
+    "embedding_label": "Modèle d'embedding (optionnel)",
+    "embedding_hint": "Pour indexer votre bibliothèque. Vous pouvez l'ignorer et le définir plus tard.",
+    "embedding_placeholder": "Saisissez ou choisissez un identifiant de modèle d'embedding…",
+    "tier": {
+      "free": "Gratuit",
+      "low": "Faible",
+      "medium": "Moyen",
+      "high": "Élevé"
+    }
   },
   "session": {
     "selector": {

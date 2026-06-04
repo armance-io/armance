@@ -5,10 +5,10 @@
 # Enveloppes système génériques
 # ---------------------------------------------------------------------------
 system:
-  ok: "*(Système : ✅ {body})*"
+  ok: "*(Système : {body})*"
   info: "*(Système : ℹ️ {body})*"
-  warn: "*(Système : ⚠️ {body})*"
-  error: "*(Système : ❌ {body})*"
+  warn: "*(Système : Attention — {body})*"
+  error: "*(Système : {body})*"
 
 # ---------------------------------------------------------------------------
 # Cycle de vie des documents / bibliothèque
@@ -62,8 +62,8 @@ rag_report:
   no_docs_hint: "> Déposez des fichiers PDF, MD, DOCX ou TXT dans `.armance/docs/` et demandez à Armance de les retenir."
   files_header: "### Fichiers dans `.armance/docs/`"
   status_stale: "🔄 modifié (à re-retenir)"
-  status_retained: "✅ retenu ({chunks} chunks, ~{tokens} tokens)"
-  status_manifest_only: "⚠️ dans le manifest mais absent de la base (erreur d'ingestion ?)"
+  status_retained: "retenu ({chunks} chunks, ~{tokens} tokens)"
+  status_manifest_only: "Attention — dans le manifest mais absent de la base (erreur d'ingestion ?)"
   status_not_retained: "⏳ non retenu"
   doc_line: "- **{name}** ({size_kb} KB) — {status}"
   orphans_header: "### Orphelins (dans la bibliothèque, fichier disparu de `.armance/docs/`)"
@@ -78,7 +78,7 @@ docs_section:
   empty_title: "## Documents dans `.armance/docs/`"
   empty_body: "_Aucun document pour le moment._ Dites à l'utilisateur qu'il peut déposer PDF / DOCX / MD / TXT dans `.armance/docs/` et choisir lesquels indexer dans la bibliothèque et/ou charger pour que toute l'équipe les lise."
   empty_body_no_library: "_Aucun document pour le moment._ Dites à l'utilisateur qu'il peut déposer PDF / DOCX / MD / TXT dans `.armance/docs/` et choisir lesquels **charger** (toute l'équipe lit le texte intégral le temps de la session). La bibliothèque indexée **n'est pas configurée** sur cette installation (aucun modèle d'embedding), donc l'indexation est indisponible. Ne proposez PAS d'indexer. Si l'utilisateur demande, mentionnez qu'il peut activer la bibliothèque en relançant `armance init` et en choisissant un modèle d'embedding."
-  status_retained: "✅ indexé dans la bibliothèque (cherchable par feuillets)"
+  status_retained: "indexé dans la bibliothèque (cherchable par feuillets)"
   status_unread: "⏳ pas encore indexé (proposer de l'indexer et/ou de le charger)"
   file_line: "- `{name}` — {status}"
   orphans_header: "### Orphelins (encore dans la bibliothèque, fichier disparu de `.armance/docs/`)"
@@ -232,8 +232,8 @@ system_msg:
   recruit_failed: "*(Système : échec du recrutement : {error})*"
   auto_dismissed_before_recruit: "*(Système : remplacement complet de l'équipe détecté — {n} ancien(s) spécialiste(s) dismiss automatiquement avant le recrutement de la nouvelle équipe)*"
   forwarded: "— transféré à {target} —"
-  health_warning: "⚠️ Modèles injoignables détectés au test : {agents}. Demandez à @Malik de proposer un autre modèle pour ces agents."
-  workflow_health_block: "🛑 Workflow non lancé : agent(s) injoignable(s) — {agents}. Demandez à @Malik de remplacer leur modèle, ou autorisez l'exécution sans eux."
+  health_warning: "Attention — Modèles injoignables détectés au test : {agents}. Demandez à @Malik de proposer un autre modèle pour ces agents."
+  workflow_health_block: "Workflow non lancé : agent(s) injoignable(s) — {agents}. Demandez à @Malik de remplacer leur modèle, ou autorisez l'exécution sans eux."
 
 model:
   set: "modèle défini : {provider}/{model}"
@@ -261,10 +261,10 @@ export:
 
 workflow:
   run_started: "▶️ Run démarré → livrables dans `{path}/`"
-  run_finished: "✅ Run terminé. Tous les livrables sont dans `{path}/`. Demandez à Mona une synthèse, ou comparez avec un run précédent."
-  run_preview: "✅ Run terminé → `{path}/`\n\n**Aperçu :** {preview}…\n\n{mona_offer}"
+  run_finished: "Run terminé. Tous les livrables sont dans `{path}/`. Demandez à Mona une synthèse, ou comparez avec un run précédent."
+  run_preview: "Run terminé → `{path}/`\n\n**Aperçu :** {preview}…\n\n{mona_offer}"
   run_mona_offer: "Veux-tu que Mona te fasse une synthèse et un compte rendu ? Dis-moi."
-  run_aborted: "🛑 Workflow interrompu au point de contrôle `{step_id}` — run partiel enregistré dans `{path}/` avec le statut `canceled`."
+  run_aborted: "Workflow interrompu au point de contrôle `{step_id}` — run partiel enregistré dans `{path}/` avec le statut `canceled`."
   assumptions_header: "\n\n### 🔍 Synthèse exécutive de Mona (Hypothèses et incertitudes critiques)\n\n"
   list_usage: "usage : /workflow list <nom>"
   list_header: "Runs de **{workflow}** ({n}) :"
@@ -272,20 +272,20 @@ workflow:
   compare_usage: "usage : /workflow compare <nom> <run1> <run2>"
   compare_not_found: "Impossible de charger les runs `{run1}` et/ou `{run2}` pour `{workflow}`."
   compare_queued: "📥 Runs `{run1}` et `{run2}` chargés. Mona est activé — posez-lui votre question de comparaison."
-  design_blocked_no_team: "🛑 Aucune équipe n'est encore recrutée. Un workflow sans spécialistes ne pourrait exécuter aucune étape. Voyez `@Malik` pour constituer une équipe adaptée à votre projet, puis revenez me voir."
-  run_blocked_no_team: "🛑 Aucun spécialiste recruté — impossible d'exécuter ce workflow. Demandez à `@Malik` de recruter l'équipe d'abord."
-  aborted_no_agents: "🛑 Workflow interrompu : trop d'étapes sans agent disponible (domaine `{domain}` à l'étape `{step_id}`). Vérifiez la composition de l'équipe avec `@Malik`."
-  warn_critique_single_family: "⚠️ Pression adversarial limitée : juge, exécutants et challenger partagent la même famille ({family}). Le workflow continue, mais la diversité épistémique est faible. Configurez une seconde famille de provider dans `.armance/config.yaml` pour un meilleur résultat."
-  warn_judge_single_family: "⚠️ Mona partage la même famille de provider ({family}) que les exécutants — risque d'angle mort. Pensez à un juge cross-family."
+  design_blocked_no_team: "Aucune équipe n'est encore recrutée. Un workflow sans spécialistes ne pourrait exécuter aucune étape. Voyez `@Malik` pour constituer une équipe adaptée à votre projet, puis revenez me voir."
+  run_blocked_no_team: "Aucun spécialiste recruté — impossible d'exécuter ce workflow. Demandez à `@Malik` de recruter l'équipe d'abord."
+  aborted_no_agents: "Workflow interrompu : trop d'étapes sans agent disponible (domaine `{domain}` à l'étape `{step_id}`). Vérifiez la composition de l'équipe avec `@Malik`."
+  warn_critique_single_family: "Attention — Pression adversarial limitée : juge, exécutants et challenger partagent la même famille ({family}). Le workflow continue, mais la diversité épistémique est faible. Configurez une seconde famille de provider dans `.armance/config.yaml` pour un meilleur résultat."
+  warn_judge_single_family: "Attention — Mona partage la même famille de provider ({family}) que les exécutants — risque d'angle mort. Pensez à un juge cross-family."
   not_found: "workflow introuvable : {name} (essayé .armance/workflows/ et workflows/)"
   no_agent_for_step: "[aucun agent pour le domaine {domain} dans l'étape {step_id}]"
   step_error: "[erreur dans {step_id} : {error}]"
   aborted: "[workflow interrompu]"
   usage_root: "usage : /workflow run|design <nom>"
   deprecated_design: "obsolète : utilisez « /workflow design <nom> » (dialogue Kim) à la place"
-  design_missing_yaml: "⚠️ Aucun bloc YAML détecté dans la proposition. Kim doit joindre un bloc ```yaml ... ``` avec `name`, `steps`."
-  design_invalid_yaml: "⚠️ YAML invalide : {error}"
-  design_invalid_workflow: "⚠️ Workflow invalide : {error}"
+  design_missing_yaml: "Attention — Aucun bloc YAML détecté dans la proposition. Kim doit joindre un bloc ```yaml ... ``` avec `name`, `steps`."
+  design_invalid_yaml: "Attention — YAML invalide : {error}"
+  design_invalid_workflow: "Attention — Workflow invalide : {error}"
   design_created: "Workflow **{name}** créé ✓  ({gem} {label})\nFichier : `.armance/workflows/{filename}`\n"
   usage_run: "usage : /workflow run <nom> [--enrich <session_id>] [--yes]"
   usage_design: "usage : /workflow design <nom>"
@@ -357,7 +357,7 @@ init:
         custom-openai n'expose pas de liste de modèles — saisissez l'identifiant ci-dessous.
         Laissez vide pour désactiver le RAG.
     no_models_hint: |2
-        ⚠️  Aucun modèle d'embedding trouvé sur vos providers (vérifiez vos clés API).
+        Attention —  Aucun modèle d'embedding trouvé sur vos providers (vérifiez vos clés API).
            Vous pouvez quand même en saisir un manuellement ci-dessous,
            ou appuyer sur Entrée pour désactiver le RAG.
     prompt_provider: "Provider pour ce modèle d'embedding :"

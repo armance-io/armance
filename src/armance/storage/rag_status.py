@@ -32,6 +32,27 @@ def _load_manifest(vector_dir: Path) -> dict[str, str]:
         return {}
 
 
+def has_indexed_chunks(armance_root: Path) -> bool:
+    """True if the vector DB exists and holds at least one chunk.
+
+    Cheap (a single COUNT, no embedding) — used to skip RAG retrieval (and the
+    query-embedding call it entails) entirely when no document is indexed.
+    """
+    from armance.storage.paths import rag_index_db_path
+    db_path = rag_index_db_path(armance_root)
+    if not db_path.exists():
+        return False
+    try:
+        conn = sqlite3.connect(db_path, check_same_thread=False)
+        try:
+            row = conn.execute("SELECT 1 FROM chunks LIMIT 1").fetchone()
+        finally:
+            conn.close()
+        return row is not None
+    except Exception:
+        return False
+
+
 def _query_sqlite_chunks(armance_root: Path) -> dict[str, int]:
     """Return {doc_id: chunk_count} from the SQLite vector DB."""
     from armance.storage.paths import rag_index_db_path

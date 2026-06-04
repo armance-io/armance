@@ -98,11 +98,21 @@
       "imported": "Document imported",
       "indexing": "Indexing started…",
       "indexing_all": "Indexing all documents…",
-      "loading": "Loading into context…"
+      "loading": "Loading into context…",
+      "embedding_set": "Embedding model set",
+      "doc_indexed": "{name} indexed"
     },
     "feuillets_count": "{n} slips",
     "feuillets_total_aria": "Total indexed slips",
-    "no_embedding_tooltip": "Configure an embedding model to enable indexing (Admin → Config)"
+    "no_embedding_tooltip": "Configure an embedding model to enable indexing (Admin → Config)",
+    "embedding": {
+      "prompt": "No embedding model set — pick one to enable indexing.",
+      "placeholder": "Type or pick an embedding model…",
+      "set": "Enable"
+    },
+    "indexing": {
+      "in_progress": "Indexing in progress…"
+    }
   },
   "chat": {
     "input": {
@@ -120,7 +130,7 @@
       "cost_na": "n/a"
     },
     "bottom": {
-      "thinking": "{{name}} is thinking…"
+      "thinking": "{name} is thinking…"
     },
     "agents": {
       "label": "Talking to",
@@ -220,6 +230,29 @@
       "proposed_by": "Proposed by",
       "rejected_by": "Rejected by",
       "weight": "weight"
+    },
+    "tabs": {
+      "flow": "Flow",
+      "report": "Report"
+    },
+    "flow": {
+      "waiting": "Waiting for the run to start…",
+      "status": {
+        "queued": "queued",
+        "working": "working",
+        "completed": "done",
+        "failed": "failed",
+        "skipped": "skipped",
+        "cancelled": "cancelled",
+        "awaiting": "awaiting"
+      },
+      "answer_placeholder": "Type your answer…",
+      "answer_send": "Send",
+      "awaiting_answer": "Waiting for your answer",
+      "question_notif": "An agent is asking you a question",
+      "qa_question": "Q:",
+      "qa_mona_answered": "Mona answered:",
+      "qa_you_answered": "You answered:"
     }
   },
   "workflow": {
@@ -306,7 +339,11 @@
     "launch": {
       "started": "Run launched: {id}",
       "error": "Could not launch the run.",
-      "in_progress": "Launching…"
+      "in_progress": "Launching…",
+      "started_no_id": "Workflow run started."
+    },
+    "panel": {
+      "resize": "Drag to resize"
     }
   },
   "hypotheses": {
@@ -315,11 +352,11 @@
     "invalidator": "invalidator"
   },
   "roles": {
-    "weaver": "weaver",
-    "scout": "scout",
-    "conductor": "conductor",
-    "distiller": "distiller",
-    "critic": "critic"
+    "weaver": "Weaver",
+    "scout": "Scout",
+    "conductor": "Conductor",
+    "distiller": "Distiller",
+    "critic": "Critic"
   },
   "sidebar": {
     "nav_section": {
@@ -366,8 +403,7 @@
       "secrets": "Secrets",
       "logs": "Logs",
       "stats": "Statistics",
-      "agents": "Agents",
-      "empreinte": "Empreinte"
+      "agents": "Agents"
     },
     "config": {
       "title": "Configuration",
@@ -388,7 +424,12 @@
         "required": "Required"
       },
       "providers": "Configured Providers",
-      "default": "Default"
+      "default": "Default",
+      "delete_provider": "Delete Provider",
+      "add_provider": "+ Add a Provider",
+      "embedding": "Embedding model",
+      "embedding_placeholder": "Type or pick an embedding model id…",
+      "embedding_hint": "Used to index your library. Pick from your providers or type any model id."
     },
     "secrets": {
       "title": "Secrets",
@@ -439,7 +480,9 @@
       "per_agent": "Per agent",
       "top5_cost": "Top 5 by cost",
       "carbon": "Carbon footprint",
-      "water": "Water use"
+      "water": "Water use",
+      "carbon_total": "Total carbon footprint",
+      "water_total": "Total water use"
     },
     "agents": {
       "title": "Agents",
@@ -449,7 +492,8 @@
       "persona": "Persona",
       "persona_hint": "Edit persona via Malik chat.",
       "save": "Save",
-      "saving": "Saving…"
+      "saving": "Saving…",
+      "saved": "Agent saved successfully."
     },
     "footprint": {
       "error": "Error loading footprint stats.",
@@ -490,7 +534,18 @@
     "step_model": "Pick a model",
     "step_budget": "Pick a budget",
     "step_language": "Pick a language",
-    "continue": "Continue"
+    "continue": "Continue",
+    "model_hint": "Choose a default model. This initializes your staff agents (Malik, Kim, Mona, etc.). You can type any model id.",
+    "model_placeholder": "Type or pick a model id…",
+    "embedding_label": "Embedding model (optional)",
+    "embedding_hint": "For indexing your library. You can skip this and set it later.",
+    "embedding_placeholder": "Type or pick an embedding model id…",
+    "tier": {
+      "free": "Free",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    }
   },
   "session": {
     "selector": {

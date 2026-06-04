@@ -8,7 +8,8 @@ import { WorkflowsList } from "./WorkflowsList";
 import { WorkflowGraphContainer } from "@/components/workflow/WorkflowGraphContainer";
 import { InterruptButtonContainer } from "@/components/workflow/InterruptButtonContainer";
 import { RunHistoryContainer } from "@/components/workflow/RunHistoryContainer";
-import { LivePanelContainer } from "@/components/run/LivePanelContainer";
+import { WorkflowRunPanel } from "@/components/workflow/WorkflowRunPanel";
+import { useResizableWidth } from "@/lib/useResizableWidth";
 import { launchWorkflow, getActiveWorkflow, listWorkflows } from "@/lib/api";
 import { useRouteParams } from "@/lib/routeParams";
 import { useToast } from "@/components/_shared/Toast";
@@ -45,13 +46,25 @@ export default function WorkflowView() {
   const [launching, setLaunching] = useState(false);
   const [launchResult, setLaunchResult] = useState<string | null>(null);
 
+  // The right panel is drag-resizable (left-edge handle) and remembers its width.
+  const panel = useResizableWidth({
+    storageKey: "armance.workflow-panel-width",
+    initial: 420,
+    min: 320,
+    max: 720,
+    edge: "left",
+  });
+
   const handleLaunch = async (mode: "interactive" | "autonomous", depth: "quick" | "deep") => {
     setLaunching(true);
     setLaunchResult(null);
     try {
       const result = await launchWorkflow(pid, sid, workflowName, { mode, depth });
-      toast(t("workflow:launch.started").replace("{id}", result.run_id), "success");
-      setLaunchResult(result.run_id);
+      const msg = result.run_id
+        ? t("workflow:launch.started").replace("{id}", result.run_id)
+        : t("workflow:launch.started_no_id");
+      toast(msg, "success");
+      setLaunchResult(result.run_id || null);
       refetchActive();
     } catch {
       toast(t("workflow:launch.error"), "error");
@@ -111,10 +124,23 @@ export default function WorkflowView() {
           <WorkflowGraphContainer pid={pid} sid={sid} workflowName={workflowName} runId={activeRunId} />
         </aside>
 
+        {/* Drag handle to resize the right panel */}
+        <div
+          onMouseDown={panel.onDragStart}
+          role="separator"
+          aria-orientation="vertical"
+          title={t("workflow:panel.resize")}
+          style={{
+            width: 6, flexShrink: 0, cursor: "col-resize",
+            background: panel.dragging ? "color-mix(in srgb, var(--accent) 30%, transparent)" : "transparent",
+            borderLeft: `1px solid ${tokens.rule}`,
+          }}
+        />
+
         {/* Right panel */}
-        <div style={{ width: 420, height: "100%", borderLeft: `1px solid ${tokens.rule}`, display: "flex", flexDirection: "column", overflow: "auto" }}>
+        <div style={{ width: panel.width, flexShrink: 0, height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {activeRunId ? (
-            <LivePanelContainer pid={pid} sid={sid} workflowName={workflowName} runId={activeRunId} />
+            <WorkflowRunPanel pid={pid} sid={sid} workflowName={workflowName} runId={activeRunId} />
           ) : (
             <div style={{ flex: 1, overflow: "auto" }}>
               <DepthPicker workflowName={workflowName} onLaunch={handleLaunch} t={t} />

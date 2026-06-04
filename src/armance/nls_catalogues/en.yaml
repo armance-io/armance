@@ -6,10 +6,10 @@
 # Generic system message envelopes
 # ---------------------------------------------------------------------------
 system:
-  ok: "*(System: ✅ {body})*"
+  ok: "*(System: {body})*"
   info: "*(System: ℹ️ {body})*"
-  warn: "*(System: ⚠️ {body})*"
-  error: "*(System: ❌ {body})*"
+  warn: "*(System: Attention — {body})*"
+  error: "*(System: {body})*"
 
 # ---------------------------------------------------------------------------
 # Document / library lifecycle
@@ -63,8 +63,8 @@ rag_report:
   no_docs_hint: "> Drop PDF, MD, DOCX or TXT files into `.armance/docs/` and ask Armance to retain them."
   files_header: "### Files in `.armance/docs/`"
   status_stale: "🔄 modified (needs re-retain)"
-  status_retained: "✅ retained ({chunks} chunks, ~{tokens} tokens)"
-  status_manifest_only: "⚠️ in manifest but missing from DB (ingestion error?)"
+  status_retained: "retained ({chunks} chunks, ~{tokens} tokens)"
+  status_manifest_only: "Attention — in manifest but missing from DB (ingestion error?)"
   status_not_retained: "⏳ not retained"
   doc_line: "- **{name}** ({size_kb} KB) — {status}"
   orphans_header: "### Orphans (in library but file removed from `.armance/docs/`)"
@@ -79,7 +79,7 @@ docs_section:
   empty_title: "## Documents in `.armance/docs/`"
   empty_body: "_No documents yet._ Tell the user they can drop PDF / DOCX / MD / TXT files into `.armance/docs/` and pick which to **index** (library, searchable by slip) and/or **load** (every agent reads the full text)."
   empty_body_no_library: "_No documents yet._ Tell the user they can drop PDF / DOCX / MD / TXT files into `.armance/docs/` and pick which to **load** (every agent reads the full text in this session). The searchable library is **not configured** on this install (no embedding model), so indexing is unavailable. Do not propose to index. If the user asks, mention they can enable the library by re-running `armance init` and choosing an embedding model."
-  status_retained: "✅ indexed in library (searchable by slip)"
+  status_retained: "indexed in library (searchable by slip)"
   status_unread: "⏳ not yet indexed (offer to index and/or load)"
   file_line: "- `{name}` — {status}"
   orphans_header: "### Orphans (still in library, file removed from `.armance/docs/`)"
@@ -236,8 +236,8 @@ system_msg:
   recruit_failed: "*(System: failed to recruit agents: {error})*"
   auto_dismissed_before_recruit: "*(System: detected full-roster reshuffle — auto-dismissed {n} previous specialist(s) before recruiting the new team)*"
   forwarded: "— forwarded to {target} —"
-  health_warning: "⚠️ Unreachable models detected during probe: {agents}. Ask @Malik to propose another model for these agents."
-  workflow_health_block: "🛑 Workflow not launched: unreachable agent(s) — {agents}. Ask @Malik to swap their model, or authorise execution without them."
+  health_warning: "Attention — Unreachable models detected during probe: {agents}. Ask @Malik to propose another model for these agents."
+  workflow_health_block: "Workflow not launched: unreachable agent(s) — {agents}. Ask @Malik to swap their model, or authorise execution without them."
 
 model:
   set: "model set: {provider}/{model}"
@@ -271,8 +271,8 @@ export:
 # ---------------------------------------------------------------------------
 workflow:
   run_started: "▶️ Run started → outputs land in `{path}/`"
-  run_finished: "✅ Run finished. All outputs are in `{path}/`. Ask Mona for a synthesis, or compare against a previous run."
-  run_preview: "✅ Run finished → `{path}/`\n\n**Preview:** {preview}…\n\n{mona_offer}"
+  run_finished: "Run finished. All outputs are in `{path}/`. Ask Mona for a synthesis, or compare against a previous run."
+  run_preview: "Run finished → `{path}/`\n\n**Preview:** {preview}…\n\n{mona_offer}"
   run_mona_offer: "Want Mona to give you a synthesis and debrief? Just say the word."
   assumptions_header: "\n\n### 🔍 Mona's Executive Summary (Assumptions & Critical Uncertainties)\n\n"
   list_usage: "usage: /workflow list <name>"
@@ -281,20 +281,20 @@ workflow:
   compare_usage: "usage: /workflow compare <name> <run1> <run2>"
   compare_not_found: "Could not load runs `{run1}` and/or `{run2}` for `{workflow}`."
   compare_queued: "📥 Runs `{run1}` and `{run2}` loaded. Mona is now active — ask him your comparison question."
-  design_blocked_no_team: "🛑 No team has been recruited yet. A workflow without specialists cannot execute any step. Ask `@Malik` to assemble a team for your project, then come back."
-  run_blocked_no_team: "🛑 No specialists recruited — cannot execute this workflow. Ask `@Malik` to recruit the team first."
-  aborted_no_agents: "🛑 Workflow aborted: too many steps with no available agent (domain `{domain}` at step `{step_id}`). Check the team composition with `@Malik`."
-  warn_critique_single_family: "⚠️ Adversarial pressure is limited: judge, executors and challenger share the same family ({family}). The workflow will run, but epistemic diversity is low. Configure a second provider family in `.armance/config.yaml` for better results."
-  warn_judge_single_family: "⚠️ Mona shares the same provider family ({family}) as the executors — possible blind spot. Consider a cross-family judge."
+  design_blocked_no_team: "No team has been recruited yet. A workflow without specialists cannot execute any step. Ask `@Malik` to assemble a team for your project, then come back."
+  run_blocked_no_team: "No specialists recruited — cannot execute this workflow. Ask `@Malik` to recruit the team first."
+  aborted_no_agents: "Workflow aborted: too many steps with no available agent (domain `{domain}` at step `{step_id}`). Check the team composition with `@Malik`."
+  warn_critique_single_family: "Attention — Adversarial pressure is limited: judge, executors and challenger share the same family ({family}). The workflow will run, but epistemic diversity is low. Configure a second provider family in `.armance/config.yaml` for better results."
+  warn_judge_single_family: "Attention — Mona shares the same provider family ({family}) as the executors — possible blind spot. Consider a cross-family judge."
   not_found: "workflow not found: {name} (tried .armance/workflows/ and workflows/)"
   no_agent_for_step: "[no agent for domain {domain} in step {step_id}]"
   step_error: "[error in {step_id}: {error}]"
   aborted: "[workflow aborted]"
   usage_root: "usage: /workflow run|design <name>"
   deprecated_design: "deprecated: use '/workflow design <name>' (Kim dialogue) instead"
-  design_missing_yaml: "⚠️ No YAML block found in the proposal. Kim must attach a ```yaml ... ``` block with `name`, `steps`."
-  design_invalid_yaml: "⚠️ Invalid YAML: {error}"
-  design_invalid_workflow: "⚠️ Invalid workflow: {error}"
+  design_missing_yaml: "Attention — No YAML block found in the proposal. Kim must attach a ```yaml ... ``` block with `name`, `steps`."
+  design_invalid_yaml: "Attention — Invalid YAML: {error}"
+  design_invalid_workflow: "Attention — Invalid workflow: {error}"
   design_created: "Workflow **{name}** created ✓  ({gem} {label})\nFile: `.armance/workflows/{filename}`\n"
   usage_run: "usage: /workflow run <name> [--enrich <session_id>] [--yes]"
   usage_design: "usage: /workflow design <name>"
@@ -382,7 +382,7 @@ init:
         custom-openai doesn't expose a model list — type the model id below.
         Leave blank to disable RAG.
     no_models_hint: |2
-        ⚠️  No embedding model found on your providers (check your API keys).
+        Attention —  No embedding model found on your providers (check your API keys).
            You can still type one manually below, or press Enter to skip RAG.
     prompt_provider: "Provider for this embedding model:"
     prompt_manual_id: "Embedding model id (leave blank to disable RAG):"

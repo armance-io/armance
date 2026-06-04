@@ -56,7 +56,7 @@ def _make_ctx(
     current_agent: str,
     agents: list[Agent],
 ) -> LoopContext:
-    from armance.service.session import Session, SessionState
+    from armance.service.session import Session
     state = SessionState.new()
     state.current_agent = current_agent
     session = Session(state, armance_root)
@@ -78,7 +78,6 @@ async def test_system_hr_non_recruit_message_calls_llm(
     """If current_agent=system-hr and user sends a question (not a recruit request),
     the service must call the LLM with Malik's system prompt, not return static help text.
     """
-    from armance.service.handlers import _cmd_hr_chat
 
     # Minimal Malik agent
     malik_path = tmp_armance / "agents" / "system-hr.md"

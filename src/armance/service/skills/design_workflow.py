@@ -25,10 +25,10 @@ logger = logging.getLogger(__name__)
 
 # Canonical strategy keys (legacy short/standard/deep are accepted as aliases).
 _STRATEGIES = {
-    "rapide": {"label": "Rapide", "gem": "🟢", "complexity": "minimal"},
-    "equilibree": {"label": "Équilibrée", "gem": "🟡", "complexity": "modéré"},
-    "approfondie": {"label": "Approfondie", "gem": "🔴", "complexity": "élevé"},
-    "custom": {"label": "Custom", "gem": "⚪", "complexity": "variable"},
+    "rapide": {"label": "Rapide", "complexity": "minimal"},
+    "equilibree": {"label": "Équilibrée", "complexity": "modéré"},
+    "approfondie": {"label": "Approfondie", "complexity": "élevé"},
+    "custom": {"label": "Custom", "complexity": "variable"},
 }
 
 _STRATEGY_ALIASES = {
@@ -180,7 +180,7 @@ class DesignWorkflowSkill(Skill):
             step_lines.append(f"  {s.get('id', '?')} ({s.get('kind', '?')} · {r})")
 
         summary = (
-            f"Workflow **{name}** créé — stratégie {meta['gem']} {meta['label']} "
+            f"Workflow **{name}** créé — stratégie {meta['label']} "
             f"({meta['complexity']}). {len(steps)} étape(s):\n"
             + "\n".join(step_lines)
             + "\n\nFichier : `.armance/workflows/"

@@ -83,9 +83,6 @@ async def cmd_hr_chat(text: str, ctx: LoopContext) -> str:
     return reply
 
 
-_TIER_GEMS = {"free": "🟢", "low": "🟡", "medium": "🟠", "high": "🔴"}
-
-
 _TIER_GEM_RE = re.compile(r"[🟢🟡🟠🔴]\s*(?:free|low|medium|high)\b", re.IGNORECASE)
 _ALL_GEMS = "🟢🟡🟠🔴"
 
@@ -120,10 +117,11 @@ async def _normalise_tier_gems(reply: str, cfg) -> str:
     out = reply
     for mid in sorted_ids:
         canonical_tier = id_to_tier[mid]
-        canonical_gem = _TIER_GEMS.get(canonical_tier, "")
-        if not canonical_gem:
+        if not canonical_tier:
             continue
-        canonical_label = f"{canonical_gem} {canonical_tier}"
+        # Replace any "gem + tier" blurb the model emitted with the plain,
+        # canonical tier word — no coloured gem (DESIGN.md).
+        canonical_label = canonical_tier
         pos = 0
         while True:
             idx = out.find(mid, pos)
@@ -173,8 +171,8 @@ async def _build_roster_table(created: list, cfg) -> str:
     lines = ["", "| Agent | Provider | Model | Tier |", "|---|---|---|---|"]
     for a in created:
         tier = await _resolve_tier(a.provider, a.model, cfg)
-        gem = _TIER_GEMS.get(tier, "")
-        lines.append(f"| {a.name} | {a.provider} | `{a.model}` | {gem} {tier} |")
+        # Tier as a plain word — no coloured gem (DESIGN.md: no 🟢🟡🔴).
+        lines.append(f"| {a.name} | {a.provider} | `{a.model}` | {tier} |")
     return "\n".join(lines)
 
 
@@ -260,13 +258,12 @@ async def _build_models_context(ctx: LoopContext) -> str:
             ids = by_tier[tier]
             if not ids:
                 continue
-            gem = _TIER_GEMS[tier]
             # Cap only at very large counts (50+) to keep the prompt sane.
             # Otherwise list ALL available models so Malik sees the full
             # menu — users complained they were only offered a fraction.
             shown = ids if len(ids) <= 50 else ids[:50]
             suffix = f" (+{len(ids) - 50} more)" if len(ids) > 50 else ""
-            lines.append(f"  - {gem} {tier}: {', '.join(shown)}{suffix}")
+            lines.append(f"  - {tier}: {', '.join(shown)}{suffix}")
         reasoning_ids = [m.id for m in models if m.supports_reasoning][:8]
         if reasoning_ids:
             lines.append(f"  - Reasoning-effort supported: {', '.join(reasoning_ids)}")
@@ -434,9 +431,11 @@ async def _emit_agents_proposed(ctx: LoopContext, created: list) -> None:
             "reasoning": a.reasoning,
         })
     try:
-        await bus.emit("agents_proposed", attributes={"agents": payload})
+        # Event names must be dotted (<component>.<action>) — the bus rejects
+        # underscored names, which silently dropped the recruit refresh.
+        await bus.emit("agents.proposed", attributes={"agents": payload})
     except Exception:
-        logger.exception("event_bus.emit(agents_proposed) failed")
+        logger.exception("event_bus.emit(agents.proposed) failed")
 
 
 def _peek_proposed_names(yaml_text: str) -> list[str]:

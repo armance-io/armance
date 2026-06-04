@@ -48,7 +48,7 @@ class FootprintConfig(BaseModel):
 
 class Config(BaseModel):
     providers: list[ProviderConfig] = Field(default_factory=list)
-    default_provider: str = "openrouter"
+    default_provider: str = ""
     default_model: str = ""
     chunk_max_tokens: int = DEFAULT_CHUNK_MAX_TOKENS
     caveman_protocol_path: str = DEFAULT_CAVEMAN_PROTOCOL
@@ -230,8 +230,20 @@ def _install_builtin_agents(armance_root: Path, config: Config | None = None) ->
                     builtin_agent.provider = existing_agent.provider or builtin_agent.provider
                     builtin_agent.model = existing_agent.model
                 elif config:
-                    builtin_agent.provider = getattr(config, "default_provider", "openrouter") or "openrouter"
-                    builtin_agent.model = getattr(config, "default_model", "openai/gpt-4o-mini") or "openai/gpt-4o-mini"
+                    dp = getattr(config, "default_provider", "") or ""
+                    dm = getattr(config, "default_model", "") or ""
+                    if not dp and config.providers:
+                        dp = config.providers[0].name
+                        if dp == "gemini":
+                            dm = "gemini-2.5-flash"
+                        elif dp == "claude-code":
+                            dm = "claude-sonnet-4-6"
+                        elif dp == "openrouter":
+                            dm = "google/gemini-2.5-flash"
+                        else:
+                            dm = "openai/gpt-4o-mini"
+                    builtin_agent.provider = dp or "openrouter"
+                    builtin_agent.model = dm or "openai/gpt-4o-mini"
                 entry_content = builtin_agent.to_markdown()
             except Exception:
                 # Fallback: old heuristic (file lacks proper frontmatter)
@@ -242,8 +254,20 @@ def _install_builtin_agents(armance_root: Path, config: Config | None = None) ->
                 if config:
                     try:
                         builtin_agent = Agent.from_frontmatter(entry_content)
-                        builtin_agent.provider = getattr(config, "default_provider", "openrouter") or "openrouter"
-                        builtin_agent.model = getattr(config, "default_model", "openai/gpt-4o-mini") or "openai/gpt-4o-mini"
+                        dp = getattr(config, "default_provider", "") or ""
+                        dm = getattr(config, "default_model", "") or ""
+                        if not dp and config.providers:
+                            dp = config.providers[0].name
+                            if dp == "gemini":
+                                dm = "gemini-2.5-flash"
+                            elif dp == "claude-code":
+                                dm = "claude-sonnet-4-6"
+                            elif dp == "openrouter":
+                                dm = "google/gemini-2.5-flash"
+                            else:
+                                dm = "openai/gpt-4o-mini"
+                        builtin_agent.provider = dp or "openrouter"
+                        builtin_agent.model = dm or "openai/gpt-4o-mini"
                         entry_content = builtin_agent.to_markdown()
                     except Exception as e2:
                         logger.error("Failed to substitute placeholder in agent %s: %s", filename, e2)
@@ -253,8 +277,20 @@ def _install_builtin_agents(armance_root: Path, config: Config | None = None) ->
                 try:
                     agent = Agent.from_frontmatter(entry_content)
                     if agent.model == "openai/gpt-4o-mini":
-                        agent.provider = getattr(config, "default_provider", "openrouter") or "openrouter"
-                        agent.model = getattr(config, "default_model", "openai/gpt-4o-mini") or "openai/gpt-4o-mini"
+                        dp = getattr(config, "default_provider", "") or ""
+                        dm = getattr(config, "default_model", "") or ""
+                        if not dp and config.providers:
+                            dp = config.providers[0].name
+                            if dp == "gemini":
+                                dm = "gemini-2.5-flash"
+                            elif dp == "claude-code":
+                                dm = "claude-sonnet-4-6"
+                            elif dp == "openrouter":
+                                dm = "google/gemini-2.5-flash"
+                            else:
+                                dm = "openai/gpt-4o-mini"
+                        agent.provider = dp or "openrouter"
+                        agent.model = dm or "openai/gpt-4o-mini"
                         entry_content = agent.to_markdown()
                 except Exception as e:
                     logger.error("Failed to substitute placeholder in agent %s: %s", filename, e)

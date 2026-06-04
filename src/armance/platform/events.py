@@ -52,22 +52,26 @@ class LocalEventBus:
 
     Moved from armance.service.events (J.3).  No behaviour change.
 
-    SINGLE-CONSUMER: there is one `queue`, and `asyncio.Queue.get()` hands each
-    event to exactly one waiting getter. The web SSE `/events` route is today's
-    only consumer; with the chat view kept mounted across tabs, its EventSource
-    stays open continuously. This is fine while only `turn.*` / `agents_proposed`
-    / `checkpoint.requested` are emitted (a single logical reader). BEFORE live
-    workflow events (`workflow.step_*`, `workflow.completed`) ship and a second
-    component subscribes concurrently, switch to per-subscriber fan-out
-    (`subscribe()` returning its own queue) — otherwise the two consumers would
-    steal each other's events. No replay needed for fan-out (replay is what
-    risks duplicate bubbles; distributing future events does not).
+    Supports multi-consumer fan-out (subscribe() returning its own queue)
+    so multiple components or SSE clients can listen to the event stream
+    concurrently without stealing events from one another.
     """
 
     def __init__(self, log_path: Path) -> None:
         self.log_path = log_path
         self.queue: asyncio.Queue[Event] = asyncio.Queue()
+        self._queues: set[asyncio.Queue[Event]] = {self.queue}
         self._lock = asyncio.Lock()
+
+    def subscribe(self) -> asyncio.Queue[Event]:
+        """Subscribe to the event bus, returning a new queue."""
+        q: asyncio.Queue[Event] = asyncio.Queue()
+        self._queues.add(q)
+        return q
+
+    def unsubscribe(self, q: asyncio.Queue[Event]) -> None:
+        """Unsubscribe a queue from the event bus."""
+        self._queues.discard(q)
 
     async def emit(
         self,
@@ -109,7 +113,8 @@ class LocalEventBus:
             with self.log_path.open("a", encoding="utf-8") as fh:
                 fh.write(event.model_dump_json() + "\n")
 
-        try:
-            self.queue.put_nowait(event)
-        except asyncio.QueueFull:
-            logger.debug("EventBus queue full; TUI subscriber is slow")
+        for q in list(self._queues):
+            try:
+                q.put_nowait(event)
+            except asyncio.QueueFull:
+                logger.debug("EventBus queue full; subscriber is slow")

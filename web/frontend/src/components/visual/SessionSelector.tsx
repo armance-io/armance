@@ -11,7 +11,8 @@ import { tokens } from "../_shared/armance-tokens";
  * deroulable to load an older one. Becomes read-only (id only) once the user
  * has sent a message in the current session (sessionBus lock).
  */
-function shortId(id: string): string {
+function formatSessionId(id: string): string {
+  if (id.includes("-")) return id;
   return id.length > 12 ? id.slice(0, 12) : id;
 }
 
@@ -35,7 +36,7 @@ export const SessionSelector: FC<{ t: (k: string) => string }> = ({ t }) => {
     fontFamily: tokens.ffMono, fontSize: 11, cursor: "pointer",
   };
 
-  const idLabel = `${t("session:selector.id_label")}: ${shortId(sid)}`;
+  const idLabel = `${t("session:selector.id_label")}: ${formatSessionId(sid)}`;
 
   return (
     <div style={{ position: "relative" }} data-testid="session-selector">
@@ -96,7 +97,7 @@ export const SessionSelector: FC<{ t: (k: string) => string }> = ({ t }) => {
               }}
             >
               <span style={{ fontFamily: tokens.ffMono, fontSize: 10, color: tokens.inkFaint, width: 18 }}>{i + 1}</span>
-              <span style={{ fontFamily: tokens.ffMono, fontSize: 12 }}>{shortId(s.id)}</span>
+              <span style={{ fontFamily: tokens.ffMono, fontSize: 12 }}>{formatSessionId(s.id)}</span>
               <span style={{ marginLeft: "auto", fontFamily: tokens.ffMono, fontSize: 10, color: tokens.inkFaint }}>
                 {(() => {
                   const ts = s.updated_at || s.created_at;

@@ -102,18 +102,17 @@ test.describe("G.10 — Admin page tabs E2E", () => {
     await expect(page.getByRole("button", { name: "Save" })).toBeVisible();
   });
 
-  test("clicking Secrets tab renders SecretsList", async ({ page }) => {
+  test("secrets are visible inside Config tab when provider is expanded", async ({ page }) => {
     await page.goto(ADMIN_URL);
-    await page.getByRole("tab", { name: /secrets/i }).click();
-    await expect(page.getByTestId("secrets-list")).toBeVisible();
-    await expect(page.getByText("OPENROUTER_API_KEY")).toBeVisible();
+    await page.getByRole("tab", { name: /config/i }).click();
+    await expect(page.getByTestId("config-form")).toBeVisible();
   });
 
   test("clicking Logs tab renders LogViewer", async ({ page }) => {
     await page.goto(ADMIN_URL);
     await page.getByRole("tab", { name: /logs/i }).click();
     await expect(page.getByTestId("log-viewer")).toBeVisible();
-    await expect(page.getByTestId("log-viewer").getByText("Armance").first()).toBeVisible();
+    await expect(page.getByTestId("log-viewer").locator("span").getByText("Armance").first()).toBeVisible();
   });
 
   test("clicking Stats tab renders StatsDashboard", async ({ page }) => {

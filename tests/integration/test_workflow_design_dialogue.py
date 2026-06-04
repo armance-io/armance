@@ -71,7 +71,7 @@ def test_invalid_kind_rejected(tmp_path) -> None:
         "    role: historian\n"
         "```\n"
     ))
-    assert "invalide" in reply.lower() or "⚠" in reply
+    assert "invalid" in reply.lower()  # matches EN "invalid" + FR "invalide"
 
 
 def test_step_without_domain_rejected(tmp_path) -> None:

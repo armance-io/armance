@@ -6,7 +6,6 @@ Verifies:
 - archive moves agent files
 """
 import pytest
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from armance.core.models.agent import Agent
@@ -410,7 +409,6 @@ class TestR13ValidationAndRetries:
     @pytest.mark.asyncio
     async def test_persona_collision_retry_loop_success_after_retry(self, hr_service):
         """Should retry once and succeed when duplicate personas are resolved."""
-        from armance.service.agents.recruiter_agent import PersonaCollisionError
 
         # Mock first response with duplicate personas, second with unique
         resp1 = MagicMock()
