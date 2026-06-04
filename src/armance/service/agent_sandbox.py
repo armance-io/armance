@@ -37,7 +37,7 @@ _ROLE_TAG_ALLOWLIST: dict[str, set[str]] = {
     "malik": {"recruit", "dismiss-all", "library-status"},
     "kim": {"workflow-design", "workflow-run", "workflow-stop", "library-status"},
     "mona": {"library-status", "save-deliverable", "load-run"},
-    "specialist": {"load-run"},
+    "specialist": {"load-run", "boost-request", "boost-release"},
 }
 
 _TAG_RE = re.compile(r"\[EXECUTE:/([\w-]+)(?::[^\]]*)?\]")
