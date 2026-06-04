@@ -1,7 +1,6 @@
 """Tests for setup routes (Epic E.1, E.3)."""
 from __future__ import annotations
 
-import json
 import pytest
 from httpx import AsyncClient
 from pathlib import Path
