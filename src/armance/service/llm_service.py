@@ -122,6 +122,10 @@ class TokenLedger:
                         "tier": e.footprint.tier if e.footprint else None,
                         "estimate": e.footprint.estimate if e.footprint else None,
                         "zone": e.footprint.zone if e.footprint else None,
+                        "gco2e_min": e.footprint.gco2e_min if e.footprint else None,
+                        "gco2e_max": e.footprint.gco2e_max if e.footprint else None,
+                        "water_ml_min": e.footprint.water_ml_min if e.footprint else None,
+                        "water_ml_max": e.footprint.water_ml_max if e.footprint else None,
                     }
                     for e in self.entries
                 ],
@@ -140,6 +144,8 @@ class TokenLedger:
                 "tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0,
                 "calls": 0, "gco2e": 0.0, "water_ml": 0.0,
                 "has_estimate": False, "has_unknown": False,
+                "gco2e_min": 0.0, "gco2e_max": 0.0,
+                "water_ml_min": 0.0, "water_ml_max": 0.0,
             }
             for e in self.entries:
                 b = per_agent.setdefault(
@@ -148,18 +154,37 @@ class TokenLedger:
                         "tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0,
                         "calls": 0, "gco2e": 0.0, "water_ml": 0.0,
                         "has_estimate": False, "has_unknown": False,
+                        "gco2e_min": 0.0, "gco2e_max": 0.0,
+                        "water_ml_min": 0.0, "water_ml_max": 0.0,
                     },
                 )
+                fp = e.footprint
                 for d in (b, total):
                     d["tokens_in"] += e.tokens_in
                     d["tokens_out"] += e.tokens_out
                     d["cost_usd"] += e.cost_usd or 0.0
                     d["calls"] += 1
-                    d["gco2e"] += e.footprint.gco2e if e.footprint else 0.0
-                    d["water_ml"] += e.footprint.water_ml if e.footprint else 0.0
-                    if e.footprint is None:
+                    d["gco2e"] += fp.gco2e if fp else 0.0
+                    d["water_ml"] += fp.water_ml if fp else 0.0
+                    d["gco2e_min"] += (
+                        fp.gco2e_min if fp and fp.gco2e_min is not None
+                        else (fp.gco2e if fp else 0.0)
+                    )
+                    d["gco2e_max"] += (
+                        fp.gco2e_max if fp and fp.gco2e_max is not None
+                        else (fp.gco2e if fp else 0.0)
+                    )
+                    d["water_ml_min"] += (
+                        fp.water_ml_min if fp and fp.water_ml_min is not None
+                        else (fp.water_ml if fp else 0.0)
+                    )
+                    d["water_ml_max"] += (
+                        fp.water_ml_max if fp and fp.water_ml_max is not None
+                        else (fp.water_ml if fp else 0.0)
+                    )
+                    if fp is None:
                         d["has_unknown"] = True
-                    elif e.footprint.estimate:
+                    elif fp.estimate:
                         d["has_estimate"] = True
             return {"per_agent": per_agent, "total": total}
 
@@ -278,6 +303,10 @@ def log_response(
             "estimate": footprint.estimate if footprint else None,
             "tier": footprint.tier if footprint else None,
             "zone": footprint.zone if footprint else None,
+            "gco2e_min": footprint.gco2e_min if footprint else None,
+            "gco2e_max": footprint.gco2e_max if footprint else None,
+            "water_ml_min": footprint.water_ml_min if footprint else None,
+            "water_ml_max": footprint.water_ml_max if footprint else None,
         },
     )
 
