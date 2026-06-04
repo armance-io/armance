@@ -25,3 +25,12 @@ class Footprint:
     tier: str
     proxy_model: str | None
     zone: str
+    # Range bounds (additive; default None → fall back to the scalar midpoint).
+    # When EcoLogits returns a RangeValue (MoE / ranged PUE) or the dynamic
+    # bounding tier fires, these carry the min/max of the confidence interval.
+    gco2e_min: float | None = None
+    gco2e_max: float | None = None
+    water_ml_min: float | None = None
+    water_ml_max: float | None = None
+    energy_wh_min: float | None = None
+    energy_wh_max: float | None = None
