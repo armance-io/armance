@@ -54,13 +54,16 @@ class SpecialistRunner:
         caveman_level: str = "none",
         system_addon: str | None = None,
         event_bus: Any | None = None,
+        boosted_agents: set[str] | None = None,
     ) -> Report:
         """Run a single specialist agent with L0 + L1[role] context.
 
         The system prompt is built as:
             caveman_protocol + agent.system_prompt + L0_body + L1[role]_body
         """
-        client = get_client(agent.provider, self.config)
+        from armance.service.boost_ops import boosted_model_for
+        eff_provider, eff_model = boosted_model_for(agent, boosted_agents or set())
+        client = get_client(eff_provider, self.config)
 
         # Build layered context
         context = self._build_layered_context(agent)
@@ -159,22 +162,22 @@ class SpecialistRunner:
         #   - "suffix": append `:online` to the model id (OpenRouter).
         #   - "tool":   inject the provider-specific search tool param.
         #   - "builtin": nothing to do (model already searches).
-        effective_model = agent.model
+        effective_model = eff_model
         try:
             from armance.providers.discovery import _CACHE as _DISCOVERY_CACHE
             spec = next(
                 (
-                    m for m in _DISCOVERY_CACHE.get(agent.provider, [])
-                    if m.id == agent.model
+                    m for m in _DISCOVERY_CACHE.get(eff_provider, [])
+                    if m.id == eff_model
                 ),
                 None,
             )
             if spec is not None and spec.supports_search:
-                if spec.search_mode == "suffix" and not agent.model.endswith(":online"):
-                    effective_model = f"{agent.model}:online"
+                if spec.search_mode == "suffix" and not eff_model.endswith(":online"):
+                    effective_model = f"{eff_model}:online"
                 elif spec.search_mode == "tool":
                     extras.setdefault("tools", []).append(
-                        _search_tool_for(agent.provider),
+                        _search_tool_for(eff_provider),
                     )
         except Exception:
             logger.debug("search activation lookup failed", exc_info=True)
@@ -196,6 +199,7 @@ class SpecialistRunner:
                 messages,
                 effective_model,
                 on_token=effective_on_token,
+                provider=eff_provider,
                 **extras
             )
         finally:
@@ -333,6 +337,7 @@ async def run_specialist(
     caveman_level: str = "none",
     system_addon: str | None = None,
     event_bus: Any | None = None,
+    boosted_agents: set[str] | None = None,
 ) -> Report:
     """Convenience function to run a single specialist agent."""
     runner = SpecialistRunner(armance_root, config, reports_root=reports_root)
@@ -344,6 +349,7 @@ async def run_specialist(
         caveman_level=caveman_level,
         system_addon=system_addon,
         event_bus=event_bus,
+        boosted_agents=boosted_agents,
     )
     write_report(report, runner.reports_root)
     return report
