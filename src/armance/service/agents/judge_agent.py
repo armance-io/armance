@@ -106,7 +106,8 @@ class JudgeAgent:
             extras["reasoning"] = {"effort": mona.reasoning}
 
         response = await call_with_ledger(
-            client, mona.name, messages, mona.model, **extras
+            client, mona.name, messages, mona.model,
+            provider=mona.provider, **extras
         )
 
         synthesis = Synthesis(
@@ -221,6 +222,7 @@ class JudgeAgent:
             extras["reasoning"] = {"effort": mona.reasoning}
 
         response = await call_with_ledger(
-            client, mona.name, messages, mona.model, **extras
+            client, mona.name, messages, mona.model,
+            provider=mona.provider, **extras
         )
         return response.text
