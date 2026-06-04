@@ -389,6 +389,10 @@ footprint:
   zone_note: "Zone électrique : {zone}"
   by_day: "Par jour"
   by_month: "Par mois"
+  equiv:
+    phone_charges: "recharges de téléphone"
+    car_km: "km en voiture"
+    water_glasses: "verres d'eau"
 
 # Rôles du personnel
 # ---------------------------------------------------------------------------

@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from armance.nls import t
+from armance.service.equivalences import humanise
 
 logger = logging.getLogger(__name__)
 
@@ -114,12 +115,49 @@ def footprint_stats(logs_dir: Path, project_id: str) -> dict[str, Any]:
 # Sub-title chip
 # ---------------------------------------------------------------------------
 
+def _render_co2_chip(total: dict[str, Any]) -> str:
+    """Return the 🌱 chip string (without water or token parts).
+
+    Range form:   ``~[{min:.2g} – {max:.2g}]gCO₂e (~{n:.2g} phone charges)``
+    Single form:  ``~{mid:.2g}gCO₂e (~{n:.2g} phone charges)``
+    Unknown form: ``🌱?``  (returned as-is, no equivalence)
+
+    The em-dash used in the range is U+2013 (–).
+    """
+    gco2e = total.get("gco2e", 0.0)
+    gco2e_min = total.get("gco2e_min", gco2e)
+    gco2e_max = total.get("gco2e_max", gco2e)
+    water_ml = total.get("water_ml", 0.0)
+    has_estimate = total.get("has_estimate", False)
+    has_unknown = total.get("has_unknown", False)
+
+    if has_unknown and gco2e == 0.0:
+        return "🌱?"
+
+    prefix = "~" if has_estimate else ""
+    suffix = "?" if has_unknown else ""
+
+    if gco2e_max - gco2e_min > 1e-9:
+        co2_part = f"{prefix}🌱[{gco2e_min:.2g} – {gco2e_max:.2g}]gCO₂e{suffix}"
+    else:
+        co2_part = f"{prefix}🌱{gco2e:.2g}gCO₂e{suffix}"
+
+    # Append ADEME phone-charges equivalence (mid-point value).
+    eq = humanise(gco2e=gco2e, water_ml=water_ml)
+    label = t("footprint.equiv.phone_charges")
+    equiv_str = f"(~{eq.phone_charges:.2g} {label})"
+    return f"{co2_part} {equiv_str}"
+
+
 def format_token_subtitle(snapshot: dict[str, Any], *, show_water: bool) -> str:
     """Return the full sub_title string including the footprint chip.
 
     Mirrors the existing ``↑ti ↓to $cost`` format and appends:
-      ``· 🌱{gco2e:.2g}gCO₂e``  (or ``🌱?`` when unknown)
+      ``· 🌱{gco2e:.2g}gCO₂e (~{n} phone charges)``  (or ``🌱?`` when unknown)
       ``· 💧{water_ml:.0f}mL``   (when show_water=True and not unknown)
+
+    When ``gco2e_min`` / ``gco2e_max`` differ, the chip shows a range:
+      ``· ~🌱[{min:.2g} – {max:.2g}]gCO₂e (~{n} phone charges)``
 
     Estimate flag adds ``~`` prefix to the 🌱 chip.
 
@@ -134,25 +172,14 @@ def format_token_subtitle(snapshot: dict[str, Any], *, show_water: bool) -> str:
     ti = total.get("tokens_in", 0)
     to_ = total.get("tokens_out", 0)
     cost = total.get("cost_usd", 0.0)
-    gco2e = total.get("gco2e", 0.0)
-    water_ml = total.get("water_ml", 0.0)
-    has_estimate = total.get("has_estimate", False)
     has_unknown = total.get("has_unknown", False)
+    water_ml = total.get("water_ml", 0.0)
 
     parts = [f"↑{ti:,} ↓{to_:,} ${cost:.4f}"]
+    parts.append(_render_co2_chip(total))
 
-    if has_unknown and gco2e == 0.0:
-        # No figures at all — show only the honest unknown marker.
-        parts.append("🌱?")
-    else:
-        prefix = "~" if has_estimate else ""
-        # Partial coverage: some entries had no footprint. Flag the sum as
-        # incomplete instead of presenting it as a complete total.
-        suffix = "?" if has_unknown else ""
-        chip = f"{prefix}🌱{gco2e:.2g}gCO₂e{suffix}"
-        parts.append(chip)
-        if show_water and not has_unknown:
-            parts.append(f"💧{water_ml:.0f}mL")
+    if show_water and not has_unknown:
+        parts.append(f"💧{water_ml:.0f}mL")
 
     return " · ".join(parts)
 
