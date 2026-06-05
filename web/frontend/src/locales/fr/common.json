@@ -435,7 +435,9 @@
       "add_provider": "+ Ajouter un fournisseur",
       "embedding": "Modèle d'embedding",
       "embedding_placeholder": "Saisissez ou choisissez un identifiant de modèle d'embedding…",
-      "embedding_hint": "Sert à indexer votre bibliothèque. Choisissez parmi vos fournisseurs ou saisissez un identifiant de modèle."
+      "embedding_hint": "Sert à indexer votre bibliothèque. Choisissez parmi vos fournisseurs ou saisissez un identifiant de modèle.",
+      "carbon_zone": "Pays / zone (empreinte CO₂)",
+      "carbon_zone_hint": "Affine l'estimation CO₂ selon l'intensité carbone de votre réseau électrique."
     },
     "secrets": {
       "title": "Secrets",

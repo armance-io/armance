@@ -186,6 +186,17 @@ export interface ProvidersCatalogue {
   hint?: string;
 }
 
+export interface FootprintZone {
+  code: string;
+  gco2e_per_kwh: number;
+}
+
+/** Carbon-intensity zones for the footprint estimate (WOR first). */
+export async function getFootprintZones(): Promise<FootprintZone[]> {
+  const r = await api.get<{ zones: FootprintZone[] }>("/footprint/zones");
+  return r.zones;
+}
+
 export async function getProviders(): Promise<ProvidersCatalogue> {
   return api.get<ProvidersCatalogue>(`/providers`);
 }
