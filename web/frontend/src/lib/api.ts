@@ -619,7 +619,9 @@ export interface AdminAgent {
   boosted?: boolean;
   effective_model?: string;
   is_boostable?: boolean;
+  boost_provider?: string | null;
   boost_model?: string | null;
+  boost_reasoning?: string | null;
 }
 
 export async function getAdminAgents(pid: string, sid: string): Promise<AdminAgent[]> {
@@ -630,7 +632,14 @@ export async function patchAdminAgent(
   pid: string,
   sid: string,
   name: string,
-  patch: { provider?: string; model?: string; reasoning?: string | null },
+  patch: {
+    provider?: string;
+    model?: string;
+    reasoning?: string | null;
+    boost_provider?: string | null;
+    boost_model?: string | null;
+    boost_reasoning?: string | null;
+  },
 ): Promise<{ name: string; provider: string; model: string; reasoning: string | null }> {
   return api.patch<{ name: string; provider: string; model: string; reasoning: string | null }>(
     `/projects/${pid}/sessions/${sid}/agents/${encodeURIComponent(name)}`,
