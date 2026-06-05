@@ -74,6 +74,8 @@ def _agent_row(
         "staff": staff,
         "boosted": boosted,
         "effective_model": eff_mod or default_model,
+        "is_boostable": agent.is_boostable,
+        "boost_model": agent.boost_model,
     }
 
 
