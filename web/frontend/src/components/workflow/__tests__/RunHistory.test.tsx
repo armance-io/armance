@@ -32,6 +32,16 @@ describe("RunHistory", () => {
     expect(screen.getByText("workflow:history.empty")).toBeTruthy();
   });
 
+  it("renders every backend status without crashing (incl. working/queued)", () => {
+    // Regression: STATUS_COLORS[run.status].border threw when the backend sent
+    // 'working' (not in the old running/completed/failed/cancelled set).
+    const statuses = ["queued", "working", "completed", "failed", "skipped", "unknown"] as const;
+    const runs = statuses.map((s, i) => run({ run_id: `r-${i}`, status: s as "completed" }));
+    expect(() =>
+      render(<RunHistory runs={runs} onOpen={vi.fn()} onDelete={vi.fn()} t={t} />),
+    ).not.toThrow();
+  });
+
   it("renders one row per run and fires onOpen with the run id when clicked", () => {
     const onOpen = vi.fn();
     render(
