@@ -146,6 +146,10 @@ export interface AgentDetails {
   tokens_in: number;
   tokens_out: number;
   cost_usd: number | null;
+  boosted?: boolean;
+  effective_model?: string;
+  is_boostable?: boolean;
+  boost_model?: string | null;
 }
 
 export async function getAgentDetails(
@@ -155,6 +159,25 @@ export async function getAgentDetails(
 ): Promise<AgentDetails> {
   return api.get<AgentDetails>(
     `/projects/${pid}/sessions/${sid}/agents/${encodeURIComponent(name)}`,
+  );
+}
+
+export interface AugmentResult {
+  name: string;
+  boosted: boolean;
+  effective_model: string;
+}
+
+/** Manually turn an agent's augmented model on/off for this session. */
+export async function setAgentAugment(
+  pid: string,
+  sid: string,
+  name: string,
+  enabled: boolean,
+): Promise<AugmentResult> {
+  return api.post<AugmentResult>(
+    `/projects/${pid}/sessions/${sid}/agents/${encodeURIComponent(name)}/augment`,
+    { enabled },
   );
 }
 
