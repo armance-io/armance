@@ -149,8 +149,9 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, ac
     }
 
     if (evt.name === "agent.streaming.end") {
-      setBusy(null);
-      setBusyAgent(null);
+      // Do NOT clear busy here: streaming.end can arrive before the reply is
+      // rendered, which made the "{name} thinking" banner vanish while the
+      // agent had not answered yet. turn.completed / turn.error own the clear.
       return;
     }
 
