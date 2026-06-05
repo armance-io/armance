@@ -59,7 +59,9 @@
       "water_aria": "Empreinte eau (mL)",
       "tokens_in_aria": "Jetons entrants",
       "tokens_out_aria": "Jetons sortants",
-      "model_aria": "Modèle utilisé (agent sélectionné)"
+      "model_aria": "Modèle utilisé (agent sélectionné)",
+      "detail_title": "Détail de l'empreinte",
+      "detail_estimate": "Estimation — fourchette physique, pas une mesure exacte."
     }
   },
   "library": {
