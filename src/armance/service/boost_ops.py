@@ -25,6 +25,22 @@ def boosted_model_for(agent: Agent, boosted_names: set[str]) -> tuple[str, str]:
     return (agent.provider, agent.model)
 
 
+def set_boost(agent: Agent, boosted_names: set[str], *, enabled: bool) -> bool:
+    """Manually toggle an agent's augmented state, mutating ``boosted_names``.
+
+    Deterministic counterpart to the NL ``/boost-request`` flow: the user drives
+    the transition directly (sidebar toggle / settings) with no checkpoint.
+    Enabling only takes effect when the agent is boostable; disabling always
+    clears the name (defensive against a stale entry). Returns the resulting
+    boosted state for this agent.
+    """
+    if enabled and agent.is_boostable:
+        boosted_names.add(agent.name)
+        return True
+    boosted_names.discard(agent.name)
+    return False
+
+
 async def intercept_boost_tags(
     reply: str,
     agent: Agent,
