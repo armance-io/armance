@@ -59,7 +59,9 @@
       "water_aria": "Water footprint (mL)",
       "tokens_in_aria": "Tokens in",
       "tokens_out_aria": "Tokens out",
-      "model_aria": "Model in use (selected agent)"
+      "model_aria": "Model in use (selected agent)",
+      "detail_title": "Footprint detail",
+      "detail_estimate": "Estimate — physical range, not an exact measurement."
     }
   },
   "library": {
