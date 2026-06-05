@@ -46,6 +46,9 @@ class Agent(BaseModel):
     # switch to (e.g. Opus). is_boostable / effective_boost() resolve it.
     boost_provider: str | None = None
     boost_model: str | None = None
+    # Reasoning effort to apply when augmented (e.g. base Sonnet low → boost
+    # Sonnet high). None inherits the base reasoning.
+    boost_reasoning: str | None = None
     reasoning: str | None = None
     system_prompt: str = ""
     caveman_level: CavemanLevel = "none"

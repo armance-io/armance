@@ -502,7 +502,17 @@
       "persona_hint": "Modifiez la personnalité via le chat Malik.",
       "save": "Sauvegarder",
       "saving": "Sauvegarde…",
-      "saved": "Agent sauvegardé."
+      "saved": "Agent sauvegardé.",
+      "augment": "Capacité d'augmentation",
+      "augment_hint": "Modèle renforcé optionnel, activable depuis la barre latérale en cas de besoin.",
+      "augment_reasoning": "Raisonnement (augmenté)",
+      "reasoning_unsupported": "Capacité non explicitement supportée par ce modèle — vous pouvez tout de même la spécifier.",
+      "reasoning_levels": {
+        "off": "Aucun",
+        "low": "Faible",
+        "medium": "Moyen",
+        "high": "Élevé"
+      }
     },
     "footprint": {
       "error": "Erreur de chargement de l'empreinte.",

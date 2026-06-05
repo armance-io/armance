@@ -502,7 +502,17 @@
       "persona_hint": "Edit persona via Malik chat.",
       "save": "Save",
       "saving": "Saving…",
-      "saved": "Agent saved successfully."
+      "saved": "Agent saved successfully.",
+      "augment": "Augment capability",
+      "augment_hint": "Optional stronger model, switchable from the sidebar when more power is needed.",
+      "augment_reasoning": "Reasoning (augmented)",
+      "reasoning_unsupported": "Capability not explicitly supported by this model — you can still specify it.",
+      "reasoning_levels": {
+        "off": "Off",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      }
     },
     "footprint": {
       "error": "Error loading footprint stats.",

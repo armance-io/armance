@@ -414,6 +414,8 @@ const AgentsTab: FC<{ pid: string; sid: string | null; t: (k: string) => string 
   const [modelOptionsByProvider, setModelOptionsByProvider] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
 
+  const [reasoningSet, setReasoningSet] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     if (!sid) return;
     setLoading(true);
@@ -433,19 +435,32 @@ const AgentsTab: FC<{ pid: string; sid: string | null; t: (k: string) => string 
             reasoning: (a.reasoning as AgentRecord["reasoning"]) ?? "off",
             supportsReasoning: false,
             staff: a.staff ?? false,
+            boostProvider: a.boost_provider ?? "",
+            boostModel: a.boost_model ?? "",
+            boostReasoning: (a.boost_reasoning as AgentRecord["boostReasoning"]) ?? "off",
           })),
         );
-        const provs = (prov.providers ?? {}) as Record<string, Array<{ id?: string }>>;
+        const provs = (prov.providers ?? {}) as Record<string, Array<{ id?: string; supports_reasoning?: boolean }>>;
         setProviders(Object.keys(provs).sort());
 
         const mapped: Record<string, string[]> = {};
+        const rset = new Set<string>();
         for (const [pName, mList] of Object.entries(provs)) {
           mapped[pName] = mList.map((m) => m.id ?? "").filter(Boolean).sort();
+          for (const m of mList) {
+            if (m.supports_reasoning && m.id) rset.add(`${pName}::${m.id}`);
+          }
         }
         setModelOptionsByProvider(mapped);
+        setReasoningSet(rset);
       },
     ).catch(console.error).finally(() => setLoading(false));
   }, [pid, sid]);
+
+  const reasoningSupported = useCallback(
+    (provider: string, model: string) => reasoningSet.has(`${provider}::${model}`),
+    [reasoningSet],
+  );
 
   const onSave = async (agent: AgentRecord) => {
     if (!sid) return;
@@ -453,6 +468,9 @@ const AgentsTab: FC<{ pid: string; sid: string | null; t: (k: string) => string 
       provider: agent.provider,
       model: agent.model,
       reasoning: agent.reasoning ?? null,
+      boost_provider: agent.boostProvider || null,
+      boost_model: agent.boostModel || null,
+      boost_reasoning: agent.boostModel ? (agent.boostReasoning ?? null) : null,
     });
   };
 
@@ -475,6 +493,7 @@ const AgentsTab: FC<{ pid: string; sid: string | null; t: (k: string) => string 
         agents={agentRecords}
         providerOptions={providers}
         modelOptionsByProvider={modelOptionsByProvider}
+        reasoningSupported={reasoningSupported}
         onSave={onSave}
         t={t}
       />

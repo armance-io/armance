@@ -25,7 +25,11 @@ _SAFE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 router = APIRouter()
 
 _PERSONA_ERROR = {"error": "persona_via_malik_only"}
-_WRITABLE_FIELDS = {"provider", "model", "reasoning"}
+_WRITABLE_FIELDS = {
+    "provider", "model", "reasoning",
+    # Augment capability — the user can grant/edit a stronger fallback model.
+    "boost_provider", "boost_model", "boost_reasoning",
+}
 
 
 def _persona_text(agent: Agent) -> str:
@@ -75,7 +79,9 @@ def _agent_row(
         "boosted": boosted,
         "effective_model": eff_mod or default_model,
         "is_boostable": agent.is_boostable,
+        "boost_provider": agent.boost_provider,
         "boost_model": agent.boost_model,
+        "boost_reasoning": agent.boost_reasoning,
     }
 
 
@@ -149,6 +155,11 @@ async def patch_agent(
         updated_data["model"] = patch["model"]
     if "reasoning" in patch:
         updated_data["reasoning"] = patch["reasoning"]
+    # Augment capability — an empty string clears the field (back to None).
+    for fld in ("boost_provider", "boost_model", "boost_reasoning"):
+        if fld in patch:
+            val = patch[fld]
+            updated_data[fld] = val if val else None
 
     updated = Agent.model_validate(updated_data)
     updated.save(path)
@@ -158,4 +169,6 @@ async def patch_agent(
         "provider": updated.provider,
         "model": updated.model,
         "reasoning": updated.reasoning,
+        "boost_provider": updated.boost_provider,
+        "boost_model": updated.boost_model,
     }
