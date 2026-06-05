@@ -18,10 +18,10 @@ export const BottomSpinner: FC<BottomSpinnerProps> = ({ busy, t }) => {
   const isActive = busy !== null;
 
   const rootStyle: CSSProperties = {
-    height: isActive ? "32px" : "0",
+    height: isActive ? "26px" : "0",
     overflow: "hidden",
     background: isActive
-      ? "var(--bg-paper-deep, #e8dfcd)"
+      ? "color-mix(in srgb, var(--bg-paper-deep, #e8dfcd) 88%, transparent)"
       : "transparent",
     borderTop: isActive
       ? "1px solid var(--rule, #d6c8ad)"
@@ -31,12 +31,12 @@ export const BottomSpinner: FC<BottomSpinnerProps> = ({ busy, t }) => {
     gap: "8px",
     padding: isActive ? "0 16px" : "0",
     transition:
-      "height 200ms ease, padding 200ms ease, background 200ms ease, border-top 200ms ease",
+      "height 160ms ease, padding 160ms ease, background 160ms ease",
   };
 
   const portraitStyle: CSSProperties = {
-    width: "20px",
-    height: "20px",
+    width: "16px",
+    height: "16px",
     borderRadius: "999px",
     overflow: "hidden",
     flexShrink: 0,

@@ -230,7 +230,14 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, ac
   const startSending = useCallback(() => {
     setSending(true);
     if (sendingTimer.current) clearTimeout(sendingTimer.current);
-    sendingTimer.current = setTimeout(() => setSending(false), 60_000);
+    sendingTimer.current = setTimeout(() => {
+      // Safety net: also clear the thinking banner. Since streaming.end no
+      // longer clears busy, a turn that ends without turn.completed/turn.error
+      // would otherwise leave the banner hanging forever.
+      setSending(false);
+      setBusy(null);
+      setBusyAgent(null);
+    }, 60_000);
   }, []);
   // Clear the safety timer whenever sending is explicitly unlocked.
   useEffect(() => {
@@ -359,11 +366,11 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, ac
             padding: "16px 0",
             paddingLeft: 8,
             paddingRight: 10,
-            // Reserve scroll space under the last bubble for the floating banner
-            // so it never covers the reply. This grows scrollHeight only — the
-            // bubbles keep their position whether the banner is shown or not.
-            scrollPaddingBottom: 40,
-            paddingBottom: busy ? 40 : 16,
+            // Constant bottom reserve sized to the banner height. Kept constant
+            // (not toggled with `busy`) so showing/hiding the banner reflows
+            // nothing — the last bubble never shifts. Sized to the slim banner.
+            scrollPaddingBottom: 28,
+            paddingBottom: 28,
           }}
         >
           {messages.length === 0 ? (
