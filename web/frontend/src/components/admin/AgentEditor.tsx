@@ -1,4 +1,4 @@
-import { type CSSProperties, type FC, useState } from "react";
+import { type CSSProperties, type FC, useEffect, useState } from "react";
 import { tokens } from "../_shared/armance-tokens";
 import { AgentPortrait } from "../visual/AgentPortrait";
 
@@ -66,6 +66,20 @@ const AgentCard: FC<{
   const [draft, setDraft] = useState<AgentRecord>(agent);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  // Re-sync the editable draft when the persisted agent changes (refetch after
+  // save). The list key is the stable agent id, so React keeps this instance
+  // and useState(agent) would otherwise hold the pre-save snapshot — the edit
+  // looked saved on disk but the card stayed blank/stale. Keyed on the
+  // persisted signature so it does not clobber in-progress edits on rerender.
+  const persistedSig = [
+    agent.provider, agent.model, agent.reasoning ?? "",
+    agent.boostProvider ?? "", agent.boostModel ?? "", agent.boostReasoning ?? "",
+  ].join("|");
+  useEffect(() => {
+    setDraft(agent);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agent.id, persistedSig]);
 
   const card: CSSProperties = {
     display: "grid",
