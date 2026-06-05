@@ -520,7 +520,7 @@
       "error": "Error loading footprint stats.",
       "no_data": "No footprint data yet — run a deliberation to populate it.",
       "method": "Estimation method",
-      "method_body": "Environmental impact is computed with the EcoLogits methodology (ISO 14044 LCA), accounting for the usage phase (GPU, data-centre PUE) and the embodied impact of hardware manufacturing.",
+      "method_body": "The footprint is estimated with EcoLogits (life-cycle assessment, ISO 14044), run fully offline — no data leaves your machine. For each reply we combine the usage phase (GPU energy inferred from output tokens and latency, scaled by the data-centre PUE) with the embodied impact of manufacturing the hardware, amortised over its lifetime. Energy is converted to gCO₂e via the carbon intensity of the zone's electricity grid, and to millilitres of water via that zone's WUE (water-usage effectiveness).",
       "estimate": "Estimate",
       "measured": "Measured",
       "title": "Environmental footprint (EcoLogits)",
@@ -538,7 +538,11 @@
       "zone": {
         "wor": "World — global average carbon intensity",
         "unknown": "Unknown zone"
-      }
+      },
+      "method_tiers": "Accuracy depends on what is known about the model. Six tiers, most to least reliable: exact (registry model), alias (known equivalent), params (declared size), similar and provider-default (approximate families), then dynamic bounding — a best/worst-case physical range when the model is unknown (e.g. ':free' models with no metadata). We never show '?': always an honest range, marked '~' when it is an estimate.",
+      "method_zone_label": "Carbon-intensity zone",
+      "method_providers_title": "Providers in this session",
+      "method_provider_note": "Anthropic and OpenAI do not publish their hardware; we use EcoLogits per-family averages. OpenRouter ':free' models often fall through to dynamic bounding for lack of metadata."
     }
   },
   "audio": {

@@ -520,7 +520,7 @@
       "error": "Erreur de chargement de l'empreinte.",
       "no_data": "Aucune donnée d'empreinte pour l'instant — lancez une délibération pour la renseigner.",
       "method": "Méthode d'estimation",
-      "method_body": "L'impact environnemental est calculé avec la méthodologie EcoLogits (ACV ISO 14044), prenant en compte la phase d'usage (GPU, PUE des centres de données) et l'impact incorporé de la fabrication du matériel.",
+      "method_body": "L'empreinte est estimée avec EcoLogits (analyse de cycle de vie, ISO 14044), appliquée hors-ligne — aucune donnée ne quitte votre machine. Pour chaque réponse, on combine la phase d'usage (énergie GPU déduite des jetons produits et de la latence, multipliée par le PUE du centre de données) et l'impact incorporé de la fabrication du matériel, amorti sur sa durée de vie. L'énergie est convertie en gCO₂e via l'intensité carbone du réseau électrique de la zone, et en millilitres d'eau via le WUE (water-usage effectiveness) de cette zone.",
       "estimate": "Estimation",
       "measured": "Mesure réelle",
       "title": "Empreinte environnementale (EcoLogits)",
@@ -538,7 +538,11 @@
       "zone": {
         "wor": "Monde — intensité carbone moyenne mondiale",
         "unknown": "Zone inconnue"
-      }
+      },
+      "method_tiers": "La précision dépend de ce qu'on sait du modèle. Six paliers, du plus fiable au plus prudent : exact (modèle au registre), alias (équivalent connu), paramètres (taille déclarée), similaire et défaut-fournisseur (familles approchées), puis bornage dynamique — une fourchette physique best/worst-case quand le modèle est inconnu (ex. modèles « :free » sans métadonnées). On n'affiche jamais « ? » : toujours une fourchette honnête, marquée « ~ » quand c'est une estimation.",
+      "method_zone_label": "Zone d'intensité carbone",
+      "method_providers_title": "Fournisseurs de cette session",
+      "method_provider_note": "Anthropic et OpenAI ne publient pas leur matériel ; on s'appuie sur les moyennes EcoLogits par famille de modèles. Les modèles « :free » d'OpenRouter passent souvent par le bornage dynamique faute de métadonnées."
     }
   },
   "audio": {
