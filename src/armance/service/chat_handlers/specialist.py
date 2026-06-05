@@ -76,6 +76,8 @@ async def cmd_chat(text: str, ctx: LoopContext) -> str:
                 event_bus=ctx.event_bus,
             )
             reply = scrub_reply(report.content, agent_role="specialist")
+            from armance.service.boost_ops import intercept_boost_tags
+            reply = await intercept_boost_tags(reply, agent_obj, ctx.state.boosted_agents, ctx.checkpoint_handler, t)
             reply = intercept_load_run_tag(reply, ctx)
         else:
             fallback = ctx.agents[0] if ctx.agents else None

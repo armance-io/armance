@@ -42,6 +42,13 @@ class Agent(BaseModel):
     persona: Persona | None = None
     provider: str
     model: str
+    # Optional boost: a fallback (provider, model) the agent can temporarily
+    # switch to (e.g. Opus). is_boostable / effective_boost() resolve it.
+    boost_provider: str | None = None
+    boost_model: str | None = None
+    # Reasoning effort to apply when augmented (e.g. base Sonnet low → boost
+    # Sonnet high). None inherits the base reasoning.
+    boost_reasoning: str | None = None
     reasoning: str | None = None
     system_prompt: str = ""
     caveman_level: CavemanLevel = "none"
@@ -147,6 +154,20 @@ class Agent(BaseModel):
             level=level, repo_root=repo_root, protocol_path=protocol_path
         )
         return f"{protocol_text}\n\n{self.system_prompt}".strip()
+
+    @property
+    def is_boostable(self) -> bool:
+        """True when a boost model is configured for this agent."""
+        return bool(self.boost_model)
+
+    def effective_boost(self) -> tuple[str, str] | None:
+        """Return the (provider, model) to use when this agent is boosted.
+
+        Falls back to the base provider when only boost_model is set.
+        """
+        if not self.boost_model:
+            return None
+        return (self.boost_provider or self.provider, self.boost_model)
 
 
 def _split_frontmatter(text: str) -> tuple[str, str]:

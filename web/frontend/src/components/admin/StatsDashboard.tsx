@@ -1,6 +1,7 @@
 import { type CSSProperties, type FC, useMemo, useState } from "react";
 import { tokens } from "../_shared/armance-tokens";
 import { displayAgentName } from "@/lib/agentNames";
+import type { FootprintEquiv } from "@/lib/footprint";
 
 export interface AgentStat {
   agent: string;
@@ -11,11 +12,38 @@ export interface AgentStat {
   gco2e?: number;
   water_ml?: number;
   has_estimate?: boolean;
+  /** EcoLogits carbon confidence bounds (optional; render a range). */
+  gco2e_min?: number | undefined;
+  gco2e_max?: number | undefined;
+  water_ml_min?: number | undefined;
+  water_ml_max?: number | undefined;
+}
+
+const EN_DASH = "–";
+
+/** `~[min – max] gCO₂e` when the bounds differ, else a flat `~mid gCO₂e`. */
+function formatCo2(
+  mid: number,
+  min: number | undefined,
+  max: number | undefined,
+  estimate: boolean,
+): string {
+  const tilde = estimate ? "~" : "";
+  if (min != null && max != null && Math.abs(max - min) > 1e-9) {
+    return `${tilde}[${min.toFixed(1)} ${EN_DASH} ${max.toFixed(1)}] gCO₂e`;
+  }
+  return `${tilde}${mid.toFixed(1)} gCO₂e`;
 }
 
 export interface StatsDashboardProps {
   agents: AgentStat[];
   currency?: string;
+  /** ADEME human-scale equivalences for the project total (optional). */
+  equiv?: FootprintEquiv | undefined;
+  /** Dominant carbon-intensity zone for the session (e.g. "WOR", "FRA"). */
+  dominantZone?: string | null | undefined;
+  /** Distinct providers used this session, for the method context note. */
+  providers?: string[] | undefined;
   t: (key: string) => string;
 }
 
@@ -24,6 +52,9 @@ const fmt = (n: number) => n.toLocaleString("fr-FR");
 export const StatsDashboard: FC<StatsDashboardProps> = ({
   agents,
   currency = "€",
+  equiv,
+  dominantZone,
+  providers,
   t,
 }) => {
   const totals = useMemo(
@@ -36,8 +67,15 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
           messages: acc.messages + a.messages,
           gco2e: acc.gco2e + (a.gco2e ?? 0),
           water_ml: acc.water_ml + (a.water_ml ?? 0),
+          // Bounds fall back to the midpoint when a record carries no range.
+          gco2e_min: acc.gco2e_min + (a.gco2e_min ?? a.gco2e ?? 0),
+          gco2e_max: acc.gco2e_max + (a.gco2e_max ?? a.gco2e ?? 0),
+          has_estimate: acc.has_estimate || Boolean(a.has_estimate),
         }),
-        { tokens_in: 0, tokens_out: 0, cost: 0, messages: 0, gco2e: 0, water_ml: 0 },
+        {
+          tokens_in: 0, tokens_out: 0, cost: 0, messages: 0,
+          gco2e: 0, water_ml: 0, gco2e_min: 0, gco2e_max: 0, has_estimate: false,
+        },
       ),
     [agents],
   );
@@ -78,7 +116,11 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
       <div style={{ ...cards, gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}>
         <Card
           label={`🌱 ${t("admin:stats.carbon_total")}`}
-          value={totals.gco2e > 0 ? `~${totals.gco2e.toFixed(1)} gCO₂e` : t("visual:empty.deliberation.title")}
+          value={
+            totals.gco2e > 0
+              ? formatCo2(totals.gco2e, totals.gco2e_min, totals.gco2e_max, totals.has_estimate)
+              : t("visual:empty.deliberation.title")
+          }
           accent
           accentColor="var(--accent-deep, #4a3666)"
         />
@@ -89,6 +131,25 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
           accentColor="#2e6f40"
         />
       </div>
+
+      {/* ADEME human-scale equivalences — make the abstract gCO₂e tangible. */}
+      {equiv && totals.gco2e > 0 && (
+        <div
+          data-testid="footprint-equiv"
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 24,
+            fontSize: 13,
+            color: tokens.inkSoft,
+            fontFamily: tokens.ffSans,
+          }}
+        >
+          <Equiv label={t("admin:stats.equiv.phone_charges")} value={equiv.phone_charges} />
+          <Equiv label={t("admin:stats.equiv.car_km")} value={equiv.car_km} />
+          <Equiv label={t("admin:stats.equiv.water_glasses")} value={equiv.water_glasses} />
+        </div>
+      )}
 
       {/* Monetary & Token Statistics */}
       <div style={cards}>
@@ -146,7 +207,9 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
                     🌱 {t("admin:stats.carbon")}
                   </span>
                   <span style={{ fontSize: 15, fontWeight: 600, color: tokens.ink }}>
-                    {a.gco2e && a.gco2e > 0 ? `${a.has_estimate ? "~" : ""}${a.gco2e.toFixed(1)} gCO₂e` : "—"}
+                    {a.gco2e && a.gco2e > 0
+                      ? formatCo2(a.gco2e, a.gco2e_min, a.gco2e_max, Boolean(a.has_estimate))
+                      : "—"}
                   </span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -256,9 +319,40 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
               fontSize: 13,
               color: tokens.inkSoft,
               lineHeight: 1.6,
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
             }}
           >
-            {t("admin:footprint.method_body")}
+            <p style={{ margin: 0 }}>{t("admin:footprint.method_body")}</p>
+            <p style={{ margin: 0 }}>{t("admin:footprint.method_tiers")}</p>
+            {dominantZone && (
+              <p style={{ margin: 0, fontFamily: tokens.ffMono, fontSize: 12 }}>
+                {t("admin:footprint.method_zone_label")}: <strong>{dominantZone}</strong>
+              </p>
+            )}
+            {providers && providers.length > 0 && (
+              <div style={{ borderTop: `1px solid ${tokens.ruleSoft || tokens.rule}`, paddingTop: 10 }}>
+                <div style={{ fontFamily: tokens.ffMono, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
+                  {t("admin:footprint.method_providers_title")}
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                  {providers.map((p) => (
+                    <span
+                      key={p}
+                      style={{
+                        fontFamily: tokens.ffMono, fontSize: 11,
+                        padding: "2px 8px", borderRadius: 999,
+                        border: `1px solid ${tokens.rule}`, color: tokens.ink,
+                      }}
+                    >
+                      {p}
+                    </span>
+                  ))}
+                </div>
+                <p style={{ margin: 0 }}>{t("admin:footprint.method_provider_note")}</p>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -305,6 +399,17 @@ const Card: FC<{ label: string; value: string; accent?: boolean; accentColor?: s
     </span>
   </div>
 );
+
+/** One "≈ N · label" human-scale equivalence chip. */
+const Equiv: FC<{ label: string; value: number }> = ({ label, value }) => {
+  const n = value >= 1 ? Math.round(value) : value.toFixed(1);
+  return (
+    <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6 }}>
+      <span style={{ fontWeight: 600, color: tokens.ink, fontFamily: tokens.ffMono }}>≈ {n}</span>
+      <span>{label}</span>
+    </span>
+  );
+};
 
 const Section: FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <section>

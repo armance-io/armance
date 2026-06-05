@@ -7,9 +7,9 @@ import {
   useEffect,
 } from "react";
 
-/* ─── Types ──────────────────────────────────────────────────────────────── */
+import type { RunStatus } from "@/lib/runStatus";
 
-type RunStatus = "running" | "completed" | "failed" | "cancelled";
+/* ─── Types ──────────────────────────────────────────────────────────────── */
 
 export interface DeleteRunButtonProps {
   runId: string;
@@ -34,7 +34,8 @@ export const DeleteRunButton: FC<DeleteRunButtonProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  const isBlocked = status === "running";
+  // A run still in flight (queued/working/running) can't be deleted.
+  const isBlocked = status === "running" || status === "working" || status === "queued";
   const isEnabled = !isBlocked && state !== "submitting";
 
   /* ─── Handlers ─────────────────────────────────────────────────────────── */

@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from armance.service.agent_sandbox import (
+    cut_at_bare_affirmation,
     cut_at_speaker_markers,
     normalise_hallucinated_tool_calls,
     scrub_reply,
     strip_hallucinated_tool_calls,
+    strip_mode_narration,
     strip_unauthorised_execute_tags,
     truncate_simulated_turns,
 )
@@ -51,6 +53,74 @@ def test_strip_drops_tool_call_after_normalise_pass() -> None:
     raw = "<tool_call>read</tool_call>"
     out = strip_hallucinated_tool_calls(raw)
     assert "<tool_call>" not in out
+
+
+def test_strip_mode_narration_drops_caveman_preamble() -> None:
+    """The exact 305-brises leak: Malik narrates its compression mode A2H."""
+    leaked = (
+        "Caveman pause — security step. Brittany conference needs fact-heavy "
+        "historians. Recommend Claude Haiku. Accept?"
+    )
+    out = strip_mode_narration(leaked)
+    assert out.startswith("Brittany conference needs")
+    assert "Caveman" not in out
+
+
+def test_strip_mode_narration_variants() -> None:
+    for prefix in (
+        "Caveman mode: ",
+        "Mode caveman — ",
+        "Caveman mode active. ",
+        "[caveman] ",
+    ):
+        out = strip_mode_narration(prefix + "Real content here.")
+        assert out == "Real content here.", prefix
+
+
+def test_strip_mode_narration_leaves_clean_reply() -> None:
+    text = "Brittany needs historians. Recommend Haiku. Accept?"
+    assert strip_mode_narration(text) == text
+
+
+def test_scrub_reply_strips_mode_narration() -> None:
+    raw = "Caveman pause — security step. Recommend Haiku for the historians."
+    out = scrub_reply(raw, agent_role="malik")
+    assert "Caveman" not in out
+    assert "Recommend Haiku" in out
+
+
+def test_cut_at_bare_affirmation_drops_simulated_user_turn() -> None:
+    """The exact 55-lumières bug: agent scripts the user's 'oui' then acts."""
+    buggy = (
+        "Voulez-vous que je fige ce cadrage maintenant ?\n\n"
+        "oui\n\n"
+        "[EXECUTE:/save]\n\n"
+        "@Malik, peux-tu recruter l'équipe ?"
+    )
+    out = cut_at_bare_affirmation(buggy)
+    assert out == "Voulez-vous que je fige ce cadrage maintenant ?"
+    assert "[EXECUTE:/save]" not in out
+    assert "@Malik" not in out
+
+
+def test_cut_at_bare_affirmation_leaves_legit_save_reply() -> None:
+    """A real save (after a separate user 'oui') has no bare affirmation line."""
+    legit = "Entendu. [EXECUTE:/save]"
+    assert cut_at_bare_affirmation(legit) == legit
+
+
+def test_cut_at_bare_affirmation_keeps_affirmation_inside_sentence() -> None:
+    """'oui' as part of a real sentence is not a simulated turn."""
+    text = "Oui, je comprends votre objectif. Continuons sur ce cadrage."
+    assert cut_at_bare_affirmation(text) == text
+
+
+def test_scrub_reply_cuts_simulated_oui_before_execute() -> None:
+    """End-to-end: scrub_reply removes the scripted turn so /save can't fire."""
+    raw = "Je fige maintenant ?\n\noui\n\n[EXECUTE:/save]"
+    out = scrub_reply(raw, agent_role="armance")
+    assert "[EXECUTE:/save]" not in out
+    assert out == "Je fige maintenant ?"
 
 
 def test_scrub_reply_armance_save_path() -> None:

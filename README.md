@@ -130,7 +130,7 @@ DOCX / PPTX / Markdown exports need nothing extra.
 ```bash
 git clone https://github.com/armance-io/armance.git
 cd armance
-uv sync && uv pip install -e '.[web]'
+uv sync
 ```
 
 > An editable install lives in the project's `.venv` — it is **not** put on
