@@ -27,6 +27,41 @@ class TestBoostedModelFor:
         assert boosted_model_for(a, boosted_names={"Sara"}) == ("openrouter", "base/model")
 
 
+class TestSetBoost:
+    def _agent(self, boost=True):
+        from armance.core.models.agent import Agent
+        kw = dict(name="Lea", domain="history", provider="claude-code", model="claude-haiku-4-5")
+        if boost:
+            kw.update(boost_provider="claude-code", boost_model="claude-sonnet-4-6")
+        return Agent(**kw)
+
+    def test_enable_adds_to_set(self) -> None:
+        from armance.service.boost_ops import set_boost
+        names: set[str] = set()
+        assert set_boost(self._agent(), names, enabled=True) is True
+        assert "Lea" in names
+
+    def test_disable_removes_from_set(self) -> None:
+        from armance.service.boost_ops import set_boost
+        names = {"Lea"}
+        assert set_boost(self._agent(), names, enabled=False) is False
+        assert "Lea" not in names
+
+    def test_enable_non_boostable_is_noop(self) -> None:
+        from armance.service.boost_ops import set_boost
+        names: set[str] = set()
+        # not boostable → cannot enable, returns False, set unchanged
+        assert set_boost(self._agent(boost=False), names, enabled=True) is False
+        assert names == set()
+
+    def test_disable_non_boostable_still_clears(self) -> None:
+        # defensive: a stale name for a now-non-boostable agent is cleared
+        from armance.service.boost_ops import set_boost
+        names = {"Lea"}
+        assert set_boost(self._agent(boost=False), names, enabled=False) is False
+        assert names == set()
+
+
 class TestSessionBoostState:
     def test_boosted_agents_round_trips(self, tmp_path: Path) -> None:
         from armance.service.session import SessionState, load_state, save_state
