@@ -12,6 +12,7 @@ import questionary
 
 from armance.config import (
     Config,
+    FootprintConfig,
     ProviderConfig,
     ensure_armance_tree,
     save_config,
@@ -452,12 +453,32 @@ def cmd_init(
 
     embedding_provider, embedding_model = _ask_embedding(selected, providers, language=language)
 
+    # Carbon-intensity zone — refines the CO2 footprint estimate to the user's
+    # electricity grid. Defaults to the world average (WOR).
+    from armance.service.footprint_zones import list_zones
+    zones = list_zones()
+    zone_labels = [f"{z['code']} · {z['gco2e_per_kwh']} gCO2e/kWh" for z in zones]
+    zone_label = questionary.select(
+        "Country / zone for the CO2 footprint estimate (world average by default)",
+        choices=zone_labels,
+        default=zone_labels[0],
+        use_arrow_keys=True,
+        style=_SELECT_STYLE,
+    ).ask() or zone_labels[0]
+    # Resolve back to the zone code; tolerate a label we don't recognise
+    # (mismatched mock / future format) by falling back to the world average.
+    try:
+        electricity_mix_zone = str(zones[zone_labels.index(zone_label)]["code"])
+    except ValueError:
+        electricity_mix_zone = "WOR"
+
     cfg_kwargs: dict = dict(
         providers=providers,
         default_provider=default_provider,
         default_model=default_model,
         budget_effort=budget_effort,
         language=language,
+        footprint=FootprintConfig(electricity_mix_zone=electricity_mix_zone),
     )
     if embedding_provider:
         cfg_kwargs["embedding_provider"] = embedding_provider
@@ -882,7 +903,7 @@ def _build_web_bundle() -> int:
             "        pip install armance\n"
             "    • or build from a clone:\n"
             "        git clone https://github.com/armance-io/armance.git\n"
-            "        cd armance && uv sync && uv pip install -e '.[web]'\n"
+            "        cd armance && uv sync\n"
             "        uv run armance web --build",
             file=sys.stderr,
         )
@@ -986,10 +1007,10 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     if _missing:
         print(
             f"Web dependencies missing: {', '.join(_missing)}\n\n"
-            "Install with:\n"
-            "  uv tool install --reinstall 'git+https://github.com/armance-io/armance.git[web]'\n"
-            "or if installed via pipx:\n"
-            "  pipx inject armance fastapi 'uvicorn[standard]' sse-starlette python-multipart",
+            "Please reinstall armance:\n"
+            "  pip install armance\n"
+            "or:\n"
+            "  uv tool install --reinstall armance",
             file=sys.stderr,
         )
         return 1

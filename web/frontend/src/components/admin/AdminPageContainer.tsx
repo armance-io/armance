@@ -32,6 +32,7 @@ import {
   patchAdminAgent,
   getProviders,
   getEmbeddingModels,
+  getFootprintZones,
   type EmbeddingModel,
 } from "@/lib/api";
 import { KNOWN_PROVIDERS } from "@/lib/providerLabels";
@@ -121,6 +122,7 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
   const [cfg, setCfg] = useState<ConfigValues | null>(null);
   const [providerOptions, setProviderOptions] = useState<string[]>([]);
   const [embeddingOptions, setEmbeddingOptions] = useState<EmbeddingModel[]>([]);
+  const [zoneOptions, setZoneOptions] = useState<Array<{ code: string; gco2e_per_kwh: number }>>([]);
   const [secrets, setSecrets] = useState<Array<{ name: string; value: string; set: boolean }>>([]);
 
   const reloadSecrets = useCallback(() => {
@@ -139,6 +141,7 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
 
   useEffect(() => {
     void Promise.all([getAdminConfig(pid), getProviders()]).then(([raw, prov]) => {
+      const footprint = (raw.footprint ?? {}) as { electricity_mix_zone?: string };
       setCfg({
         default_provider: String(raw.default_provider ?? ""),
         default_model: String(raw.default_model ?? ""),
@@ -146,6 +149,7 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
         language: String(raw.language ?? "en"),
         embedding_provider: String(raw.embedding_provider ?? ""),
         embedding_model: String(raw.embedding_model ?? ""),
+        electricity_mix_zone: String(footprint.electricity_mix_zone ?? "WOR"),
         providers: (raw.providers as ConfigValues["providers"]) ?? [],
       });
       const provs = (prov.providers ?? {}) as Record<string, Array<{ id?: string }>>;
@@ -158,6 +162,9 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
     });
     void getEmbeddingModels()
       .then((res) => setEmbeddingOptions(res.models ?? []))
+      .catch(console.error);
+    void getFootprintZones()
+      .then((zones) => setZoneOptions(zones))
       .catch(console.error);
     reloadSecrets();
   }, [pid, reloadSecrets]);
@@ -197,7 +204,16 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
       }
     }
 
-    const updated = await patchAdminConfig(pid, values as unknown as Record<string, unknown>);
+    // The carbon zone lives under the nested `footprint` config; lift it out of
+    // the flat form value into the shape the backend Config expects.
+    const { electricity_mix_zone, ...flat } = values;
+    const patchBody: Record<string, unknown> = { ...flat };
+    if (electricity_mix_zone) {
+      patchBody.footprint = { electricity_mix_zone };
+    }
+
+    const updated = await patchAdminConfig(pid, patchBody);
+    const updFootprint = (updated.footprint ?? {}) as { electricity_mix_zone?: string };
     setCfg({
       default_provider: String(updated.default_provider ?? ""),
       default_model: String(updated.default_model ?? ""),
@@ -205,6 +221,7 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
       language: String(updated.language ?? "en"),
       embedding_provider: String(updated.embedding_provider ?? ""),
       embedding_model: String(updated.embedding_model ?? ""),
+      electricity_mix_zone: String(updFootprint.electricity_mix_zone ?? "WOR"),
       providers: (updated.providers as ConfigValues["providers"]) ?? [],
     });
     reloadSecrets();
@@ -218,6 +235,7 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
         providerOptions={providerOptions}
         languageOptions={["en", "fr"]}
         embeddingOptions={embeddingOptions}
+        zoneOptions={zoneOptions}
         onSave={onSave}
         onAddProviderSecrets={onAddProviderSecrets}
         secrets={secrets}
@@ -347,7 +365,11 @@ const LogsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
 // ---------------------------------------------------------------------------
 
 const StatsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
+  const { sid } = useLatestSession();
   const [agents, setAgents] = useState<AgentStat[]>([]);
+  const [equiv, setEquiv] = useState<import("@/lib/footprint").FootprintEquiv | undefined>(undefined);
+  const [dominantZone, setDominantZone] = useState<string | null>(null);
+  const [providers, setProviders] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -355,9 +377,13 @@ const StatsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => 
     void Promise.all([
       getAdminStats(pid),
       getFootprint(pid, "agent").catch(() => null),
-    ]).then(([statsData, footprintData]) => {
+      sid ? getAdminAgents(pid, sid).catch(() => []) : Promise.resolve([]),
+    ]).then(([statsData, footprintData, roster]) => {
       const statsMap = statsData?.agents ?? {};
       const footprintMap = footprintData?.by_agent ?? {};
+      setEquiv(footprintData?.equiv);
+      setDominantZone(footprintData?.dominant_zone ?? null);
+      setProviders(Array.from(new Set(roster.map((a) => a.provider).filter(Boolean))).sort());
 
       const allAgentNames = Array.from(
         new Set([...Object.keys(statsMap), ...Object.keys(footprintMap)]),
@@ -365,17 +391,22 @@ const StatsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => 
 
       const merged: AgentStat[] = allAgentNames.map((name) => {
         const s = statsMap[name] ?? { tokens_in: 0, tokens_out: 0, cost_usd: 0, msg_count: 0 };
-        const f = footprintMap[name] ?? { gco2e: 0, water_ml: 0, has_estimate: false };
+        const f: Partial<import("@/lib/footprint").FootprintBucket> =
+          footprintMap[name] ?? {};
         return {
           agent: name,
           tokens_in: s.tokens_in,
           tokens_out: s.tokens_out,
           cost: s.cost_usd,
           messages: s.msg_count,
-          gco2e: f.gco2e,
-          water_ml: f.water_ml,
-          has_estimate: f.has_estimate,
-        };
+          gco2e: f.gco2e ?? 0,
+          water_ml: f.water_ml ?? 0,
+          has_estimate: f.has_estimate ?? false,
+          gco2e_min: f.gco2e_min,
+          gco2e_max: f.gco2e_max,
+          water_ml_min: f.water_ml_min,
+          water_ml_max: f.water_ml_max,
+        } satisfies AgentStat;
       });
 
       setAgents(merged);
@@ -384,7 +415,7 @@ const StatsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => 
       console.error(err);
       setLoading(false);
     });
-  }, [pid]);
+  }, [pid, sid]);
 
   if (loading) {
     return <div style={{ padding: 20, color: tokens.inkSoft, fontFamily: tokens.ffSans }}>{t("app:loading")}</div>;
@@ -392,7 +423,7 @@ const StatsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => 
 
   return (
     <div data-testid="stats-dashboard">
-      <StatsDashboard agents={agents} t={t} />
+      <StatsDashboard agents={agents} equiv={equiv} dominantZone={dominantZone} providers={providers} t={t} />
     </div>
   );
 };
@@ -406,6 +437,8 @@ const AgentsTab: FC<{ pid: string; sid: string | null; t: (k: string) => string 
   const [providers, setProviders] = useState<string[]>([]);
   const [modelOptionsByProvider, setModelOptionsByProvider] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(false);
+
+  const [reasoningSet, setReasoningSet] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!sid) return;
@@ -426,19 +459,32 @@ const AgentsTab: FC<{ pid: string; sid: string | null; t: (k: string) => string 
             reasoning: (a.reasoning as AgentRecord["reasoning"]) ?? "off",
             supportsReasoning: false,
             staff: a.staff ?? false,
+            boostProvider: a.boost_provider ?? "",
+            boostModel: a.boost_model ?? "",
+            boostReasoning: (a.boost_reasoning as AgentRecord["boostReasoning"]) ?? "off",
           })),
         );
-        const provs = (prov.providers ?? {}) as Record<string, Array<{ id?: string }>>;
+        const provs = (prov.providers ?? {}) as Record<string, Array<{ id?: string; supports_reasoning?: boolean }>>;
         setProviders(Object.keys(provs).sort());
 
         const mapped: Record<string, string[]> = {};
+        const rset = new Set<string>();
         for (const [pName, mList] of Object.entries(provs)) {
           mapped[pName] = mList.map((m) => m.id ?? "").filter(Boolean).sort();
+          for (const m of mList) {
+            if (m.supports_reasoning && m.id) rset.add(`${pName}::${m.id}`);
+          }
         }
         setModelOptionsByProvider(mapped);
+        setReasoningSet(rset);
       },
     ).catch(console.error).finally(() => setLoading(false));
   }, [pid, sid]);
+
+  const reasoningSupported = useCallback(
+    (provider: string, model: string) => reasoningSet.has(`${provider}::${model}`),
+    [reasoningSet],
+  );
 
   const onSave = async (agent: AgentRecord) => {
     if (!sid) return;
@@ -446,6 +492,9 @@ const AgentsTab: FC<{ pid: string; sid: string | null; t: (k: string) => string 
       provider: agent.provider,
       model: agent.model,
       reasoning: agent.reasoning ?? null,
+      boost_provider: agent.boostProvider || null,
+      boost_model: agent.boostModel || null,
+      boost_reasoning: agent.boostModel ? (agent.boostReasoning ?? null) : null,
     });
   };
 
@@ -468,6 +517,7 @@ const AgentsTab: FC<{ pid: string; sid: string | null; t: (k: string) => string 
         agents={agentRecords}
         providerOptions={providers}
         modelOptionsByProvider={modelOptionsByProvider}
+        reasoningSupported={reasoningSupported}
         onSave={onSave}
         t={t}
       />

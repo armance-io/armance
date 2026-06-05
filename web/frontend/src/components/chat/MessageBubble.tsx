@@ -157,7 +157,7 @@ export const MessageBubble: FC<MessageBubbleProps> = ({
   };
 
   const proseStyle: CSSProperties = {
-    fontFamily: "var(--ff-sans, 'Inter', sans-serif)", fontSize: "12.5px", lineHeight: 1.55, color: "var(--ink, #2a2520)",
+    fontFamily: "var(--ff-sans, 'Inter', sans-serif)", fontSize: "11.5px", lineHeight: 1.5, color: "var(--ink, #2a2520)",
   };
 
   const footerStyle: CSSProperties = {

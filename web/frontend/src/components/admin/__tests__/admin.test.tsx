@@ -33,6 +33,7 @@ vi.mock("@/lib/api", () => ({
   patchAdminAgent: vi.fn(),
   getProviders: vi.fn(),
   getEmbeddingModels: vi.fn(),
+  getFootprintZones: vi.fn(() => Promise.resolve([{ code: "WOR", gco2e_per_kwh: 473 }])),
 }));
 
 vi.mock("@/lib/useLatestSession", () => ({
@@ -424,6 +425,37 @@ describe("<AgentEditor />", () => {
     await waitFor(() => {
       expect(handleSave).toHaveBeenCalled();
     });
+  });
+
+  it("warns when reasoning is unsupported but still lets you set it", () => {
+    render(
+      <AgentEditor
+        agents={mockAgents}
+        providerOptions={["openrouter"]}
+        modelOptionsByProvider={{ openrouter: ["gpt-4o"] }}
+        reasoningSupported={() => false}
+        onSave={vi.fn()}
+        t={mockT}
+      />
+    );
+    // base reasoning is "low" (≠ off) on an unsupported model → warning shown
+    expect(screen.getByTestId("reasoning-warning")).toBeDefined();
+  });
+
+  it("shows the augment reasoning picker only once a boost model is set", () => {
+    const boostable: AgentRecord[] = [
+      { ...mockAgents[0]!, boostProvider: "openrouter", boostModel: "gpt-4o", boostReasoning: "high" },
+    ];
+    render(
+      <AgentEditor
+        agents={boostable}
+        providerOptions={["openrouter"]}
+        modelOptionsByProvider={{ openrouter: ["gpt-4o"] }}
+        onSave={vi.fn()}
+        t={mockT}
+      />
+    );
+    expect(screen.getByText("admin:agents.augment_reasoning")).toBeDefined();
   });
 });
 

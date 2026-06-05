@@ -146,6 +146,10 @@ export interface AgentDetails {
   tokens_in: number;
   tokens_out: number;
   cost_usd: number | null;
+  boosted?: boolean;
+  effective_model?: string;
+  is_boostable?: boolean;
+  boost_model?: string | null;
 }
 
 export async function getAgentDetails(
@@ -158,9 +162,39 @@ export async function getAgentDetails(
   );
 }
 
+export interface AugmentResult {
+  name: string;
+  boosted: boolean;
+  effective_model: string;
+}
+
+/** Manually turn an agent's augmented model on/off for this session. */
+export async function setAgentAugment(
+  pid: string,
+  sid: string,
+  name: string,
+  enabled: boolean,
+): Promise<AugmentResult> {
+  return api.post<AugmentResult>(
+    `/projects/${pid}/sessions/${sid}/agents/${encodeURIComponent(name)}/augment`,
+    { enabled },
+  );
+}
+
 export interface ProvidersCatalogue {
   providers: Record<string, Array<Record<string, unknown>>>;
   hint?: string;
+}
+
+export interface FootprintZone {
+  code: string;
+  gco2e_per_kwh: number;
+}
+
+/** Carbon-intensity zones for the footprint estimate (WOR first). */
+export async function getFootprintZones(): Promise<FootprintZone[]> {
+  const r = await api.get<{ zones: FootprintZone[] }>("/footprint/zones");
+  return r.zones;
 }
 
 export async function getProviders(): Promise<ProvidersCatalogue> {
@@ -593,6 +627,12 @@ export interface AdminAgent {
   reasoning: string | null;
   persona?: string;
   staff?: boolean;
+  boosted?: boolean;
+  effective_model?: string;
+  is_boostable?: boolean;
+  boost_provider?: string | null;
+  boost_model?: string | null;
+  boost_reasoning?: string | null;
 }
 
 export async function getAdminAgents(pid: string, sid: string): Promise<AdminAgent[]> {
@@ -603,7 +643,14 @@ export async function patchAdminAgent(
   pid: string,
   sid: string,
   name: string,
-  patch: { provider?: string; model?: string; reasoning?: string | null },
+  patch: {
+    provider?: string;
+    model?: string;
+    reasoning?: string | null;
+    boost_provider?: string | null;
+    boost_model?: string | null;
+    boost_reasoning?: string | null;
+  },
 ): Promise<{ name: string; provider: string; model: string; reasoning: string | null }> {
   return api.patch<{ name: string; provider: string; model: string; reasoning: string | null }>(
     `/projects/${pid}/sessions/${sid}/agents/${encodeURIComponent(name)}`,

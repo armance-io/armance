@@ -1,0 +1,5 @@
+# Human-scale equivalence factors. SOURCED — do not invent.
+# Sources: ADEME Base Carbone; armance-strategie/research/report2.md §équivalences.
+phone_charge_gco2e: 8.3    # 1 full smartphone charge (US grid intensity, report2)
+car_km_gco2e: 218.0        # 1 km, average petrol car (ADEME Base Carbone)
+water_glass_ml: 250.0      # standard drinking-glass capacity

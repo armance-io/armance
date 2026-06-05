@@ -67,3 +67,15 @@ async def test_get_providers_handles_discovery_failure(client: AsyncClient) -> N
     data = resp.json()
     assert data["providers"] == {}
     assert "hint" in data
+
+
+@pytest.mark.asyncio
+async def test_get_footprint_zones(client: AsyncClient) -> None:
+    """GET /footprint/zones lists carbon zones, world-average first."""
+    resp = await client.get("/footprint/zones")
+    assert resp.status_code == 200
+    zones = resp.json()["zones"]
+    assert zones[0]["code"] == "WOR"
+    codes = {z["code"] for z in zones}
+    assert {"FRA", "USA", "DEU"} <= codes
+    assert all(z["gco2e_per_kwh"] > 0 for z in zones)

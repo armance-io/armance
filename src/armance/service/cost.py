@@ -118,6 +118,7 @@ def estimate_workflow(
     user_prompt: str,
     context_size_tokens: int = 0,
     prices_override: dict[str, dict[str, float]] | None = None,
+    intense: bool = False,
 ) -> dict[str, Any]:
     """Estimate cost for a workflow before running it. See module docstring
     for price resolution. Steps whose model has no known price contribute 0
@@ -126,6 +127,7 @@ def estimate_workflow(
     agent_map = {a.name: a for a in agents}
     step_estimates: list[dict[str, Any]] = []
     by_provider: dict[str, float] = {}
+    boosted_agents_seen: set[str] = set()
 
     for step in workflow.steps:
         if step.kind in ("human_checkpoint", "deliverable"):
@@ -140,8 +142,13 @@ def estimate_workflow(
         agent_count = min(3, len(step_agents)) if step.mode == "full" else 1
 
         for agent in step_agents[:agent_count]:
-            model = getattr(agent, "model", None) or ""
-            provider = getattr(agent, "provider", "openrouter")
+            if intense and getattr(agent, "boost_model", None):
+                model = agent.boost_model
+                provider = agent.boost_provider or getattr(agent, "provider", "openrouter")
+                boosted_agents_seen.add(agent.name)
+            else:
+                model = getattr(agent, "model", None) or ""
+                provider = getattr(agent, "provider", "openrouter")
             prompt_tokens = max(1, len(user_prompt.split()) * 4 // 3)
             tokens_in = 500 + context_size_tokens + prompt_tokens
             tokens_out = ASSUMED_OUTPUT_TOKENS
@@ -161,4 +168,5 @@ def estimate_workflow(
         "steps": step_estimates,
         "by_provider": by_provider,
         "total_usd": sum(e["cost_usd"] for e in step_estimates if e["cost_usd"] is not None),
+        "boosted_count": len(boosted_agents_seen),
     }

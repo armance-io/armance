@@ -12,10 +12,11 @@ Resolution chain
 3. params       — caller supplies active_params / total_params directly.
 4. similar      — provider family is known; borrow the family's default model.
 5. provider-default — no family match; use a conservative 8B dense bucket.
-6. unknown/None — id ends with ':free' and no params; never fabricate.
+6. bounded — dynamic best/worst-case enveloppe; never None.
 
-``estimate=True`` for tiers 4–5 only.  EcoLogits' inherent RangeValue
-(MoE / ranged PUE) is not an "estimate" flag — we collapse it to the mean.
+``estimate=True`` for tiers 4–6 (similar / provider-default / bounded).
+EcoLogits' inherent RangeValue (MoE / ranged PUE) is not an "estimate"
+flag — we keep it as the min/max range and report the mean as the scalar.
 
 Resolution primitives (alias table, family maps, the compute wrapper) live in
 ``footprint_resolve``; this module owns the public chain only.
@@ -54,9 +55,8 @@ def estimate_footprint(
 ) -> Footprint | None:
     """Estimate the environmental footprint of a single LLM response.
 
-    Returns ``None`` (tier "unknown") only when the id ends in ``:free`` and
-    no param counts are supplied.  All other cases return a Footprint, with
-    ``estimate=True`` for tiers 4–5.
+    Never returns ``None``.  All cases return a Footprint; ``estimate=True``
+    for tiers 4–6 (similar / provider-default / dynamic bounding).
 
     Args:
         provider: Armance provider name ("openrouter", "anthropic", "gemini",
@@ -71,11 +71,13 @@ def estimate_footprint(
         total_params: Total parameter count in billions (tier 3 seam).
     """
     # ------------------------------------------------------------------
-    # Tier 6 — unknown (:free with no params → never fabricate)
+    # Tier 6 (final) — dynamic bounding. Reached for :free / fully unknown
+    # ids with no params: never fabricate a point value, never show "?".
     # ------------------------------------------------------------------
     if model.endswith(":free") and active_params is None:
-        logger.debug("footprint: tier=unknown for :free model %s/%s", provider, model)
-        return None
+        from armance.service.footprint_bounds import bounded_footprint
+        logger.debug("footprint: tier=bounded for :free model %s/%s", provider, model)
+        return bounded_footprint(tokens_out=tokens_out, latency_s=latency_s, zone=zone)
 
     # ------------------------------------------------------------------
     # Tier 3 — caller-supplied params (before any registry lookup)
