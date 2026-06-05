@@ -33,6 +33,7 @@ vi.mock("@/lib/api", () => ({
   patchAdminAgent: vi.fn(),
   getProviders: vi.fn(),
   getEmbeddingModels: vi.fn(),
+  getFootprintZones: vi.fn(() => Promise.resolve([{ code: "WOR", gco2e_per_kwh: 473 }])),
 }));
 
 vi.mock("@/lib/useLatestSession", () => ({

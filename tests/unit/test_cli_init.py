@@ -35,6 +35,7 @@ def test_cmd_init_writes_config_env_and_tree(
             "free-first",                                               # budget effort
             # embedding autocomplete: compact label format
             "openai/text-embedding-test  [openrouter]  🆓",
+            "FRA · 44.2 gCO2e/kWh",                                     # carbon zone picker
         ]
     )
 
@@ -62,6 +63,8 @@ def test_cmd_init_writes_config_env_and_tree(
     yaml_text = (armance_dir / "config.yaml").read_text(encoding="utf-8")
     assert "sk-test" not in yaml_text
     assert "budget_effort: free-first" in yaml_text
+    # The chosen carbon zone is persisted under the footprint config.
+    assert "electricity_mix_zone: FRA" in yaml_text
 
 
 def test_cmd_init_aborts_when_no_provider(
@@ -87,6 +90,7 @@ def test_cmd_init_gemini_writes_key(
             "gemini-1.5-pro",                    # default model
             "low",                               # budget effort
             "none",                              # skip embedding (autocomplete skip_label, EN)
+            "WOR · 473.0 gCO2e/kWh",             # carbon zone picker (world average)
         ]
     )
 
