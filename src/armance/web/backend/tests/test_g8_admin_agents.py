@@ -106,6 +106,43 @@ async def test_patch_agent_model_specialist(session_with_agents, armance_root: P
 
 
 @pytest.mark.asyncio
+async def test_patch_agent_boost_fields(session_with_agents, armance_root: Path) -> None:
+    """The augment capability (boost_provider/boost_model) is editable."""
+    app, ws = session_with_agents
+    from httpx import AsyncClient as AC, ASGITransport
+    async with AC(transport=ASGITransport(app=app), base_url="http://test") as c:
+        resp = await c.patch(
+            f"/projects/default/sessions/{ws.sid}/agents/Alice",
+            json={"boost_provider": "claude-code", "boost_model": "claude-sonnet-4-6"},
+        )
+    assert resp.status_code == 200
+    saved = Agent.load(armance_root / "agents" / "Alice.md")
+    assert saved.boost_provider == "claude-code"
+    assert saved.boost_model == "claude-sonnet-4-6"
+    assert saved.is_boostable is True
+
+
+@pytest.mark.asyncio
+async def test_patch_agent_clear_boost(session_with_agents, armance_root: Path) -> None:
+    """Passing an empty boost_model removes the augment capability."""
+    app, ws = session_with_agents
+    from httpx import AsyncClient as AC, ASGITransport
+    async with AC(transport=ASGITransport(app=app), base_url="http://test") as c:
+        await c.patch(
+            f"/projects/default/sessions/{ws.sid}/agents/Alice",
+            json={"boost_provider": "claude-code", "boost_model": "claude-sonnet-4-6"},
+        )
+        resp = await c.patch(
+            f"/projects/default/sessions/{ws.sid}/agents/Alice",
+            json={"boost_model": ""},
+        )
+    assert resp.status_code == 200
+    saved = Agent.load(armance_root / "agents" / "Alice.md")
+    assert saved.boost_model is None
+    assert saved.is_boostable is False
+
+
+@pytest.mark.asyncio
 async def test_patch_agent_model_staff(session_with_agents, armance_root: Path) -> None:
     app, ws = session_with_agents
     from httpx import AsyncClient as AC, ASGITransport

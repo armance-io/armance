@@ -2,6 +2,9 @@ import { type CSSProperties, type FC, useState } from "react";
 import { tokens } from "../_shared/armance-tokens";
 import { AgentPortrait } from "../visual/AgentPortrait";
 
+export type ReasoningLevel = "off" | "low" | "medium" | "high";
+const REASONING_LEVELS: ReasoningLevel[] = ["off", "low", "medium", "high"];
+
 export interface AgentRecord {
   id: string;
   name: string;
@@ -10,15 +13,21 @@ export interface AgentRecord {
   portraitUrl: string;
   provider: string;
   model: string;
-  reasoning?: "off" | "low" | "high";
+  reasoning?: ReasoningLevel;
   supportsReasoning: boolean;
   staff: boolean;
+  // Augment capability — optional stronger fallback model.
+  boostProvider?: string;
+  boostModel?: string;
+  boostReasoning?: ReasoningLevel;
 }
 
 export interface AgentEditorProps {
   agents: AgentRecord[];
   providerOptions: string[];
   modelOptionsByProvider: Record<string, string[]>;
+  /** (provider, model) → whether reasoning effort is explicitly supported. */
+  reasoningSupported?: ((provider: string, model: string) => boolean) | undefined;
   onSave: (agent: AgentRecord) => Promise<void>;
   t: (key: string) => string;
 }
@@ -27,6 +36,7 @@ export const AgentEditor: FC<AgentEditorProps> = ({
   agents,
   providerOptions,
   modelOptionsByProvider,
+  reasoningSupported,
   onSave,
   t,
 }) => (
@@ -37,6 +47,7 @@ export const AgentEditor: FC<AgentEditorProps> = ({
         agent={a}
         providerOptions={providerOptions}
         modelOptionsByProvider={modelOptionsByProvider}
+        reasoningSupported={reasoningSupported}
         onSave={onSave}
         t={t}
       />
@@ -48,9 +59,10 @@ const AgentCard: FC<{
   agent: AgentRecord;
   providerOptions: string[];
   modelOptionsByProvider: Record<string, string[]>;
+  reasoningSupported?: ((provider: string, model: string) => boolean) | undefined;
   onSave: (a: AgentRecord) => Promise<void>;
   t: (key: string) => string;
-}> = ({ agent, providerOptions, modelOptionsByProvider, onSave, t }) => {
+}> = ({ agent, providerOptions, modelOptionsByProvider, reasoningSupported, onSave, t }) => {
   const [draft, setDraft] = useState<AgentRecord>(agent);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -158,32 +170,67 @@ const AgentCard: FC<{
           </div>
         </div>
 
-        {draft.supportsReasoning && (
-          <div>
-            <span style={label}>{t("admin:agents.reasoning")}</span>
-            <div style={{ display: "flex", gap: 8 }}>
-              {(["off", "low", "high"] as const).map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setDraft((d) => ({ ...d, reasoning: r }))}
-                  style={{
-                    padding: "6px 14px",
-                    borderRadius: 999,
-                    border: `1px solid ${draft.reasoning === r ? tokens.accent : tokens.rule}`,
-                    background: draft.reasoning === r ? tokens.accent : "transparent",
-                    color: draft.reasoning === r ? tokens.bgPaperCard : tokens.inkSoft,
-                    fontFamily: tokens.ffMono,
-                    fontSize: 12,
-                    cursor: "pointer",
-                  }}
-                >
-                  {t(`admin:agents.reasoning.${r}`)}
-                </button>
-              ))}
+        {/* Reasoning — always editable. Some custom-API models support effort
+            without advertising it, so we never hide the control; we warn instead. */}
+        <ReasoningPicker
+          label={t("admin:agents.reasoning")}
+          value={draft.reasoning ?? "off"}
+          onChange={(r) => setDraft((d) => ({ ...d, reasoning: r }))}
+          warn={reasoningSupported ? !reasoningSupported(draft.provider, draft.model) : false}
+          t={t}
+        />
+
+        {/* Augment capability — optional stronger fallback model the user can
+            switch on from the sidebar. */}
+        <div style={{ borderTop: `1px solid ${tokens.ruleSoft || tokens.rule}`, paddingTop: 10 }}>
+          <span style={label}>{t("admin:agents.augment")}</span>
+          <p style={{ color: tokens.inkFaint, margin: "0 0 8px", fontStyle: "italic", fontSize: 12 }}>
+            {t("admin:agents.augment_hint")}
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <span style={label}>{t("admin:agents.provider")}</span>
+              <select
+                value={draft.boostProvider ?? ""}
+                onChange={(e) => setDraft((d) => ({ ...d, boostProvider: e.target.value, boostModel: "" }))}
+                style={input}
+              >
+                <option value="">—</option>
+                {providerOptions.map((p) => (
+                  <option key={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <span style={label}>{t("admin:agents.model")}</span>
+              <select
+                value={draft.boostModel ?? ""}
+                onChange={(e) => setDraft((d) => ({ ...d, boostModel: e.target.value }))}
+                style={input}
+              >
+                <option value="">—</option>
+                {(modelOptionsByProvider[draft.boostProvider ?? ""] || []).map((m) => (
+                  <option key={m}>{m}</option>
+                ))}
+              </select>
             </div>
           </div>
-        )}
+          {draft.boostModel ? (
+            <div style={{ marginTop: 10 }}>
+              <ReasoningPicker
+                label={t("admin:agents.augment_reasoning")}
+                value={draft.boostReasoning ?? "off"}
+                onChange={(r) => setDraft((d) => ({ ...d, boostReasoning: r }))}
+                warn={
+                  reasoningSupported
+                    ? !reasoningSupported(draft.boostProvider ?? draft.provider, draft.boostModel)
+                    : false
+                }
+                t={t}
+              />
+            </div>
+          ) : null}
+        </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
           <button
@@ -230,5 +277,53 @@ const AgentCard: FC<{
     </div>
   );
 };
+
+const ReasoningPicker: FC<{
+  label: string;
+  value: ReasoningLevel;
+  onChange: (r: ReasoningLevel) => void;
+  warn: boolean;
+  t: (key: string) => string;
+}> = ({ label, value, onChange, warn, t }) => (
+  <div>
+    <span
+      style={{
+        fontFamily: tokens.ffMono, fontSize: 11, textTransform: "uppercase",
+        letterSpacing: "0.08em", color: tokens.inkSoft, marginBottom: 6, display: "block",
+      }}
+    >
+      {label}
+    </span>
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      {REASONING_LEVELS.map((r) => (
+        <button
+          key={r}
+          type="button"
+          onClick={() => onChange(r)}
+          style={{
+            padding: "6px 14px",
+            borderRadius: 999,
+            border: `1px solid ${value === r ? tokens.accent : tokens.rule}`,
+            background: value === r ? tokens.accent : "transparent",
+            color: value === r ? tokens.bgPaperCard : tokens.inkSoft,
+            fontFamily: tokens.ffMono,
+            fontSize: 12,
+            cursor: "pointer",
+          }}
+        >
+          {t(`admin:agents.reasoning_levels.${r}`)}
+        </button>
+      ))}
+    </div>
+    {warn && value !== "off" && (
+      <p
+        data-testid="reasoning-warning"
+        style={{ color: tokens.warning, margin: "6px 0 0", fontSize: 12, fontStyle: "italic" }}
+      >
+        {t("admin:agents.reasoning_unsupported")}
+      </p>
+    )}
+  </div>
+);
 
 export default AgentEditor;
