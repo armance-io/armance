@@ -63,6 +63,78 @@ async def test_get_agent_details_returns_payload(
 
 
 @pytest.mark.asyncio
+async def test_augment_toggle_flips_boosted_state(
+    client: AsyncClient, armance_root: Path
+) -> None:
+    """POST /agents/{name}/augment toggles the augmented state deterministically."""
+    cr = await client.post("/projects/default/sessions")
+    sid = cr.json()["id"]
+    agents_dir = armance_root / "agents"
+    agents_dir.mkdir(exist_ok=True)
+    (agents_dir / "Lea.md").write_text(
+        "---\n"
+        "name: Lea\n"
+        "domain: historian\n"
+        "role: historian\n"
+        "provider: claude-code\n"
+        "model: claude-haiku-4-5\n"
+        "boost_provider: claude-code\n"
+        "boost_model: claude-sonnet-4-6\n"
+        "---\n"
+        "You are Lea.\n",
+        encoding="utf-8",
+    )
+    ws = client._transport.app.state.app_state.get(sid)  # type: ignore[attr-defined]
+    ws.ctx.agents.clear()
+    from armance.core.models.agent import Agent
+    ws.ctx.agents.append(Agent.load(agents_dir / "Lea.md"))
+
+    on = await client.post(
+        f"/projects/default/sessions/{sid}/agents/Lea/augment",
+        json={"enabled": True},
+    )
+    assert on.status_code == 200
+    assert on.json()["boosted"] is True
+    assert on.json()["effective_model"] == "claude-sonnet-4-6"
+    assert "Lea" in ws.session.state.boosted_agents
+
+    off = await client.post(
+        f"/projects/default/sessions/{sid}/agents/Lea/augment",
+        json={"enabled": False},
+    )
+    assert off.status_code == 200
+    assert off.json()["boosted"] is False
+    assert "Lea" not in ws.session.state.boosted_agents
+
+
+@pytest.mark.asyncio
+async def test_augment_non_boostable_stays_false(
+    client: AsyncClient, armance_root: Path
+) -> None:
+    """Enabling augment on an agent with no boost_model is a no-op."""
+    cr = await client.post("/projects/default/sessions")
+    sid = cr.json()["id"]
+    agents_dir = armance_root / "agents"
+    agents_dir.mkdir(exist_ok=True)
+    (agents_dir / "Flat.md").write_text(
+        "---\nname: Flat\ndomain: critic\nrole: critic\n"
+        "provider: openrouter\nmodel: openai/gpt-4o-mini\n---\nYou are Flat.\n",
+        encoding="utf-8",
+    )
+    ws = client._transport.app.state.app_state.get(sid)  # type: ignore[attr-defined]
+    ws.ctx.agents.clear()
+    from armance.core.models.agent import Agent
+    ws.ctx.agents.append(Agent.load(agents_dir / "Flat.md"))
+
+    r = await client.post(
+        f"/projects/default/sessions/{sid}/agents/Flat/augment",
+        json={"enabled": True},
+    )
+    assert r.status_code == 200
+    assert r.json()["boosted"] is False
+
+
+@pytest.mark.asyncio
 async def test_get_agent_unknown_returns_404(client: AsyncClient) -> None:
     cr = await client.post("/projects/default/sessions")
     sid = cr.json()["id"]

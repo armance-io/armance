@@ -9,3 +9,5 @@ export function generateStaticParams() {
 export default function AdminPage() {
   return <AdminView />;
 }
+
+export const dynamicParams = false;

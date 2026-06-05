@@ -21,7 +21,7 @@
     "shell": {
       "brand_domain": "armance.io",
       "sidebar_collapse_aria": "Replier la barre latérale",
-      "footer_motto": "Une maison d'agents qui pensent.",
+      "footer_motto": "Une maison d'agents pour aiguiser sa pensée.",
       "footer_line": "2026 · établi en France"
     },
     "theme": {
@@ -59,7 +59,9 @@
       "water_aria": "Empreinte eau (mL)",
       "tokens_in_aria": "Jetons entrants",
       "tokens_out_aria": "Jetons sortants",
-      "model_aria": "Modèle utilisé (agent sélectionné)"
+      "model_aria": "Modèle utilisé (agent sélectionné)",
+      "detail_title": "Détail de l'empreinte",
+      "detail_estimate": "Estimation — fourchette physique, pas une mesure exacte."
     }
   },
   "library": {
@@ -306,7 +308,9 @@
         "completed": "✓",
         "failed": "✗",
         "cancelled": "⊘",
-        "canceled": "⊘"
+        "canceled": "⊘",
+        "skipped": "⊘",
+        "unknown": "?"
       }
     },
     "delete": {
@@ -395,6 +399,10 @@
       "feuillets": "Feuillets",
       "subtitle": "{docs} docs · {feuillets} feuillets",
       "inactive": "inactif — aucun modèle d'embedding"
+    },
+    "augment": {
+      "hint": "Augmenter cet agent (modèle renforcé)",
+      "active_hint": "Augmenté — cliquer pour revenir au modèle de base"
     }
   },
   "admin": {
@@ -429,7 +437,9 @@
       "add_provider": "+ Ajouter un fournisseur",
       "embedding": "Modèle d'embedding",
       "embedding_placeholder": "Saisissez ou choisissez un identifiant de modèle d'embedding…",
-      "embedding_hint": "Sert à indexer votre bibliothèque. Choisissez parmi vos fournisseurs ou saisissez un identifiant de modèle."
+      "embedding_hint": "Sert à indexer votre bibliothèque. Choisissez parmi vos fournisseurs ou saisissez un identifiant de modèle.",
+      "carbon_zone": "Pays / zone (empreinte CO₂)",
+      "carbon_zone_hint": "Affine l'estimation CO₂ selon l'intensité carbone de votre réseau électrique."
     },
     "secrets": {
       "title": "Secrets",
@@ -482,7 +492,12 @@
       "carbon": "Empreinte carbone",
       "water": "Consommation d'eau",
       "carbon_total": "Empreinte carbone totale",
-      "water_total": "Consommation d'eau totale"
+      "water_total": "Consommation d'eau totale",
+      "equiv": {
+        "phone_charges": "recharges de smartphone",
+        "car_km": "km en voiture",
+        "water_glasses": "verres d'eau"
+      }
     },
     "agents": {
       "title": "Agents",
@@ -493,15 +508,29 @@
       "persona_hint": "Modifiez la personnalité via le chat Malik.",
       "save": "Sauvegarder",
       "saving": "Sauvegarde…",
-      "saved": "Agent sauvegardé."
+      "saved": "Agent sauvegardé.",
+      "augment": "Capacité d'augmentation",
+      "augment_hint": "Modèle renforcé optionnel, activable depuis la barre latérale en cas de besoin.",
+      "augment_reasoning": "Raisonnement (augmenté)",
+      "reasoning_unsupported": "Capacité non explicitement supportée par ce modèle — vous pouvez tout de même la spécifier.",
+      "reasoning_levels": {
+        "off": "Aucun",
+        "low": "Faible",
+        "medium": "Moyen",
+        "high": "Élevé"
+      }
     },
     "footprint": {
       "error": "Erreur de chargement de l'empreinte.",
       "no_data": "Aucune donnée d'empreinte pour l'instant — lancez une délibération pour la renseigner.",
       "method": "Méthode d'estimation",
-      "method_body": "L'impact environnemental est calculé avec la méthodologie EcoLogits (ACV ISO 14044), prenant en compte la phase d'usage (GPU, PUE des centres de données) et l'impact incorporé de la fabrication du matériel.",
+      "method_body": "L'empreinte est estimée avec EcoLogits (analyse de cycle de vie, ISO 14044), appliquée hors-ligne — aucune donnée ne quitte votre machine. Pour chaque réponse, on combine la phase d'usage (énergie GPU déduite des jetons produits et de la latence, multipliée par le PUE du centre de données) et l'impact incorporé de la fabrication du matériel, amorti sur sa durée de vie. L'énergie est convertie en gCO₂e via l'intensité carbone du réseau électrique de la zone, et en millilitres d'eau via le WUE (water-usage effectiveness) de cette zone.",
       "estimate": "Estimation",
       "measured": "Mesure réelle",
+      "title": "Empreinte environnementale (EcoLogits)",
+      "unknown_title": "Empreinte environnementale inconnue",
+      "range_aria": "Fourchette estimée de l'empreinte carbone, borne basse à borne haute",
+      "estimate_badge": "est.",
       "zone_label": "Zone d'intensité carbone",
       "col": {
         "agent": "Agent",
@@ -513,7 +542,11 @@
       "zone": {
         "wor": "Monde — intensité carbone moyenne mondiale",
         "unknown": "Zone inconnue"
-      }
+      },
+      "method_tiers": "La précision dépend de ce qu'on sait du modèle. Six paliers, du plus fiable au plus prudent : exact (modèle au registre), alias (équivalent connu), paramètres (taille déclarée), similaire et défaut-fournisseur (familles approchées), puis bornage dynamique — une fourchette physique best/worst-case quand le modèle est inconnu (ex. modèles « :free » sans métadonnées). On n'affiche jamais « ? » : toujours une fourchette honnête, marquée « ~ » quand c'est une estimation.",
+      "method_zone_label": "Zone d'intensité carbone",
+      "method_providers_title": "Fournisseurs de cette session",
+      "method_provider_note": "Anthropic et OpenAI ne publient pas leur matériel ; on s'appuie sur les moyennes EcoLogits par famille de modèles. Les modèles « :free » d'OpenRouter passent souvent par le bornage dynamique faute de métadonnées."
     }
   },
   "audio": {

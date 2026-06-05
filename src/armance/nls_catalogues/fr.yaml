@@ -389,6 +389,10 @@ footprint:
   zone_note: "Zone électrique : {zone}"
   by_day: "Par jour"
   by_month: "Par mois"
+  equiv:
+    phone_charges: "recharges de téléphone"
+    car_km: "km en voiture"
+    water_glasses: "verres d'eau"
 
 # Rôles du personnel
 # ---------------------------------------------------------------------------
@@ -399,3 +403,8 @@ staff:
     conductor: "orchestratrice"
     distiller: "distillatrice"
     critic: "critique"
+
+boost:
+  confirm_upgrade: "L'agent {agent} demande à être augmenté vers {boost} (au lieu de {base}). Autoriser ? [Y/n]"
+  confirm_downgrade: "L'agent {agent} a terminé et souhaite revenir à {base}. Autoriser ? [Y/n]"
+  workflow_notice: "Note : {count} agent(s) seront automatiquement augmentés pendant ce run de workflow intense."

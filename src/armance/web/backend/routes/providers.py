@@ -80,3 +80,16 @@ async def get_providers(
             ),
         }
     return {"providers": catalogue}
+
+
+@router.get("/footprint/zones")
+async def get_footprint_zones(
+    _user: str = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Return the selectable carbon-intensity zones for the footprint feature.
+
+    Shape: { "zones": [{ "code": "FRA", "gco2e_per_kwh": 56.0 }, ...] }
+    World average (``WOR``) first, then alphabetical.
+    """
+    from armance.service.footprint_zones import list_zones
+    return {"zones": list_zones()}

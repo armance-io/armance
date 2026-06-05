@@ -1,6 +1,6 @@
 [project]
   name = "armance"
-  version = "0.1.0"
+  version = "0.2-beta"
   description = "Armance 👒 - a team of experts you recruit to help you decide. Coordinate a panel that debates, stress-tests and synthesises. You keep the call 💡. Not a copilot, a brain you consult when the choice matters."
   readme = "README.md"
   license = { text = "AGPL-3.0-or-later" }
@@ -52,19 +52,17 @@
       "python-pptx>=0.6",
       "markdown-it-py>=3.0",
       "weasyprint>=60.0",
-      "ecologits>=0.6",
+    "ecologits>=0.6",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sse-starlette>=2.1",
+    "python-multipart>=0.0.12",
 ]
 
-  [project.optional-dependencies]
-  claude = [
-      "claude-agent-sdk>=0.1",
-  ]
-  web = [
-      "fastapi>=0.115",
-      "uvicorn[standard]>=0.30",
-      "sse-starlette>=2.1",
-      "python-multipart>=0.0.12",
-  ]
+[project.optional-dependencies]
+claude = [
+    "claude-agent-sdk>=0.1",
+]
 
   [project.urls]
   Homepage = "https://armance.io"

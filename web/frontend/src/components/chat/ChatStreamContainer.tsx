@@ -149,8 +149,9 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, ac
     }
 
     if (evt.name === "agent.streaming.end") {
-      setBusy(null);
-      setBusyAgent(null);
+      // Do NOT clear busy here: streaming.end can arrive before the reply is
+      // rendered, which made the "{name} thinking" banner vanish while the
+      // agent had not answered yet. turn.completed / turn.error own the clear.
       return;
     }
 
@@ -229,7 +230,14 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, ac
   const startSending = useCallback(() => {
     setSending(true);
     if (sendingTimer.current) clearTimeout(sendingTimer.current);
-    sendingTimer.current = setTimeout(() => setSending(false), 60_000);
+    sendingTimer.current = setTimeout(() => {
+      // Safety net: also clear the thinking banner. Since streaming.end no
+      // longer clears busy, a turn that ends without turn.completed/turn.error
+      // would otherwise leave the banner hanging forever.
+      setSending(false);
+      setBusy(null);
+      setBusyAgent(null);
+    }, 60_000);
   }, []);
   // Clear the safety timer whenever sending is explicitly unlocked.
   useEffect(() => {
@@ -346,13 +354,29 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, ac
   return (
     <section style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
       {/* R4: no "Talking to" banner — agent selection lives in the sidebar. */}
-      {/* paddingLeft only on the scroll area — ChatInput stays flush with the sidebar border. */}
-      <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 0", paddingLeft: 8 }}>
-        {messages.length === 0 ? (
-          <EmptySession t={t} />
-        ) : (
-          <>
-            {messages.map((m) => (
+      {/* The scroll area is the positioning context for the floating spinner so
+          the banner overlays the bottom of the conversation instead of taking
+          flow space — toggling it never reflows the message bubbles. */}
+      <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+        <div
+          ref={scrollRef}
+          style={{
+            height: "100%",
+            overflowY: "auto",
+            padding: "16px 0",
+            paddingLeft: 8,
+            paddingRight: 10,
+            // Constant bottom reserve sized to the banner height. Kept constant
+            // (not toggled with `busy`) so showing/hiding the banner reflows
+            // nothing — the last bubble never shifts. Sized to the slim banner.
+            scrollPaddingBottom: 28,
+            paddingBottom: 28,
+          }}
+        >
+          {messages.length === 0 ? (
+            <EmptySession t={t} />
+          ) : (
+            messages.map((m) => (
               <MessageBubble
                 key={m.id}
                 role={m.role}
@@ -363,13 +387,14 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, ac
                 streaming={m.streaming}
                 t={t}
               />
-            ))}
-            {/* Spacer to prevent overlap/clipping by the BottomSpinner */}
-            <div style={{ height: busy ? "36px" : "0px", transition: "height 200ms ease" }} />
-          </>
-        )}
+            ))
+          )}
+        </div>
+        {/* Floating thinking banner — absolute, so it never reflows the thread. */}
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, pointerEvents: "none" }}>
+          <BottomSpinner busy={bottom} t={t} />
+        </div>
       </div>
-      <BottomSpinner busy={bottom} t={t} />
       <ChatInput
         placeholder={t("chat:input.placeholder")}
         disabled={sending}
