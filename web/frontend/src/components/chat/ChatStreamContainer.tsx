@@ -347,13 +347,29 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, ac
   return (
     <section style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
       {/* R4: no "Talking to" banner — agent selection lives in the sidebar. */}
-      {/* paddingLeft only on the scroll area — ChatInput stays flush with the sidebar border. */}
-      <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px 0", paddingLeft: 8 }}>
-        {messages.length === 0 ? (
-          <EmptySession t={t} />
-        ) : (
-          <>
-            {messages.map((m) => (
+      {/* The scroll area is the positioning context for the floating spinner so
+          the banner overlays the bottom of the conversation instead of taking
+          flow space — toggling it never reflows the message bubbles. */}
+      <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
+        <div
+          ref={scrollRef}
+          style={{
+            height: "100%",
+            overflowY: "auto",
+            padding: "16px 0",
+            paddingLeft: 8,
+            paddingRight: 10,
+            // Reserve scroll space under the last bubble for the floating banner
+            // so it never covers the reply. This grows scrollHeight only — the
+            // bubbles keep their position whether the banner is shown or not.
+            scrollPaddingBottom: 40,
+            paddingBottom: busy ? 40 : 16,
+          }}
+        >
+          {messages.length === 0 ? (
+            <EmptySession t={t} />
+          ) : (
+            messages.map((m) => (
               <MessageBubble
                 key={m.id}
                 role={m.role}
@@ -364,13 +380,14 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, ac
                 streaming={m.streaming}
                 t={t}
               />
-            ))}
-            {/* Spacer to prevent overlap/clipping by the BottomSpinner */}
-            <div style={{ height: busy ? "36px" : "0px", transition: "height 200ms ease" }} />
-          </>
-        )}
+            ))
+          )}
+        </div>
+        {/* Floating thinking banner — absolute, so it never reflows the thread. */}
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, pointerEvents: "none" }}>
+          <BottomSpinner busy={bottom} t={t} />
+        </div>
       </div>
-      <BottomSpinner busy={bottom} t={t} />
       <ChatInput
         placeholder={t("chat:input.placeholder")}
         disabled={sending}
