@@ -395,6 +395,10 @@
       "feuillets": "Feuillets",
       "subtitle": "{docs} docs · {feuillets} feuillets",
       "inactive": "inactif — aucun modèle d'embedding"
+    },
+    "augment": {
+      "hint": "Augmenter cet agent (modèle renforcé)",
+      "active_hint": "Augmenté — cliquer pour revenir au modèle de base"
     }
   },
   "admin": {

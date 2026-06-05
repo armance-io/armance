@@ -395,6 +395,10 @@
       "feuillets": "Slips",
       "subtitle": "{docs} docs · {feuillets} slips",
       "inactive": "inactive — no embedding model"
+    },
+    "augment": {
+      "hint": "Augment this agent (stronger model)",
+      "active_hint": "Augmented — click to return to the base model"
     }
   },
   "admin": {

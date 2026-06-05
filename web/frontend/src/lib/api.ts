@@ -618,6 +618,8 @@ export interface AdminAgent {
   staff?: boolean;
   boosted?: boolean;
   effective_model?: string;
+  is_boostable?: boolean;
+  boost_model?: string | null;
 }
 
 export async function getAdminAgents(pid: string, sid: string): Promise<AdminAgent[]> {
