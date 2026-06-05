@@ -164,6 +164,15 @@ async def patch_agent(
     updated = Agent.model_validate(updated_data)
     updated.save(path)
 
+    # Reflect the write in the in-memory roster so reads (GET /agents,
+    # sidebar, augment toggle) see the new model without a recruit/reload.
+    # Without this, is_boostable/boost_model stay stale until the session
+    # reloads — the settings edit appears to "not take".
+    for i, a in enumerate(ws.ctx.agents):
+        if a.name == name:
+            ws.ctx.agents[i] = updated
+            break
+
     return {
         "name": updated.name,
         "provider": updated.provider,
