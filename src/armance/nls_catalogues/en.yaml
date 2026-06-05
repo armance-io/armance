@@ -429,7 +429,7 @@ staff:
     critic: "critic"
 
 boost:
-  confirm_upgrade: "Agent {agent} requests upgrade to {boost} (from {base}). Allow? [Y/n]"
-  confirm_downgrade: "Agent {agent} is done and wants to downgrade back to {base}. Allow? [Y/n]"
-  workflow_notice: "Notice: {count} agent(s) will be automatically boosted during this intense workflow run."
+  confirm_upgrade: "Agent {agent} requests to be augmented to {boost} (from {base}). Allow? [Y/n]"
+  confirm_downgrade: "Agent {agent} is done and wants to return to {base}. Allow? [Y/n]"
+  workflow_notice: "Notice: {count} agent(s) will be automatically augmented during this intense workflow run."
 
