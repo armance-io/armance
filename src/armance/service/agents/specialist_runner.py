@@ -105,12 +105,15 @@ class SpecialistRunner:
         system_prompt = agent.effective_system_prompt(caveman_level=caveman_level)
 
         if caveman_level == "none":
+            # Positive instruction only. Naming the compression style here makes
+            # weak models echo the label ("Caveman pause — …") into the human
+            # turn, so we describe the *desired* register without mentioning it.
             system_prompt += (
                 "\n\n## Communication Style — Direct Human Dialogue\n"
                 "You are in direct, personal dialogue with the human user (CEO). "
-                "Do NOT use caveman mode, telegram style, or truncated sentences. "
-                "Always reply in a natural, polite, and fully-articulated style with proper grammar, "
-                "even if previous turns in the history were generated using caveman mode."
+                "Reply in a natural, polite, fully-articulated style with complete "
+                "sentences and proper grammar. Never narrate your own response style "
+                "or formatting; just speak."
             )
 
         # Sandbox reminder for non-meta specialists: no tools available.
