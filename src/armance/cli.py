@@ -903,7 +903,7 @@ def _build_web_bundle() -> int:
             "        pip install armance\n"
             "    • or build from a clone:\n"
             "        git clone https://github.com/armance-io/armance.git\n"
-            "        cd armance && uv sync && uv pip install -e '.[web]'\n"
+            "        cd armance && uv sync\n"
             "        uv run armance web --build",
             file=sys.stderr,
         )
@@ -1007,10 +1007,10 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     if _missing:
         print(
             f"Web dependencies missing: {', '.join(_missing)}\n\n"
-            "Install with:\n"
-            "  uv tool install --reinstall 'git+https://github.com/armance-io/armance.git[web]'\n"
-            "or if installed via pipx:\n"
-            "  pipx inject armance fastapi 'uvicorn[standard]' sse-starlette python-multipart",
+            "Please reinstall armance:\n"
+            "  pip install armance\n"
+            "or:\n"
+            "  uv tool install --reinstall armance",
             file=sys.stderr,
         )
         return 1
