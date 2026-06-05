@@ -89,7 +89,7 @@ uv tool install armance
 ```bash
 git clone https://github.com/armance-io/armance.git
 cd armance
-uv sync && uv pip install -e '.[web]'
+uv sync
 ```
 
 ## Configuration
