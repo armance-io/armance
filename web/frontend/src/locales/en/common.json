@@ -435,7 +435,9 @@
       "add_provider": "+ Add a Provider",
       "embedding": "Embedding model",
       "embedding_placeholder": "Type or pick an embedding model id…",
-      "embedding_hint": "Used to index your library. Pick from your providers or type any model id."
+      "embedding_hint": "Used to index your library. Pick from your providers or type any model id.",
+      "carbon_zone": "Country / zone (CO₂ footprint)",
+      "carbon_zone_hint": "Refines the CO₂ estimate using your electricity grid's carbon intensity."
     },
     "secrets": {
       "title": "Secrets",
