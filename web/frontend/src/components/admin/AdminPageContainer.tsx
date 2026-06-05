@@ -347,8 +347,11 @@ const LogsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
 // ---------------------------------------------------------------------------
 
 const StatsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => {
+  const { sid } = useLatestSession();
   const [agents, setAgents] = useState<AgentStat[]>([]);
   const [equiv, setEquiv] = useState<import("@/lib/footprint").FootprintEquiv | undefined>(undefined);
+  const [dominantZone, setDominantZone] = useState<string | null>(null);
+  const [providers, setProviders] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -356,10 +359,13 @@ const StatsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => 
     void Promise.all([
       getAdminStats(pid),
       getFootprint(pid, "agent").catch(() => null),
-    ]).then(([statsData, footprintData]) => {
+      sid ? getAdminAgents(pid, sid).catch(() => []) : Promise.resolve([]),
+    ]).then(([statsData, footprintData, roster]) => {
       const statsMap = statsData?.agents ?? {};
       const footprintMap = footprintData?.by_agent ?? {};
       setEquiv(footprintData?.equiv);
+      setDominantZone(footprintData?.dominant_zone ?? null);
+      setProviders(Array.from(new Set(roster.map((a) => a.provider).filter(Boolean))).sort());
 
       const allAgentNames = Array.from(
         new Set([...Object.keys(statsMap), ...Object.keys(footprintMap)]),
@@ -391,7 +397,7 @@ const StatsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => 
       console.error(err);
       setLoading(false);
     });
-  }, [pid]);
+  }, [pid, sid]);
 
   if (loading) {
     return <div style={{ padding: 20, color: tokens.inkSoft, fontFamily: tokens.ffSans }}>{t("app:loading")}</div>;
@@ -399,7 +405,7 @@ const StatsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => 
 
   return (
     <div data-testid="stats-dashboard">
-      <StatsDashboard agents={agents} equiv={equiv} t={t} />
+      <StatsDashboard agents={agents} equiv={equiv} dominantZone={dominantZone} providers={providers} t={t} />
     </div>
   );
 };

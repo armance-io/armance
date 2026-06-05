@@ -40,6 +40,10 @@ export interface StatsDashboardProps {
   currency?: string;
   /** ADEME human-scale equivalences for the project total (optional). */
   equiv?: FootprintEquiv | undefined;
+  /** Dominant carbon-intensity zone for the session (e.g. "WOR", "FRA"). */
+  dominantZone?: string | null | undefined;
+  /** Distinct providers used this session, for the method context note. */
+  providers?: string[] | undefined;
   t: (key: string) => string;
 }
 
@@ -49,6 +53,8 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
   agents,
   currency = "€",
   equiv,
+  dominantZone,
+  providers,
   t,
 }) => {
   const totals = useMemo(
@@ -313,9 +319,40 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
               fontSize: 13,
               color: tokens.inkSoft,
               lineHeight: 1.6,
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
             }}
           >
-            {t("admin:footprint.method_body")}
+            <p style={{ margin: 0 }}>{t("admin:footprint.method_body")}</p>
+            <p style={{ margin: 0 }}>{t("admin:footprint.method_tiers")}</p>
+            {dominantZone && (
+              <p style={{ margin: 0, fontFamily: tokens.ffMono, fontSize: 12 }}>
+                {t("admin:footprint.method_zone_label")}: <strong>{dominantZone}</strong>
+              </p>
+            )}
+            {providers && providers.length > 0 && (
+              <div style={{ borderTop: `1px solid ${tokens.ruleSoft || tokens.rule}`, paddingTop: 10 }}>
+                <div style={{ fontFamily: tokens.ffMono, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
+                  {t("admin:footprint.method_providers_title")}
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                  {providers.map((p) => (
+                    <span
+                      key={p}
+                      style={{
+                        fontFamily: tokens.ffMono, fontSize: 11,
+                        padding: "2px 8px", borderRadius: 999,
+                        border: `1px solid ${tokens.rule}`, color: tokens.ink,
+                      }}
+                    >
+                      {p}
+                    </span>
+                  ))}
+                </div>
+                <p style={{ margin: 0 }}>{t("admin:footprint.method_provider_note")}</p>
+              </div>
+            )}
           </div>
         )}
       </div>
