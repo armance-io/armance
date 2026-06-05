@@ -123,6 +123,26 @@ async def test_patch_agent_boost_fields(session_with_agents, armance_root: Path)
 
 
 @pytest.mark.asyncio
+async def test_patch_agent_resyncs_in_memory_roster(session_with_agents, armance_root: Path) -> None:
+    """Regression: PATCH must update ws.ctx.agents in place, not just disk.
+
+    The settings edit looked saved on disk but the UI stayed blank because
+    GET /agents reads the in-memory roster, which kept the pre-PATCH model.
+    """
+    app, ws = session_with_agents
+    from httpx import AsyncClient as AC, ASGITransport
+    async with AC(transport=ASGITransport(app=app), base_url="http://test") as c:
+        await c.patch(
+            f"/projects/default/sessions/{ws.sid}/agents/Alice",
+            json={"boost_provider": "claude-code", "boost_model": "claude-sonnet-4-6"},
+        )
+    # In-memory roster reflects the write without a recruit/reload.
+    in_mem = next(a for a in ws.ctx.agents if a.name == "Alice")
+    assert in_mem.boost_model == "claude-sonnet-4-6"
+    assert in_mem.is_boostable is True
+
+
+@pytest.mark.asyncio
 async def test_patch_agent_clear_boost(session_with_agents, armance_root: Path) -> None:
     """Passing an empty boost_model removes the augment capability."""
     app, ws = session_with_agents
