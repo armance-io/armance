@@ -39,7 +39,7 @@ wheels = [
 
 [[package]]
 name = "armance"
-version = "0.2b0"
+version = "0.2b1"
 source = { editable = "." }
 dependencies = [
     { name = "ecologits" },
