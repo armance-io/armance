@@ -4,7 +4,7 @@ import { type CSSProperties, type FC, useCallback, useEffect, useState } from "r
 import Link from "next/link";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLatestSession } from "@/lib/useLatestSession";
-import { getAdminAgents, getLibrary, listWorkflows } from "@/lib/api";
+import { getAdminAgents, getLibrary, listWorkflows, setAgentAugment, type AdminAgent } from "@/lib/api";
 import { useEventStream, type SseEvent } from "@/lib/sse";
 import { requestAgentSwitch, useCurrentAgent, useBusyAgent } from "@/lib/agentBus";
 import { tokens } from "../_shared/armance-tokens";
@@ -81,6 +81,22 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
 
   const staff = agents.filter((a) => a.staff);
   const specialists = agents.filter((a) => !a.staff);
+
+  // Manual augment toggle — user-driven, deterministic. Optimistically flips
+  // the cached roster so the glow responds instantly, then refetches.
+  const onToggleAugment = useCallback(
+    async (slug: string, next: boolean) => {
+      if (!sid) return;
+      try {
+        await setAgentAugment(pid, sid as string, slug, next);
+      } catch (err) {
+        console.error("augment toggle failed", err);
+      } finally {
+        void queryClient.invalidateQueries({ queryKey: ["sidebar-agents", pid, sid] });
+      }
+    },
+    [pid, sid, queryClient],
+  );
 
   const { data: library } = useQuery({
     queryKey: ["sidebar-library", pid, sid],
@@ -172,7 +188,7 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
     emitViewChange("workflows");
   };
 
-  const agentRow = (a: { name: string; slug?: string; role: string; model?: string }, isStaff: boolean) => {
+  const agentRow = (a: AdminAgent, isStaff: boolean) => {
     const active = currentAgent === (a.slug ?? a.name) || currentAgent === a.name;
     const thinking = busyAgent === a.name;
     const reachable = Boolean(a.model);
@@ -181,26 +197,81 @@ export const SidebarNav: FC<SidebarNavProps> = ({ t }) => {
     // Staff carry a canonical role (weaver/scout/conductor/distiller/critic) that
     // is localized; specialists carry a free-form domain label, shown verbatim.
     const roleLabel = isStaff ? t(`roles:${a.role}`) : a.role;
+    const canAugment = Boolean(a.is_boostable);
+    const augmented = Boolean(a.boosted);
     return (
-      <button
+      <div
         key={a.slug ?? a.name}
-        style={{ ...link(active), display: "flex", alignItems: "center", gap: 8, background: active ? undefined : "none", border: "none", width: "100%" }}
-        // Both staff and specialists switch the conversation (with the
-        // "Your interlocutor: X" separator) — clicking a specialist used to
-        // only drop an @mention into the input.
-        onClick={() => onAgentClick(a.name)}
-        title={t("sidebar:staff.switch_hint")}
-        aria-pressed={active}
+        style={{ display: "flex", alignItems: "center", gap: 4, width: "100%" }}
       >
-        <PulseDot size={8} color={discColour} active={thinking} />
-        <span style={{ flex: 1, textAlign: "left" }}>{a.name}</span>
-        <span style={{ color: tokens.inkFaint, fontSize: 11, textAlign: "right" }}>{roleLabel}</span>
-      </button>
+        <button
+          style={{ ...link(active), display: "flex", alignItems: "center", gap: 8, background: active ? undefined : "none", border: "none", flex: 1, minWidth: 0 }}
+          onClick={() => onAgentClick(a.name)}
+          title={t("sidebar:staff.switch_hint")}
+          aria-pressed={active}
+        >
+          <PulseDot size={8} color={discColour} active={thinking} />
+          <span
+            className={augmented ? "ae-augment-glow" : undefined}
+            style={{
+              flex: 1,
+              textAlign: "left",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              color: augmented ? tokens.accent : undefined,
+              fontWeight: augmented ? 600 : undefined,
+            }}
+          >
+            {a.name}
+          </span>
+          <span style={{ color: tokens.inkFaint, fontSize: 11, textAlign: "right", flexShrink: 0 }}>{roleLabel}</span>
+        </button>
+        {canAugment && (
+          <button
+            type="button"
+            className={augmented ? "ae-augment-btn ae-augment-btn-on" : "ae-augment-btn"}
+            onClick={() => { void onToggleAugment(a.slug ?? a.name, !augmented); }}
+            aria-pressed={augmented}
+            title={augmented ? t("sidebar:augment.active_hint") : t("sidebar:augment.hint")}
+            aria-label={augmented ? t("sidebar:augment.active_hint") : t("sidebar:augment.hint")}
+          >
+            {/* upward chevrons — "augment". Sober, accent-tinted, no emoji. */}
+            <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3 8l4-4 4 4" />
+              <path d="M3 11l4-4 4 4" />
+            </svg>
+          </button>
+        )}
+      </div>
     );
   };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+      <style>{`
+        /* Augment toggle — ghost button, accent on hover/active (DESIGN.md). */
+        .ae-augment-btn {
+          display: flex; align-items: center; justify-content: center;
+          width: 20px; height: 20px; flex-shrink: 0; padding: 0;
+          border: none; border-radius: 4px; background: transparent;
+          color: var(--ink-faint, #9c8e7e); cursor: pointer;
+          opacity: 0.55; transition: color .15s ease, opacity .15s ease, background .15s ease;
+        }
+        .ae-augment-btn:hover { color: var(--accent, #6b4f8a); opacity: 1; background: color-mix(in srgb, var(--accent) 9%, transparent); }
+        .ae-augment-btn-on { color: var(--accent, #6b4f8a); opacity: 1; }
+        /* Soft violet glow on the augmented agent's name — reuses a gentle
+           1s alternate pulse, accent only, no saturated colour. */
+        .ae-augment-glow {
+          animation: ae-augment-glow-kf 1.4s ease-in-out infinite alternate;
+          text-shadow: 0 0 5px color-mix(in srgb, var(--accent) 45%, transparent);
+        }
+        @keyframes ae-augment-glow-kf {
+          from { text-shadow: 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+          to   { text-shadow: 0 0 8px color-mix(in srgb, var(--accent) 60%, transparent); }
+        }
+        @media (prefers-reduced-motion: reduce) { .ae-augment-glow { animation: none; } }
+      `}</style>
       {/* 1 · Library — L0 with TUI-style subtitle, no sub-items */}
       <p style={sectionHeader}>{t("sidebar:section.library")}</p>
       <nav style={navContainer}>

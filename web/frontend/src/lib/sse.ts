@@ -8,12 +8,16 @@ export interface SseEvent {
 }
 
 // All named SSE event types emitted by the backend.
-const SSE_EVENT_NAMES = [
+export const SSE_EVENT_NAMES = [
   "turn.completed",
   "turn.error",
   "agent.streaming.started",
   "agent.streaming",
   "agent.streaming.end",
+  // Named event for Malik's recruitment — without this listener the browser
+  // never sees it (it arrives with an `event:` field, so `onmessage` skips it)
+  // and the sidebar/roster never refreshed after a recruit.
+  "agents.proposed",
   "checkpoint.requested",
   "checkpoint.resolved",
   "workflow.step_started",

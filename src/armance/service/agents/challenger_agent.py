@@ -158,7 +158,8 @@ class ChallengerAgent:
             extras["reasoning"] = {"effort": serge_agent.reasoning}
 
         response = await call_with_ledger(
-            client, serge_agent.name, messages, serge_agent.model, **extras
+            client, serge_agent.name, messages, serge_agent.model,
+            provider=serge_agent.provider, **extras
         )
 
         content = response.text

@@ -125,18 +125,18 @@ class TestEstimateFootprintExactTier:
         assert result is not None
         assert result.proxy_model is None
 
-    def test_free_model_returns_none(self) -> None:
-        # ':free' suffix with no params → tier 6 / None (never fabricate).
-        # Updated from EI.1 original: unknown anthropic model now returns
-        # tier='similar' (tier 4) after EI.2 added the fallback chain.
-        result = estimate_footprint(
-            provider="openrouter",
-            model="some-vendor/mystery-model:free",
-            tokens_out=600,
-            latency_s=4.0,
-            zone="WOR",
+    def test_free_model_returns_bounded_not_none(self) -> None:
+        # NEW contract: :free with no params no longer returns None; it returns
+        # a dynamic-bounded estimate so the UI never shows "🌱?".
+        from armance.service.footprint import estimate_footprint
+        fp = estimate_footprint(
+            "openrouter", "some/unknown-model:free",
+            tokens_out=300, latency_s=4.0, zone="WOR",
         )
-        assert result is None
+        assert fp is not None
+        assert fp.tier == "bounded"
+        assert fp.estimate is True
+        assert fp.gco2e_min is not None and fp.gco2e_max is not None
 
     def test_units_are_wh_g_ml(self) -> None:
         """energy in Wh (not kWh), CO2 in g (not kg), water in mL (not L)."""
@@ -167,3 +167,27 @@ class TestEstimateFootprintExactTier:
         )
         assert r is not None
         assert r.gco2e > 0.0
+
+
+class TestFootprintRangeFields:
+    def test_min_max_fields_default_to_none(self) -> None:
+        from armance.core.models.footprint import Footprint
+        fp = Footprint(
+            energy_wh=1.0, gco2e=2.0, water_ml=3.0, embodied_gco2e=0.5,
+            estimate=False, tier="exact", proxy_model=None, zone="WOR",
+        )
+        assert fp.gco2e_min is None
+        assert fp.gco2e_max is None
+        assert fp.water_ml_min is None
+        assert fp.water_ml_max is None
+        assert fp.energy_wh_min is None
+        assert fp.energy_wh_max is None
+
+    def test_min_max_fields_accepted(self) -> None:
+        from armance.core.models.footprint import Footprint
+        fp = Footprint(
+            energy_wh=1.0, gco2e=2.0, water_ml=3.0, embodied_gco2e=0.5,
+            estimate=False, tier="exact", proxy_model=None, zone="WOR",
+            gco2e_min=1.5, gco2e_max=2.5,
+        )
+        assert fp.gco2e_min == 1.5 and fp.gco2e_max == 2.5

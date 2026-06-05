@@ -3,8 +3,11 @@ from __future__ import annotations
 import re
 import httpx
 import logging
+from typing import Callable, TypeVar
 
 logger = logging.getLogger(__name__)
+
+_M = TypeVar("_M")
 
 # Patterns that identify non-text-chat models — useless for brainstorming
 _NON_TEXT_PATTERNS = re.compile(
@@ -171,6 +174,22 @@ def provider_catalogue(provider_name: str) -> dict[str, list[str]] | None:
 def supports_reasoning(provider: str, model: str) -> bool:
     """True if the provider+model is known to honour `reasoning.effort`."""
     return model in REASONING_SUPPORT.get(provider, set())
+
+
+def order_models_by_effort(
+    models: list[_M], effort: str, gco2e_lookup: Callable[[_M], float],
+) -> list[_M]:
+    """Order candidate models for a budget_effort tier.
+
+    'optimised' → ascending estimated gCO2e (greenest first), via the injected
+    ``gco2e_lookup`` callable (kept out of this leaf layer to avoid importing
+    ``service``). Python's ``sorted`` is stable, so equal-gCO2e ties keep their
+    incoming order. All other tiers return ``models`` unchanged (the caller has
+    already ordered them by cost index).
+    """
+    if effort == "optimised":
+        return sorted(models, key=gco2e_lookup)
+    return models
 
 
 async def discover_openrouter_models() -> dict[str, list[str]]:

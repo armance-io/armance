@@ -11,6 +11,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Query
 
 from armance.platform.user import get_current_user
+from armance.service.equivalences import humanise
 from armance.service.footprint_ops import footprint_stats
 from armance.web.backend.deps import get_app_state
 from armance.web.backend.state import AppState
@@ -44,12 +45,23 @@ async def get_footprint(
     logs_dir = app_state.armance_root / "logs"
     stats = footprint_stats(logs_dir, project_id=pid)
 
+    # Derive the project total (midpoint) by summing the per-agent buckets,
+    # then translate it into ADEME human-scale equivalences for the browser.
+    total_gco2e = sum(b.get("gco2e", 0.0) for b in stats["by_agent"].values())
+    total_water = sum(b.get("water_ml", 0.0) for b in stats["by_agent"].values())
+    eq = humanise(gco2e=total_gco2e, water_ml=total_water)
+
     result: dict[str, Any] = {
         "by_agent": stats["by_agent"],
         "by_day": stats["by_day"],
         "by_month": stats["by_month"],
         "by_session": stats["by_session"],
         "dominant_zone": stats["dominant_zone"],
+        "equiv": {
+            "phone_charges": eq.phone_charges,
+            "car_km": eq.car_km,
+            "water_glasses": eq.water_glasses,
+        },
     }
 
     _footprint_cache[cache_key] = (now, result)

@@ -5,10 +5,10 @@ import {
   useCallback,
 } from "react";
 import { DeleteRunButton } from "./DeleteRunButton";
+import type { RunStatus } from "@/lib/runStatus";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
-type RunStatus = "running" | "completed" | "failed" | "cancelled";
 
 interface RunItem {
   run_id: string;
@@ -28,12 +28,21 @@ export interface RunHistoryProps {
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
+const _NEUTRAL = { bg: "var(--ink-faint, #9c8e7e)", border: "rgba(42, 37, 32, 0.2)" };
+const _ACTIVE = { bg: "hsl(35, 30%, 60%)", border: "hsl(35, 30%, 50%)", pulse: true };
 const STATUS_COLORS: Record<RunStatus, { bg: string; border: string; pulse?: boolean }> = {
-  running: { bg: "hsl(35, 30%, 60%)", border: "hsl(35, 30%, 50%)", pulse: true },
+  queued: _NEUTRAL,
+  working: _ACTIVE,
+  running: _ACTIVE,
   completed: { bg: "hsl(120, 15%, 55%)", border: "hsl(120, 15%, 45%)" },
   failed: { bg: "hsl(0, 30%, 65%)", border: "hsl(0, 30%, 55%)" },
-  cancelled: { bg: "var(--ink-faint, #9c8e7e)", border: "rgba(42, 37, 32, 0.2)" },
+  skipped: _NEUTRAL,
+  cancelled: _NEUTRAL,
+  unknown: _NEUTRAL,
 };
+
+// Defensive lookup: an unexpected status must never crash the run list.
+const statusColor = (s: string) => STATUS_COLORS[s as RunStatus] ?? _NEUTRAL;
 
 function formatDuration(ms: number | null): string {
   if (ms === null || ms === undefined || ms < 0) return "--:--";
@@ -272,9 +281,9 @@ export const RunHistory: FC<RunHistoryProps> = ({
                   height: "14px",
                   fontSize: "11px",
                   lineHeight: 1,
-                  color: STATUS_COLORS[run.status].border,
+                  color: statusColor(run.status).border,
                   flexShrink: 0,
-                  animation: STATUS_COLORS[run.status].pulse ? "runhistory-pulse 1s infinite alternate" : "none",
+                  animation: statusColor(run.status).pulse ? "runhistory-pulse 1s infinite alternate" : "none",
                 }}
                 title={t(`workflow:history.status.${run.status}`)}
               >

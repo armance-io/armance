@@ -37,7 +37,7 @@ _ROLE_TAG_ALLOWLIST: dict[str, set[str]] = {
     "malik": {"recruit", "dismiss-all", "library-status"},
     "kim": {"workflow-design", "workflow-run", "workflow-stop", "library-status"},
     "mona": {"library-status", "save-deliverable", "load-run"},
-    "specialist": {"load-run"},
+    "specialist": {"load-run", "boost-request", "boost-release"},
 }
 
 _TAG_RE = re.compile(r"\[EXECUTE:/([\w-]+)(?::[^\]]*)?\]")
@@ -150,6 +150,73 @@ def cut_at_speaker_markers(text: str) -> str:
     return cut
 
 
+# A bare short affirmation standing alone as its own line is never something an
+# agent legitimately writes mid-reply: the user's real "oui" always arrives as a
+# separate message. When a model scripts the user's confirmation inside its own
+# turn (then continues with [EXECUTE:...] / a handoff), it shows up exactly like
+# this. Cut the reply at that line so the simulated turn — and any tag/handoff it
+# scripted after it — never fires.
+_BARE_AFFIRMATION_RE = re.compile(
+    r"(?im)^\s*(?:oui|ok|okay|d'accord|d accord|yes|ouais|oui\.|ok\.)\s*[.!]?\s*$",
+)
+
+
+# Weak models on a compression protocol narrate the protocol itself when asked
+# to drop it for the human turn ("Caveman pause — …", "Caveman mode: …"). The
+# instruction not to do so necessarily names the mode, which is exactly what the
+# model then echoes. Deterministic strip of a leading mode-narration preamble:
+# match a bracket/label/sentence at the very start that mentions the mode word
+# and is terminated by a separator (— : . ]), then drop it.
+# Matches a leading mode-narration preamble. Two shapes, both anchored at start:
+#  1. "Caveman mode: ", "Mode caveman — ", "[caveman] " — label terminated by a
+#     short separator (: — ]) before any sentence end.
+#  2. "Caveman pause — security step." — a full narration sentence terminated by
+#     '.', '!' or '?'. The sentence body must stay short (no real content runs
+#     on for hundreds of chars), so cap the run length.
+_MODE_NARRATION_RE = re.compile(
+    r"(?is)^\s*(?:"
+    r"\[\s*(?:mode\s+)?caveman(?:\s+mode)?\s*\]\s*"             # [caveman] bracket label
+    r"|(?:mode\s+)?caveman(?:\s+mode)?\s*[:—-]\s*"              # label + separator
+    r"|(?:mode\s+)?caveman\b[^.!?\n]{0,80}[.!?]\s*"             # short narration sentence
+    r")",
+)
+
+
+def strip_mode_narration(text: str) -> str:
+    """Drop a leading compression-mode narration preamble (e.g. 'Caveman pause —').
+
+    Only strips when the reply *opens* with the narration, so genuine content
+    that merely contains the word later is untouched.
+    """
+    m = _MODE_NARRATION_RE.match(text)
+    if m is None:
+        return text
+    rest = text[m.end():].lstrip()
+    if not rest:
+        return text  # whole reply was the preamble — keep it rather than blank
+    logger.warning("stripped leading mode-narration preamble from reply")
+    return rest
+
+
+def cut_at_bare_affirmation(text: str) -> str:
+    """Cut a reply at the first line that is *only* a short affirmation.
+
+    Robust against the 55-lumières self-dialogue, where a meta-agent writes the
+    user's "oui" inside its own reply then proceeds to ``[EXECUTE:/save]`` and a
+    handoff. A legitimate confirmation arrives as a separate user turn, so the
+    agent's own reply reads e.g. ``"Entendu. [EXECUTE:/save]"`` — no standalone
+    affirmation line — and is left untouched.
+    """
+    m = _BARE_AFFIRMATION_RE.search(text)
+    if m is None:
+        return text
+    cut = text[: m.start()].rstrip()
+    if not cut:
+        return text  # affirmation at the very top — nothing safe to keep
+    logger.warning("truncated LLM reply: bare affirmation line (model scripting user confirmation)")
+    return cut
+
+
 def truncate_simulated_turns(text: str, max_acks: int = 1) -> str:
     """Cut reply when the model starts simulating user turns.
 
@@ -212,10 +279,12 @@ def scrub_reply(reply: str, *, agent_role: str) -> str:
       4. Strip any unauthorised [EXECUTE:/...] tags.
     """
     allow = _ROLE_TAG_ALLOWLIST.get(agent_role, set())
+    reply = strip_mode_narration(reply)
     reply = normalise_hallucinated_tool_calls(reply, allow=allow)
     reply = strip_hallucinated_tool_calls(reply)
     reply = truncate_repeated_garbage(reply)
     reply = cut_at_speaker_markers(reply)
+    reply = cut_at_bare_affirmation(reply)
     reply = truncate_simulated_turns(reply)
     reply = strip_unauthorised_execute_tags(reply, agent_role=agent_role)
     return reply

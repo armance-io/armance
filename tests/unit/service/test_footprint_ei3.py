@@ -259,3 +259,38 @@ class TestCallWithLedgerFootprint:
 
         assert isinstance(result, LLMResponse)
         assert ledger.snapshot()["total"]["calls"] == 1
+
+
+# ---------------------------------------------------------------------------
+# snapshot() min/max bounds
+# ---------------------------------------------------------------------------
+
+class TestSnapshotBounds:
+    def test_snapshot_sums_min_max(self) -> None:
+        from armance.service.llm_service import TokenLedger
+        from armance.core.models.footprint import Footprint
+        led = TokenLedger()
+        fp = Footprint(
+            energy_wh=1.0, gco2e=2.0, water_ml=3.0, embodied_gco2e=0.2,
+            estimate=False, tier="exact", proxy_model=None, zone="WOR",
+            gco2e_min=1.0, gco2e_max=3.0, water_ml_min=2.0, water_ml_max=4.0,
+        )
+        led.record("alice", 10, 20, cost_usd=0.0, footprint=fp)
+        led.record("alice", 10, 20, cost_usd=0.0, footprint=fp)
+        snap = led.snapshot()
+        assert snap["total"]["gco2e_min"] == 2.0
+        assert snap["total"]["gco2e_max"] == 6.0
+
+    def test_snapshot_bounds_fallback_to_midpoint_when_none(self) -> None:
+        # A footprint without explicit bounds contributes its midpoint to both.
+        from armance.service.llm_service import TokenLedger
+        from armance.core.models.footprint import Footprint
+        led = TokenLedger()
+        fp = Footprint(
+            energy_wh=1.0, gco2e=5.0, water_ml=3.0, embodied_gco2e=0.2,
+            estimate=False, tier="exact", proxy_model=None, zone="WOR",
+        )  # no *_min/*_max
+        led.record("bob", 1, 1, cost_usd=0.0, footprint=fp)
+        snap = led.snapshot()
+        assert snap["total"]["gco2e_min"] == 5.0
+        assert snap["total"]["gco2e_max"] == 5.0

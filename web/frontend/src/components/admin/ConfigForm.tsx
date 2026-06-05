@@ -12,6 +12,7 @@ export interface ConfigValues {
   language: string;
   embedding_provider?: string;
   embedding_model?: string;
+  electricity_mix_zone?: string;
   providers?: Array<{ name: string; base_url?: string | null }>;
 }
 
@@ -20,6 +21,8 @@ export interface ConfigFormProps {
   providerOptions: string[];
   languageOptions: string[];
   embeddingOptions?: EmbeddingModel[];
+  /** Carbon-intensity zones for the footprint estimate. */
+  zoneOptions?: Array<{ code: string; gco2e_per_kwh: number }>;
   onSave: (values: ConfigValues) => Promise<void>;
   onAddProviderSecrets?: (provName: string, apiKey: string, baseUrl?: string) => Promise<void>;
   secrets?: Array<{ name: string; value: string; set: boolean }>;
@@ -71,6 +74,7 @@ export const ConfigForm: FC<ConfigFormProps> = ({
   providerOptions,
   languageOptions,
   embeddingOptions = [],
+  zoneOptions = [],
   onSave,
   onAddProviderSecrets,
   secrets = [],
@@ -593,6 +597,25 @@ export const ConfigForm: FC<ConfigFormProps> = ({
           ))}
         </select>
         {errors.language && <span style={errStyle}>{errors.language}</span>}
+      </div>
+
+      {/* Carbon-intensity zone — refines the CO₂ estimate to the user's grid. */}
+      <div style={row}>
+        <label style={label}>{t("admin:config.carbon_zone")}</label>
+        <select
+          style={inputBase}
+          value={draft.electricity_mix_zone ?? "WOR"}
+          onChange={(e) => set("electricity_mix_zone", e.target.value)}
+        >
+          {zoneOptions.map((z) => (
+            <option key={z.code} value={z.code}>
+              {z.code} · {z.gco2e_per_kwh} gCO₂e/kWh
+            </option>
+          ))}
+        </select>
+        <span style={{ color: "var(--ink-faint)", fontSize: 12, fontStyle: "italic" }}>
+          {t("admin:config.carbon_zone_hint")}
+        </span>
       </div>
 
       <EmbeddingSection

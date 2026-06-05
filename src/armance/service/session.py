@@ -13,7 +13,7 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from armance.core.models.conversation import Conversation
 
@@ -43,6 +43,12 @@ class SessionState(BaseModel):
     current_provider: str | None = None
     current_model: str | None = None
     project_brief: str = ""
+    # Ephemeral per-session set of agent names currently running on their
+    # boost (provider, model). Resolved by service/boost_ops.boosted_model_for.
+    # Never leaks into L0 project context. pydantic v2 serialises set→JSON
+    # array via model_dump_json and coerces array→set on model_validate_json,
+    # so this round-trips through state.json without a custom serializer.
+    boosted_agents: set[str] = Field(default_factory=set)
 
     @classmethod
     def new(cls, parent_id: str | None = None) -> "SessionState":
