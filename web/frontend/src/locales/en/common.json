@@ -308,7 +308,9 @@
         "completed": "✓",
         "failed": "✗",
         "cancelled": "⊘",
-        "canceled": "⊘"
+        "canceled": "⊘",
+        "skipped": "⊘",
+        "unknown": "?"
       }
     },
     "delete": {
