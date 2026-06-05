@@ -41,11 +41,13 @@ def _pid_alive(pid: int) -> bool:
         return False
     try:
         os.kill(pid, 0)
-    except ProcessLookupError:
-        return False
     except PermissionError:
         # Exists but owned by another user — still "alive" for our purposes.
         return True
+    except OSError:
+        # On POSIX, catches ProcessLookupError. On Windows, OSError [WinError 87]
+        # represents a dead or non-existent process.
+        return False
     return True
 
 
