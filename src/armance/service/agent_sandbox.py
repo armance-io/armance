@@ -161,6 +161,43 @@ _BARE_AFFIRMATION_RE = re.compile(
 )
 
 
+# Weak models on a compression protocol narrate the protocol itself when asked
+# to drop it for the human turn ("Caveman pause — …", "Caveman mode: …"). The
+# instruction not to do so necessarily names the mode, which is exactly what the
+# model then echoes. Deterministic strip of a leading mode-narration preamble:
+# match a bracket/label/sentence at the very start that mentions the mode word
+# and is terminated by a separator (— : . ]), then drop it.
+# Matches a leading mode-narration preamble. Two shapes, both anchored at start:
+#  1. "Caveman mode: ", "Mode caveman — ", "[caveman] " — label terminated by a
+#     short separator (: — ]) before any sentence end.
+#  2. "Caveman pause — security step." — a full narration sentence terminated by
+#     '.', '!' or '?'. The sentence body must stay short (no real content runs
+#     on for hundreds of chars), so cap the run length.
+_MODE_NARRATION_RE = re.compile(
+    r"(?is)^\s*(?:"
+    r"\[\s*(?:mode\s+)?caveman(?:\s+mode)?\s*\]\s*"             # [caveman] bracket label
+    r"|(?:mode\s+)?caveman(?:\s+mode)?\s*[:—-]\s*"              # label + separator
+    r"|(?:mode\s+)?caveman\b[^.!?\n]{0,80}[.!?]\s*"             # short narration sentence
+    r")",
+)
+
+
+def strip_mode_narration(text: str) -> str:
+    """Drop a leading compression-mode narration preamble (e.g. 'Caveman pause —').
+
+    Only strips when the reply *opens* with the narration, so genuine content
+    that merely contains the word later is untouched.
+    """
+    m = _MODE_NARRATION_RE.match(text)
+    if m is None:
+        return text
+    rest = text[m.end():].lstrip()
+    if not rest:
+        return text  # whole reply was the preamble — keep it rather than blank
+    logger.warning("stripped leading mode-narration preamble from reply")
+    return rest
+
+
 def cut_at_bare_affirmation(text: str) -> str:
     """Cut a reply at the first line that is *only* a short affirmation.
 
@@ -242,6 +279,7 @@ def scrub_reply(reply: str, *, agent_role: str) -> str:
       4. Strip any unauthorised [EXECUTE:/...] tags.
     """
     allow = _ROLE_TAG_ALLOWLIST.get(agent_role, set())
+    reply = strip_mode_narration(reply)
     reply = normalise_hallucinated_tool_calls(reply, allow=allow)
     reply = strip_hallucinated_tool_calls(reply)
     reply = truncate_repeated_garbage(reply)
