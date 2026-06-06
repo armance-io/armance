@@ -12,6 +12,8 @@ import pytest_asyncio
 from pathlib import Path
 from httpx import AsyncClient, ASGITransport
 
+from .conftest import AUTH_COOKIES
+
 
 @pytest.fixture()
 def uninitialised_root(tmp_path: Path) -> Path:
@@ -32,6 +34,7 @@ async def uninit_client(uninitialised_root: Path) -> AsyncClient:
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
+        cookies=AUTH_COOKIES,
     ) as ac:
         app.state.app_state = AppState(armance_root=uninitialised_root)
         yield ac

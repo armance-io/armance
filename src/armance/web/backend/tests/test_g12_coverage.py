@@ -14,6 +14,8 @@ from __future__ import annotations
 import pytest
 from pathlib import Path
 from httpx import AsyncClient
+
+from .conftest import AUTH_COOKIES
 from unittest.mock import patch, MagicMock
 
 from armance.config import Config
@@ -244,7 +246,7 @@ async def test_secrets_client_none(client: AsyncClient, armance_root: Path) -> N
     app.state.app_state = AppState(armance_root=armance_root)
 
     with patch.object(Request, "client", new_callable=PropertyMock, return_value=None):
-        async with AC(transport=ASGITransport(app=app), base_url="http://test") as c:
+        async with AC(transport=ASGITransport(app=app), base_url="http://test", cookies=AUTH_COOKIES) as c:
             resp = await c.get("/projects/default/admin/secrets")
             assert resp.status_code == 403
             assert resp.json() == {"error": "secrets_localhost_only"}
@@ -283,7 +285,7 @@ async def test_patch_agent_invalid_name(client: AsyncClient, armance_root: Path)
     app.state.app_state.put(ws)
 
     # Regex test with a name that is invalid but doesn't change path segments
-    async with AC(transport=ASGITransport(app=app), base_url="http://test") as c:
+    async with AC(transport=ASGITransport(app=app), base_url="http://test", cookies=AUTH_COOKIES) as c:
         resp = await c.patch(
             f"/projects/default/sessions/{ws.sid}/agents/Alice.Bob",
             json={"model": "x"},
@@ -324,7 +326,7 @@ async def test_patch_agent_unknown_field(client: AsyncClient, armance_root: Path
     app.state.app_state = AppState(armance_root=armance_root)
     app.state.app_state.put(ws)
 
-    async with AC(transport=ASGITransport(app=app), base_url="http://test") as c:
+    async with AC(transport=ASGITransport(app=app), base_url="http://test", cookies=AUTH_COOKIES) as c:
         resp = await c.patch(
             f"/projects/default/sessions/{ws.sid}/agents/AliceCov",
             json={"unknown_field": "x"},
@@ -360,7 +362,7 @@ async def test_patch_agent_not_found(client: AsyncClient, armance_root: Path) ->
     app.state.app_state = AppState(armance_root=armance_root)
     app.state.app_state.put(ws)
 
-    async with AC(transport=ASGITransport(app=app), base_url="http://test") as c:
+    async with AC(transport=ASGITransport(app=app), base_url="http://test", cookies=AUTH_COOKIES) as c:
         resp = await c.patch(
             f"/projects/default/sessions/{ws.sid}/agents/ValidButMissing",
             json={"model": "gpt-4o"},
@@ -398,7 +400,7 @@ async def test_patch_agent_not_on_disk_and_reasoning(client: AsyncClient, armanc
     app.state.app_state = AppState(armance_root=armance_root)
     app.state.app_state.put(ws)
 
-    async with AC(transport=ASGITransport(app=app), base_url="http://test") as c:
+    async with AC(transport=ASGITransport(app=app), base_url="http://test", cookies=AUTH_COOKIES) as c:
         resp = await c.patch(
             f"/projects/default/sessions/{ws.sid}/agents/AliceNotOnDisk",
             json={"reasoning": "effort_high"},
