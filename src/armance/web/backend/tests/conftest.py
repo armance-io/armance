@@ -12,6 +12,21 @@ import pytest_asyncio
 from pathlib import Path
 from httpx import AsyncClient, ASGITransport
 
+# Epic S · security gate. A fixed web password used across the backend suite
+# so the gate is deterministic, plus the cookie that authorises a client.
+TEST_WEB_SECRET = "test-web-secret"
+AUTH_COOKIES = {"armance_session_token": TEST_WEB_SECRET}
+
+
+@pytest.fixture(autouse=True)
+def _web_secret_env(monkeypatch):
+    """Pin the gate's secret for every test so it is known and stable."""
+    monkeypatch.setenv("ARMANCE_WEB_PASSWORD", TEST_WEB_SECRET)
+    from armance.service import security
+    security.reset_web_secret_cache()
+    yield
+    security.reset_web_secret_cache()
+
 
 @pytest.fixture()
 def armance_root(tmp_path: Path) -> Path:
@@ -42,12 +57,16 @@ async def client(armance_root: Path, request) -> AsyncClient:
     route seams (e.g. _dispatch_run) directly.
     """
     os.environ["ARMANCE_ROOT"] = str(armance_root.parent)
+    # Epic S · security gate covers every data route. Carry the session
+    # cookie (secret pinned by the autouse _web_secret_env fixture) so tests
+    # authenticate transparently.
     from armance.web.backend.main import create_app
     app = create_app()
     # Run the lifespan explicitly via httpx's lifespan support.
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
+        cookies=AUTH_COOKIES,
     ) as ac:
         # Manually trigger lifespan so app.state.app_state is set.
         from armance.web.backend.state import AppState

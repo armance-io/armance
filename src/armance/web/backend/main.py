@@ -26,7 +26,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from armance.web.backend.state import AppState
-from armance.web.backend.routes import health, whoami, sessions, turn, events, checkpoint, docs, library, library_docs, library_delete, library_action, exports, runs, agents, providers, embedding_models, hypotheses, workflows, active_workflow, sidecars, admin, admin_config, admin_secrets, admin_logs, admin_stats, admin_agents, deliverables, setup
+from armance.web.backend.routes import health, whoami, sessions, turn, events, checkpoint, docs, library, library_docs, library_delete, library_action, exports, runs, agents, providers, embedding_models, hypotheses, workflows, active_workflow, sidecars, admin, admin_config, admin_secrets, admin_logs, admin_stats, admin_agents, deliverables, setup, auth
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +100,12 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Epic S · security gate. Fail-closed auth over every data route (mounted
+    # under both "" and "/api") except the public liveness + auth endpoints.
+    # Runs after the SPA middleware, so static HTML navigations (the login
+    # shell included) are served before the gate and stay reachable.
+    _install_auth_gate(app)
+
     # SPA page URLs share the /projects/{pid}/... shape with the API. The
     # browser asks for pages with `Accept: text/html` and for data via
     # fetch/EventSource (Accept: */* or application/json). A pre-routing
@@ -123,12 +129,61 @@ def create_app() -> FastAPI:
             workflows.router, active_workflow.router, sidecars.router,
             admin.router, admin_config.router, admin_secrets.router,
             admin_logs.router, admin_stats.router, admin_agents.router,
-            deliverables.router, setup.router,
+            deliverables.router, setup.router, auth.router,
         ):
             api.include_router(r)
         app.include_router(api)
 
     return app
+
+
+# Paths that bypass the security gate: liveness + the auth flow itself (so
+# the login page can authenticate before any cookie exists). Listed for both
+# the root and /api mounts — the API routers are mounted under both.
+_PUBLIC_PREFIXES = (
+    "/healthz", "/api/healthz",
+    "/auth/", "/api/auth/",
+)
+
+
+def _install_auth_gate(app: FastAPI) -> None:
+    """Require a valid web secret on protected /api/* requests."""
+    from fastapi.responses import JSONResponse
+
+    from armance.config import load_config
+    from armance.service import security
+    from armance.web.backend.routes.auth import COOKIE_NAME
+
+    def _candidate(request) -> str | None:
+        auth = request.headers.get("authorization", "")
+        if auth.lower().startswith("bearer "):
+            return auth[7:].strip()
+        qp = request.query_params.get("token")
+        if qp:
+            return qp
+        return request.cookies.get(COOKIE_NAME)
+
+    @app.middleware("http")
+    async def _auth_gate(request, call_next):
+        # The SPA middleware runs before this one and already returns the
+        # static HTML shell for text/html navigations, so anything reaching
+        # here is a data/fetch call (root- or /api-mounted). Gate them all
+        # except the public liveness + auth endpoints. This closes the
+        # root-mount bypass: data routes exist at both "" and "/api".
+        path = request.url.path
+        if any(path.startswith(p) for p in _PUBLIC_PREFIXES):
+            return await call_next(request)
+        state = getattr(request.app.state, "app_state", None)
+        if state is None:  # lifespan not yet run (shouldn't happen in serving)
+            return await call_next(request)
+        try:
+            cfg = load_config(state.armance_root.parent)
+        except Exception:  # noqa: BLE001 — config unreadable; env secret still applies
+            from armance.config import Config as _Cfg
+            cfg = _Cfg()
+        if not security.check_web_secret(cfg, _candidate(request)):
+            return JSONResponse({"detail": "unauthorized"}, status_code=401)
+        return await call_next(request)
 
 
 # Segments whose *following* path component is a dynamic id. The static

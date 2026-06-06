@@ -11,6 +11,8 @@ from __future__ import annotations
 import pytest
 from pathlib import Path
 from httpx import AsyncClient, ASGITransport
+
+from .conftest import AUTH_COOKIES
 import os
 
 
@@ -47,6 +49,7 @@ async def test_get_secrets_from_non_loopback_forbidden(armance_root: Path) -> No
     async with AsyncClient(
         transport=ASGITransport(app=app, client=("8.8.8.8", 0)),
         base_url="http://test",
+        cookies=AUTH_COOKIES,
     ) as remote_client:
         resp = await remote_client.get("/projects/default/admin/secrets")
 
