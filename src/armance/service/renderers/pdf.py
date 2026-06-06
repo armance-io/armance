@@ -81,7 +81,7 @@ class PdfRenderer:
         return RenderResult(
             output_path=output_path,
             warnings=[
-                "weasyprint not installed; install with: pip install armance[render]",
+                "weasyprint not installed; install with: pip install 'armance[pdf]'",
                 "pandoc not found either",
             ],
             error="no PDF renderer available; install weasyprint or pandoc",

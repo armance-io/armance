@@ -1,6 +1,6 @@
 """PPTX renderer — one slide per top-level heading.
 
-Requires python-pptx (optional [render] extra). Falls back gracefully.
+Requires python-pptx (bundled by default). Falls back gracefully.
 
 Spec: docs/spec/22_circular_outputs.md § Supported formats (pptx)
 """
@@ -53,7 +53,7 @@ class PptxRenderer:
         except ImportError:
             return RenderResult(
                 output_path=output_path,
-                warnings=["python-pptx not installed; install with: pip install armance[render]"],
+                warnings=["python-pptx not installed; reinstall armance (this dep ships by default)"],
                 error="python-pptx not installed",
             )
 

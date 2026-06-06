@@ -1,6 +1,6 @@
 """XLSX renderer — markdown tables → sheets.
 
-Requires openpyxl (optional [render] extra). Falls back gracefully.
+Requires openpyxl (not bundled; optional). Falls back gracefully.
 
 Spec: docs/spec/22_circular_outputs.md § Supported formats (xlsx)
 """
@@ -48,7 +48,7 @@ class XlsxRenderer:
         except ImportError:
             return RenderResult(
                 output_path=output_path,
-                warnings=["openpyxl not installed; install with: pip install armance[render]"],
+                warnings=["openpyxl not installed; install with: pip install openpyxl"],
                 error="openpyxl not installed",
             )
 
