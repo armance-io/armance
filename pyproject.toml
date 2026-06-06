@@ -1,6 +1,6 @@
 [project]
   name = "armance"
-  version = "0.2-beta.1"
+  version = "0.2-beta.2"
   description = "Armance 👒 - a team of experts you recruit to help you decide. Coordinate a panel that debates, stress-tests and synthesises. You keep the call 💡. Not a copilot, a brain you consult when the choice matters."
   readme = "README.md"
   license = { text = "AGPL-3.0-or-later" }
@@ -28,6 +28,7 @@
       "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
       "Operating System :: POSIX :: Linux",
       "Operating System :: MacOS",
+      "Operating System :: Microsoft :: Windows",
       "Programming Language :: Python :: 3",
       "Programming Language :: Python :: 3.11",
       "Programming Language :: Python :: 3.12",
@@ -51,17 +52,20 @@
       "python-docx>=1.1",
       "python-pptx>=0.6",
       "markdown-it-py>=3.0",
-      "weasyprint>=60.0",
     "ecologits>=0.6",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
     "sse-starlette>=2.1",
     "python-multipart>=0.0.12",
+    "claude-agent-sdk>=0.1",
 ]
 
 [project.optional-dependencies]
-claude = [
-    "claude-agent-sdk>=0.1",
+# PDF export needs native libs (GTK/Pango/Cairo) that pip cannot install on
+# its own — notably painful on Windows. Kept optional so the base install and
+# `armance web` never depend on them. DOCX/MD/PPTX export work without this.
+pdf = [
+    "weasyprint>=60.0",
 ]
 
   [project.urls]

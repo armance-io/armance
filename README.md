@@ -80,9 +80,11 @@ Project home: **[armance.io](https://armance.io)** *(site coming soon)*.
 pip install armance
 ```
 
-That's it. The base install gives you the full CLI/TUI, RAG, three providers
-(OpenRouter, Gemini, custom OpenAI-compatible), PDF / DOCX / PPTX
-deliverables, and the **web UI** — no extras to choose.
+That's it. The base install gives you the full CLI/TUI, RAG, **all four
+providers** (OpenRouter, `claude-code` subscription, Gemini, custom
+OpenAI-compatible), DOCX / PPTX / Markdown deliverables, and the **web
+UI** — no extras to choose. (PDF export is the one optional extra — see
+below — because it needs native libraries pip can't install on its own.)
 
 > Prefer an isolated tool install? `uv tool install armance` or
 > `pipx install armance` work identically.
@@ -100,30 +102,31 @@ armance --version
 armance doctor      # config, provider reachability, sqlite-vec, deliverables, ledger
 ```
 
-> **Reaching Claude models:** Anthropic models are available through
-> **OpenRouter** on the base install (set `OPENROUTER_API_KEY`) — nothing
-> extra needed. The opt-in extra below is only for billing through a Claude
-> *subscription* login rather than a metered API key.
+> **Reaching Claude models:** two ways, both on the base install. Through
+> **OpenRouter** (set `OPENROUTER_API_KEY`), or through a Claude Pro/Max
+> *subscription* via the bundled `claude-code` provider (Anthropic's
+> `claude-agent-sdk` ships in the package — no extra to install).
 
-#### One optional extra: the Claude subscription provider
+#### Optional extra: PDF export
 
-The `claude-code` provider lets you drive Claude through a Claude Pro/Max
-*subscription* via Anthropic's `claude-agent-sdk` (+~75 MB). It is opt-in:
-
-```bash
-pip install 'armance[claude]'
-```
-
-#### System libraries for PDF export (Linux only)
-
-PDF deliverables use WeasyPrint, which needs native libs on Linux
-(macOS bundles them):
+Every export format works out of the box **except PDF**. PDF uses
+WeasyPrint, which depends on native libraries (GTK / Pango / Cairo) that
+pip cannot install — so it is opt-in:
 
 ```bash
-sudo apt-get install libgobject-2.0-0 libcairo2 libpango-1.0-0
+pip install 'armance[pdf]'
 ```
 
-DOCX / PPTX / Markdown exports need nothing extra.
+Then install the native libs for your OS:
+
+- **Linux:** `sudo apt-get install libgobject-2.0-0 libcairo2 libpango-1.0-0`
+- **macOS:** `brew install pango` (usually already present)
+- **Windows:** install the GTK runtime — see the
+  [WeasyPrint install guide](https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#installation).
+
+DOCX / PPTX / Markdown exports need none of this. If WeasyPrint is
+missing, `armance` simply skips PDF with a clear message — it never
+crashes.
 
 ### Contributor / dev setup
 
@@ -321,7 +324,7 @@ Each layer imports only from layers below. Enforced by [`import-linter`](https:/
 | Provider | Key env var | Notes |
 |---|---|---|
 | `openrouter`   | `OPENROUTER_API_KEY` | Default. Live model discovery. Many `:free` models. Supports reasoning effort. |
-| `claude-code`  | uses `claude-agent-sdk` auth | Requires `armance[claude]`. Subscription = effectively free for the user. Native web search via WebSearch tool. |
+| `claude-code`  | uses `claude-agent-sdk` auth | Bundled by default (no extra). Subscription = effectively free for the user. Native web search via WebSearch tool. |
 | `gemini`       | `GEMINI_API_KEY` | Live discovery via `/v1beta/models`. Native Google Search grounding. |
 | `custom-openai`| `CUSTOM_OPENAI_API_KEY` + `CUSTOM_OPENAI_BASE_URL` | Any OpenAI-compatible endpoint. |
 

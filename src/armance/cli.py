@@ -845,13 +845,20 @@ def cmd_doctor(repo_root: Path | None = None) -> int:
     except Exception as exc:
         _row("rag dir writable", False, str(exc))
 
-    # deliverable libs
-    for lib in ("docx", "pptx", "weasyprint"):
+    # deliverable libs (docx/pptx ship by default)
+    for lib in ("docx", "pptx"):
         try:
             __import__(lib)
             _row(f"lib:{lib}", True)
         except ImportError:
             _row(f"lib:{lib}", False, f"`pip install python-{lib}` or `uv add python-{lib}`")
+    # weasyprint is optional (PDF export); import lazily so a missing native
+    # lib never prints its banner during the doctor check.
+    try:
+        __import__("weasyprint")
+        _row("lib:weasyprint (pdf)", True)
+    except Exception:
+        _row("lib:weasyprint (pdf)", False, "optional — `pip install 'armance[pdf]'`")
 
     # ledger writable
     sessions_dir = armance_root / "sessions"
@@ -1069,8 +1076,9 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     if _web_main._resolve_static_dir() is None:
         print(
             f"Note: no bundled UI found — running API only on http://{bind}:{port}.\n"
-            "  The web UI is a build artifact, not shipped in git installs. To get it:\n"
-            "    • pip install a release wheel (UI bundled), then `armance web`; or\n"
+            "  The UI ships in the 0.2 release. A plain `pip install armance`\n"
+            "  may still resolve to an older release without the UI. To get it:\n"
+            "    • pip install --upgrade --pre armance   (while 0.2 is a beta)\n"
             "    • from a repo clone: `uv run armance web --build` (needs Node + pnpm).",
             file=sys.stderr,
         )
