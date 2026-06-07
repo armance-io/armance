@@ -1220,6 +1220,52 @@ def cmd_install_shortcut() -> int:
     return 0 if result.ok else 1
 
 
+def _open_launcher_browser(path: str, port: int = 8000) -> None:
+    """Open the browser on the launcher/setup page once the server is ready.
+
+    Polls the liveness endpoint in a background thread, then opens
+    ``http://127.0.0.1:<port><path>``. Best-effort — never blocks the caller.
+    """
+    import threading
+    import urllib.error
+    import urllib.request
+    import webbrowser
+
+    url = f"http://127.0.0.1:{port}{path}"
+
+    def _wait_and_open() -> None:
+        import time
+
+        for _ in range(100):  # ~10s
+            try:
+                urllib.request.urlopen(f"http://127.0.0.1:{port}/healthz", timeout=0.5)
+                break
+            except (urllib.error.URLError, OSError):
+                time.sleep(0.1)
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
+
+    threading.Thread(target=_wait_and_open, daemon=True).start()
+
+
+def cmd_launcher() -> int:
+    """Bare `armance`: open the launcher (or first-run setup) in the browser.
+
+    Grandma path. The launcher server is homed in the GLOBAL config dir (so a
+    first run from any folder never litters a stray ``.armance`` there). No
+    global config yet → the browser lands on the setup wizard; otherwise on the
+    launcher window.
+    """
+    from armance import paths
+
+    configured = paths.global_config_path().exists()
+    target = "/launcher" if configured else "/setup"
+    _open_launcher_browser(target)
+    return cmd_web(paths.global_config_dir(), ["--no-browser"])
+
+
 def main(argv: list[str] | None = None) -> int:
     import argparse
     import importlib.metadata
@@ -1235,13 +1281,19 @@ def main(argv: list[str] | None = None) -> int:
         print(f"armance {version}")
         return 0
 
-    if not argv or argv[0] in ("-h", "--help", "help"):
+    # Bare `armance` (no args) is the grandma path: open the launcher (or the
+    # first-run setup wizard) in the browser. Explicit help still prints usage.
+    if not argv:
+        return cmd_launcher()
+
+    if argv[0] in ("-h", "--help", "help"):
         print(
             "usage: armance {init,run,index,doctor,workflow,web,install-shortcut} "
-            "[--version]",
+            "[--version]\n"
+            "  (run `armance` with no arguments to open the launcher)",
             file=sys.stderr,
         )
-        return 0 if argv else 1
+        return 0
 
     parser = argparse.ArgumentParser(prog="armance", add_help=False)
     parser.add_argument("command")
