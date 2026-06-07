@@ -19,11 +19,15 @@ try:
 except Exception:  # pragma: no cover
     HAS_PPTX = False
 
-try:
-    from weasyprint import HTML
-    HAS_WEASYPRINT = True
-except Exception:  # pragma: no cover
-    HAS_WEASYPRINT = False
+# weasyprint pulls native libs (GTK/Pango/Cairo) and prints a noisy banner to
+# stderr when they are missing. It is imported lazily inside render_pdf so that
+# merely importing this module — e.g. on `armance web` boot — never touches it.
+def _weasyprint_available() -> bool:
+    try:
+        import weasyprint  # noqa: F401
+        return True
+    except Exception:  # pragma: no cover
+        return False
 
 
 class DeliverableError(RuntimeError):
@@ -287,11 +291,15 @@ def render_pdf(
     Converts markdown -> HTML (via markdown-it) -> CSS-styled PDF.
     Uses default template from src/armance/templates/pdf_default.css
     """
-    if not HAS_WEASYPRINT:
+    if not _weasyprint_available():
         raise DeliverableError(
-            "WeasyPrint not available. "
-            "Install system deps (libgobject-2.0-0, libcairo2, libpango-1.0-0) then: "
-            "pip install weasyprint"
+            "PDF export needs WeasyPrint, which is optional. Install it with:\n"
+            "    pip install 'armance[pdf]'\n"
+            "WeasyPrint also needs native libs (GTK/Pango/Cairo). "
+            "On Linux: apt install libgobject-2.0-0 libcairo2 libpango-1.0-0. "
+            "On Windows: install the GTK runtime "
+            "(see https://doc.courtbouillon.org/weasyprint/stable/first_steps.html). "
+            "Other formats (md, docx, pptx) work without it."
         )
 
     out_path = Path(out_path)
@@ -320,7 +328,7 @@ def render_pdf(
         """
 
     # Render to PDF
-    from weasyprint import CSS
+    from weasyprint import CSS, HTML
     HTML(string=html, base_url=str(out_path.parent)).write_pdf(
         str(out_path),
         stylesheets=[CSS(string=css)],

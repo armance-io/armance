@@ -47,7 +47,7 @@ Lower layers never import from upper layers. Lint: `grep -rn
 | Provider | API key env var | Reasoning support | Notes |
 |---|---|---|---|
 | `openrouter` | `OPENROUTER_API_KEY` | yes (`reasoning` field) | many free `:free` models |
-| `claude-code` | `claude-agent-sdk` auth | no | extra: `pip install 'armance[claude]'` |
+| `claude-code` | `claude-agent-sdk` auth | no | bundled by default (no extra) |
 | `gemini` | `GEMINI_API_KEY` | no | |
 | `custom-openai` | `CUSTOM_OPENAI_API_KEY` + `CUSTOM_OPENAI_BASE_URL` | model-dependent | OpenAI-compatible |
 
@@ -94,7 +94,7 @@ bash scripts/check_invariants.sh     # layer + lifecycle invariants (43 checks)
 
 ### Web Backend Tests
 The backend ships inside the package at `src/armance/web/backend/`. Run its
-suite from the `web/` directory (its venv has the `[web]` extra wired):
+suite from the `web/` directory (web deps ship in core — no extra needed):
 ```bash
 cd web && uv run pytest ../src/armance/web/backend/tests/   # offline routes suite (163)
 ```
