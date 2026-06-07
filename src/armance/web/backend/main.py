@@ -177,7 +177,7 @@ def _install_auth_gate(app: FastAPI) -> None:
         if state is None:  # lifespan not yet run (shouldn't happen in serving)
             return await call_next(request)
         try:
-            cfg = load_config(state.armance_root.parent)
+            cfg = load_config()
         except Exception:  # noqa: BLE001 — config unreadable; env secret still applies
             from armance.config import Config as _Cfg
             cfg = _Cfg()
