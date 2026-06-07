@@ -596,5 +596,28 @@
     "submit": "Unlock",
     "error": "Invalid token or password. Please try again.",
     "checking": "Checking…"
+  },
+  "launcher": {
+    "title": "Your projects",
+    "subtitle": "Open a project to consult your house of minds — or start a new one.",
+    "open": "Open",
+    "new_project": "New project",
+    "no_projects": "No projects yet. Create your first one.",
+    "last_opened": "Last opened",
+    "stale": "Folder not found",
+    "stale_hint": "This folder no longer exists at its recorded path.",
+    "browse": {
+      "title": "Choose a folder",
+      "use_this": "Use this folder",
+      "up": "Up",
+      "empty": "No subfolders here.",
+      "cancel": "Cancel",
+      "create_hint": "A new project will be created in the selected folder."
+    },
+    "error": {
+      "open_failed": "Could not open this project.",
+      "new_failed": "Could not create the project here.",
+      "browse_failed": "Could not list this folder."
+    }
   }
 }
