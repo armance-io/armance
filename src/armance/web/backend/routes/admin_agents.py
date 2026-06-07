@@ -17,7 +17,7 @@ from armance.core.models.agent import Agent
 from armance.platform.user import get_current_user
 from armance.service.tui_bridge import META_AGENTS
 from armance.storage.paths import agent_path
-from armance.web.backend.deps import get_app_state, get_web_session
+from armance.web.backend.deps import get_app_state, get_web_session, resolve_root_or_404
 from armance.web.backend.state import AppState, WebSession
 
 _SAFE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -142,7 +142,7 @@ async def patch_agent(
     if agent is None:
         raise HTTPException(status_code=404, detail="agent_not_found")
 
-    path = agent_path(app_state.armance_root, name)
+    path = agent_path(resolve_root_or_404(app_state, pid), name)
     if path.exists():
         on_disk = Agent.load(path)
     else:

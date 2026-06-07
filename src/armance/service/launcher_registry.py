@@ -7,9 +7,11 @@ per-project. Entries are kept even when their path disappears (flagged
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
+import re
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -22,6 +24,18 @@ logger = logging.getLogger(__name__)
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _pid_for(resolved_path: str) -> str:
+    """Stable, URL-safe project id: slugified folder name + path hash.
+
+    The hash makes the pid unique even when two folders share a basename, and
+    stable across restarts (derived only from the absolute path).
+    """
+    name = Path(resolved_path).name
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "project"
+    digest = hashlib.sha1(resolved_path.encode("utf-8")).hexdigest()[:8]
+    return f"{slug}-{digest}"
 
 
 def _read_raw() -> dict[str, list[dict[str, Any]]]:
@@ -65,7 +79,12 @@ def bump_project(folder: Path) -> None:
             break
     else:
         data["projects"].append(
-            {"path": resolved, "name": Path(resolved).name, "last_opened": now}
+            {
+                "id": _pid_for(resolved),
+                "path": resolved,
+                "name": Path(resolved).name,
+                "last_opened": now,
+            }
         )
     _write_raw(data)
 
@@ -87,6 +106,7 @@ def list_projects() -> list[dict[str, Any]]:
     data = _read_raw()
     items = [
         {
+            "id": e.get("id") or _pid_for(e.get("path", "")),
             "name": e.get("name", Path(e.get("path", "")).name),
             "path": e.get("path", ""),
             "last_opened": e.get("last_opened", ""),
@@ -96,3 +116,18 @@ def list_projects() -> list[dict[str, Any]]:
     ]
     items.sort(key=lambda e: e["last_opened"], reverse=True)
     return items
+
+
+def path_for_pid(pid: str) -> Path | None:
+    """Resolve a registry pid to its project folder, or None if unknown.
+
+    pids resolve ONLY through the registry — a raw pid never builds an
+    arbitrary filesystem path. Unknown pid → None (callers raise 404).
+    """
+    data = _read_raw()
+    for e in data["projects"]:
+        eid = e.get("id") or _pid_for(e.get("path", ""))
+        if eid == pid:
+            p = e.get("path", "")
+            return Path(p).resolve() if p else None
+    return None
