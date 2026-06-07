@@ -588,5 +588,13 @@
       "locked_aria": "Active session (locked after first message)",
       "id_label": "Session ID"
     }
+  },
+  "auth": {
+    "title": "Armance",
+    "prompt": "Enter your access token or password to continue.",
+    "placeholder": "Access token",
+    "submit": "Unlock",
+    "error": "Invalid token or password. Please try again.",
+    "checking": "Checking…"
   }
 }

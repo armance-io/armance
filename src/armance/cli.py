@@ -845,13 +845,20 @@ def cmd_doctor(repo_root: Path | None = None) -> int:
     except Exception as exc:
         _row("rag dir writable", False, str(exc))
 
-    # deliverable libs
-    for lib in ("docx", "pptx", "weasyprint"):
+    # deliverable libs (docx/pptx ship by default)
+    for lib in ("docx", "pptx"):
         try:
             __import__(lib)
             _row(f"lib:{lib}", True)
         except ImportError:
             _row(f"lib:{lib}", False, f"`pip install python-{lib}` or `uv add python-{lib}`")
+    # weasyprint is optional (PDF export); import lazily so a missing native
+    # lib never prints its banner during the doctor check.
+    try:
+        __import__("weasyprint")
+        _row("lib:weasyprint (pdf)", True)
+    except Exception:
+        _row("lib:weasyprint (pdf)", False, "optional — `pip install 'armance[pdf]'`")
 
     # ledger writable
     sessions_dir = armance_root / "sessions"
@@ -1025,6 +1032,23 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     url = f"http://127.0.0.1:{port}/"
     open_browser = not web_args.no_browser
 
+    # Epic S · security gate. Resolve the web secret in the parent so the
+    # printed URL and the child server agree, then hand it to the child via
+    # ARMANCE_WEB_PASSWORD (so the child does not generate its own token).
+    from armance.config import load_config as _load_cfg
+    from armance.service import security as _security
+    try:
+        _web_cfg = _load_cfg(root)
+    except Exception:  # noqa: BLE001 — config may be absent; fall back to a token
+        from armance.config import Config as _Cfg2
+        _web_cfg = _Cfg2()
+    _web_secret = _security.resolve_web_secret(_web_cfg)
+    _web_secret_auto = _security.was_auto_generated(_web_cfg)
+    # The auto-generated token is safe to put in the URL (ephemeral, local).
+    # A persistent password must never travel in the query string.
+    if _web_secret_auto:
+        url = f"http://127.0.0.1:{port}/?token={_web_secret}"
+
     # Foreground mode blocks in subprocess.run below, so the browser must be
     # opened from a background thread that waits for readiness first. Background
     # mode opens it inline after the readiness wait (see below), since the
@@ -1069,13 +1093,15 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     if _web_main._resolve_static_dir() is None:
         print(
             f"Note: no bundled UI found — running API only on http://{bind}:{port}.\n"
-            "  The web UI is a build artifact, not shipped in git installs. To get it:\n"
-            "    • pip install a release wheel (UI bundled), then `armance web`; or\n"
+            "  The UI ships in the 0.2 release. A plain `pip install armance`\n"
+            "  may still resolve to an older release without the UI. To get it:\n"
+            "    • pip install --upgrade --pre armance   (while 0.2 is a beta)\n"
             "    • from a repo clone: `uv run armance web --build` (needs Node + pnpm).",
             file=sys.stderr,
         )
 
-    env = {**os.environ, "ARMANCE_ROOT": str(root)}
+    env = {**os.environ, "ARMANCE_ROOT": str(root),
+           "ARMANCE_WEB_PASSWORD": _web_secret}
     cmd = [
         sys.executable, "-m", "uvicorn",
         "armance.web.backend.main:app",
@@ -1087,6 +1113,13 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     # logs stream to the terminal). Useful for dev / debugging. We still write
     # the pidfile so the single-instance lock holds, and clear it on exit.
     if web_args.foreground:
+        if _web_secret_auto:
+            print(
+                f"[SECURITY] Web interface access token: {_web_secret}\n"
+                f"[SECURITY] Access the UI via: {url}",
+            )
+        else:
+            print("[SECURITY] Web interface protected by your configured password.")
         proc = None
         try:
             proc = subprocess.Popen(cmd, env=env, start_new_session=True)
@@ -1155,6 +1188,14 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     if open_browser:
         import webbrowser
         webbrowser.open(url)
+
+    if _web_secret_auto:
+        print(
+            f"[SECURITY] Web interface access token: {_web_secret}\n"
+            f"[SECURITY] Access the UI via: {url}",
+        )
+    else:
+        print("[SECURITY] Web interface protected by your configured password.")
 
     print(
         f"✓ Armance web running at http://{bind}:{port}  (pid {proc.pid})\n"

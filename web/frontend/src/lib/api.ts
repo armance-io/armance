@@ -37,6 +37,40 @@ async function request<T>(
   if (body !== undefined) reqInit.body = JSON.stringify(body);
   const res = await fetch(`${BASE}${path}`, reqInit);
   if (!res.ok) {
+    // Epic S · security gate. A 401 means the session cookie is missing or
+    // invalid — send the user to the login screen (unless already there, to
+    // avoid a redirect loop). The login flow posts to /auth/login directly.
+    if (res.status === 401 && typeof window !== "undefined") {
+      if (window.location.pathname !== "/login") {
+        // SEC5. The CLI prints a URL like http://host/?token=abc. Rather than
+        // bounce that token through another URL (which would leave it in the
+        // address bar / server logs), exchange it for the HttpOnly cookie
+        // right here, strip it from the URL via history.replaceState, then
+        // reload the now-authenticated page. Only if that fails do we fall
+        // back to the manual /login form (carrying no token).
+        const here = new URLSearchParams(window.location.search);
+        const urlToken = here.get("token");
+        if (urlToken) {
+          here.delete("token");
+          const cleaned = here.toString();
+          const cleanUrl = window.location.pathname + (cleaned ? `?${cleaned}` : "");
+          void login(urlToken).then((ok) => {
+            window.history.replaceState(null, "", cleanUrl);
+            if (ok) {
+              window.location.reload();
+            } else {
+              window.location.replace(`/login?next=${encodeURIComponent(cleanUrl)}`);
+            }
+          });
+        } else {
+          const next = encodeURIComponent(
+            window.location.pathname + window.location.search,
+          );
+          window.location.replace(`/login?next=${next}`);
+        }
+      }
+      throw new ApiError(401, "unauthorized", "unauthorized");
+    }
     const detail = await res.json().catch(() => ({ detail: res.statusText }));
     const code = typeof detail.detail === "string" ? detail.detail : detail.detail?.error ?? "unknown";
     if (res.status === 409) {
@@ -59,6 +93,36 @@ export const api = {
   del: <T>(path: string, body?: unknown) => request<T>("DELETE", path, body),
   raw: (path: string, init?: RequestInit) => fetch(`${BASE}${path}`, init),
 };
+
+/* ─── Epic S — auth (token / password) ───────────────────────────────────── */
+
+/**
+ * Exchange a token/password for an HttpOnly session cookie.
+ * Returns true on success, false on an invalid secret. Bypasses the shared
+ * 401 interceptor so the login screen can show an inline error instead of
+ * redirecting to itself.
+ */
+export async function login(token: string): Promise<boolean> {
+  const res = await fetch(`${BASE}/auth/login`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ token }),
+  });
+  return res.ok;
+}
+
+/**
+ * Verify the current credential. Sends an explicit token via the
+ * `Authorization: Bearer` header (never the query string, which would leak
+ * into server logs); falls back to the session cookie when no token given.
+ */
+export async function verifyAuth(token?: string): Promise<boolean> {
+  const init: RequestInit = { method: "GET", credentials: "include" };
+  if (token) init.headers = { Authorization: `Bearer ${token}` };
+  const res = await fetch(`${BASE}/auth/verify`, init);
+  return res.ok;
+}
 
 export interface SessionCreated {
   id: string;

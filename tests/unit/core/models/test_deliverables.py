@@ -31,7 +31,9 @@ def mock_pptx(monkeypatch):
 @pytest.fixture(autouse=True)
 def mock_weasyprint(monkeypatch):
     """Mock weasyprint module to avoid requiring weasyprint."""
-    monkeypatch.setattr("armance.core.models.deliverables.HAS_WEASYPRINT", False)
+    monkeypatch.setattr(
+        "armance.core.models.deliverables._weasyprint_available", lambda: False
+    )
 
 
 @pytest.fixture
@@ -273,16 +275,17 @@ def test_render_pptx_file_exists_and_openable(report_tree, temp_dir):
 
 
 @pytest.mark.skipif(os.name == "nt", reason="PDF rendering requires weasyprint")
-def test_render_pdf_file_exists_and_parseable(report_tree, temp_dir):
+def test_render_pdf_file_exists_and_parseable(report_tree, temp_dir, monkeypatch):
     """Test render_pdf() produces valid PDF file."""
+    pytest.importorskip("weasyprint")
     from armance.core.models.deliverables import render_pdf
 
-    # Mock HAS_WEASYPRINT to True for this test
-    import armance.core.models.deliverables as deliv_module
-    original = deliv_module.HAS_WEASYPRINT
-    deliv_module.HAS_WEASYPRINT = True
+    # Force the availability probe True (the autouse fixture stubs it False).
+    monkeypatch.setattr(
+        "armance.core.models.deliverables._weasyprint_available", lambda: True
+    )
 
-    try:
+    if True:
         pdf_path = temp_dir / "test_report.pdf"
         render_pdf(report_tree, pdf_path)
 
@@ -310,9 +313,6 @@ def test_render_pdf_file_exists_and_parseable(report_tree, temp_dir):
         except (subprocess.SubprocessError, FileNotFoundError):
             # pdftotext not available, skip text extraction check
             pass
-
-    finally:
-        deliv_module.HAS_WEASYPRINT = original
 
 
 def test_render_md_file_exists_and_matches_source(report_tree, temp_dir):
@@ -366,5 +366,5 @@ def test_all_renderers_with_missing_dependencies(report_tree, temp_dir):
     with pytest.raises(RuntimeError, match="python-pptx not available"):
         render_pptx(report_tree, pptx_path)
 
-    with pytest.raises(RuntimeError, match="WeasyPrint not available"):
+    with pytest.raises(RuntimeError, match="PDF export needs WeasyPrint"):
         render_pdf(report_tree, pdf_path)

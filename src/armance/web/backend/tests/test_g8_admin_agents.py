@@ -12,6 +12,8 @@ from __future__ import annotations
 import pytest
 from pathlib import Path
 from httpx import AsyncClient
+
+from .conftest import AUTH_COOKIES
 from unittest.mock import MagicMock
 
 from armance.core.models.agent import Agent
@@ -69,7 +71,7 @@ def session_with_agents(armance_root: Path, client: AsyncClient):
 async def test_get_agents_list(session_with_agents, armance_root: Path) -> None:
     app, ws = session_with_agents
     from httpx import AsyncClient as AC, ASGITransport
-    async with AC(transport=ASGITransport(app=app), base_url="http://test") as c:
+    async with AC(transport=ASGITransport(app=app), base_url="http://test", cookies=AUTH_COOKIES) as c:
         resp = await c.get(f"/projects/default/sessions/{ws.sid}/agents")
 
     assert resp.status_code == 200
@@ -93,7 +95,7 @@ async def test_get_agents_list(session_with_agents, armance_root: Path) -> None:
 async def test_patch_agent_model_specialist(session_with_agents, armance_root: Path) -> None:
     app, ws = session_with_agents
     from httpx import AsyncClient as AC, ASGITransport
-    async with AC(transport=ASGITransport(app=app), base_url="http://test") as c:
+    async with AC(transport=ASGITransport(app=app), base_url="http://test", cookies=AUTH_COOKIES) as c:
         resp = await c.patch(
             f"/projects/default/sessions/{ws.sid}/agents/Alice",
             json={"model": "claude-3-5-haiku"},
@@ -110,7 +112,7 @@ async def test_patch_agent_boost_fields(session_with_agents, armance_root: Path)
     """The augment capability (boost_provider/boost_model) is editable."""
     app, ws = session_with_agents
     from httpx import AsyncClient as AC, ASGITransport
-    async with AC(transport=ASGITransport(app=app), base_url="http://test") as c:
+    async with AC(transport=ASGITransport(app=app), base_url="http://test", cookies=AUTH_COOKIES) as c:
         resp = await c.patch(
             f"/projects/default/sessions/{ws.sid}/agents/Alice",
             json={"boost_provider": "claude-code", "boost_model": "claude-sonnet-4-6"},
@@ -131,7 +133,7 @@ async def test_patch_agent_resyncs_in_memory_roster(session_with_agents, armance
     """
     app, ws = session_with_agents
     from httpx import AsyncClient as AC, ASGITransport
-    async with AC(transport=ASGITransport(app=app), base_url="http://test") as c:
+    async with AC(transport=ASGITransport(app=app), base_url="http://test", cookies=AUTH_COOKIES) as c:
         await c.patch(
             f"/projects/default/sessions/{ws.sid}/agents/Alice",
             json={"boost_provider": "claude-code", "boost_model": "claude-sonnet-4-6"},
@@ -147,7 +149,7 @@ async def test_patch_agent_clear_boost(session_with_agents, armance_root: Path) 
     """Passing an empty boost_model removes the augment capability."""
     app, ws = session_with_agents
     from httpx import AsyncClient as AC, ASGITransport
-    async with AC(transport=ASGITransport(app=app), base_url="http://test") as c:
+    async with AC(transport=ASGITransport(app=app), base_url="http://test", cookies=AUTH_COOKIES) as c:
         await c.patch(
             f"/projects/default/sessions/{ws.sid}/agents/Alice",
             json={"boost_provider": "claude-code", "boost_model": "claude-sonnet-4-6"},
@@ -166,7 +168,7 @@ async def test_patch_agent_clear_boost(session_with_agents, armance_root: Path) 
 async def test_patch_agent_model_staff(session_with_agents, armance_root: Path) -> None:
     app, ws = session_with_agents
     from httpx import AsyncClient as AC, ASGITransport
-    async with AC(transport=ASGITransport(app=app), base_url="http://test") as c:
+    async with AC(transport=ASGITransport(app=app), base_url="http://test", cookies=AUTH_COOKIES) as c:
         resp = await c.patch(
             f"/projects/default/sessions/{ws.sid}/agents/system-context",
             json={"model": "gemini-2.0-flash"},
@@ -182,7 +184,7 @@ async def test_patch_agent_model_staff(session_with_agents, armance_root: Path) 
 async def test_patch_persona_rejected(session_with_agents, armance_root: Path) -> None:
     app, ws = session_with_agents
     from httpx import AsyncClient as AC, ASGITransport
-    async with AC(transport=ASGITransport(app=app), base_url="http://test") as c:
+    async with AC(transport=ASGITransport(app=app), base_url="http://test", cookies=AUTH_COOKIES) as c:
         resp = await c.patch(
             f"/projects/default/sessions/{ws.sid}/agents/Alice",
             json={"persona": "new persona text"},
