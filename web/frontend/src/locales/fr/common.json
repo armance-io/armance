@@ -588,5 +588,13 @@
       "locked_aria": "Session active (verrouillée après le premier message)",
       "id_label": "Session ID"
     }
+  },
+  "auth": {
+    "title": "Armance",
+    "prompt": "Saisissez votre jeton d’accès ou mot de passe pour continuer.",
+    "placeholder": "Jeton d’accès",
+    "submit": "Déverrouiller",
+    "error": "Jeton ou mot de passe invalide. Réessayez.",
+    "checking": "Vérification…"
   }
 }

@@ -23,9 +23,8 @@ from armance.providers.claude_utils import (
 logger = logging.getLogger(__name__)
 
 _INSTALL_HINT = (
-    "claude-agent-sdk not installed.\n"
-    "  Install: pip install 'armance[claude]'  (or: uv pip install 'armance[claude]')\n"
-    "  Docs: see 'Optional extras' section in README.md"
+    "claude-agent-sdk not available — it ships with armance, so this usually\n"
+    "  means a broken or partial install. Try: pip install --force-reinstall armance"
 )
 
 

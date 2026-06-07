@@ -65,7 +65,7 @@ armance web                         # serves the freshly built bundle
 Everything below runs against your working tree — nothing is committed.
 
 ```bash
-# Backend (from web/, whose venv has the [web] extra)
+# Backend (from web/; web deps ship in core — no extra)
 cd web && uv run pytest ../src/armance/web/backend/tests/      # 163 tests
 
 # Frontend
@@ -81,7 +81,7 @@ touching git or PyPI:
 
 ```bash
 scripts/build_release.sh            # builds wheel WITH the UI, verifies it
-python -m venv /tmp/v && /tmp/v/bin/pip install "dist/"*.whl"[web]"
+python -m venv /tmp/v && /tmp/v/bin/pip install "dist/"*.whl
 cd /some/project && /tmp/v/bin/python -m uvicorn armance.web.backend.main:app --port 8000
 # browse http://127.0.0.1:8000 — same as `pip install armance && armance web`
 ```

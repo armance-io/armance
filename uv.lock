@@ -39,9 +39,10 @@ wheels = [
 
 [[package]]
 name = "armance"
-version = "0.2b1"
+version = "0.2b2"
 source = { editable = "." }
 dependencies = [
+    { name = "claude-agent-sdk" },
     { name = "ecologits" },
     { name = "fastapi" },
     { name = "httpx" },
@@ -61,12 +62,11 @@ dependencies = [
     { name = "textual" },
     { name = "tiktoken" },
     { name = "uvicorn", extra = ["standard"] },
-    { name = "weasyprint" },
 ]
 
 [package.optional-dependencies]
-claude = [
-    { name = "claude-agent-sdk" },
+pdf = [
+    { name = "weasyprint" },
 ]
 
 [package.dev-dependencies]
@@ -84,7 +84,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "claude-agent-sdk", marker = "extra == 'claude'", specifier = ">=0.1" },
+    { name = "claude-agent-sdk", specifier = ">=0.1" },
     { name = "ecologits", specifier = ">=0.6" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "httpx", specifier = ">=0.27,<1" },
@@ -104,7 +104,7 @@ requires-dist = [
     { name = "textual", specifier = ">=1.0" },
     { name = "tiktoken", specifier = ">=0.7" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
-    { name = "weasyprint", specifier = ">=60.0" },
+    { name = "weasyprint", marker = "extra == 'pdf'", specifier = ">=60.0" },
 ]
 
 [package.metadata.requires-dev]
