@@ -46,6 +46,18 @@ class FootprintConfig(BaseModel):
     show_water: bool = True
 
 
+class WebConfig(BaseModel):
+    """Web interface settings (Epic S · security gate).
+
+    ``password`` is an optional persistent passcode for the web UI. When
+    empty, `armance web` auto-generates a transient per-process token (see
+    armance.service.security). It can also be overridden at runtime via the
+    ``ARMANCE_WEB_PASSWORD`` environment variable.
+    """
+
+    password: str = ""
+
+
 class Config(BaseModel):
     providers: list[ProviderConfig] = Field(default_factory=list)
     default_provider: str = ""
@@ -60,6 +72,7 @@ class Config(BaseModel):
     language: LanguageCode = "en"  # UI + agent voice language
     prices: dict[str, dict[str, float]] = Field(default_factory=dict)
     footprint: FootprintConfig = Field(default_factory=FootprintConfig)
+    web: WebConfig = Field(default_factory=WebConfig)
 
     def provider(self, name: str) -> ProviderConfig:
         for p in self.providers:

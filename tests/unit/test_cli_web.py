@@ -82,3 +82,60 @@ def test_cmd_web_stop_terminates_and_returns_zero(tmp_path: Path) -> None:
 def test_cmd_web_stop_without_server_returns_one(tmp_path: Path) -> None:
     rc = cmd_web(tmp_path, ["--stop"])
     assert rc == 1
+
+
+def test_cmd_web_passes_token_to_child_and_prints_security(
+    tmp_path: Path, capsys, monkeypatch
+) -> None:
+    """Epic S · S.3 — auto token handed to the child via env + printed."""
+    monkeypatch.delenv("ARMANCE_WEB_PASSWORD", raising=False)
+    from armance.service import security
+    security.reset_web_secret_cache()
+
+    proc = MagicMock()
+    proc.poll.return_value = None
+    proc.pid = 9999
+
+    with patch("subprocess.Popen", return_value=proc) as popen, \
+         patch("urllib.request.urlopen", return_value=_fake_ready_response()):
+        rc = cmd_web(tmp_path, ["--no-browser"])
+
+    assert rc == 0
+    uvicorn_calls = [
+        c for c in popen.call_args_list
+        if c.args and isinstance(c.args[0], list) and "uvicorn" in c.args[0]
+    ]
+    child_env = uvicorn_calls[0].kwargs["env"]
+    token = child_env["ARMANCE_WEB_PASSWORD"]
+    assert len(token) == 32  # auto-generated 32-hex token
+    out = capsys.readouterr().out
+    assert "[SECURITY]" in out
+    assert token in out  # the printed URL/notice carries the token
+    security.reset_web_secret_cache()
+
+
+def test_cmd_web_uses_configured_password_not_in_url(
+    tmp_path: Path, capsys, monkeypatch
+) -> None:
+    """A configured password is honoured and never leaked into the URL."""
+    monkeypatch.setenv("ARMANCE_WEB_PASSWORD", "hunter2")
+    from armance.service import security
+    security.reset_web_secret_cache()
+
+    proc = MagicMock()
+    proc.poll.return_value = None
+    proc.pid = 9998
+
+    with patch("subprocess.Popen", return_value=proc) as popen, \
+         patch("urllib.request.urlopen", return_value=_fake_ready_response()):
+        rc = cmd_web(tmp_path, ["--no-browser"])
+
+    assert rc == 0
+    uvicorn_calls = [
+        c for c in popen.call_args_list
+        if c.args and isinstance(c.args[0], list) and "uvicorn" in c.args[0]
+    ]
+    assert uvicorn_calls[0].kwargs["env"]["ARMANCE_WEB_PASSWORD"] == "hunter2"
+    out = capsys.readouterr().out
+    assert "hunter2" not in out  # password must not travel in the URL/output
+    security.reset_web_secret_cache()

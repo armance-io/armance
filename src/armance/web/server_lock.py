@@ -120,8 +120,9 @@ def stop_server(root: Path, *, timeout: float = 10.0) -> tuple[bool, str]:
             return True, f"stopped web server (pid {pid})"
         time.sleep(0.2)
 
-    # Escalate.
-    _signal(pid, signal.SIGKILL)
+    # Escalate. signal.SIGKILL does not exist on Windows — fall back to
+    # SIGTERM there (the only signal os.kill honours on that platform).
+    _signal(pid, getattr(signal, "SIGKILL", signal.SIGTERM))
     time.sleep(0.3)
     clear_lock(root)
     if _pid_alive(pid):
