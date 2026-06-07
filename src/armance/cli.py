@@ -1211,6 +1211,15 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     return 0
 
 
+def cmd_install_shortcut() -> int:
+    """Create a desktop icon that launches Armance. Best-effort."""
+    from armance.service.shortcuts import install_shortcut
+
+    result = install_shortcut()
+    print(("✓ " if result.ok else "⚠ ") + result.message)
+    return 0 if result.ok else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     import argparse
     import importlib.metadata
@@ -1227,7 +1236,11 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if not argv or argv[0] in ("-h", "--help", "help"):
-        print("usage: armance {init,run,index,doctor,workflow,web} [--version]", file=sys.stderr)
+        print(
+            "usage: armance {init,run,index,doctor,workflow,web,install-shortcut} "
+            "[--version]",
+            file=sys.stderr,
+        )
         return 0 if argv else 1
 
     parser = argparse.ArgumentParser(prog="armance", add_help=False)
@@ -1308,6 +1321,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_doctor(root)
     if cmd == "web":
         return cmd_web(root, remaining)
+    if cmd == "install-shortcut":
+        return cmd_install_shortcut()
     if cmd == "workflow":
         if not remaining or remaining[0] == "run":
             wf_parser = argparse.ArgumentParser(add_help=False)
