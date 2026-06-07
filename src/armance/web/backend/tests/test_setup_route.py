@@ -8,13 +8,16 @@ from pathlib import Path
 
 @pytest.fixture()
 def clean_armance_root(armance_root: Path) -> Path:
-    """An armance_root directory without any config.yaml."""
-    cfg_file = armance_root / "config.yaml"
-    if cfg_file.exists():
-        cfg_file.unlink()
-    env_file = armance_root / ".env"
-    if env_file.exists():
-        env_file.unlink()
+    """A project root whose GLOBAL config + .env have been removed.
+
+    Clean break: setup status / init read and write the global config dir, so
+    that is what must be cleared to simulate an unconfigured install.
+    """
+    from armance import paths
+
+    for f in (paths.global_config_path(), paths.global_env_path()):
+        if f.exists():
+            f.unlink()
     return armance_root
 
 
@@ -62,12 +65,11 @@ async def test_setup_init_success(
     assert resp.status_code == 201
     assert resp.json() == {"configured": True, "project_id": "default"}
 
-    # Verify config.yaml was written
-    cfg_file = clean_armance_root / "config.yaml"
-    assert cfg_file.exists()
-    
-    # Verify .env was written with key
-    env_file = clean_armance_root / ".env"
+    # Verify config.yaml + .env were written to the GLOBAL dir (clean break).
+    from armance import paths
+
+    assert paths.global_config_path().exists()
+    env_file = paths.global_env_path()
     assert env_file.exists()
     env_content = env_file.read_text(encoding="utf-8")
     assert "OPENROUTER_API_KEY=sk-test-key" in env_content

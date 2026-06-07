@@ -41,7 +41,7 @@ def _serialise_model(m: Any) -> dict[str, Any]:
 
 async def _discover_serialised(armance_root) -> dict[str, list[dict[str, Any]]]:
     """Inner helper — keeps the route trivially mockable in tests."""
-    cfg = load_config(armance_root.parent)
+    cfg = load_config()
     if not cfg.providers:
         from armance.config import ProviderConfig
         cfg.providers = [
