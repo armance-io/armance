@@ -15,6 +15,7 @@ from armance.config import (
     FootprintConfig,
     ProviderConfig,
     ensure_armance_tree,
+    ensure_global_setup,
     save_config,
     write_env,
 )
@@ -328,9 +329,10 @@ def _cmd_init_noninteractive(
         embedding_model=embedding_model or "",
     )
     cfg = Config(**cfg_kwargs)
+    ensure_global_setup(cfg)
+    save_config(cfg)
+    write_env(provider_objs)
     ensure_armance_tree(root, cfg)
-    save_config(root, cfg)
-    write_env(root, provider_objs)
 
     print(f"✅  Armance initialised at {root / '.armance'}")
     print(f"    providers: {', '.join(providers)}")
@@ -490,9 +492,10 @@ def cmd_init(
 
     cfg = Config(**cfg_kwargs)
 
+    ensure_global_setup(cfg)
+    save_config(cfg)
+    write_env(providers)
     ensure_armance_tree(root, cfg)
-    save_config(root, cfg)
-    write_env(root, providers)
 
     armance_readme = root / ".armance" / "README.md"
     print()
@@ -526,7 +529,7 @@ def cmd_index(repo_root: Path | None = None) -> int:
         console.print("[red].armance/ not found — run `armance init` first[/red]")
         return 1
 
-    cfg = load_config(root)
+    cfg = load_config()
     result = sync_docs(armance_root, config=cfg)
     console.print(
         f"[green]index complete[/green]: "
@@ -600,11 +603,12 @@ def cmd_run(
     console = Console()
     root = repo_root or Path.cwd()
     armance_root = root / ".armance"
-    if not (armance_root / "config.yaml").exists():
+    from armance import paths
+    if not paths.global_config_path().exists():
         console.print("[red]armance not initialized — run `armance init` first[/red]")
         return 1
 
-    cfg = load_config(root)
+    cfg = load_config()
     ensure_armance_tree(root, cfg)
 
     # Initialize NLS with the configured language so all user-facing strings
@@ -709,7 +713,8 @@ def cmd_workflow_run(
     root = armance_root or Path.cwd()
     armance = root / ".armance"
 
-    if not (armance / "config.yaml").exists():
+    from armance import paths
+    if not paths.global_config_path().exists():
         console.print("[red]armance not initialized — run `armance init` first[/red]")
         return 1
 
@@ -821,11 +826,12 @@ def cmd_doctor(repo_root: Path | None = None) -> int:
         status = "[green]OK[/green]" if passed else "[red]FAIL[/red]"
         table.add_row(label, status, detail)
 
-    # config
-    cfg_path = armance_root / "config.yaml"
+    # config (global — clean break)
+    from armance import paths
+    cfg_path = paths.global_config_path()
     if cfg_path.exists():
         try:
-            cfg = load_config(root)
+            cfg = load_config()
             _row("config.yaml", True, f"{len(cfg.providers)} provider(s)")
         except Exception as exc:
             _row("config.yaml", False, str(exc))

@@ -17,7 +17,11 @@ import os
 
 
 def _write_env(armance_root: Path, content: str) -> None:
-    (armance_root / ".env").write_text(content, encoding="utf-8")
+    # Clean break: secrets live in the GLOBAL config dir, not per-project.
+    from armance import paths
+
+    paths.global_config_dir().mkdir(parents=True, exist_ok=True)
+    paths.global_env_path().write_text(content, encoding="utf-8")
 
 
 @pytest.mark.asyncio

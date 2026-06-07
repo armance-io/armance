@@ -15,10 +15,20 @@ _BUILTIN_DIR = Path(__file__).resolve().parents[1] / "agents" / "builtin"
 
 
 def resolve_agent_path(armance_root: Path, stem: str) -> Path | None:
-    """Resolve a meta-agent's .md path: user override first, then builtin."""
-    user = armance_root / "agents" / f"{stem}.md"
-    if user.exists():
-        return user
+    """Resolve a meta-agent's .md path.
+
+    Clean break (grandma launcher): base staff lives in the GLOBAL agents dir.
+    Resolution order: per-project override (local ``.armance/agents``) →
+    global base agents → bundled builtin fallback.
+    """
+    from armance import paths
+
+    local = armance_root / "agents" / f"{stem}.md"
+    if local.exists():
+        return local
+    global_agent = paths.global_agents_dir() / f"{stem}.md"
+    if global_agent.exists():
+        return global_agent
     builtin = _BUILTIN_DIR / f"{stem}.md"
     return builtin if builtin.exists() else None
 

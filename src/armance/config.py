@@ -91,13 +91,17 @@ def _env_base_url_for(provider: str) -> str:
     return f"{sanitized}_BASE_URL"
 
 
-def load_config(repo_root: Path) -> Config:
-    """Load config from .armance/config.yaml then overlay .env values.
+def load_config() -> Config:
+    """Load the GLOBAL config (config.yaml) then overlay global .env values.
 
-    Returns an empty default Config if neither file exists.
+    Clean break (grandma launcher): config and secrets are machine-wide,
+    resolved via :mod:`armance.paths`, not per project folder. Returns an
+    empty default Config if neither file exists.
     """
-    yaml_path = repo_root / ".armance" / "config.yaml"
-    env_path = repo_root / ".armance" / ".env"
+    from armance import paths
+
+    yaml_path = paths.global_config_path()
+    env_path = paths.global_env_path()
 
     raw: dict[str, Any] = {}
     if yaml_path.exists():
@@ -127,14 +131,16 @@ def load_config(repo_root: Path) -> Config:
     return cfg
 
 
-def save_config(repo_root: Path, cfg: Config) -> Path:
-    """Persist non-secret fields to .armance/config.yaml.
+def save_config(cfg: Config) -> Path:
+    """Persist non-secret fields to the GLOBAL config.yaml.
 
     API keys are stripped — they belong in .env.
     """
-    armance_dir = repo_root / ".armance"
-    armance_dir.mkdir(parents=True, exist_ok=True)
-    yaml_path = armance_dir / "config.yaml"
+    from armance import paths
+
+    config_dir = paths.global_config_dir()
+    config_dir.mkdir(parents=True, exist_ok=True)
+    yaml_path = paths.global_config_path()
 
     payload = cfg.model_dump()
     for provider in payload["providers"]:
@@ -143,10 +149,12 @@ def save_config(repo_root: Path, cfg: Config) -> Path:
     return yaml_path
 
 
-def write_env(repo_root: Path, providers: list[ProviderConfig]) -> Path:
-    """Write provider API keys + base URLs into .armance/.env."""
-    (repo_root / ".armance").mkdir(parents=True, exist_ok=True)
-    env_path = repo_root / ".armance" / ".env"
+def write_env(providers: list[ProviderConfig]) -> Path:
+    """Write provider API keys + base URLs into the GLOBAL .env."""
+    from armance import paths
+
+    paths.global_config_dir().mkdir(parents=True, exist_ok=True)
+    env_path = paths.global_env_path()
     lines: list[str] = []
     for provider in providers:
         if provider.api_key:
@@ -157,12 +165,13 @@ def write_env(repo_root: Path, providers: list[ProviderConfig]) -> Path:
     return env_path
 
 
+# Per-folder DATA layout (clean break: no config/secrets, no base agents here).
+# Project-specific recruited specialists still live in the local agents/ dir.
 ARMANCE_DIR_TREE = (
     "docs",
     "reports",
     "context",
     "agents",
-    "agents/builtin",
     "workflows",
     "judge",
     "sessions",
@@ -171,12 +180,34 @@ ARMANCE_DIR_TREE = (
 
 
 def ensure_armance_tree(repo_root: Path, config: Config | None = None) -> Path:
-    armance = repo_root / ".armance"
+    """Create the per-folder DATA tree under ``<repo_root>/.armance``.
+
+    Clean break (grandma launcher): config / secrets / base agents are global
+    (see :func:`ensure_global_setup`); this only provisions a project folder's
+    data directories.
+    """
+    from armance import paths
+
+    armance = paths.local_data_dir(repo_root)
     for sub in ARMANCE_DIR_TREE:
         (armance / sub).mkdir(parents=True, exist_ok=True)
-    _install_builtin_agents(armance, config)
     _install_readme(armance)
     return armance
+
+
+def ensure_global_setup(config: Config | None = None) -> Path:
+    """Provision the GLOBAL config dir: base agents (+ builtin assets).
+
+    config.yaml / .env are written by :func:`save_config` / :func:`write_env`.
+    This installs the base meta-agents into the global agents dir so every
+    project folder shares one staff roster.
+    """
+    from armance import paths
+
+    global_dir = paths.global_config_dir()
+    (global_dir / "agents" / "builtin").mkdir(parents=True, exist_ok=True)
+    _install_builtin_agents(global_dir, config)
+    return global_dir
 
 
 def _install_readme(armance_root: Path) -> None:

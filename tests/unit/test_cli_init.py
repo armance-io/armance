@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from armance import cli
+from armance import cli, paths
 
 
 class StubPrompt:
@@ -52,15 +52,16 @@ def test_cmd_init_writes_config_env_and_tree(
     rc = cli.cmd_init(tmp_path)
     assert rc == 0
 
-    armance_dir = tmp_path / ".armance"
-    assert (armance_dir / "config.yaml").exists()
+    # Clean break: config + secrets are GLOBAL; only the data tree is local.
+    assert paths.global_config_path().exists()
+    local = tmp_path / ".armance"
     for sub in ("docs", "reports", "context", "agents", "workflows", "judge", "sessions"):
-        assert (armance_dir / sub).is_dir()
+        assert (local / sub).is_dir()
 
-    env = (tmp_path / ".armance" / ".env").read_text(encoding="utf-8")
+    env = paths.global_env_path().read_text(encoding="utf-8")
     assert "OPENROUTER_API_KEY=sk-test" in env
 
-    yaml_text = (armance_dir / "config.yaml").read_text(encoding="utf-8")
+    yaml_text = paths.global_config_path().read_text(encoding="utf-8")
     assert "sk-test" not in yaml_text
     assert "budget_effort: free-first" in yaml_text
     # The chosen carbon zone is persisted under the footprint config.
@@ -74,7 +75,7 @@ def test_cmd_init_aborts_when_no_provider(
     monkeypatch.setattr(cli.questionary, "checkbox", lambda *a, **k: StubPrompt([]))
     rc = cli.cmd_init(tmp_path)
     assert rc == 1
-    assert not (tmp_path / ".armance" / "config.yaml").exists()
+    assert not paths.global_config_path().exists()
 
 
 def test_cmd_init_gemini_writes_key(
@@ -107,9 +108,9 @@ def test_cmd_init_gemini_writes_key(
     rc = cli.cmd_init(tmp_path)
     assert rc == 0
 
-    env = (tmp_path / ".armance" / ".env").read_text(encoding="utf-8")
+    env = paths.global_env_path().read_text(encoding="utf-8")
     assert "GEMINI_API_KEY=sk-gemini-key" in env
 
-    yaml_text = (tmp_path / ".armance" / "config.yaml").read_text(encoding="utf-8")
+    yaml_text = paths.global_config_path().read_text(encoding="utf-8")
     assert "budget_effort: low" in yaml_text
     assert "gemini" in yaml_text
