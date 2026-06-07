@@ -32,6 +32,10 @@ async def test_launcher_new_creates_data_tree(client: AsyncClient, tmp_path: Pat
     resp = await client.post("/launcher/new", json={"path": str(proj)})
     assert resp.status_code == 200
     assert (proj / ".armance" / "docs").is_dir()
+    # Returns the pid the frontend navigates to (/projects/{pid}).
+    body = resp.json()
+    assert body["id"]
+    assert body["name"] == "fresh"
 
 
 @pytest.mark.asyncio

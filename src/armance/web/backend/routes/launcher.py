@@ -25,6 +25,16 @@ class _PathBody(BaseModel):
     path: str
 
 
+def _project_payload(folder: Path) -> dict[str, Any]:
+    """Open/new response: the pid the frontend navigates to (/projects/{pid})."""
+    resolved = folder.resolve()
+    pid = next(
+        (p["id"] for p in launcher_registry.list_projects() if p["path"] == str(resolved)),
+        None,
+    )
+    return {"id": pid, "name": resolved.name, "path": str(resolved)}
+
+
 @router.get("/launcher")
 async def get_launcher(_user: str = Depends(get_current_user)) -> dict[str, Any]:
     """Launcher state: known projects, most-recent first."""
@@ -39,7 +49,7 @@ async def open_project(
     if not folder.is_dir():
         return JSONResponse(status_code=404, content={"error": "path_not_found"})
     launcher_registry.bump_project(folder)
-    return {"name": folder.resolve().name, "path": str(folder.resolve())}
+    return _project_payload(folder)
 
 
 @router.post("/launcher/new")
@@ -52,7 +62,7 @@ async def new_project(
     # Provision the per-folder data tree, then register it.
     ensure_armance_tree(folder)
     launcher_registry.bump_project(folder)
-    return {"name": folder.resolve().name, "path": str(folder.resolve())}
+    return _project_payload(folder)
 
 
 @router.get("/launcher/browse")
