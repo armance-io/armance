@@ -96,3 +96,81 @@ a:hover { color: var(--accent-deep); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
+
+/* ── Launcher (grandma launcher) — Belle Époque parchment ─────────────────── */
+.btn-accent {
+  font-family: var(--ff-sans);
+  background: var(--accent);
+  color: #faf6ef;
+  border: 1px solid var(--accent-deep);
+  border-radius: var(--radius-sm);
+  padding: 0 18px;
+  height: var(--control-h);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.btn-accent:hover:not(:disabled) { background: var(--accent-deep); }
+.btn-accent:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.btn-ghost {
+  font-family: var(--ff-sans);
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  padding: 0 18px;
+  height: var(--control-h);
+  cursor: pointer;
+}
+.btn-ghost:hover { border-color: var(--accent-soft); color: var(--ink); }
+
+.launcher-root { min-height: 100vh; background: var(--bg-paper); color: var(--ink); }
+.launcher-header { display: flex; justify-content: flex-end; padding: 16px 24px; }
+.launcher-body { max-width: 880px; margin: 0 auto; padding: 24px 24px 64px; text-align: center; }
+.launcher-title { font-family: var(--ff-serif); font-size: 2.4rem; margin: 8px 0 4px; }
+.launcher-subtitle { font-family: var(--ff-sans); color: var(--ink-soft); margin: 0 0 28px; }
+.launcher-actions { margin-bottom: 32px; }
+.launcher-error { color: var(--danger); font-family: var(--ff-sans); margin: 12px 0; }
+.launcher-empty { font-family: var(--ff-sans); color: var(--ink-faint); }
+.launcher-grid {
+  list-style: none; padding: 0; margin: 0;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px;
+}
+
+.project-card {
+  display: flex; flex-direction: column; justify-content: space-between;
+  text-align: left; gap: 14px;
+  background: var(--bg-paper-card); border: 1px solid var(--rule);
+  border-radius: var(--radius-sm); padding: 18px; box-shadow: var(--shadow-lift);
+}
+.project-card--stale { opacity: 0.6; }
+.project-card__name { font-family: var(--ff-serif); font-size: 1.3rem; margin: 0 0 6px; }
+.project-card__path {
+  font-family: var(--ff-mono); font-size: 0.78rem; color: var(--ink-faint);
+  margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.project-card__stale { font-family: var(--ff-sans); font-size: 0.78rem; color: var(--warning); margin: 6px 0 0; }
+.project-card__open { align-self: flex-start; }
+
+.explorer-overlay {
+  position: fixed; inset: 0; background: rgba(42, 37, 32, 0.45);
+  display: flex; align-items: center; justify-content: center; z-index: 50;
+}
+.explorer-card {
+  width: min(560px, 92vw); max-height: 80vh; display: flex; flex-direction: column;
+  background: var(--bg-paper-card); border: 1px solid var(--rule);
+  border-radius: var(--radius-sm); padding: 24px; box-shadow: var(--shadow-pop);
+}
+.explorer-title { font-family: var(--ff-serif); font-size: 1.5rem; margin: 0 0 8px; }
+.explorer-current { font-family: var(--ff-mono); font-size: 0.8rem; color: var(--ink-faint); margin: 0 0 12px; }
+.explorer-list { flex: 1; overflow-y: auto; border: 1px solid var(--rule-soft); border-radius: var(--radius-sm); }
+.explorer-row {
+  display: block; width: 100%; text-align: left; font-family: var(--ff-sans);
+  background: transparent; border: none; border-bottom: 1px solid var(--rule-soft);
+  padding: 10px 14px; cursor: pointer; color: var(--ink);
+}
+.explorer-row:hover { background: var(--bg-paper-deep); }
+.explorer-row--up { color: var(--accent); }
+.explorer-empty { font-family: var(--ff-sans); color: var(--ink-faint); padding: 14px; margin: 0; }
+.explorer-hint { font-family: var(--ff-sans); font-size: 0.82rem; color: var(--ink-soft); margin: 12px 0; }
+.explorer-actions { display: flex; justify-content: flex-end; gap: 12px; }
