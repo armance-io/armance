@@ -28,8 +28,7 @@ async def get_config(
     _user: str = Depends(get_current_user),
     app_state: AppState = Depends(get_app_state),
 ) -> dict[str, Any]:
-    repo_root = app_state.armance_root.parent
-    cfg = load_config(repo_root)
+    cfg = load_config()
     return _config_to_dict_safe(cfg)
 
 
@@ -40,13 +39,12 @@ async def patch_config(
     _user: str = Depends(get_current_user),
     app_state: AppState = Depends(get_app_state),
 ) -> dict[str, Any]:
-    repo_root = app_state.armance_root.parent
-    current = load_config(repo_root)
+    current = load_config()
     try:
         updated = validate_config_patch(current, patch)
     except ConfigValidationError as exc:
         raise HTTPException(status_code=422, detail={"fields": exc.fields}) from exc
-    save_config(repo_root, updated)
+    save_config(updated)
     from armance.providers.discovery import reset_cache
     reset_cache()
     return _config_to_dict_safe(updated)

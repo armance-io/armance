@@ -30,15 +30,15 @@ router = APIRouter(prefix="/projects/{pid}", tags=["sessions"])
 
 
 def _check_initialised(armance_root: Path, pid: str) -> None:
-    """Raise 409 if the project is not yet initialised.
+    """Raise 409 if Armance is not yet initialised.
 
-    "Initialised" = `.armance/config.yaml` exists (the same path load_config
-    reads). Never write or overwrite config here — a previous version checked
-    the wrong path (`<root>/config.yaml`) and silently clobbered the user's
-    real config with a Gemini default on every launch.
+    Clean break (grandma launcher): "initialised" = the GLOBAL config.yaml
+    exists (the same path ``load_config`` reads). Config is machine-wide, not
+    per project folder. Never write or overwrite config here.
     """
-    config_path = armance_root / "config.yaml"
-    if not config_path.exists():
+    from armance import paths
+
+    if not paths.global_config_path().exists():
         raise HTTPException(
             status_code=409,
             detail={"error": "not_initialised", "redirect": "/setup"},
@@ -58,7 +58,7 @@ def _load_web_session(
         return ws
 
     try:
-        cfg = load_config(armance_root.parent)
+        cfg = load_config()
     except Exception as exc:
         raise HTTPException(
             status_code=409,
@@ -111,7 +111,7 @@ async def create_session(
     _check_initialised(armance_root, pid)
 
     try:
-        cfg = load_config(armance_root.parent)
+        cfg = load_config()
     except Exception as exc:
         raise HTTPException(status_code=409, detail={"error": "not_initialised", "redirect": "/setup"}) from exc
 
@@ -160,7 +160,7 @@ async def get_latest_session(
     if not sid:
         # Create a default session automatically just like POST /sessions
         try:
-            cfg = load_config(armance_root.parent)
+            cfg = load_config()
         except Exception as exc:
             raise HTTPException(status_code=409, detail={"error": "not_initialised", "redirect": "/setup"}) from exc
 

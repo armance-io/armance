@@ -39,7 +39,7 @@ async def _discover_embedding(armance_root) -> list[dict[str, Any]]:
         discover_openrouter_embedding_models,
     )
 
-    cfg = load_config(armance_root.parent)
+    cfg = load_config()
     providers = cfg.providers or [ProviderConfig(name=n) for n in _DEFAULT_PROVIDERS]
 
     out: list[dict[str, Any]] = []

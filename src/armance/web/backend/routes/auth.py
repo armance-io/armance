@@ -10,7 +10,6 @@ from pydantic import BaseModel
 
 from armance.config import load_config
 from armance.service import security
-from armance.web.backend.deps import get_app_state
 
 COOKIE_NAME = "armance_session_token"
 
@@ -33,8 +32,8 @@ def _present_secret(request: Request) -> str | None:
 
 
 def _config(request: Request):
-    state = get_app_state(request)
-    return load_config(state.armance_root.parent)
+    # Config is global (clean break); request is kept for signature stability.
+    return load_config()
 
 
 @router.get("/auth/verify")
