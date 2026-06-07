@@ -1044,7 +1044,7 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     from armance.config import load_config as _load_cfg
     from armance.service import security as _security
     try:
-        _web_cfg = _load_cfg(root)
+        _web_cfg = _load_cfg()
     except Exception:  # noqa: BLE001 — config may be absent; fall back to a token
         from armance.config import Config as _Cfg2
         _web_cfg = _Cfg2()
@@ -1257,12 +1257,32 @@ def cmd_launcher() -> int:
     first run from any folder never litters a stray ``.armance`` there). No
     global config yet → the browser lands on the setup wizard; otherwise on the
     launcher window.
+
+    Epic S: the page's first API call is gated. We resolve the web secret in the
+    parent, pin it via ``ARMANCE_WEB_PASSWORD`` so the child server agrees, and
+    open the browser with ``?token=`` when the secret was auto-generated — so
+    SEC5 auto-login sets the cookie and the grandma never hits a login wall. A
+    configured password is never put in the URL.
     """
     from armance import paths
+    from armance.config import Config, load_config
+    from armance.service import security
 
     configured = paths.global_config_path().exists()
     target = "/launcher" if configured else "/setup"
-    _open_launcher_browser(target)
+
+    try:
+        cfg = load_config()
+    except Exception:  # noqa: BLE001 — first run: no config yet
+        cfg = Config()
+    # Determine auto-generation BEFORE pinning the env var (which would
+    # otherwise make was_auto_generated see a "configured" secret).
+    secret = security.resolve_web_secret(cfg)
+    auto = security.was_auto_generated(cfg)
+    os.environ["ARMANCE_WEB_PASSWORD"] = secret  # child server uses the same secret
+
+    query = f"?token={secret}" if auto else ""
+    _open_launcher_browser(f"{target}{query}")
     return cmd_web(paths.global_config_dir(), ["--no-browser"])
 
 
