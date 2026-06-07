@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # Armance installer — installs or upgrades from GitHub
-# Usage: curl -sSL https://raw.githubusercontent.com/armance-io/armance/feat/spec-rework-05-2026/install.sh | sh
+# Usage: curl -sSL https://raw.githubusercontent.com/armance-io/armance/main/install.sh | sh
 set -e
 
 REPO="https://github.com/armance-io/armance.git"
