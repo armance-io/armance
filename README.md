@@ -67,6 +67,8 @@ Plus the **specialists** Malik recruits per project (UX researchers, historians,
 ## Install
 
 Project home: **[armance.io](https://armance.io)** *(site coming soon)*.
+For the full, OS-by-OS guide (and a copy-paste prompt to let an AI agent
+install it for you), see **[`INSTALL.md`](INSTALL.md)**.
 
 ### Prerequisites
 
