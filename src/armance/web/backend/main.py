@@ -26,7 +26,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from armance.web.backend.state import AppState
-from armance.web.backend.routes import health, whoami, sessions, turn, events, checkpoint, docs, library, library_docs, library_delete, library_action, exports, runs, agents, providers, embedding_models, hypotheses, workflows, active_workflow, sidecars, admin, admin_config, admin_secrets, admin_logs, admin_stats, admin_agents, deliverables, setup, auth
+from armance.web.backend.routes import health, whoami, sessions, turn, events, checkpoint, docs, library, library_docs, library_delete, library_action, exports, runs, agents, providers, embedding_models, hypotheses, workflows, active_workflow, sidecars, admin, admin_config, admin_secrets, admin_logs, admin_stats, admin_agents, deliverables, setup, auth, launcher
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +130,7 @@ def create_app() -> FastAPI:
             admin.router, admin_config.router, admin_secrets.router,
             admin_logs.router, admin_stats.router, admin_agents.router,
             deliverables.router, setup.router, auth.router,
+            launcher.router,
         ):
             api.include_router(r)
         app.include_router(api)
