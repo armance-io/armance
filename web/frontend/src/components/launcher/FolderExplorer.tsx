@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { browseFolders, type BrowseResult } from "@/lib/api";
+import { browseFolders, makeFolder, type BrowseResult } from "@/lib/api";
 
 export interface FolderExplorerProps {
   onSelect: (path: string) => void;
@@ -11,20 +11,34 @@ export interface FolderExplorerProps {
 }
 
 /**
- * Minimal server-side folder picker (DESIGN.md parchment modal). Starts at the
- * user's home dir, descends one level at a time, and never traverses above the
- * root the backend enforces.
+ * Minimal server-side folder picker (DESIGN.md parchment modal). Opens at the
+ * user's home dir and navigates the local filesystem one level at a time; can
+ * also create a new folder in the current directory.
  */
 export function FolderExplorer({ onSelect, onCancel }: FolderExplorerProps) {
   const { t } = useTranslation();
   const [view, setView] = useState<BrowseResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [newName, setNewName] = useState("");
 
   function load(path?: string) {
     setError(null);
     browseFolders(path)
       .then((r) => setView(r))
       .catch(() => setError(t("launcher:error.browse_failed")));
+  }
+
+  async function createFolder() {
+    const name = newName.trim();
+    if (!name || !view) return;
+    setError(null);
+    try {
+      const dir = await makeFolder(view.path, name);
+      setNewName("");
+      load(dir.path); // descend into the freshly created folder
+    } catch {
+      setError(t("launcher:error.mkdir_failed"));
+    }
   }
 
   useEffect(() => {
@@ -71,6 +85,29 @@ export function FolderExplorer({ onSelect, onCancel }: FolderExplorerProps) {
               {d.name}
             </button>
           ))}
+        </div>
+
+        <div className="explorer-newfolder">
+          <input
+            type="text"
+            className="explorer-input"
+            data-testid="explorer-newfolder-input"
+            placeholder={t("launcher:browse.new_folder_placeholder")}
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") void createFolder();
+            }}
+          />
+          <button
+            type="button"
+            className="btn-ghost"
+            data-testid="explorer-newfolder-create"
+            disabled={!newName.trim() || !view}
+            onClick={() => void createFolder()}
+          >
+            {t("launcher:browse.new_folder")}
+          </button>
         </div>
 
         <p className="explorer-hint">{t("launcher:browse.create_hint")}</p>

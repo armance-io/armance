@@ -60,3 +60,29 @@ def test_symlink_escape_rejected(tmp_path: Path) -> None:
 def test_nonexistent_path_rejected(tmp_path: Path) -> None:
     with pytest.raises(br.BrowseError):
         br.browse(tmp_path / "nope", root=tmp_path)
+
+
+def test_make_dir_creates_subdir(tmp_path: Path) -> None:
+    created = br.make_dir(tmp_path, "MyProject", root=tmp_path)
+    assert created == (tmp_path / "MyProject").resolve()
+    assert (tmp_path / "MyProject").is_dir()
+
+
+def test_make_dir_rejects_name_traversal(tmp_path: Path) -> None:
+    for bad in ("../escape", "a/b", "..", ".", ""):
+        with pytest.raises(br.BrowseError):
+            br.make_dir(tmp_path, bad, root=tmp_path)
+
+
+def test_make_dir_rejects_parent_outside_root(tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    root.mkdir()
+    with pytest.raises(br.BrowseError):
+        br.make_dir(tmp_path, "x", root=root)  # tmp_path is above root
+
+
+def test_make_dir_idempotent_existing(tmp_path: Path) -> None:
+    (tmp_path / "exists").mkdir()
+    # Creating an existing dir is fine (returns it), not an error.
+    created = br.make_dir(tmp_path, "exists", root=tmp_path)
+    assert created == (tmp_path / "exists").resolve()
