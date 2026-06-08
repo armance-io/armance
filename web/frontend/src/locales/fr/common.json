@@ -612,12 +612,15 @@
       "up": "Remonter",
       "empty": "Aucun sous-dossier ici.",
       "cancel": "Annuler",
-      "create_hint": "Un nouveau projet sera créé dans le dossier sélectionné."
+      "create_hint": "Un nouveau projet sera créé dans le dossier sélectionné.",
+      "new_folder": "Nouveau dossier",
+      "new_folder_placeholder": "Nom du nouveau dossier"
     },
     "error": {
       "open_failed": "Impossible d'ouvrir ce projet.",
       "new_failed": "Impossible de créer le projet ici.",
-      "browse_failed": "Impossible de lister ce dossier."
+      "browse_failed": "Impossible de lister ce dossier.",
+      "mkdir_failed": "Impossible de créer le dossier."
     }
   }
 }
