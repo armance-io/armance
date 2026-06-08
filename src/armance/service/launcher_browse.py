@@ -62,3 +62,23 @@ def browse(path: Path, root: Path) -> dict[str, Any]:
         "parent": parent,
         "dirs": dirs,
     }
+
+
+def make_dir(parent: Path, name: str, root: Path) -> Path:
+    """Create directory *name* inside *parent*, confined to *root*.
+
+    *name* must be a single path component (no separators, no ``..``) — that is
+    the real guard, so a crafted name can't escape *parent*. *parent* itself is
+    confined via :func:`_confined_resolve`. Creating an existing directory is a
+    no-op (returns it). Raises :class:`BrowseError` on an invalid name or an
+    out-of-root parent.
+    """
+    if name != Path(name).name or name in ("", ".", ".."):
+        raise BrowseError(f"invalid folder name: {name!r}")
+    real_parent = _confined_resolve(parent, root)
+    target = real_parent / name
+    try:
+        target.mkdir(exist_ok=True)
+    except OSError as exc:
+        raise BrowseError(f"could not create folder: {exc}") from exc
+    return target.resolve()

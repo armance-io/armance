@@ -78,11 +78,58 @@ async def test_browse_lists_subdirs(client: AsyncClient, monkeypatch, tmp_path: 
 
 
 @pytest.mark.asyncio
-async def test_browse_traversal_rejected(client: AsyncClient, monkeypatch, tmp_path: Path) -> None:
-    home = tmp_path / "home"
-    home.mkdir()
+async def test_browse_can_leave_home(client: AsyncClient, monkeypatch, tmp_path: Path) -> None:
+    """Local single user: the picker can navigate above/outside home."""
+    home = tmp_path / "home" / "sub"
+    home.mkdir(parents=True)
     monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
 
-    resp = await client.get("/launcher/browse", params={"path": "/etc"})
+    # Navigate to the parent of home — previously rejected, now allowed.
+    resp = await client.get("/launcher/browse", params={"path": str(tmp_path)})
+    assert resp.status_code == 200
+    assert resp.json()["parent"] is not None  # not at the FS anchor
+
+
+@pytest.mark.asyncio
+async def test_browse_nonexistent_rejected(client: AsyncClient, tmp_path: Path) -> None:
+    resp = await client.get("/launcher/browse", params={"path": str(tmp_path / "nope")})
     assert resp.status_code == 400
     assert resp.json()["error"] == "invalid_path"
+
+
+@pytest.mark.asyncio
+async def test_mkdir_creates_folder(client: AsyncClient, tmp_path: Path) -> None:
+    resp = await client.post(
+        "/launcher/mkdir", json={"path": str(tmp_path), "name": "NewProj"}
+    )
+    assert resp.status_code == 200
+    assert (tmp_path / "NewProj").is_dir()
+    assert resp.json()["name"] == "NewProj"
+
+
+@pytest.mark.asyncio
+async def test_mkdir_rejects_bad_name(client: AsyncClient, tmp_path: Path) -> None:
+    resp = await client.post(
+        "/launcher/mkdir", json={"path": str(tmp_path), "name": "../escape"}
+    )
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_filesystem_routes_non_loopback_forbidden(armance_root: Path) -> None:
+    """browse / mkdir are loopback-only (403 from a remote IP)."""
+    from armance.web.backend.main import create_app
+    from armance.web.backend.state import AppState
+    from .conftest import AUTH_COOKIES
+
+    app = create_app()
+    app.state.app_state = AppState(armance_root=armance_root)
+    async with AsyncClient(
+        transport=ASGITransport(app=app, client=("8.8.8.8", 0)),
+        base_url="http://test",
+        cookies=AUTH_COOKIES,
+    ) as remote:
+        b = await remote.get("/launcher/browse")
+        m = await remote.post("/launcher/mkdir", json={"path": "/tmp", "name": "x"})
+    assert b.status_code == 403
+    assert m.status_code == 403
