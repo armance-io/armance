@@ -1335,7 +1335,8 @@ def main(argv: list[str] | None = None) -> int:
         print(
             "usage: armance {init,run,index,doctor,workflow,web,install-shortcut} "
             "[--version]\n"
-            "  (run `armance` with no arguments to open the launcher)",
+            "  armance            open the launcher (no arguments)\n"
+            "  armance --stop     stop the launcher server",
             file=sys.stderr,
         )
         return 0
