@@ -795,4 +795,8 @@ export async function browseFolders(path?: string): Promise<BrowseResult> {
   return api.get<BrowseResult>(`/launcher/browse${q}`);
 }
 
+export async function makeFolder(path: string, name: string): Promise<BrowseEntry> {
+  return api.post<BrowseEntry>("/launcher/mkdir", { path, name });
+}
+
 

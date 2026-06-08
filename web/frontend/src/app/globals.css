@@ -174,3 +174,10 @@ a:hover { color: var(--accent-deep); }
 .explorer-empty { font-family: var(--ff-sans); color: var(--ink-faint); padding: 14px; margin: 0; }
 .explorer-hint { font-family: var(--ff-sans); font-size: 0.82rem; color: var(--ink-soft); margin: 12px 0; }
 .explorer-actions { display: flex; justify-content: flex-end; gap: 12px; }
+.explorer-newfolder { display: flex; gap: 8px; margin-top: 12px; }
+.explorer-input {
+  flex: 1; font-family: var(--ff-sans); color: var(--ink);
+  background: var(--bg-paper); border: 1px solid var(--rule);
+  border-radius: var(--radius-sm); padding: 0 12px; height: var(--control-h);
+}
+.explorer-input:focus { outline: none; border-color: var(--accent-soft); }

@@ -7,12 +7,14 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@/lib/api", () => ({
   browseFolders: vi.fn(),
+  makeFolder: vi.fn(),
 }));
 
 import * as api from "@/lib/api";
 import { FolderExplorer } from "../FolderExplorer";
 
 const browseFolders = vi.mocked(api.browseFolders);
+const makeFolder = vi.mocked(api.makeFolder);
 
 const HOME = {
   path: "/home/u",
@@ -22,7 +24,10 @@ const HOME = {
 };
 
 describe("FolderExplorer", () => {
-  beforeEach(() => browseFolders.mockReset());
+  beforeEach(() => {
+    browseFolders.mockReset();
+    makeFolder.mockReset();
+  });
 
   it("lists subdirs of the starting folder", async () => {
     browseFolders.mockResolvedValue(HOME);
@@ -61,6 +66,54 @@ describe("FolderExplorer", () => {
     render(<FolderExplorer onSelect={vi.fn()} onCancel={vi.fn()} />);
     await waitFor(() => screen.getByTestId("explorer-dir"));
     fireEvent.click(screen.getByTestId("explorer-dir"));
+    expect(await screen.findByTestId("explorer-error")).toBeInTheDocument();
+  });
+});
+
+describe("FolderExplorer — new folder", () => {
+  beforeEach(() => {
+    browseFolders.mockReset();
+    makeFolder.mockReset();
+  });
+
+  it("creates a folder and descends into it", async () => {
+    browseFolders
+      .mockResolvedValueOnce(HOME)
+      .mockResolvedValueOnce({
+        path: "/home/u/NewProj",
+        root: "/home/u",
+        parent: "/home/u",
+        dirs: [],
+      });
+    makeFolder.mockResolvedValue({ path: "/home/u/NewProj", name: "NewProj" });
+
+    render(<FolderExplorer onSelect={vi.fn()} onCancel={vi.fn()} />);
+    await waitFor(() => screen.getByTestId("explorer-newfolder-input"));
+
+    fireEvent.change(screen.getByTestId("explorer-newfolder-input"), {
+      target: { value: "NewProj" },
+    });
+    fireEvent.click(screen.getByTestId("explorer-newfolder-create"));
+
+    await waitFor(() =>
+      expect(makeFolder).toHaveBeenCalledWith("/home/u", "NewProj"),
+    );
+    await waitFor(() =>
+      expect(browseFolders).toHaveBeenLastCalledWith("/home/u/NewProj"),
+    );
+  });
+
+  it("shows an error when folder creation fails", async () => {
+    browseFolders.mockResolvedValue(HOME);
+    makeFolder.mockImplementation(async () => {
+      throw new Error("nope");
+    });
+    render(<FolderExplorer onSelect={vi.fn()} onCancel={vi.fn()} />);
+    await waitFor(() => screen.getByTestId("explorer-newfolder-input"));
+    fireEvent.change(screen.getByTestId("explorer-newfolder-input"), {
+      target: { value: "X" },
+    });
+    fireEvent.click(screen.getByTestId("explorer-newfolder-create"));
     expect(await screen.findByTestId("explorer-error")).toBeInTheDocument();
   });
 });
