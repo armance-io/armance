@@ -33,9 +33,10 @@ def test_launcher_first_run_opens_setup(monkeypatch, isolate_global_config: Path
     """No global config → launcher boots in setup mode (browser → /setup)."""
     opened = {}
 
-    def _fake_cmd_web(root=None, remaining=None) -> int:
+    def _fake_cmd_web(root=None, remaining=None, *, data_dir=None) -> int:
         opened["root"] = root
         opened["remaining"] = remaining
+        opened["data_dir"] = data_dir
         return 0
 
     # A fixed password → no token in the URL (a configured secret never travels
@@ -50,8 +51,10 @@ def test_launcher_first_run_opens_setup(monkeypatch, isolate_global_config: Path
     assert rc == 0
     # The browser is pointed at the setup wizard (no token — password is fixed).
     assert opened.get("path") == "/setup"
-    # The launcher server is homed in the global config dir, not cwd.
+    # The launcher server is homed in the global config dir — both as the root
+    # and as the data dir (no nested .armance under ~/.config/armance).
     assert opened["root"] == paths.global_config_dir()
+    assert opened["data_dir"] == paths.global_config_dir()
 
 
 def test_launcher_auto_token_in_url(monkeypatch, isolate_global_config: Path) -> None:
@@ -66,7 +69,7 @@ def test_launcher_auto_token_in_url(monkeypatch, isolate_global_config: Path) ->
     monkeypatch.delenv("ARMANCE_WEB_PASSWORD", raising=False)
     security.reset_web_secret_cache()
     opened = {}
-    monkeypatch.setattr(cli, "cmd_web", lambda root=None, remaining=None: 0)
+    monkeypatch.setattr(cli, "cmd_web", lambda root=None, remaining=None, **kw: 0)
     monkeypatch.setattr(cli, "_open_launcher_browser", lambda path: opened.setdefault("path", path))
 
     rc = cli.cmd_launcher()
@@ -77,10 +80,38 @@ def test_launcher_auto_token_in_url(monkeypatch, isolate_global_config: Path) ->
     assert os.environ["ARMANCE_WEB_PASSWORD"] == token
 
 
+def test_bare_stop_routes_to_launcher_stop(monkeypatch) -> None:
+    """`armance --stop` stops the global-homed launcher from any cwd."""
+    captured = {}
+
+    def _stub(stop: bool = False) -> int:
+        captured["stop"] = stop
+        return 0
+
+    monkeypatch.setattr(cli, "cmd_launcher", _stub)
+    rc = cli.main(["--stop"])
+    assert rc == 0
+    assert captured.get("stop") is True
+
+
+def test_launcher_stop_targets_global_home(monkeypatch, isolate_global_config: Path) -> None:
+    """cmd_launcher(stop=True) stops the server at the global config dir."""
+    seen = {}
+
+    def _fake_stop(data_dir):
+        seen["data_dir"] = data_dir
+        return True, "stopped"
+
+    monkeypatch.setattr("armance.web.server_lock.stop_server", _fake_stop)
+    rc = cli.cmd_launcher(stop=True)
+    assert rc == 0
+    assert seen["data_dir"] == paths.global_config_dir()
+
+
 def test_launcher_configured_opens_launcher(monkeypatch, isolate_global_config: Path) -> None:
     """Global config present → browser opens the launcher window."""
     opened = {}
-    monkeypatch.setattr(cli, "cmd_web", lambda root=None, remaining=None: 0)
+    monkeypatch.setattr(cli, "cmd_web", lambda root=None, remaining=None, **kw: 0)
     monkeypatch.setattr(cli, "_open_launcher_browser", lambda path: opened.setdefault("path", path))
 
     paths.global_config_path().write_text("language: en\n", encoding="utf-8")

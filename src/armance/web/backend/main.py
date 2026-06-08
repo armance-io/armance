@@ -31,14 +31,19 @@ logger = logging.getLogger(__name__)
 
 
 def _resolve_armance_root() -> Path:
-    """Resolve the .armance directory from the ARMANCE_ROOT env var or cwd."""
+    """Resolve the boot ``.armance`` data dir.
+
+    ``ARMANCE_DATA_DIR`` (if set) is used verbatim — the launcher points this at
+    the global config dir so it does not nest a redundant ``.armance``.
+    Otherwise ``ARMANCE_ROOT`` (or cwd) is a project folder and ``.armance`` is
+    appended.
+    """
+    data = os.environ.get("ARMANCE_DATA_DIR")
+    if data:
+        return Path(data)
     env = os.environ.get("ARMANCE_ROOT")
-    if env:
-        root = Path(env)
-    else:
-        root = Path.cwd()
-    armance_root = root / ".armance"
-    return armance_root
+    root = Path(env) if env else Path.cwd()
+    return root / ".armance"
 
 
 def _resolve_static_dir() -> Path | None:
