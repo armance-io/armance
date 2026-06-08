@@ -940,7 +940,12 @@ def _build_web_bundle() -> int:
     return 0
 
 
-def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -> int:
+def cmd_web(
+    repo_root: Path | None = None,
+    remaining: list[str] | None = None,
+    *,
+    data_dir: Path | None = None,
+) -> int:
     """Start the Armance web UI (FastAPI backend + optional browser open)."""
     import argparse
     import subprocess
@@ -970,17 +975,21 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     web_args, _ = web_parser.parse_known_args(remaining or [])
 
     root = repo_root or Path.cwd()
+    # The server's runtime files (pidfile, logs) live in `data_dir`. Normally
+    # that is the project's <folder>/.armance; the launcher passes the global
+    # config dir directly so it does not nest a redundant .armance there.
+    data_dir = data_dir if data_dir is not None else root / ".armance"
 
     # `armance web stop` (positional) is an alias for `armance web --stop`.
     if web_args.stop or "stop" in (remaining or []):
         from armance.web.server_lock import stop_server
-        stopped, message = stop_server(root)
+        stopped, message = stop_server(data_dir)
         print(message, file=sys.stderr if not stopped else sys.stdout)
         return 0 if stopped else 1
 
     # One instance per folder: refuse to launch over a live server.
     from armance.web.server_lock import read_lock, write_lock, clear_lock
-    existing = read_lock(root)
+    existing = read_lock(data_dir)
     if existing is not None:
         print(
             f"Armance web is already running in this folder "
@@ -1107,6 +1116,7 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
         )
 
     env = {**os.environ, "ARMANCE_ROOT": str(root),
+           "ARMANCE_DATA_DIR": str(data_dir),
            "ARMANCE_WEB_PASSWORD": _web_secret}
     cmd = [
         sys.executable, "-m", "uvicorn",
@@ -1129,14 +1139,14 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
         proc = None
         try:
             proc = subprocess.Popen(cmd, env=env, start_new_session=True)
-            write_lock(root, proc.pid, port)
+            write_lock(data_dir, proc.pid, port)
             rc = proc.wait()
         except KeyboardInterrupt:
             if proc is not None:
                 proc.terminate()
             rc = 0
         finally:
-            clear_lock(root)
+            clear_lock(data_dir)
         if rc not in (0, None):
             print(f"web server exited with code {rc}", file=sys.stderr)
             return rc
@@ -1145,7 +1155,7 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     # Default: run the server in the background and return 0. Logs go to
     # .armance/logs/web-server.log instead of the terminal, so the shell is
     # freed and the window stays clean.
-    log_dir = root / ".armance" / "logs"
+    log_dir = data_dir / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / "web-server.log"
     log_file = open(log_path, "a", encoding="utf-8")  # noqa: SIM115 — handed to the child
@@ -1189,7 +1199,7 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
         return 1
 
     # Server is up: record the single-instance lock for this folder.
-    write_lock(root, proc.pid, port)
+    write_lock(data_dir, proc.pid, port)
 
     if open_browser:
         import webbrowser
@@ -1250,7 +1260,7 @@ def _open_launcher_browser(path: str, port: int = 8000) -> None:
     threading.Thread(target=_wait_and_open, daemon=True).start()
 
 
-def cmd_launcher() -> int:
+def cmd_launcher(stop: bool = False) -> int:
     """Bare `armance`: open the launcher (or first-run setup) in the browser.
 
     Grandma path. The launcher server is homed in the GLOBAL config dir (so a
@@ -1268,6 +1278,17 @@ def cmd_launcher() -> int:
     from armance.config import Config, load_config
     from armance.service import security
 
+    launcher_home = paths.global_config_dir()
+
+    # `armance --stop`: stop the launcher server, homed in the global dir (so it
+    # is reachable from any cwd — symmetric with bare `armance` = launch).
+    if stop:
+        from armance.web.server_lock import stop_server
+
+        stopped, message = stop_server(launcher_home)
+        print(message, file=sys.stderr if not stopped else sys.stdout)
+        return 0 if stopped else 1
+
     configured = paths.global_config_path().exists()
     target = "/launcher" if configured else "/setup"
 
@@ -1283,7 +1304,7 @@ def cmd_launcher() -> int:
 
     query = f"?token={secret}" if auto else ""
     _open_launcher_browser(f"{target}{query}")
-    return cmd_web(paths.global_config_dir(), ["--no-browser"])
+    return cmd_web(launcher_home, ["--no-browser"], data_dir=launcher_home)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1305,6 +1326,10 @@ def main(argv: list[str] | None = None) -> int:
     # first-run setup wizard) in the browser. Explicit help still prints usage.
     if not argv:
         return cmd_launcher()
+
+    # `armance --stop` (bare): stop the launcher server homed in the global dir.
+    if argv[0] == "--stop":
+        return cmd_launcher(stop=True)
 
     if argv[0] in ("-h", "--help", "help"):
         print(
