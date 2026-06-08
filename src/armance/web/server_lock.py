@@ -58,7 +58,7 @@ def _pid_alive(pid: int) -> bool:
 
 
 def read_lock(data_dir: Path) -> LockInfo | None:
-    """Return the live lock for *root*, or None.
+    """Return the live lock in *data_dir*, or None.
 
     A pidfile whose process is no longer running is stale: it is removed and
     None is returned, so a fresh launch can proceed.
@@ -106,7 +106,7 @@ def _remove(path: Path) -> None:
 
 
 def stop_server(data_dir: Path, *, timeout: float = 10.0) -> tuple[bool, str]:
-    """Stop the running server for *root*.
+    """Stop the running server recorded in *data_dir*.
 
     Returns ``(stopped, message)``. ``stopped`` is False when no live server
     was found. Sends SIGTERM (to the process group on POSIX), waits up to
