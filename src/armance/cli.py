@@ -447,7 +447,7 @@ def cmd_init(
 
     budget_effort = questionary.select(
         "Budget effort — cost constraint for agents (adjustable at runtime via /effort)",
-        choices=["free-first", "low", "medium", "high", "adaptive"],
+        choices=["free-first", "low", "medium", "high", "adaptive", "optimised"],
         default="free-first",
         use_arrow_keys=True,
         style=_SELECT_STYLE,
@@ -1349,7 +1349,7 @@ def main(argv: list[str] | None = None) -> int:
         init_parser.add_argument("--embedding-provider", default=None)
         init_parser.add_argument("--embedding-model", default=None)
         init_parser.add_argument("--budget", default=None,
-                                 choices=["free-first", "low", "medium", "high", "adaptive"])
+                                 choices=["free-first", "low", "medium", "high", "adaptive", "optimised"])
         init_parser.add_argument("--language", default=None,
                                  choices=["en", "fr", "es", "de", "zh", "ja"])
         init_args = init_parser.parse_args(remaining)
