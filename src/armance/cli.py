@@ -445,13 +445,25 @@ def cmd_init(
     ).ask()
     default_model = _ask_default_model(default_provider, providers)
 
+    # Two curated postures (2026-06-10). The historical low/medium/high/
+    # adaptive values stay valid in config.yaml for power users.
     budget_effort = questionary.select(
-        "Budget effort — cost constraint for agents (adjustable at runtime via /effort)",
-        choices=["free-first", "low", "medium", "high", "adaptive", "optimised"],
-        default="free-first",
+        "Recruitment posture (adjustable at runtime via /effort)",
+        choices=[
+            questionary.Choice(
+                "optimised — the most frugal model that truly fits each agent; "
+                "stronger fallback for demanding needs (environment first)",
+                value="optimised",
+            ),
+            questionary.Choice(
+                "free-first — free models and free API quotas only (zero cost)",
+                value="free-first",
+            ),
+        ],
+        default="optimised",
         use_arrow_keys=True,
         style=_SELECT_STYLE,
-    ).ask() or "free-first"
+    ).ask() or "optimised"
 
     embedding_provider, embedding_model = _ask_embedding(selected, providers, language=language)
 

@@ -165,5 +165,14 @@
     "detail": {
       "title": "Lauf-Details — {{runId}}"
     }
+  },
+  "setup": {
+    "step_zone": "Wo arbeiten Sie? (Stromnetz)",
+    "zone_hint": "Verfeinert die CO2-Schätzung anhand Ihres Netzes. WOR = Weltdurchschnitt.",
+    "budget_free_name": "Zuerst kostenlos",
+    "budget_free_desc": "Nur kostenlose Modelle und API-Freikontingente. Null Kosten — variable Leistung.",
+    "budget_opt_name": "Optimiert",
+    "budget_opt_desc": "Malik wählt das sparsamste Modell, das der Aufgabe jedes Agenten wirklich gewachsen ist, mit stärkerem Rückgriff für anspruchsvolle Fälle. Umwelt zuerst, dann Kosten.",
+    "recommended": "EMPFOHLEN"
   }
 }

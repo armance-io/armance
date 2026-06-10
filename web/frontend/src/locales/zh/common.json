@@ -165,5 +165,14 @@
     "detail": {
       "title": "运行详情 — {{runId}}"
     }
+  },
+  "setup": {
+    "step_zone": "您在哪里运行？（电网）",
+    "zone_hint": "根据您的电网细化每次对话的 CO2 估算。WOR = 世界平均值。",
+    "budget_free_name": "免费优先",
+    "budget_free_desc": "仅使用免费模型和免费 API 配额。零成本——能力不一。",
+    "budget_opt_name": "优化",
+    "budget_opt_desc": "Malik 为每个智能体挑选真正胜任且最节制的模型，并为高要求任务提供更强的后备。环境优先，其次是成本。",
+    "recommended": "推荐"
   }
 }

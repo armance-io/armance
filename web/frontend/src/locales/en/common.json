@@ -592,7 +592,14 @@
       "low": "Low",
       "medium": "Medium",
       "high": "High"
-    }
+    },
+    "step_zone": "Where do you run? (electricity grid)",
+    "zone_hint": "Refines the CO2 estimate of every conversation to your grid. WOR = world average.",
+    "budget_free_name": "Free first",
+    "budget_free_desc": "Only free models and free API quotas. Zero cost — capability varies.",
+    "budget_opt_name": "Optimised",
+    "budget_opt_desc": "Malik picks the most frugal model that truly fits each agent's job, and grants a stronger fallback for the demanding ones. Environment first, then cost.",
+    "recommended": "RECOMMENDED"
   },
   "session": {
     "selector": {
