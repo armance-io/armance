@@ -20,6 +20,11 @@ def isolate_global_config(monkeypatch, tmp_path_factory):
     """
     global_dir = tmp_path_factory.mktemp("armance_global")
     monkeypatch.setenv("ARMANCE_CONFIG_DIR", str(global_dir))
+    
+    from armance.config import _install_builtin_agents
+    (global_dir / "agents" / "builtin").mkdir(parents=True, exist_ok=True)
+    _install_builtin_agents(global_dir, None)
+    
     return global_dir
 
 

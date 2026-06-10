@@ -945,6 +945,7 @@ def cmd_web(
     remaining: list[str] | None = None,
     *,
     data_dir: Path | None = None,
+    launch_url_suffix: str = "",
 ) -> int:
     """Start the Armance web UI (FastAPI backend + optional browser open)."""
     import argparse
@@ -991,10 +992,13 @@ def cmd_web(
     from armance.web.server_lock import read_lock, write_lock, clear_lock
     existing = read_lock(data_dir)
     if existing is not None:
+        from armance import paths
+        is_launcher = (data_dir == paths.global_config_dir())
+        stop_cmd = "armance stop" if is_launcher else "armance web --stop (or armance stop)"
         print(
             f"Armance web is already running in this folder "
             f"(pid {existing.pid}, port {existing.port}).\n"
-            f"  stop it: armance web --stop",
+            f"  stop it: {stop_cmd}",
             file=sys.stderr,
         )
         return 1
@@ -1061,7 +1065,9 @@ def cmd_web(
     _web_secret_auto = _security.was_auto_generated(_web_cfg)
     # The auto-generated token is safe to put in the URL (ephemeral, local).
     # A persistent password must never travel in the query string.
-    if _web_secret_auto:
+    if launch_url_suffix:
+        url = f"http://127.0.0.1:{port}{launch_url_suffix}"
+    elif _web_secret_auto:
         url = f"http://127.0.0.1:{port}/?token={_web_secret}"
 
     # Foreground mode blocks in subprocess.run below, so the browser must be
@@ -1210,13 +1216,20 @@ def cmd_web(
             f"[SECURITY] Web interface access token: {_web_secret}\n"
             f"[SECURITY] Access the UI via: {url}",
         )
+        if not web_args.foreground:
+            with log_path.open("a", encoding="utf-8") as f:
+                f.write(f"\n[SECURITY] Web interface access token: {_web_secret}\n")
+                f.write(f"[SECURITY] Access the UI via: {url}\n")
     else:
         print("[SECURITY] Web interface protected by your configured password.")
 
+    from armance import paths
+    is_launcher = (data_dir == paths.global_config_dir())
+    stop_cmd = "armance stop" if is_launcher else "armance web --stop (ou armance stop)"
     print(
         f"✓ Armance web running at http://{bind}:{port}  (pid {proc.pid})\n"
         f"  logs: {log_path}\n"
-        f"  stop: armance web --stop",
+        f"  stop: {stop_cmd}",
     )
     return 0
 
@@ -1228,36 +1241,6 @@ def cmd_install_shortcut() -> int:
     result = install_shortcut()
     print(("✓ " if result.ok else "⚠ ") + result.message)
     return 0 if result.ok else 1
-
-
-def _open_launcher_browser(path: str, port: int = 8000) -> None:
-    """Open the browser on the launcher/setup page once the server is ready.
-
-    Polls the liveness endpoint in a background thread, then opens
-    ``http://127.0.0.1:<port><path>``. Best-effort — never blocks the caller.
-    """
-    import threading
-    import urllib.error
-    import urllib.request
-    import webbrowser
-
-    url = f"http://127.0.0.1:{port}{path}"
-
-    def _wait_and_open() -> None:
-        import time
-
-        for _ in range(100):  # ~10s
-            try:
-                urllib.request.urlopen(f"http://127.0.0.1:{port}/healthz", timeout=0.5)
-                break
-            except (urllib.error.URLError, OSError):
-                time.sleep(0.1)
-        try:
-            webbrowser.open(url)
-        except Exception:
-            pass
-
-    threading.Thread(target=_wait_and_open, daemon=True).start()
 
 
 def cmd_launcher(stop: bool = False) -> int:
@@ -1303,8 +1286,7 @@ def cmd_launcher(stop: bool = False) -> int:
     os.environ["ARMANCE_WEB_PASSWORD"] = secret  # child server uses the same secret
 
     query = f"?token={secret}" if auto else ""
-    _open_launcher_browser(f"{target}{query}")
-    return cmd_web(launcher_home, ["--no-browser"], data_dir=launcher_home)
+    return cmd_web(launcher_home, [], data_dir=launcher_home, launch_url_suffix=f"{target}{query}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1327,8 +1309,15 @@ def main(argv: list[str] | None = None) -> int:
     if not argv:
         return cmd_launcher()
 
-    # `armance --stop` (bare): stop the launcher server homed in the global dir.
-    if argv[0] == "--stop":
+    # `armance --stop` or `armance stop` (bare): stop the local server if present, else launcher server.
+    if argv[0] in ("--stop", "stop"):
+        from armance.web.server_lock import read_lock, stop_server
+        from armance import paths
+        local_data = paths.local_data_dir(Path.cwd())
+        if read_lock(local_data) is not None:
+            stopped, message = stop_server(local_data)
+            print(message, file=sys.stderr if not stopped else sys.stdout)
+            return 0 if stopped else 1
         return cmd_launcher(stop=True)
 
     if argv[0] in ("-h", "--help", "help"):
@@ -1336,7 +1325,7 @@ def main(argv: list[str] | None = None) -> int:
             "usage: armance {init,run,index,doctor,workflow,web,install-shortcut} "
             "[--version]\n"
             "  armance            open the launcher (no arguments)\n"
-            "  armance --stop     stop the launcher server",
+            "  armance stop       stop the launcher server",
             file=sys.stderr,
         )
         return 0

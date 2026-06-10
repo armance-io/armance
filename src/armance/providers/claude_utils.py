@@ -44,10 +44,19 @@ def _build_claude_options(
             "permission_mode", "max_turns", "cwd", "max_thinking_tokens",
         }
 
+    # Hermetic by default: without an explicit (even empty) value the SDK
+    # omits --setting-sources and the CLI then loads the HOST user's Claude
+    # Code settings — CLAUDE.md, plugins and hooks — into every Armance
+    # agent call. A user-level "caveman" plugin hook is exactly how
+    # telegraphic replies kept leaking into A2H turns.
+    setting_sources = params.pop("setting_sources", [])
+
     options_kwargs = {
         "model": model,
         "system_prompt": system_prompt,
     }
+    if allowed_keys is None or "setting_sources" in allowed_keys:
+        options_kwargs["setting_sources"] = setting_sources
     for k, v in params.items():
         if v is not None:
             if allowed_keys is None or k in allowed_keys:

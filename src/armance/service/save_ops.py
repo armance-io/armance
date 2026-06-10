@@ -49,9 +49,8 @@ async def cmd_save(args: list[str], ctx: LoopContext) -> str:
 
         context_agent_path = ctx.armance_root / "agents" / "system-context.md"
         if not context_agent_path.exists():
-            context_agent_path = (
-                Path(__file__).parent / "agents" / "builtin" / "system-context.md"
-            )
+            from armance import paths
+            context_agent_path = paths.global_agents_dir() / "system-context.md"
         if not context_agent_path.exists():
             return t("meta_agent.armance_missing")
         context_agent = Agent.load(context_agent_path)

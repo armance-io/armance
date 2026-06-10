@@ -547,7 +547,20 @@
       "method_tiers": "La précision dépend de ce qu'on sait du modèle. Six paliers, du plus fiable au plus prudent : exact (modèle au registre), alias (équivalent connu), paramètres (taille déclarée), similaire et défaut-fournisseur (familles approchées), puis bornage dynamique — une fourchette physique best/worst-case quand le modèle est inconnu (ex. modèles « :free » sans métadonnées). On n'affiche jamais « ? » : toujours une fourchette honnête, marquée « ~ » quand c'est une estimation.",
       "method_zone_label": "Zone d'intensité carbone",
       "method_providers_title": "Fournisseurs de cette session",
-      "method_provider_note": "Anthropic et OpenAI ne publient pas leur matériel ; on s'appuie sur les moyennes EcoLogits par famille de modèles. Les modèles « :free » d'OpenRouter passent souvent par le bornage dynamique faute de métadonnées."
+      "method_provider_note": "Anthropic et OpenAI ne publient pas leur matériel ; on s'appuie sur les moyennes EcoLogits par famille de modèles. Les modèles « :free » d'OpenRouter passent souvent par le bornage dynamique faute de métadonnées.",
+      "tier_declared": "Déclaré",
+      "tier_computed": "Calculé",
+      "tier_estimated": "Estimé",
+      "tier_bounded": "Borné",
+      "hide_tiers": "Masquer les détails de précision",
+      "show_tiers": "Détails de précision et paliers",
+      "models_used": "Modèles appelés",
+      "desc_declared": "Modèle documenté et validé au registre EcoLogits.",
+      "desc_computed": "Estimation calculée à partir du nombre de paramètres déclaré.",
+      "desc_estimated": "Consommation projetée via un modèle similaire de référence.",
+      "desc_bounded": "Consommation inconnue, bornée entre nano (0,1 Wh) et grand MoE (33 Wh).",
+      "bounding_calc_title": "Calcul du bornage physique :",
+      "bounding_calc_desc": "En l'absence de métadonnées, l'empreinte est bornée entre deux extrêmes de la littérature (Jegham et al. 2025) : 0,1 Wh (nano-modèle 1-3B sur H100) et 33 Wh (MoE/dense >400B sur A100), mis à l'échelle selon les jetons de sortie et multipliés par le mix carbone de la zone."
     }
   },
   "audio": {

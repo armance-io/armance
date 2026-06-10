@@ -218,3 +218,31 @@ async def test_claude_code_ignores_success_pseudo_error(
     assert resp.finish_reason == "stop"
 
 
+
+
+def test_build_claude_options_is_hermetic_by_default() -> None:
+    """Armance must never inherit the host user's Claude Code settings
+    (CLAUDE.md, plugins, hooks): setting_sources defaults to []."""
+    from armance.providers.claude_utils import _build_claude_options
+    from claude_agent_sdk import ClaudeAgentOptions
+
+    opts = _build_claude_options(
+        ClaudeAgentOptions=ClaudeAgentOptions,
+        model="claude-haiku-4-5",
+        system_prompt="You are Armance.",
+        params={},
+    )
+    assert opts.setting_sources == []
+
+
+def test_build_claude_options_respects_explicit_setting_sources() -> None:
+    from armance.providers.claude_utils import _build_claude_options
+    from claude_agent_sdk import ClaudeAgentOptions
+
+    opts = _build_claude_options(
+        ClaudeAgentOptions=ClaudeAgentOptions,
+        model="claude-haiku-4-5",
+        system_prompt=None,
+        params={"setting_sources": ["project"]},
+    )
+    assert opts.setting_sources == ["project"]

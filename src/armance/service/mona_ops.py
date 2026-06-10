@@ -41,8 +41,8 @@ async def cmd_mona_chat(text: str, ctx: LoopContext) -> str:
     agent_name = "system-judge"
     mona_path = ctx.armance_root / "agents" / f"{agent_name}.md"
     if not mona_path.exists():
-        builtin = Path(__file__).parent / "agents" / "builtin" / f"{agent_name}.md"
-        mona_path = builtin if builtin.exists() else mona_path
+        from armance import paths
+        mona_path = paths.global_agents_dir() / f"{agent_name}.md"
     if not mona_path.exists():
         return t("common.error", error="Mona agent file missing")
 
