@@ -160,5 +160,10 @@
       "locked_aria": "Aktive Sitzung (nach erster Nachricht gesperrt)",
       "id_label": "Sitzungs-ID"
     }
+  },
+  "runs": {
+    "detail": {
+      "title": "Lauf-Details — {{runId}}"
+    }
   }
 }

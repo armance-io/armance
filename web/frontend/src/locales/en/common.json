@@ -202,7 +202,8 @@
         "failed": "failed",
         "cancelled": "cancelled",
         "skipped": "skipped"
-      }
+      },
+      "title": "Run details — {{runId}}"
     }
   },
   "run": {

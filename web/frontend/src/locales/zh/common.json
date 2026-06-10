@@ -160,5 +160,10 @@
       "locked_aria": "当前会话（首条消息后锁定）",
       "id_label": "会话 ID"
     }
+  },
+  "runs": {
+    "detail": {
+      "title": "运行详情 — {{runId}}"
+    }
   }
 }
