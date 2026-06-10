@@ -67,7 +67,8 @@ async def test_mona_proxy_checkpoint_includes_critical_instruction(tmp_path: Pat
     mock_report = MagicMock()
     mock_report.content = "[ASK_USER] I cannot decide on database because it is critical. Which db?"
     
-    with patch("armance.service.handlers.Path.exists", return_value=True), \
+    with patch("armance.service.chat_handlers.common.resolve_agent_path",
+               return_value=root / "system-judge.md"), \
          patch("armance.core.models.agent.Agent.load", return_value=mock_agent), \
          patch("armance.service.handlers.run_specialist", new_callable=AsyncMock, return_value=mock_report) as mock_run:
          
