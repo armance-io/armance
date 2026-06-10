@@ -12,7 +12,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from armance.config import load_config, ensure_armance_tree
+from armance.config import load_config, ensure_data_tree
 from armance.nls import set_language
 from armance.platform.events import LocalEventBus
 from armance.platform.user import get_current_user
@@ -70,7 +70,7 @@ def _load_web_session(
             detail={"error": "not_initialised", "redirect": "/setup"},
         ) from exc
 
-    ensure_armance_tree(armance_root.parent, cfg)
+    ensure_data_tree(armance_root)
     set_language(cfg.language)
 
     state = load_state(armance_root, sid)
@@ -120,7 +120,7 @@ async def create_session(
     except Exception as exc:
         raise HTTPException(status_code=409, detail={"error": "not_initialised", "redirect": "/setup"}) from exc
 
-    ensure_armance_tree(armance_root.parent, cfg)
+    ensure_data_tree(armance_root)
     set_language(cfg.language)
 
     state = start_or_resume(armance_root, resume=False)
@@ -169,7 +169,7 @@ async def get_latest_session(
         except Exception as exc:
             raise HTTPException(status_code=409, detail={"error": "not_initialised", "redirect": "/setup"}) from exc
 
-        ensure_armance_tree(armance_root.parent, cfg)
+        ensure_data_tree(armance_root)
         set_language(cfg.language)
         state = start_or_resume(armance_root, resume=False)
         sid = state.id
