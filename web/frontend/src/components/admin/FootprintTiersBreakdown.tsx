@@ -176,7 +176,6 @@ export const FootprintTiersBreakdown: FC<FootprintTiersBreakdownProps> = ({
                 {t("admin:footprint.models_used") || "Modèles appelés"}
               </div>
               {details.map((d, idx) => {
-                const categoryLabel = slices.find((s) => s.key === d.category)?.label || d.category;
                 const percentage = total > 0 ? ((d.gco2e / total) * 100).toFixed(0) : "0";
                 return (
                   <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "2px", paddingLeft: "8px", borderLeft: `2px solid ${PALETTE[d.category]}` }}>

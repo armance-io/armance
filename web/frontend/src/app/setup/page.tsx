@@ -8,7 +8,9 @@ import {
   initSetup,
   getProviders,
   getEmbeddingModels,
+  getFootprintZones,
   type EmbeddingModel,
+  type FootprintZone,
   type SetupInitIn,
 } from "@/lib/api";
 import { EMBEDDING_PROVIDERS } from "@/lib/embeddingProviders";
@@ -63,32 +65,20 @@ const PROVIDERS = [
   },
 ];
 
+// Two curated postures (2026-06-10): zero-cost, or the adequacy/environment
+// heuristic. The historical low/medium/high/adaptive values stay valid in
+// config.yaml for power users but are no longer offered at setup.
 const BUDGETS = [
   {
-    id: "free-first" as const,
-    name: "Free First",
-    description: "Leverage completely free models and API free quotas first. Zero operational cost.",
-  },
-  {
-    id: "low" as const,
-    name: "Low Cost",
-    description: "Prioritize fast, highly economical models. Best for fast edits and quick interactions.",
-  },
-  {
-    id: "medium" as const,
-    name: "Balanced",
-    description: "Perfect sweet spot of intelligence and cost. (Highly Recommended default).",
+    id: "optimised" as const,
+    nameKey: "setup:budget_opt_name",
+    descriptionKey: "setup:budget_opt_desc",
     recommended: true,
   },
   {
-    id: "high" as const,
-    name: "Maximum Capability",
-    description: "Uses the strongest models in full thinking mode, regardless of prompt cost.",
-  },
-  {
-    id: "adaptive" as const,
-    name: "Adaptive Effort",
-    description: "Intelligently upgrades/downgrades models and reasoning steps dynamically.",
+    id: "free-first" as const,
+    nameKey: "setup:budget_free_name",
+    descriptionKey: "setup:budget_free_desc",
   },
 ];
 
@@ -144,7 +134,9 @@ export default function SetupPage() {
   const [baseUrl, setBaseUrl] = useState("http://localhost:11434/v1");
   const [primaryProvider, setPrimaryProvider] = useState("gemini");
   const [model, setModel] = useState("gemini-2.5-flash");
-  const [budget, setBudget] = useState<SetupInitIn["budget"]>("medium");
+  const [budget, setBudget] = useState<SetupInitIn["budget"]>("optimised");
+  const [electricityZone, setElectricityZone] = useState("WOR");
+  const [zones, setZones] = useState<FootprintZone[]>([]);
 
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -174,6 +166,20 @@ export default function SetupPage() {
       setEmbeddingProvider(embeddingProviderChoices[0] ?? "");
     }
   }, [embeddingProviderChoices, embeddingProvider]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getFootprintZones()
+      .then((res) => {
+        if (!cancelled) setZones(res);
+      })
+      .catch(() => {
+        /* zone picker degrades to WOR-only */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -317,6 +323,7 @@ export default function SetupPage() {
         model,
         budget,
         language,
+        electricity_zone: electricityZone,
       };
       if (apiKeys[primaryProvider] && apiKeys[primaryProvider].trim()) {
         payload.api_key = apiKeys[primaryProvider].trim();
@@ -576,6 +583,32 @@ export default function SetupPage() {
                 );
               })}
             </div>
+
+            <h3 style={{ ...formLabel, marginTop: "24px" }}>{t("setup:step_zone")}</h3>
+            <p style={{ fontSize: "12px", color: "var(--ink-soft)", margin: "0 0 10px" }}>
+              {t("setup:zone_hint")}
+            </p>
+            <select
+              data-testid="setup-zone-select"
+              value={electricityZone}
+              onChange={(e) => setElectricityZone(e.target.value)}
+              style={{
+                padding: "10px 12px",
+                borderRadius: "6px",
+                border: "1.5px solid var(--rule-soft)",
+                background: "var(--bg-paper-card)",
+                color: "var(--ink)",
+                fontSize: "13px",
+                fontFamily: "inherit",
+              }}
+            >
+              {(zones.length > 0 ? zones : [{ code: "WOR", gco2e_per_kwh: 0 }]).map((z) => (
+                <option key={z.code} value={z.code}>
+                  {z.code}
+                  {z.gco2e_per_kwh ? ` · ${z.gco2e_per_kwh} gCO2e/kWh` : ""}
+                </option>
+              ))}
+            </select>
           </div>
         )}
 
@@ -842,7 +875,7 @@ export default function SetupPage() {
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "3px" }}>
-                      <span style={{ fontWeight: 600, fontSize: "13px" }}>{b.name}</span>
+                      <span style={{ fontWeight: 600, fontSize: "13px" }}>{t(b.nameKey)}</span>
                       {b.recommended && (
                         <span
                           style={{
@@ -854,12 +887,12 @@ export default function SetupPage() {
                             fontWeight: 600,
                           }}
                         >
-                          RECOMMENDED
+                          {t("setup:recommended")}
                         </span>
                       )}
                     </div>
                     <span style={{ fontSize: "11px", color: "var(--ink-soft)", lineHeight: 1.35 }}>
-                      {b.description}
+                      {t(b.descriptionKey)}
                     </span>
                   </div>
                 );
