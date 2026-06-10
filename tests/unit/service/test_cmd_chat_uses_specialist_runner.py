@@ -125,7 +125,9 @@ async def test_specialist_dm_injects_l1_in_system_prompt(
 async def test_specialist_dm_caveman_explicit(
     tmp_armance: Path, cfg: Config, aisha: Agent
 ) -> None:
-    """DM with specialist must not use caveman unless explicitly requested."""
+    """A2H invariant: DM with a specialist never uses a compression
+    protocol — not even when the user asks for it by name. Compression
+    is A2A-only (workflow steps)."""
     from armance.service.handlers import _cmd_chat
 
     # Test default: no caveman requested
@@ -145,7 +147,7 @@ async def test_specialist_dm_caveman_explicit(
     sys_content_default = captured_default[0]["content"]
     assert "Response protocol — caveman" not in sys_content_default
 
-    # Test explicit caveman request
+    # Even an explicit request must NOT switch the human-facing register.
     ctx = _make_ctx(tmp_armance, cfg, "Aisha", [aisha])
     captured_caveman: list[dict] = []
 
@@ -160,7 +162,8 @@ async def test_specialist_dm_caveman_explicit(
         await _cmd_chat("Teintures ? Parle en mode caveman ultra.", ctx)
 
     sys_content_caveman = captured_caveman[0]["content"]
-    assert "Response protocol — caveman ultra" in sys_content_caveman
+    assert "Response protocol — caveman" not in sys_content_caveman
+    assert "Direct Human Dialogue" in sys_content_caveman
 
 
 @pytest.mark.asyncio
