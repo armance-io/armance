@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { RunDetailContainer } from "@/components/runs/RunDetailContainer";
 import { WorkflowGraphContainer } from "@/components/workflow/WorkflowGraphContainer";
 import { InterruptButtonContainer } from "@/components/workflow/InterruptButtonContainer";
@@ -11,6 +12,7 @@ import { useRouteParams } from "@/lib/routeParams";
 
 export default function RunDetailView() {
   const { pid, sid, name = "", runId = "" } = useRouteParams();
+  const { t } = useTranslation();
 
   const workflowName = name;
 
@@ -67,7 +69,7 @@ export default function RunDetailView() {
               color: "var(--ink, #2a2520)",
               margin: 0,
             }}>
-              Run details — {runId}
+              {t("runs:detail.title", { runId })}
             </h3>
             {activeRunId === runId && (
               <InterruptButtonContainer
