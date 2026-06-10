@@ -131,5 +131,7 @@ async def test_filesystem_routes_non_loopback_forbidden(armance_root: Path) -> N
     ) as remote:
         b = await remote.get("/launcher/browse")
         m = await remote.post("/launcher/mkdir", json={"path": "/tmp", "name": "x"})
+        o = await remote.post("/launcher/open", json={"path": "/tmp"})
     assert b.status_code == 403
     assert m.status_code == 403
+    assert o.status_code == 403
