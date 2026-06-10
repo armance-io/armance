@@ -236,6 +236,10 @@ Drop documents into `.armance/docs/` and run `armance run`. Armance greets you, 
 
 ## How it works
 
+### Environmental Footprint
+
+The environmental footprint of LLM usage is estimated using [EcoLogits](https://github.com/genai-impact/ecologits) (Life Cycle Assessment, ISO 14044), computed entirely offline so no data leaves your machine. For each response, the footprint combines the use phase (GPU energy deduced from generated tokens and latency, multiplied by the data center's PUE) and the embodied impact of hardware manufacturing, amortized over its lifespan. The energy is then converted into gCO₂e via the carbon intensity of the zone's electrical grid, and into milliliters of water via the WUE (water-usage effectiveness) of that facility.
+
 ### The user journey
 
 ```

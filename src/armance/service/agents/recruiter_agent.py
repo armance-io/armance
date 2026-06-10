@@ -864,8 +864,9 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
             # criticalist; the legacy same-name = update path is now redundant
             # for staff but still applies to user agents).
             if new_role in _STAFF_ROLE_TO_FILE:
+                from armance import paths
                 system_stem = _STAFF_ROLE_TO_FILE[new_role]
-                system_path = agents_dir / f"{system_stem}.md"
+                system_path = paths.global_agents_dir() / f"{system_stem}.md"
                 if system_path.exists():
                     try:
                         existing_staff = Agent.load(system_path)

@@ -84,6 +84,41 @@ class TokenLedger:
         self.budget_cap_usd = budget_cap_usd
         self._lock = threading.RLock()
 
+        if persist_path and persist_path.exists():
+            try:
+                data = json.loads(persist_path.read_text(encoding="utf-8"))
+                for entry_data in data.get("entries", []):
+                    fp = None
+                    gco2e = entry_data.get("gco2e")
+                    if gco2e is not None:
+                        fp = Footprint(
+                            energy_wh=entry_data.get("energy_wh", 0.0) or 0.0,
+                            gco2e=gco2e,
+                            water_ml=entry_data.get("water_ml", 0.0) or 0.0,
+                            embodied_gco2e=entry_data.get("embodied_gco2e", 0.0) or 0.0,
+                            estimate=entry_data.get("estimate", False),
+                            tier=entry_data.get("tier", "unknown"),
+                            proxy_model=entry_data.get("proxy_model"),
+                            zone=entry_data.get("zone", "WOR"),
+                            gco2e_min=entry_data.get("gco2e_min"),
+                            gco2e_max=entry_data.get("gco2e_max"),
+                            water_ml_min=entry_data.get("water_ml_min"),
+                            water_ml_max=entry_data.get("water_ml_max"),
+                            energy_wh_min=entry_data.get("energy_wh_min"),
+                            energy_wh_max=entry_data.get("energy_wh_max"),
+                        )
+                    self.entries.append(
+                        LedgerEntry(
+                            agent=entry_data["agent"],
+                            tokens_in=entry_data["tokens_in"],
+                            tokens_out=entry_data["tokens_out"],
+                            cost_usd=entry_data.get("cost_usd"),
+                            footprint=fp,
+                        )
+                    )
+            except Exception:
+                logger.debug("ledger load failed", exc_info=True)
+
     def check_budget(self) -> None:
         if self.budget_cap_usd is None:
             return
@@ -119,13 +154,17 @@ class TokenLedger:
                         "gco2e": e.footprint.gco2e if e.footprint else None,
                         "water_ml": e.footprint.water_ml if e.footprint else None,
                         "energy_wh": e.footprint.energy_wh if e.footprint else None,
+                        "embodied_gco2e": e.footprint.embodied_gco2e if e.footprint else None,
                         "tier": e.footprint.tier if e.footprint else None,
+                        "proxy_model": e.footprint.proxy_model if e.footprint else None,
                         "estimate": e.footprint.estimate if e.footprint else None,
                         "zone": e.footprint.zone if e.footprint else None,
                         "gco2e_min": e.footprint.gco2e_min if e.footprint else None,
                         "gco2e_max": e.footprint.gco2e_max if e.footprint else None,
                         "water_ml_min": e.footprint.water_ml_min if e.footprint else None,
                         "water_ml_max": e.footprint.water_ml_max if e.footprint else None,
+                        "energy_wh_min": e.footprint.energy_wh_min if e.footprint else None,
+                        "energy_wh_max": e.footprint.energy_wh_max if e.footprint else None,
                     }
                     for e in self.entries
                 ],
@@ -267,6 +306,7 @@ def log_exchange_details(
             entry["gco2e_max"] = data.get("gco2e_max")
             entry["water_ml_min"] = data.get("water_ml_min")
             entry["water_ml_max"] = data.get("water_ml_max")
+            entry["proxy_model"] = data.get("proxy_model")
         elif event_type == "failure":
             entry["error_type"] = data.get("error_type")
             entry["error_message"] = data.get("error_message")
@@ -313,6 +353,7 @@ def log_response(
             "gco2e_max": footprint.gco2e_max if footprint else None,
             "water_ml_min": footprint.water_ml_min if footprint else None,
             "water_ml_max": footprint.water_ml_max if footprint else None,
+            "proxy_model": footprint.proxy_model if footprint else None,
         },
     )
 

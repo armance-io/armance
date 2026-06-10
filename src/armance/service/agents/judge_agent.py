@@ -164,17 +164,13 @@ class JudgeAgent:
 
     def _load_mona(self):
         from armance.core.models.agent import Agent
+        from armance import paths
 
-        # Try project-local system-judge first
-        local = self.armance_root / "agents" / "system-judge.md"
-        if local.exists():
-            return Agent.load(local)
+        global_path = paths.global_agents_dir() / "system-judge.md"
+        if global_path.exists():
+            return Agent.load(global_path)
 
-        # Fall back to builtin
-        builtin_dir = Path(__file__).parent / "builtin"
-        builtin = builtin_dir / "system-judge.md"
-        if builtin.exists():
-            return Agent.load(builtin)
+
 
         # Minimal fallback
         return Agent(
