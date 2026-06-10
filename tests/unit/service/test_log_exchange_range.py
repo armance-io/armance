@@ -4,7 +4,6 @@ midpoint — otherwise the live range collapses to a flat value downstream."""
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
 from armance.core.models.footprint import Footprint
