@@ -556,11 +556,22 @@
       "show_tiers": "Precision details and tiers",
       "models_used": "Models called",
       "desc_declared": "Model documented and verified in the EcoLogits registry.",
-      "desc_computed": "Estimate calculated from the declared parameter count.",
-      "desc_estimated": "Consumption projected via a similar reference model.",
+      "desc_computed": "Estimate calculated from the provider's declared parameter count.",
+      "desc_estimated": "Projected via a similar reference model, or a conservative per-provider size class when nothing closer exists.",
       "desc_bounded": "Unknown consumption, bounded between nano (0.1 Wh) and large MoE (33 Wh).",
       "bounding_calc_title": "Physical bounding calculation:",
-      "bounding_calc_desc": "With no metadata available, the footprint is bounded between two physical extremes from the literature (Jegham et al. 2025): 0.1 Wh (nano model 1-3B on H100) and 33 Wh (MoE/dense >400B on A100), scaled by output tokens and multiplied by the carbon mix of the zone."
+      "bounding_calc_desc": "With no metadata available, the footprint is bounded between two physical extremes from the literature (Jegham et al. 2025): 0.1 Wh (nano model 1-3B on H100) and 33 Wh (MoE/dense >400B on A100), scaled by output tokens and multiplied by the carbon mix of the zone.",
+      "method_categories_title": "Reading the precision categories",
+      "cat_declared_long": "Declared — the model (or a documented alias) is in the EcoLogits registry: architecture and size are public or well documented. The most reliable case — still a model, never a measurement.",
+      "cat_computed_long": "Computed — no registry profile, but the provider declares the parameter count; the same physical model runs on that declared size. As reliable as the declaration.",
+      "cat_estimated_long": "Estimated — nothing declared. We borrow the profile of a similar model of the same family, or fall back to a conservative size class for that provider. Marked '~'; the real figure can differ by a factor of a few.",
+      "cat_bounded_long": "Bounded — nothing is known at all (typically ':free' community models). We refuse to invent a number: you get a physical best/worst-case interval (0.1–33 Wh per request, Jegham et al. 2025), scaled by output tokens and your grid zone.",
+      "method_assumptions_title": "Assumptions we make",
+      "method_assumptions": "• Energy is inferred from output tokens and request latency — we never see the GPU.\n• Data-centre overhead (PUE) and water use (WUE) are sector averages, not the provider's real figures.\n• Hardware manufacturing (embodied impact) is amortised over a 3-year lifetime.\n• Your electricity zone applies a yearly average grid intensity — not the live mix at the moment of the request.\n• Batching and serving optimisations are assumed at the methodology's defaults.",
+      "method_known_title": "What we actually know",
+      "method_known": "Exact token counts and latency of every call, which model and provider served it, your chosen grid zone, and — for registry models — a documented hardware and parameter profile.",
+      "method_unknown_title": "What we cannot know",
+      "method_unknown": "The real GPU and data centre behind the API, the electricity mix at that very moment, the provider's true PUE/WUE, batching across customers — and the energy of input (prompt) tokens, which EcoLogits does not model yet: the true total is therefore somewhat HIGHER than shown."
     }
   },
   "audio": {

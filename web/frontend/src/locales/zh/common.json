@@ -93,7 +93,20 @@
       "zone": {
         "wor": "全球 — 全球平均碳强度",
         "unknown": "未知区域"
-      }
+      },
+      "desc_computed": "根据提供商声明的参数量计算的估算。",
+      "desc_estimated": "通过相近参考模型投算，或在无更近参照时采用按提供商的保守规模档。",
+      "method_categories_title": "如何解读精度类别",
+      "cat_declared_long": "已声明 — 模型（或其有据可查的别名）在 EcoLogits 注册表中。最可靠的情形——仍是建模，绝非实测。",
+      "cat_computed_long": "已计算 — 无注册档案，但提供商声明了参数量；同一物理模型按该规模运行。",
+      "cat_estimated_long": "估算 — 无任何声明。借用同族相近模型的档案，或该提供商的保守规模档。标注「~」；真实数字可能相差数倍。",
+      "cat_bounded_long": "有界 — 一无所知（典型为「:free」社区模型）。我们拒绝编造数字：给出物理上下界区间（每次请求 0.1–33 Wh，Jegham 等 2025）。",
+      "method_assumptions_title": "我们的假设",
+      "method_assumptions": "• 能耗由输出 token 与延迟推断——我们看不到 GPU。\n• PUE 与 WUE 为行业平均值，非提供商真实数据。\n• 硬件制造（隐含影响）按 3 年摊销。\n• 电力区域采用年均碳强度，而非请求当刻的实际电力组合。\n• 批处理按方法学默认值假设。",
+      "method_known_title": "我们确实知道的",
+      "method_known": "每次调用的精确 token 数与延迟、所用模型与提供商、您选择的电力区域，以及注册表模型的有据档案。",
+      "method_unknown_title": "我们无法知道的",
+      "method_unknown": "API 背后真实的 GPU 与数据中心、当刻电力组合、提供商真实的 PUE/WUE、跨客户批处理——以及输入 token 的能耗（EcoLogits 尚未建模）：真实总量因此略高于显示值。"
     }
   },
   "workflow": {

@@ -93,7 +93,20 @@
       "zone": {
         "wor": "Welt — globale durchschnittliche CO₂-Intensität",
         "unknown": "Unbekannte Zone"
-      }
+      },
+      "desc_computed": "Schätzung anhand der vom Anbieter deklarierten Parameterzahl.",
+      "desc_estimated": "Projektion über ein ähnliches Referenzmodell oder eine konservative Größenklasse je Anbieter.",
+      "method_categories_title": "Die Präzisionskategorien lesen",
+      "cat_declared_long": "Deklariert — das Modell (oder ein dokumentierter Alias) steht im EcoLogits-Register. Der zuverlässigste Fall — eine Modellierung, nie eine Messung.",
+      "cat_computed_long": "Berechnet — kein Registerprofil, aber der Anbieter deklariert die Parameterzahl; dasselbe physikalische Modell läuft auf dieser Größe.",
+      "cat_estimated_long": "Geschätzt — nichts deklariert. Wir übernehmen das Profil eines ähnlichen Modells derselben Familie oder eine konservative Größenklasse. Mit „~“ markiert; der reale Wert kann um einige Faktoren abweichen.",
+      "cat_bounded_long": "Begrenzt — nichts ist bekannt (typisch „:free“-Modelle). Wir erfinden keine Zahl: Sie erhalten ein physikalisches Min/Max-Intervall (0,1–33 Wh pro Anfrage, Jegham et al. 2025).",
+      "method_assumptions_title": "Unsere Annahmen",
+      "method_assumptions": "• Energie wird aus Output-Tokens und Latenz abgeleitet — wir sehen nie die GPU.\n• PUE und WUE sind Branchendurchschnitte, nicht die realen Anbieterwerte.\n• Die Hardwarefertigung wird über 3 Jahre abgeschrieben.\n• Ihre Stromzone nutzt eine Jahresdurchschnittsintensität, nicht den Mix des Moments.\n• Batching wird mit den Standardwerten der Methodik angenommen.",
+      "method_known_title": "Was wir wirklich wissen",
+      "method_known": "Exakte Tokenzahlen und Latenz jedes Aufrufs, Modell und Anbieter, Ihre Stromzone und — für Registermodelle — ein dokumentiertes Profil.",
+      "method_unknown_title": "Was wir nicht wissen können",
+      "method_unknown": "Die reale GPU und das Rechenzentrum, der Strommix des Moments, die echten PUE/WUE, kundenübergreifendes Batching — und die Energie der Eingabe-Tokens, die EcoLogits noch nicht modelliert: der wahre Gesamtwert liegt etwas HÖHER als angezeigt."
     }
   },
   "workflow": {

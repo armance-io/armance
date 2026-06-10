@@ -325,3 +325,24 @@ class TestSnapshotBounds:
         assert entry.footprint.zone == "WOR"
         assert entry.footprint.gco2e_min == 4.0
         assert entry.footprint.gco2e_max == 6.0
+
+
+def test_accumulate_tiers_honesty_mapping() -> None:
+    """provider-default is a guess, not a computation: it must land in
+    'estimated'. Only a real declared parameter count is 'computed'."""
+    from armance.service.footprint_ops import _accumulate_tiers, _empty_footprint_bucket
+
+    bucket = _empty_footprint_bucket()
+    rows = [
+        {"gco2e": 1.0, "tier": "exact", "model": "a"},
+        {"gco2e": 1.0, "tier": "aliased", "model": "b"},
+        {"gco2e": 1.0, "tier": "params", "model": "c"},
+        {"gco2e": 1.0, "tier": "similar", "model": "d"},
+        {"gco2e": 1.0, "tier": "provider-default", "model": "e"},
+        {"gco2e": 1.0, "tier": "bounded", "model": "f"},
+    ]
+    for r in rows:
+        _accumulate_tiers(bucket, r)
+    assert bucket["tiers"] == {
+        "declared": 2.0, "computed": 1.0, "estimated": 2.0, "bounded": 1.0,
+    }
