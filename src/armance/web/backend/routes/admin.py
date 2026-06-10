@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, Query
 from armance.platform.user import get_current_user
 from armance.service.equivalences import humanise
 from armance.service.footprint_ops import footprint_stats
-from armance.web.backend.deps import get_app_state
+from armance.web.backend.deps import get_app_state, resolve_root_or_404
 from armance.web.backend.state import AppState
 
 router = APIRouter()
@@ -42,7 +42,7 @@ async def get_footprint(
     if cached is not None and (now - cached[0]) < _CACHE_TTL:
         return cached[1]
 
-    logs_dir = app_state.armance_root / "logs"
+    logs_dir = resolve_root_or_404(app_state, pid) / "logs"
     stats = footprint_stats(logs_dir, project_id=pid)
 
     # Derive the project total (midpoint) by summing the per-agent buckets,

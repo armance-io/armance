@@ -596,5 +596,31 @@
     "submit": "Déverrouiller",
     "error": "Jeton ou mot de passe invalide. Réessayez.",
     "checking": "Vérification…"
+  },
+  "launcher": {
+    "title": "Vos projets",
+    "subtitle": "Ouvrez un projet pour consulter votre maison d'esprits — ou commencez-en un nouveau.",
+    "open": "Ouvrir",
+    "new_project": "Nouveau projet",
+    "no_projects": "Aucun projet pour l'instant. Créez le premier.",
+    "last_opened": "Dernière ouverture",
+    "stale": "Dossier introuvable",
+    "stale_hint": "Ce dossier n'existe plus à l'emplacement enregistré.",
+    "browse": {
+      "title": "Choisir un dossier",
+      "use_this": "Utiliser ce dossier",
+      "up": "Remonter",
+      "empty": "Aucun sous-dossier ici.",
+      "cancel": "Annuler",
+      "create_hint": "Un nouveau projet sera créé dans le dossier sélectionné.",
+      "new_folder": "Nouveau dossier",
+      "new_folder_placeholder": "Nom du nouveau dossier"
+    },
+    "error": {
+      "open_failed": "Impossible d'ouvrir ce projet.",
+      "new_failed": "Impossible de créer le projet ici.",
+      "browse_failed": "Impossible de lister ce dossier.",
+      "mkdir_failed": "Impossible de créer le dossier."
+    }
   }
 }

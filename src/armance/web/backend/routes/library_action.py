@@ -48,7 +48,7 @@ async def library_action(
     # so indexing always uses the current embedding provider/model.
     from armance.config import load_config
     try:
-        ws.ctx.cfg = load_config(ws.ctx.armance_root.parent)
+        ws.ctx.cfg = load_config()
     except Exception:  # noqa: BLE001 — keep the cached cfg if reload fails
         logger.warning("config reload failed before library action sid=%s", sid, exc_info=True)
 

@@ -23,23 +23,27 @@ from typing import AsyncIterator
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 
 from armance.web.backend.state import AppState
-from armance.web.backend.routes import health, whoami, sessions, turn, events, checkpoint, docs, library, library_docs, library_delete, library_action, exports, runs, agents, providers, embedding_models, hypotheses, workflows, active_workflow, sidecars, admin, admin_config, admin_secrets, admin_logs, admin_stats, admin_agents, deliverables, setup, auth
+from armance.web.backend.routes import health, whoami, sessions, turn, events, checkpoint, docs, library, library_docs, library_delete, library_action, exports, runs, agents, providers, embedding_models, hypotheses, workflows, active_workflow, sidecars, admin, admin_config, admin_secrets, admin_logs, admin_stats, admin_agents, deliverables, setup, auth, launcher
 
 logger = logging.getLogger(__name__)
 
 
 def _resolve_armance_root() -> Path:
-    """Resolve the .armance directory from the ARMANCE_ROOT env var or cwd."""
+    """Resolve the boot ``.armance`` data dir.
+
+    ``ARMANCE_DATA_DIR`` (if set) is used verbatim — the launcher points this at
+    the global config dir so it does not nest a redundant ``.armance``.
+    Otherwise ``ARMANCE_ROOT`` (or cwd) is a project folder and ``.armance`` is
+    appended.
+    """
+    data = os.environ.get("ARMANCE_DATA_DIR")
+    if data:
+        return Path(data)
     env = os.environ.get("ARMANCE_ROOT")
-    if env:
-        root = Path(env)
-    else:
-        root = Path.cwd()
-    armance_root = root / ".armance"
-    return armance_root
+    root = Path(env) if env else Path.cwd()
+    return root / ".armance"
 
 
 def _resolve_static_dir() -> Path | None:
@@ -130,6 +134,7 @@ def create_app() -> FastAPI:
             admin.router, admin_config.router, admin_secrets.router,
             admin_logs.router, admin_stats.router, admin_agents.router,
             deliverables.router, setup.router, auth.router,
+            launcher.router,
         ):
             api.include_router(r)
         app.include_router(api)
@@ -177,7 +182,7 @@ def _install_auth_gate(app: FastAPI) -> None:
         if state is None:  # lifespan not yet run (shouldn't happen in serving)
             return await call_next(request)
         try:
-            cfg = load_config(state.armance_root.parent)
+            cfg = load_config()
         except Exception:  # noqa: BLE001 — config unreadable; env secret still applies
             from armance.config import Config as _Cfg
             cfg = _Cfg()
@@ -240,19 +245,25 @@ def _install_spa(app: FastAPI) -> None:
     async def spa_middleware(request, call_next):  # type: ignore[no-untyped-def]
         path = request.url.path
         accept = request.headers.get("accept", "")
-        is_nav = request.method == "GET" and "text/html" in accept
         is_api = path.startswith("/api")
+        is_get = request.method == "GET"
+
+        # Static bundle assets are PUBLIC (hashed JS/CSS, no user data) and must
+        # be served BEFORE the auth gate — otherwise the very first page load
+        # via ?token (which authenticates the HTML nav but not the follow-up
+        # asset fetches, sent with Accept: */* and no cookie yet) 401s every
+        # chunk and the app renders a blank page. Serve any on-disk file here,
+        # ungated, with a path-traversal guard.
+        if is_get and not is_api and path != "/":
+            candidate = (static_dir / path.lstrip("/")).resolve()
+            sd = static_dir.resolve()
+            if (sd == candidate or sd in candidate.parents) and candidate.is_file():
+                return FileResponse(candidate)
+
+        is_nav = is_get and "text/html" in accept
         if is_nav and not is_api:
-            # Static asset on disk (e.g. /favicon.ico, /_next/...) → file.
-            asset = static_dir / path.lstrip("/")
-            if path != "/" and asset.is_file():
-                return FileResponse(asset)
             return FileResponse(_resolve_shell(static_dir, path))
         return await call_next(request)
-
-    # Hashed build assets are fetched by the browser with Accept: */*, so
-    # they bypass the nav middleware — mount them explicitly.
-    app.mount("/_next", StaticFiles(directory=static_dir / "_next"), name="next-assets")
 
     logger.info("Serving bundled frontend from %s", static_dir)
 

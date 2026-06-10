@@ -28,22 +28,39 @@ def _web_secret_env(monkeypatch):
     security.reset_web_secret_cache()
 
 
+@pytest.fixture(autouse=True)
+def isolate_global_config(monkeypatch, tmp_path_factory):
+    """Redirect the GLOBAL Armance config dir to an isolated tmp path.
+
+    Clean break (grandma launcher): config / secrets live machine-wide, read
+    via ``armance.paths``. Without this, web tests would touch the developer's
+    real ``~/.config/armance``. The ``armance_root`` fixture seeds config here.
+    """
+    global_dir = tmp_path_factory.mktemp("armance_global")
+    monkeypatch.setenv("ARMANCE_CONFIG_DIR", str(global_dir))
+    return global_dir
+
+
+# Minimal config used by most route tests (a provider so a client can be built).
+_TEST_CONFIG_YAML = (
+    "language: en\n"
+    "default_provider: openrouter\n"
+    "default_model: gpt-4o-mini\n"
+    "providers:\n"
+    "  - name: openrouter\n"
+)
+
+
 @pytest.fixture()
-def armance_root(tmp_path: Path) -> Path:
-    """Create a minimal .armance directory for testing."""
+def armance_root(tmp_path: Path, isolate_global_config: Path) -> Path:
+    """Create a project data dir + seed the GLOBAL config.
+
+    The local ``.armance`` holds data only; config now lives in the global dir
+    (clean break), so it is written there for ``load_config()`` to find.
+    """
     root = tmp_path / ".armance"
     root.mkdir()
-    # Config lives in .armance/ (same path load_config reads + _check_initialised
-    # checks). A provider so the session route can build a client.
-    config_path = root / "config.yaml"
-    config_path.write_text(
-        "language: en\n"
-        "default_provider: openrouter\n"
-        "default_model: gpt-4o-mini\n"
-        "providers:\n"
-        "  - name: openrouter\n",
-        encoding="utf-8",
-    )
+    (isolate_global_config / "config.yaml").write_text(_TEST_CONFIG_YAML, encoding="utf-8")
     return root
 
 

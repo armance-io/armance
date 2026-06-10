@@ -15,8 +15,11 @@ from httpx import AsyncClient
 
 
 def _write_config(armance_root: Path, data: dict) -> None:
-    config_path = armance_root / "config.yaml"
-    config_path.write_text(yaml.safe_dump(data), encoding="utf-8")
+    # Clean break: config is GLOBAL, not under the project's local .armance.
+    from armance import paths
+
+    paths.global_config_dir().mkdir(parents=True, exist_ok=True)
+    paths.global_config_path().write_text(yaml.safe_dump(data), encoding="utf-8")
 
 
 @pytest.mark.asyncio
@@ -58,7 +61,8 @@ async def test_patch_config_valid_field_writes_yaml(client: AsyncClient, armance
     body = resp.json()
     assert body["default_model"] == "new/model"
 
-    saved = yaml.safe_load((armance_root / "config.yaml").read_text())
+    from armance import paths
+    saved = yaml.safe_load(paths.global_config_path().read_text())
     assert saved["default_model"] == "new/model"
 
 

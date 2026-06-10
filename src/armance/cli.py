@@ -15,6 +15,7 @@ from armance.config import (
     FootprintConfig,
     ProviderConfig,
     ensure_armance_tree,
+    ensure_global_setup,
     save_config,
     write_env,
 )
@@ -328,9 +329,10 @@ def _cmd_init_noninteractive(
         embedding_model=embedding_model or "",
     )
     cfg = Config(**cfg_kwargs)
+    ensure_global_setup(cfg)
+    save_config(cfg)
+    write_env(provider_objs)
     ensure_armance_tree(root, cfg)
-    save_config(root, cfg)
-    write_env(root, provider_objs)
 
     print(f"✅  Armance initialised at {root / '.armance'}")
     print(f"    providers: {', '.join(providers)}")
@@ -445,7 +447,7 @@ def cmd_init(
 
     budget_effort = questionary.select(
         "Budget effort — cost constraint for agents (adjustable at runtime via /effort)",
-        choices=["free-first", "low", "medium", "high", "adaptive"],
+        choices=["free-first", "low", "medium", "high", "adaptive", "optimised"],
         default="free-first",
         use_arrow_keys=True,
         style=_SELECT_STYLE,
@@ -490,9 +492,10 @@ def cmd_init(
 
     cfg = Config(**cfg_kwargs)
 
+    ensure_global_setup(cfg)
+    save_config(cfg)
+    write_env(providers)
     ensure_armance_tree(root, cfg)
-    save_config(root, cfg)
-    write_env(root, providers)
 
     armance_readme = root / ".armance" / "README.md"
     print()
@@ -526,7 +529,7 @@ def cmd_index(repo_root: Path | None = None) -> int:
         console.print("[red].armance/ not found — run `armance init` first[/red]")
         return 1
 
-    cfg = load_config(root)
+    cfg = load_config()
     result = sync_docs(armance_root, config=cfg)
     console.print(
         f"[green]index complete[/green]: "
@@ -600,11 +603,12 @@ def cmd_run(
     console = Console()
     root = repo_root or Path.cwd()
     armance_root = root / ".armance"
-    if not (armance_root / "config.yaml").exists():
+    from armance import paths
+    if not paths.global_config_path().exists():
         console.print("[red]armance not initialized — run `armance init` first[/red]")
         return 1
 
-    cfg = load_config(root)
+    cfg = load_config()
     ensure_armance_tree(root, cfg)
 
     # Initialize NLS with the configured language so all user-facing strings
@@ -709,7 +713,8 @@ def cmd_workflow_run(
     root = armance_root or Path.cwd()
     armance = root / ".armance"
 
-    if not (armance / "config.yaml").exists():
+    from armance import paths
+    if not paths.global_config_path().exists():
         console.print("[red]armance not initialized — run `armance init` first[/red]")
         return 1
 
@@ -821,11 +826,12 @@ def cmd_doctor(repo_root: Path | None = None) -> int:
         status = "[green]OK[/green]" if passed else "[red]FAIL[/red]"
         table.add_row(label, status, detail)
 
-    # config
-    cfg_path = armance_root / "config.yaml"
+    # config (global — clean break)
+    from armance import paths
+    cfg_path = paths.global_config_path()
     if cfg_path.exists():
         try:
-            cfg = load_config(root)
+            cfg = load_config()
             _row("config.yaml", True, f"{len(cfg.providers)} provider(s)")
         except Exception as exc:
             _row("config.yaml", False, str(exc))
@@ -934,7 +940,12 @@ def _build_web_bundle() -> int:
     return 0
 
 
-def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -> int:
+def cmd_web(
+    repo_root: Path | None = None,
+    remaining: list[str] | None = None,
+    *,
+    data_dir: Path | None = None,
+) -> int:
     """Start the Armance web UI (FastAPI backend + optional browser open)."""
     import argparse
     import subprocess
@@ -964,17 +975,21 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     web_args, _ = web_parser.parse_known_args(remaining or [])
 
     root = repo_root or Path.cwd()
+    # The server's runtime files (pidfile, logs) live in `data_dir`. Normally
+    # that is the project's <folder>/.armance; the launcher passes the global
+    # config dir directly so it does not nest a redundant .armance there.
+    data_dir = data_dir if data_dir is not None else root / ".armance"
 
     # `armance web stop` (positional) is an alias for `armance web --stop`.
     if web_args.stop or "stop" in (remaining or []):
         from armance.web.server_lock import stop_server
-        stopped, message = stop_server(root)
+        stopped, message = stop_server(data_dir)
         print(message, file=sys.stderr if not stopped else sys.stdout)
         return 0 if stopped else 1
 
     # One instance per folder: refuse to launch over a live server.
     from armance.web.server_lock import read_lock, write_lock, clear_lock
-    existing = read_lock(root)
+    existing = read_lock(data_dir)
     if existing is not None:
         print(
             f"Armance web is already running in this folder "
@@ -1038,7 +1053,7 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     from armance.config import load_config as _load_cfg
     from armance.service import security as _security
     try:
-        _web_cfg = _load_cfg(root)
+        _web_cfg = _load_cfg()
     except Exception:  # noqa: BLE001 — config may be absent; fall back to a token
         from armance.config import Config as _Cfg2
         _web_cfg = _Cfg2()
@@ -1101,6 +1116,7 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
         )
 
     env = {**os.environ, "ARMANCE_ROOT": str(root),
+           "ARMANCE_DATA_DIR": str(data_dir),
            "ARMANCE_WEB_PASSWORD": _web_secret}
     cmd = [
         sys.executable, "-m", "uvicorn",
@@ -1123,14 +1139,14 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
         proc = None
         try:
             proc = subprocess.Popen(cmd, env=env, start_new_session=True)
-            write_lock(root, proc.pid, port)
+            write_lock(data_dir, proc.pid, port)
             rc = proc.wait()
         except KeyboardInterrupt:
             if proc is not None:
                 proc.terminate()
             rc = 0
         finally:
-            clear_lock(root)
+            clear_lock(data_dir)
         if rc not in (0, None):
             print(f"web server exited with code {rc}", file=sys.stderr)
             return rc
@@ -1139,7 +1155,7 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     # Default: run the server in the background and return 0. Logs go to
     # .armance/logs/web-server.log instead of the terminal, so the shell is
     # freed and the window stays clean.
-    log_dir = root / ".armance" / "logs"
+    log_dir = data_dir / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / "web-server.log"
     log_file = open(log_path, "a", encoding="utf-8")  # noqa: SIM115 — handed to the child
@@ -1183,7 +1199,7 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
         return 1
 
     # Server is up: record the single-instance lock for this folder.
-    write_lock(root, proc.pid, port)
+    write_lock(data_dir, proc.pid, port)
 
     if open_browser:
         import webbrowser
@@ -1205,6 +1221,92 @@ def cmd_web(repo_root: Path | None = None, remaining: list[str] | None = None) -
     return 0
 
 
+def cmd_install_shortcut() -> int:
+    """Create a desktop icon that launches Armance. Best-effort."""
+    from armance.service.shortcuts import install_shortcut
+
+    result = install_shortcut()
+    print(("✓ " if result.ok else "⚠ ") + result.message)
+    return 0 if result.ok else 1
+
+
+def _open_launcher_browser(path: str, port: int = 8000) -> None:
+    """Open the browser on the launcher/setup page once the server is ready.
+
+    Polls the liveness endpoint in a background thread, then opens
+    ``http://127.0.0.1:<port><path>``. Best-effort — never blocks the caller.
+    """
+    import threading
+    import urllib.error
+    import urllib.request
+    import webbrowser
+
+    url = f"http://127.0.0.1:{port}{path}"
+
+    def _wait_and_open() -> None:
+        import time
+
+        for _ in range(100):  # ~10s
+            try:
+                urllib.request.urlopen(f"http://127.0.0.1:{port}/healthz", timeout=0.5)
+                break
+            except (urllib.error.URLError, OSError):
+                time.sleep(0.1)
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
+
+    threading.Thread(target=_wait_and_open, daemon=True).start()
+
+
+def cmd_launcher(stop: bool = False) -> int:
+    """Bare `armance`: open the launcher (or first-run setup) in the browser.
+
+    Grandma path. The launcher server is homed in the GLOBAL config dir (so a
+    first run from any folder never litters a stray ``.armance`` there). No
+    global config yet → the browser lands on the setup wizard; otherwise on the
+    launcher window.
+
+    Epic S: the page's first API call is gated. We resolve the web secret in the
+    parent, pin it via ``ARMANCE_WEB_PASSWORD`` so the child server agrees, and
+    open the browser with ``?token=`` when the secret was auto-generated — so
+    SEC5 auto-login sets the cookie and the grandma never hits a login wall. A
+    configured password is never put in the URL.
+    """
+    from armance import paths
+    from armance.config import Config, load_config
+    from armance.service import security
+
+    launcher_home = paths.global_config_dir()
+
+    # `armance --stop`: stop the launcher server, homed in the global dir (so it
+    # is reachable from any cwd — symmetric with bare `armance` = launch).
+    if stop:
+        from armance.web.server_lock import stop_server
+
+        stopped, message = stop_server(launcher_home)
+        print(message, file=sys.stderr if not stopped else sys.stdout)
+        return 0 if stopped else 1
+
+    configured = paths.global_config_path().exists()
+    target = "/launcher" if configured else "/setup"
+
+    try:
+        cfg = load_config()
+    except Exception:  # noqa: BLE001 — first run: no config yet
+        cfg = Config()
+    # Determine auto-generation BEFORE pinning the env var (which would
+    # otherwise make was_auto_generated see a "configured" secret).
+    secret = security.resolve_web_secret(cfg)
+    auto = security.was_auto_generated(cfg)
+    os.environ["ARMANCE_WEB_PASSWORD"] = secret  # child server uses the same secret
+
+    query = f"?token={secret}" if auto else ""
+    _open_launcher_browser(f"{target}{query}")
+    return cmd_web(launcher_home, ["--no-browser"], data_dir=launcher_home)
+
+
 def main(argv: list[str] | None = None) -> int:
     import argparse
     import importlib.metadata
@@ -1220,9 +1322,24 @@ def main(argv: list[str] | None = None) -> int:
         print(f"armance {version}")
         return 0
 
-    if not argv or argv[0] in ("-h", "--help", "help"):
-        print("usage: armance {init,run,index,doctor,workflow,web} [--version]", file=sys.stderr)
-        return 0 if argv else 1
+    # Bare `armance` (no args) is the grandma path: open the launcher (or the
+    # first-run setup wizard) in the browser. Explicit help still prints usage.
+    if not argv:
+        return cmd_launcher()
+
+    # `armance --stop` (bare): stop the launcher server homed in the global dir.
+    if argv[0] == "--stop":
+        return cmd_launcher(stop=True)
+
+    if argv[0] in ("-h", "--help", "help"):
+        print(
+            "usage: armance {init,run,index,doctor,workflow,web,install-shortcut} "
+            "[--version]\n"
+            "  armance            open the launcher (no arguments)\n"
+            "  armance --stop     stop the launcher server",
+            file=sys.stderr,
+        )
+        return 0
 
     parser = argparse.ArgumentParser(prog="armance", add_help=False)
     parser.add_argument("command")
@@ -1258,7 +1375,7 @@ def main(argv: list[str] | None = None) -> int:
         init_parser.add_argument("--embedding-provider", default=None)
         init_parser.add_argument("--embedding-model", default=None)
         init_parser.add_argument("--budget", default=None,
-                                 choices=["free-first", "low", "medium", "high", "adaptive"])
+                                 choices=["free-first", "low", "medium", "high", "adaptive", "optimised"])
         init_parser.add_argument("--language", default=None,
                                  choices=["en", "fr", "es", "de", "zh", "ja"])
         init_args = init_parser.parse_args(remaining)
@@ -1302,6 +1419,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_doctor(root)
     if cmd == "web":
         return cmd_web(root, remaining)
+    if cmd == "install-shortcut":
+        return cmd_install_shortcut()
     if cmd == "workflow":
         if not remaining or remaining[0] == "run":
             wf_parser = argparse.ArgumentParser(add_help=False)

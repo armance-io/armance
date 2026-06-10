@@ -37,9 +37,10 @@ async def setup_status(
     _user: str = Depends(get_current_user),
     app_state: AppState = Depends(get_app_state),
 ) -> dict:
-    """Check if the project is initialised."""
-    config_path = app_state.armance_root / "config.yaml"
-    if not config_path.exists():
+    """Check if Armance is initialised (global config — clean break)."""
+    from armance import paths
+
+    if not paths.global_config_path().exists():
         return {
             "configured": False,
             "missing": ["default_provider", "default_model"],
@@ -58,7 +59,14 @@ async def setup_init(
     if body.provider not in ALL_PROVIDERS:
         raise HTTPException(status_code=400, detail="unknown_provider")
 
-    from armance.config import Config, ProviderConfig, ensure_armance_tree, save_config, write_env
+    from armance.config import (
+        Config,
+        ProviderConfig,
+        ensure_armance_tree,
+        ensure_global_setup,
+        save_config,
+        write_env,
+    )
 
     # Map the primary provider key
     primary_key = body.api_key or ""
@@ -108,9 +116,10 @@ async def setup_init(
     )
 
     try:
+        ensure_global_setup(cfg)
+        save_config(cfg)
+        write_env(providers_list)
         ensure_armance_tree(app_state.armance_root.parent, cfg)
-        save_config(app_state.armance_root.parent, cfg)
-        write_env(app_state.armance_root.parent, providers_list)
         from armance.providers.discovery import reset_cache
         reset_cache()
     except Exception as exc:
