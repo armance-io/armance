@@ -64,8 +64,10 @@ async def get_launcher(_user: str = Depends(get_current_user)) -> dict[str, Any]
 
 @router.post("/launcher/open")
 async def open_project(
-    body: _PathBody, _user: str = Depends(get_current_user)
+    body: _PathBody, request: Request, _user: str = Depends(get_current_user)
 ) -> Any:
+    if (denied := _require_loopback(request)) is not None:
+        return denied
     folder = Path(body.path)
     if not folder.is_dir():
         return JSONResponse(status_code=404, content={"error": "path_not_found"})
