@@ -78,13 +78,15 @@ def _accumulate_tiers(bucket: dict[str, Any], rec: dict[str, Any]) -> None:
     gco2e = rec.get("gco2e", 0.0) or 0.0
     tier = rec.get("tier", "unknown")
 
-    # Map EcoLogits tiers to the 4 user-facing categories
+    # Map the 6 resolution tiers to 4 user-facing honesty categories.
+    # "computed" means a REAL declared parameter count was used; a
+    # provider-default size bucket is a guess and belongs in "estimated".
     cat = "bounded"
     if tier in ("exact", "aliased"):
         cat = "declared"
-    elif tier in ("params", "provider-default"):
+    elif tier == "params":
         cat = "computed"
-    elif tier == "similar":
+    elif tier in ("similar", "provider-default"):
         cat = "estimated"
     elif tier == "bounded":
         cat = "bounded"
