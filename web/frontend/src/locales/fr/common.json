@@ -592,7 +592,14 @@
       "low": "Faible",
       "medium": "Moyen",
       "high": "Élevé"
-    }
+    },
+    "step_zone": "Où tournez-vous ? (réseau électrique)",
+    "zone_hint": "Affine l'estimation CO2 de chaque conversation selon votre réseau. WOR = moyenne mondiale.",
+    "budget_free_name": "Gratuit d'abord",
+    "budget_free_desc": "Uniquement des modèles gratuits et quotas d'API gratuits. Coût nul — capacité variable.",
+    "budget_opt_name": "Optimisé",
+    "budget_opt_desc": "Malik choisit le modèle le plus sobre réellement à la hauteur de chaque agent, et accorde un recours plus puissant aux besoins exigeants. L'environnement d'abord, puis le coût.",
+    "recommended": "RECOMMANDÉ"
   },
   "session": {
     "selector": {

@@ -110,3 +110,33 @@ async def test_setup_init_invalid_budget(
         },
     )
     assert resp.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_setup_init_persists_electricity_zone(client: AsyncClient) -> None:
+    """The wizard's grid-zone choice lands in footprint.electricity_mix_zone."""
+    resp = await client.post("/setup/init", json={
+        "provider": "openrouter",
+        "api_key": "sk-test",
+        "model": "openai/gpt-4o-mini",
+        "budget": "optimised",
+        "language": "fr",
+        "electricity_zone": "FRA",
+    })
+    assert resp.status_code == 201
+    from armance.config import load_config
+    cfg = load_config()
+    assert cfg.footprint.electricity_mix_zone == "FRA"
+    assert cfg.budget_effort == "optimised"
+
+
+@pytest.mark.asyncio
+async def test_setup_init_rejects_legacy_budget(client: AsyncClient) -> None:
+    """Only the two curated postures are accepted at setup time."""
+    resp = await client.post("/setup/init", json={
+        "provider": "openrouter",
+        "model": "openai/gpt-4o-mini",
+        "budget": "medium",
+        "language": "en",
+    })
+    assert resp.status_code == 422

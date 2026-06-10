@@ -165,5 +165,14 @@
     "detail": {
       "title": "Detalle de la ejecución — {{runId}}"
     }
+  },
+  "setup": {
+    "step_zone": "¿Dónde trabaja? (red eléctrica)",
+    "zone_hint": "Afina la estimación de CO2 según su red. WOR = media mundial.",
+    "budget_free_name": "Gratis primero",
+    "budget_free_desc": "Solo modelos gratuitos y cuotas de API gratuitas. Coste cero — capacidad variable.",
+    "budget_opt_name": "Optimizado",
+    "budget_opt_desc": "Malik elige el modelo más sobrio que esté a la altura de cada agente, con un recurso más potente para las necesidades exigentes. Primero el medio ambiente, luego el coste.",
+    "recommended": "RECOMENDADO"
   }
 }

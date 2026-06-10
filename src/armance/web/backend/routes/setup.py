@@ -26,8 +26,12 @@ class SetupInitIn(BaseModel):
     api_key: Optional[str] = None
     providers_keys: Optional[dict[str, str]] = None
     model: str
-    budget: Literal["free-first", "low", "medium", "high", "adaptive"] = "free-first"
+    # Two curated postures only (2026-06-10): zero-cost, or the
+    # adequacy/environment-optimised heuristic. Power users can still set
+    # the other historical values directly in config.yaml.
+    budget: Literal["free-first", "optimised"] = "optimised"
     language: Literal["en", "fr", "es", "de", "zh", "ja"] = "en"
+    electricity_zone: Optional[str] = None
     embedding_provider: Optional[str] = None
     embedding_model: Optional[str] = None
 
@@ -114,6 +118,12 @@ async def setup_init(
         embedding_provider=body.embedding_provider or "",
         embedding_model=body.embedding_model or "",
     )
+    if body.electricity_zone:
+        from armance.service.footprint_zones import is_valid_zone
+
+        if not is_valid_zone(body.electricity_zone):
+            raise HTTPException(status_code=400, detail="unknown_zone")
+        cfg.footprint.electricity_mix_zone = body.electricity_zone
 
     try:
         ensure_global_setup(cfg)
