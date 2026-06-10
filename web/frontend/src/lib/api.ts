@@ -736,8 +736,9 @@ export interface SetupInitIn {
   api_key?: string;
   providers_keys?: Record<string, string>;
   model: string;
-  budget: "free-first" | "low" | "medium" | "high" | "adaptive";
+  budget: "free-first" | "optimised";
   language: "en" | "fr" | "es" | "de" | "zh" | "ja";
+  electricity_zone?: string;
   embedding_provider?: string;
   embedding_model?: string;
 }

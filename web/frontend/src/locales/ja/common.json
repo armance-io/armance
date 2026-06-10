@@ -165,5 +165,14 @@
     "detail": {
       "title": "実行の詳細 — {{runId}}"
     }
+  },
+  "setup": {
+    "step_zone": "どこで実行しますか？（電力網）",
+    "zone_hint": "電力網に基づいて CO2 推定を精緻化します。WOR = 世界平均。",
+    "budget_free_name": "無料優先",
+    "budget_free_desc": "無料モデルと無料 API 枠のみ。コストゼロ、能力は変動します。",
+    "budget_opt_name": "最適化",
+    "budget_opt_desc": "Malik は各エージェントの仕事に本当に見合う最も省資源なモデルを選び、要求の高い用途にはより強力な代替を許可します。環境第一、次にコスト。",
+    "recommended": "おすすめ"
   }
 }
