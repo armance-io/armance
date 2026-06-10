@@ -202,7 +202,8 @@
         "failed": "échoué",
         "cancelled": "annulé",
         "skipped": "passé"
-      }
+      },
+      "title": "Détail du run — {{runId}}"
     }
   },
   "run": {

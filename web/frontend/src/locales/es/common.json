@@ -160,5 +160,10 @@
       "locked_aria": "Sesión activa (bloqueada tras el primer mensaje)",
       "id_label": "ID de sesión"
     }
+  },
+  "runs": {
+    "detail": {
+      "title": "Detalle de la ejecución — {{runId}}"
+    }
   }
 }
