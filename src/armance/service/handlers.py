@@ -253,9 +253,9 @@ async def _mona_proxy_checkpoint(
     from armance.core.models.agent import Agent
     from armance.core.models.task import Task
 
-    from armance import paths
-    mona_path = paths.global_agents_dir() / "system-judge.md"
-    if not mona_path.exists():
+    from armance.service.chat_handlers.common import resolve_agent_path
+    mona_path = resolve_agent_path(ctx.armance_root, "system-judge")
+    if mona_path is None:
         return "[autonomous: mona unavailable, defaulting to 'proceed']"
     try:
         mona = Agent.load(mona_path)
