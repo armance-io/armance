@@ -201,6 +201,22 @@ class TokenLedger:
     budget_cap_usd: float | None = None
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
+    def __post_init__(self) -> None:
+        if self.persist_path and self.persist_path.exists():
+            try:
+                data = json.loads(self.persist_path.read_text(encoding="utf-8"))
+                for entry_data in data.get("entries", []):
+                    self.entries.append(
+                        LedgerEntry(
+                            agent=entry_data["agent"],
+                            tokens_in=entry_data["tokens_in"],
+                            tokens_out=entry_data["tokens_out"],
+                            cost_usd=entry_data.get("cost_usd"),
+                        )
+                    )
+            except Exception:
+                pass
+
     def check_budget(self) -> None:
         """Raise BudgetExceeded if current cumulative cost meets or exceeds the cap."""
         if self.budget_cap_usd is None:

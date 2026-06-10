@@ -294,3 +294,34 @@ class TestSnapshotBounds:
         snap = led.snapshot()
         assert snap["total"]["gco2e_min"] == 5.0
         assert snap["total"]["gco2e_max"] == 5.0
+
+    def test_ledger_initialization_loads_existing_file(self, tmp_path: Path) -> None:
+        from armance.service.llm_service import TokenLedger
+        from armance.core.models.footprint import Footprint
+        
+        persist = tmp_path / "ledger.json"
+        
+        led = TokenLedger(persist_path=persist)
+        fp = Footprint(
+            energy_wh=1.0, gco2e=5.0, water_ml=3.0, embodied_gco2e=0.2,
+            estimate=False, tier="exact", proxy_model="some-proxy", zone="WOR",
+            gco2e_min=4.0, gco2e_max=6.0, water_ml_min=2.0, water_ml_max=4.0,
+        )
+        led.record("alice", 10, 20, cost_usd=0.01, footprint=fp)
+        
+        led2 = TokenLedger(persist_path=persist)
+        
+        assert len(led2.entries) == 1
+        entry = led2.entries[0]
+        assert entry.agent == "alice"
+        assert entry.tokens_in == 10
+        assert entry.tokens_out == 20
+        assert entry.cost_usd == 0.01
+        assert entry.footprint is not None
+        assert entry.footprint.gco2e == 5.0
+        assert entry.footprint.water_ml == 3.0
+        assert entry.footprint.tier == "exact"
+        assert entry.footprint.proxy_model == "some-proxy"
+        assert entry.footprint.zone == "WOR"
+        assert entry.footprint.gco2e_min == 4.0
+        assert entry.footprint.gco2e_max == 6.0

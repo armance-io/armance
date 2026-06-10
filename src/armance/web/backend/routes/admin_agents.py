@@ -95,6 +95,10 @@ async def list_agents(
     # The 5 permanent staff (Armance/Malik/Kim/Mona/Serge) live as
     # system-*.md files and are NOT in ctx.agents (which holds only the
     # specialists Malik recruits). Surface staff first, then specialists.
+    from pathlib import Path
+    import armance
+    from armance import paths
+
     cfg = ws.ctx.cfg
     dp = getattr(cfg, "default_provider", "") or ""
     dm = getattr(cfg, "default_model", "") or ""
@@ -102,7 +106,7 @@ async def list_agents(
     seen: set[str] = set()
     boosted_names = ws.session.state.boosted_agents
     for slug, first_name, _role in META_AGENTS:
-        path = agent_path(ws.ctx.armance_root, slug)
+        path = paths.global_agents_dir() / f"{slug}.md"
         if not path.exists():
             continue
         try:
@@ -128,6 +132,10 @@ async def patch_agent(
     ws: WebSession = Depends(get_web_session),
     app_state: AppState = Depends(get_app_state),
 ) -> dict[str, Any]:
+    from pathlib import Path
+    import armance
+    from armance import paths
+
     if not _SAFE_NAME_RE.match(name):
         raise HTTPException(status_code=400, detail="invalid_agent_name")
 
@@ -139,13 +147,37 @@ async def patch_agent(
         raise HTTPException(status_code=422, detail={"error": "unknown_fields", "fields": list(unknown)})
 
     agent = next((a for a in ws.ctx.agents if a.name == name), None)
+    is_staff = False
+    target_slug = name
+
+    if agent is None:
+        # Check if it's a staff agent (slug or display first name)
+        for slug, first_name, _role in META_AGENTS:
+            if name in (slug, first_name):
+                is_staff = True
+                target_slug = slug
+                # Try loading from global
+                path = paths.global_agents_dir() / f"{slug}.md"
+                if path.exists():
+                    try:
+                        agent = Agent.load(path)
+                    except Exception:
+                        pass
+                break
+
     if agent is None:
         raise HTTPException(status_code=404, detail="agent_not_found")
 
-    path = agent_path(resolve_root_or_404(app_state, pid), name)
+    if is_staff:
+        path = paths.global_agents_dir() / f"{target_slug}.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+    else:
+        path = agent_path(resolve_root_or_404(app_state, pid), target_slug)
+
     if path.exists():
         on_disk = Agent.load(path)
     else:
+        # If it's staff and doesn't exist globally, we use the loaded builtin agent as base
         on_disk = agent
 
     updated_data = on_disk.model_dump()
@@ -164,14 +196,13 @@ async def patch_agent(
     updated = Agent.model_validate(updated_data)
     updated.save(path)
 
-    # Reflect the write in the in-memory roster so reads (GET /agents,
-    # sidebar, augment toggle) see the new model without a recruit/reload.
-    # Without this, is_boostable/boost_model stay stale until the session
-    # reloads — the settings edit appears to "not take".
-    for i, a in enumerate(ws.ctx.agents):
-        if a.name == name:
-            ws.ctx.agents[i] = updated
-            break
+    # Reflect the write in the in-memory roster if it's a specialist.
+    # If it's a staff agent, the next chat turn handler loads it dynamically from disk.
+    if not is_staff:
+        for i, a in enumerate(ws.ctx.agents):
+            if a.name == name:
+                ws.ctx.agents[i] = updated
+                break
 
     return {
         "name": updated.name,

@@ -567,8 +567,11 @@ agents:
         """role=criticalist must update system-challenger.md (model swap),
         never create a user agent named Serge/Kai/whatever."""
         agents_dir = temp_armance_root / "agents"
+        from armance import paths
+        global_agents_dir = paths.global_agents_dir()
+        global_agents_dir.mkdir(parents=True, exist_ok=True)
         # Seed system-challenger.md (minimal frontmatter) so redirect has target.
-        (agents_dir / "system-challenger.md").write_text(
+        (global_agents_dir / "system-challenger.md").write_text(
             "---\nname: system-challenger\ndomain: meta\nrole: meta\n"
             "persona: null\nprovider: openrouter\nmodel: old/m:free\n"
             "reasoning: null\nstatus: active\nprovider_family: null\n"
@@ -590,7 +593,7 @@ agents:
         assert names == []
         assert not (agents_dir / "Serge.md").exists()
         assert not (agents_dir / "Kai.md").exists()
-        updated = Agent.load(agents_dir / "system-challenger.md")
+        updated = Agent.load(global_agents_dir / "system-challenger.md")
         assert updated.model == "openai/gpt-4o-mini:free"
 
 
@@ -625,7 +628,10 @@ class TestStaffRoleRedirect:
             "---\n"
             "body\n"
         )
-        (agents_dir / f"{stem}.md").write_text(frontmatter, encoding="utf-8")
+        from armance import paths
+        global_agents_dir = paths.global_agents_dir()
+        global_agents_dir.mkdir(parents=True, exist_ok=True)
+        (global_agents_dir / f"{stem}.md").write_text(frontmatter, encoding="utf-8")
 
     @pytest.mark.parametrize("role,system_stem", [
         ("host",           "system-context"),
@@ -654,7 +660,8 @@ agents:
         assert names == []
         assert not (agents_dir / "Astrid.md").exists()
         # system-*.md model field updated in place
-        updated = Agent.load(agents_dir / f"{system_stem}.md")
+        from armance import paths
+        updated = Agent.load(paths.global_agents_dir() / f"{system_stem}.md")
         assert updated.model == "new/model:free"
 
 
@@ -734,7 +741,10 @@ agents:
             "lead_for: []\ndescription: ''\ncreated_by: null\n"
             "last_health: null\nlast_health_at: null\n---\nbody\n"
         )
-        (agents_dir / "system-context.md").write_text(frontmatter, encoding="utf-8")
+        from armance import paths
+        global_agents_dir = paths.global_agents_dir()
+        global_agents_dir.mkdir(parents=True, exist_ok=True)
+        (global_agents_dir / "system-context.md").write_text(frontmatter, encoding="utf-8")
 
         yaml_text = """
 agents:

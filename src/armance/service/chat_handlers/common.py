@@ -11,7 +11,7 @@ from armance.service.loop_context import AgentStatus, LoopContext
 logger = logging.getLogger(__name__)
 
 
-_BUILTIN_DIR = Path(__file__).resolve().parents[1] / "agents" / "builtin"
+
 
 
 def resolve_agent_path(armance_root: Path, stem: str) -> Path | None:
@@ -19,7 +19,7 @@ def resolve_agent_path(armance_root: Path, stem: str) -> Path | None:
 
     Clean break (grandma launcher): base staff lives in the GLOBAL agents dir.
     Resolution order: per-project override (local ``.armance/agents``) →
-    global base agents → bundled builtin fallback.
+    global base agents.
     """
     from armance import paths
 
@@ -27,10 +27,7 @@ def resolve_agent_path(armance_root: Path, stem: str) -> Path | None:
     if local.exists():
         return local
     global_agent = paths.global_agents_dir() / f"{stem}.md"
-    if global_agent.exists():
-        return global_agent
-    builtin = _BUILTIN_DIR / f"{stem}.md"
-    return builtin if builtin.exists() else None
+    return global_agent if global_agent.exists() else None
 
 
 def set_status(ctx: LoopContext, name: str, state: str) -> None:

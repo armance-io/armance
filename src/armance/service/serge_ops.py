@@ -26,8 +26,8 @@ async def cmd_serge_chat(text: str, ctx: LoopContext) -> str:
     agent_name = "system-challenger"
     serge_path = ctx.armance_root / "agents" / f"{agent_name}.md"
     if not serge_path.exists():
-        builtin = Path(__file__).parent / "agents" / "builtin" / f"{agent_name}.md"
-        serge_path = builtin if builtin.exists() else serge_path
+        from armance import paths
+        serge_path = paths.global_agents_dir() / f"{agent_name}.md"
     if not serge_path.exists():
         return t("common.error", error="Serge agent file missing")
 

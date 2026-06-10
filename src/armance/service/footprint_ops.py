@@ -35,6 +35,13 @@ def _empty_footprint_bucket() -> dict[str, Any]:
         "has_estimate": False, "has_unknown": False,
         "gco2e_min": 0.0, "gco2e_max": 0.0,
         "water_ml_min": 0.0, "water_ml_max": 0.0,
+        "tiers": {
+            "declared": 0.0,
+            "computed": 0.0,
+            "estimated": 0.0,
+            "bounded": 0.0,
+        },
+        "details": [],
     }
 
 
@@ -64,6 +71,53 @@ def _accumulate_bounds(bucket: dict[str, Any], rec: dict[str, Any]) -> None:
         bucket["water_ml"] += water_ml
         bucket["water_ml_min"] += _bound(rec, "water_ml_min", water_ml)
         bucket["water_ml_max"] += _bound(rec, "water_ml_max", water_ml)
+
+
+def _accumulate_tiers(bucket: dict[str, Any], rec: dict[str, Any]) -> None:
+    """Accummulate gCO2e by footprint tier and store model-level details."""
+    gco2e = rec.get("gco2e", 0.0) or 0.0
+    tier = rec.get("tier", "unknown")
+
+    # Map EcoLogits tiers to the 4 user-facing categories
+    cat = "bounded"
+    if tier in ("exact", "aliased"):
+        cat = "declared"
+    elif tier in ("params", "provider-default"):
+        cat = "computed"
+    elif tier == "similar":
+        cat = "estimated"
+    elif tier == "bounded":
+        cat = "bounded"
+
+    # Ensure tiers dictionary exists
+    if "tiers" not in bucket:
+        bucket["tiers"] = {"declared": 0.0, "computed": 0.0, "estimated": 0.0, "bounded": 0.0}
+    bucket["tiers"][cat] += gco2e
+
+    # Collect model details
+    model = rec.get("model", "unknown")
+    proxy_model = rec.get("proxy_model")
+
+    if "details" not in bucket:
+        bucket["details"] = []
+    
+    details = bucket["details"]
+    found = False
+    for d in details:
+        if d["category"] == cat and d["model"] == model and d["proxy_model"] == proxy_model:
+            d["gco2e"] += gco2e
+            d["calls"] += 1
+            found = True
+            break
+    if not found:
+        details.append({
+            "category": cat,
+            "model": model,
+            "proxy_model": proxy_model,
+            "gco2e": gco2e,
+            "calls": 1,
+        })
+
 
 
 # ---------------------------------------------------------------------------
@@ -137,6 +191,7 @@ def footprint_stats(logs_dir: Path, project_id: str) -> dict[str, Any]:
                 bucket["has_unknown"] = True
             else:
                 _accumulate_bounds(bucket, rec)
+                _accumulate_tiers(bucket, rec)
                 if estimate:
                     bucket["has_estimate"] = True
 
@@ -285,6 +340,7 @@ def aggregate_footprint_records(log_files: list[Path]) -> dict[str, Any]:
                     bucket["has_unknown"] = True
                 else:
                     _accumulate_bounds(bucket, rec)
+                    _accumulate_tiers(bucket, rec)
                     if estimate:
                         bucket["has_estimate"] = True
 
@@ -308,7 +364,10 @@ async def cmd_footprint(args: list[str], ctx: Any) -> str:
     Usage: /footprint [day|month]
     """
     armance_root: Path = ctx.armance_root
-    log_dir = armance_root / ".armance" / "logs"
+    if armance_root.name == ".armance":
+        log_dir = armance_root / "logs"
+    else:
+        log_dir = armance_root / ".armance" / "logs"
 
     log_files = sorted(log_dir.glob("*.jsonl")) if log_dir.exists() else []
     rollup = aggregate_footprint_records(log_files)

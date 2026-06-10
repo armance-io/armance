@@ -232,14 +232,14 @@ def _resolve_step_agent(domain: str, ctx: "LoopContext") -> Any:
             try:
                 return Agent.load(user_path)
             except Exception:
-                logger.warning("failed to load user %s agent; falling back to builtin", canonical_name)
-        builtin_dir = Path(__file__).parent / "agents" / "builtin"
-        path = builtin_dir / f"{_STAFF_AGENT_MAP[domain]}.md"
+                logger.warning("failed to load user %s agent", canonical_name)
+        from armance import paths
+        path = paths.global_agents_dir() / f"{_STAFF_AGENT_MAP[domain]}.md"
         if path.exists():
             try:
                 return Agent.load(path)
             except Exception:
-                logger.exception("failed to load builtin staff agent for domain %s", domain)
+                logger.exception("failed to load staff agent for domain %s", domain)
                 return None
         return None
     return next((a for a in ctx.agents if (a.domain or "").lower() == domain), None)
@@ -254,9 +254,8 @@ async def _mona_proxy_checkpoint(
     from armance.core.models.agent import Agent
     from armance.core.models.task import Task
 
-    mona_path = (
-        Path(__file__).parent / "agents" / "builtin" / "system-judge.md"
-    )
+    from armance import paths
+    mona_path = paths.global_agents_dir() / "system-judge.md"
     if not mona_path.exists():
         return "[autonomous: mona unavailable, defaulting to 'proceed']"
     try:
