@@ -56,6 +56,26 @@ class AppState:
         self.registry = InMemorySessionRegistry()
         self._sessions: dict[str, WebSession] = {}
 
+    def resolve_root(self, pid: str) -> Path | None:
+        """Resolve the ``.armance`` data root for project *pid*.
+
+        Multi-project (grandma launcher): ``default`` / empty keeps the boot
+        root (single-project + ``armance web <folder>`` unchanged). A registry
+        pid resolves to that project's ``<folder>/.armance``. An unknown pid
+        returns None (the route raises 404) — a raw pid never addresses an
+        arbitrary folder.
+        """
+        if pid in ("default", ""):
+            return self.armance_root
+        from armance.service import launcher_registry
+
+        folder = launcher_registry.path_for_pid(pid)
+        if folder is None:
+            return None
+        from armance import paths
+
+        return paths.local_data_dir(folder)
+
     def put(self, web_session: WebSession) -> None:
         self._sessions[web_session.sid] = web_session
 

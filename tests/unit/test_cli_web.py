@@ -58,7 +58,7 @@ def test_cmd_web_background_reports_early_exit(tmp_path: Path) -> None:
 
 def test_cmd_web_refuses_second_instance(tmp_path: Path) -> None:
     # A live lock (our own pid) → launching again is refused without spawning.
-    server_lock.write_lock(tmp_path, os.getpid(), 8000)
+    server_lock.write_lock(tmp_path / ".armance", os.getpid(), 8000)
     with patch("subprocess.Popen") as popen:
         rc = cmd_web(tmp_path, ["--no-browser"])
     assert rc == 1
@@ -71,12 +71,12 @@ def test_cmd_web_refuses_second_instance(tmp_path: Path) -> None:
 
 
 def test_cmd_web_stop_terminates_and_returns_zero(tmp_path: Path) -> None:
-    server_lock.write_lock(tmp_path, os.getpid(), 8000)
+    server_lock.write_lock(tmp_path / ".armance", os.getpid(), 8000)
     with patch.object(server_lock, "_signal"), \
          patch.object(server_lock, "_pid_alive", side_effect=[True, False]):
         rc = cmd_web(tmp_path, ["--stop"])
     assert rc == 0
-    assert server_lock.read_lock(tmp_path) is None
+    assert server_lock.read_lock(tmp_path / ".armance") is None
 
 
 def test_cmd_web_stop_without_server_returns_one(tmp_path: Path) -> None:

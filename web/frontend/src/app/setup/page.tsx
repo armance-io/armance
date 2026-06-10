@@ -6,7 +6,6 @@ import { Fleuron } from "@/components/visual/Fleuron";
 import { ThemeToggle } from "@/components/visual/ThemeToggle";
 import {
   initSetup,
-  createSession,
   getProviders,
   getEmbeddingModels,
   type EmbeddingModel,
@@ -328,10 +327,11 @@ export default function SetupPage() {
       }
 
       await initSetup(payload);
-      
-      // Setup successful! Create session and redirect.
-      const session = await createSession("default");
-      window.location.replace(`/projects/default/sessions/${session.id}`);
+
+      // Setup writes the GLOBAL config only (clean break). Land on the
+      // launcher — creating the first project is the launcher's job, not the
+      // wizard's.
+      window.location.replace("/launcher");
     } catch (err: unknown) {
       console.error("Setup initialization failed", err);
       const msg = err instanceof Error ? err.message : String(err);

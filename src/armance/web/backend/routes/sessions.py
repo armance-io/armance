@@ -21,7 +21,7 @@ from armance.service.session import start_or_resume, Session, load_state, latest
 from armance.service.tui_bridge import make_loop_context, META_AGENTS
 
 from armance.web.backend.checkpoint import WebCheckpointHandler
-from armance.web.backend.deps import get_app_state
+from armance.web.backend.deps import get_app_state, resolve_root_or_404
 from armance.web.backend.state import AppState, WebSession
 
 logger = logging.getLogger(__name__)
@@ -29,16 +29,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/projects/{pid}", tags=["sessions"])
 
 
-def _check_initialised(armance_root: Path, pid: str) -> None:
-    """Raise 409 if the project is not yet initialised.
+def _root(app_state: AppState, pid: str) -> Path:
+    """Resolve project *pid*'s data root, or 404 if the pid is unknown."""
+    return resolve_root_or_404(app_state, pid)
 
-    "Initialised" = `.armance/config.yaml` exists (the same path load_config
-    reads). Never write or overwrite config here — a previous version checked
-    the wrong path (`<root>/config.yaml`) and silently clobbered the user's
-    real config with a Gemini default on every launch.
+
+def _check_initialised(armance_root: Path, pid: str) -> None:
+    """Raise 409 if Armance is not yet initialised.
+
+    Clean break (grandma launcher): "initialised" = the GLOBAL config.yaml
+    exists (the same path ``load_config`` reads). Config is machine-wide, not
+    per project folder. Never write or overwrite config here.
     """
-    config_path = armance_root / "config.yaml"
-    if not config_path.exists():
+    from armance import paths
+
+    if not paths.global_config_path().exists():
         raise HTTPException(
             status_code=409,
             detail={"error": "not_initialised", "redirect": "/setup"},
@@ -58,7 +63,7 @@ def _load_web_session(
         return ws
 
     try:
-        cfg = load_config(armance_root.parent)
+        cfg = load_config()
     except Exception as exc:
         raise HTTPException(
             status_code=409,
@@ -107,11 +112,11 @@ async def create_session(
     app_state: AppState = Depends(get_app_state),
 ) -> dict:
     """Create a new Armance session for project *pid*."""
-    armance_root = app_state.armance_root
+    armance_root = _root(app_state, pid)
     _check_initialised(armance_root, pid)
 
     try:
-        cfg = load_config(armance_root.parent)
+        cfg = load_config()
     except Exception as exc:
         raise HTTPException(status_code=409, detail={"error": "not_initialised", "redirect": "/setup"}) from exc
 
@@ -138,7 +143,7 @@ async def get_sessions(
     Mirrors the TUI resume picker: id, updated_at, turns, est_tokens.
     """
     try:
-        sessions = list_sessions(app_state.armance_root)
+        sessions = list_sessions(_root(app_state, pid))
     except Exception:
         logger.warning("list_sessions failed pid=%s", pid, exc_info=True)
         sessions = []
@@ -153,14 +158,14 @@ async def get_latest_session(
     app_state: AppState = Depends(get_app_state),
 ) -> dict:
     """Return the latest session, auto-creating one if none exists."""
-    armance_root = app_state.armance_root
+    armance_root = _root(app_state, pid)
     _check_initialised(armance_root, pid)
 
     sid = latest_session_id(armance_root)
     if not sid:
         # Create a default session automatically just like POST /sessions
         try:
-            cfg = load_config(armance_root.parent)
+            cfg = load_config()
         except Exception as exc:
             raise HTTPException(status_code=409, detail={"error": "not_initialised", "redirect": "/setup"}) from exc
 
@@ -184,7 +189,7 @@ async def get_session(
     app_state: AppState = Depends(get_app_state),
 ) -> dict:
     """Return session state, agent list, and language."""
-    armance_root = app_state.armance_root
+    armance_root = _root(app_state, pid)
     _check_initialised(armance_root, pid)
 
     try:
@@ -224,7 +229,7 @@ async def get_messages(
     The web chat replays these on mount so an existing session shows its
     dialogue exactly like the TUI.
     """
-    armance_root = app_state.armance_root
+    armance_root = _root(app_state, pid)
     _check_initialised(armance_root, pid)
 
     try:
