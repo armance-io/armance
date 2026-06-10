@@ -387,6 +387,37 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
           >
             <p style={{ margin: 0 }}>{t("admin:footprint.method_body")}</p>
             <p style={{ margin: 0 }}>{t("admin:footprint.method_tiers")}</p>
+
+            <div style={{ borderTop: `1px solid ${tokens.ruleSoft || tokens.rule}`, paddingTop: 10 }}>
+              <div style={{ fontFamily: tokens.ffMono, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
+                {t("admin:footprint.method_categories_title")}
+              </div>
+              {(["declared", "computed", "estimated", "bounded"] as const).map((c) => (
+                <p key={c} style={{ margin: "0 0 6px" }}>
+                  {t(`admin:footprint.cat_${c}_long`)}
+                </p>
+              ))}
+            </div>
+
+            <div style={{ borderTop: `1px solid ${tokens.ruleSoft || tokens.rule}`, paddingTop: 10 }}>
+              <div style={{ fontFamily: tokens.ffMono, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
+                {t("admin:footprint.method_assumptions_title")}
+              </div>
+              <p style={{ margin: 0, whiteSpace: "pre-line" }}>
+                {t("admin:footprint.method_assumptions")}
+              </p>
+            </div>
+
+            <div style={{ borderTop: `1px solid ${tokens.ruleSoft || tokens.rule}`, paddingTop: 10 }}>
+              <div style={{ fontFamily: tokens.ffMono, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
+                {t("admin:footprint.method_known_title")}
+              </div>
+              <p style={{ margin: "0 0 10px" }}>{t("admin:footprint.method_known")}</p>
+              <div style={{ fontFamily: tokens.ffMono, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
+                {t("admin:footprint.method_unknown_title")}
+              </div>
+              <p style={{ margin: 0 }}>{t("admin:footprint.method_unknown")}</p>
+            </div>
             {dominantZone && (
               <p style={{ margin: 0, fontFamily: tokens.ffMono, fontSize: 12 }}>
                 {t("admin:footprint.method_zone_label")}: <strong>{dominantZone}</strong>
