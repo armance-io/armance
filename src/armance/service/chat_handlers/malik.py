@@ -284,6 +284,24 @@ async def _build_models_context(ctx: LoopContext) -> str:
         "carries that. `provider:` must be exactly one of the names above "
         "(`openrouter`, `gemini`, `claude-code`, `custom-openai`).",
     ]
+    if budget == "optimised":
+        lines.extend([
+            "",
+            "OPTIMISED POSTURE — how to choose models (environment first, then cost):",
+            "1. For each agent, pick the MOST FRUGAL model that is genuinely "
+            "adequate for the role's real difficulty — never under-staff a "
+            "demanding role to save grams of CO2e: an inadequate answer that "
+            "must be redone costs more than a right-sized one.",
+            "2. Give EVERY specialist an augment pair: a sober base `model` "
+            "plus a stronger `boost_model` (same or another configured "
+            "provider). The augment is engaged only when needed, so granting "
+            "it costs nothing by default — be generous with it.",
+            "3. Roles with intense needs (multi-step reasoning, synthesis "
+            "across many sources, adversarial critique, long documents) get "
+            "a base one class higher, not just an augment.",
+            "4. Within a capability class, prefer the greenest (the lists "
+            "below are sorted greenest-first inside each class).",
+        ])
     for prov in configured:
         models = filter_for_budget(catalogues.get(prov, []), budget)
         if not models:
@@ -295,13 +313,23 @@ async def _build_models_context(ctx: LoopContext) -> str:
         models = _order_for_budget(models, budget, ctx.cfg)
         lines.append(f"\nProvider `{prov}`:")
         if budget == "optimised":
-            ids = [m.id for m in models]
-            shown = ids if len(ids) <= 50 else ids[:50]
-            suffix = f" (+{len(ids) - 50} more)" if len(ids) > 50 else ""
-            lines.append(
-                f"  - greenest first (lowest estimated gCO2e): "
-                f"{', '.join(shown)}{suffix}"
-            )
+            # Adequacy first, then carbon: keep the capability classes
+            # (cost tier as proxy) and sort greenest-first INSIDE each
+            # class. A flat greenest list pushed Malik toward tiny models
+            # regardless of the role's real needs.
+            by_tier_m: dict[str, list] = {"free": [], "low": [], "medium": [], "high": []}
+            for m in models:
+                by_tier_m[m.tier].append(m)
+            for tier in ("free", "low", "medium", "high"):
+                tier_models = _order_for_budget(by_tier_m[tier], "optimised", ctx.cfg)
+                ids = [m.id for m in tier_models]
+                if not ids:
+                    continue
+                shown = ids if len(ids) <= 50 else ids[:50]
+                suffix = f" (+{len(ids) - 50} more)" if len(ids) > 50 else ""
+                lines.append(
+                    f"  - {tier} (greenest first): {', '.join(shown)}{suffix}"
+                )
         else:
             by_tier: dict[str, list[str]] = {"free": [], "low": [], "medium": [], "high": []}
             for m in models:

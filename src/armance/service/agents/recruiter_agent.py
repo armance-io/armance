@@ -741,6 +741,17 @@ agents:
                     boost_prov, entry["boost_model"],
                     default_provider=self.config.default_provider,
                 )
+            elif getattr(self.config, "budget_effort", "") == "optimised":
+                # Optimised posture: every specialist must carry an augment
+                # pair (sober base + stronger fallback). When Malik forgot
+                # one, fall back deterministically to the user's flagship
+                # default model — unless it IS the base already.
+                default_boost = (self.config.default_model or "").strip()
+                if default_boost and default_boost != entry["model"]:
+                    entry["boost_provider"], entry["boost_model"] = _normalise_provider_model(
+                        self.config.default_provider, default_boost,
+                        default_provider=self.config.default_provider,
+                    )
 
             agents.append(Agent.model_validate(entry))
 
