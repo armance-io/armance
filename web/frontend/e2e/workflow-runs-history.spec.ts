@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Workflow Runs History E2E", () => {
   test("displays historical runs, allows navigating, deleting completed runs, and blocks active deletions", async ({ page }) => {

@@ -25,8 +25,24 @@ const config: NextConfig = isExport
         optimizePackageImports: ["@xyflow/react", "i18next", "react-i18next", "@tanstack/react-query"],
       },
       async rewrites() {
-        // Backend serves the API under /api; proxy straight through.
-        return [{ source: "/api/:path*", destination: `${backend}/api/:path*` }];
+        return [
+          // Backend serves the API under /api; proxy straight through.
+          { source: "/api/:path*", destination: `${backend}/api/:path*` },
+          // Mirror the production FastAPI behaviour for dynamic routes: the
+          // exported shell is pre-rendered with the "_" sentinel params and
+          // real ids are read client-side from the URL (useRouteParams).
+          // Without these, dev / `next start` 404s on any real id
+          // (dynamicParams = false → NoFallbackError) and the E2E suite
+          // cannot navigate anywhere.
+          { source: "/projects/:pid/admin", destination: "/projects/_/admin" },
+          { source: "/projects/:pid/sessions/:sid", destination: "/projects/_/sessions/_" },
+          { source: "/projects/:pid/sessions/:sid/library", destination: "/projects/_/sessions/_/library" },
+          { source: "/projects/:pid/sessions/:sid/deliverables", destination: "/projects/_/sessions/_/deliverables" },
+          { source: "/projects/:pid/sessions/:sid/workflows/:name", destination: "/projects/_/sessions/_/workflows/_" },
+          { source: "/projects/:pid/sessions/:sid/workflows/:name/preview", destination: "/projects/_/sessions/_/workflows/_/preview" },
+          { source: "/projects/:pid/sessions/:sid/workflows/:name/runs/:runId", destination: "/projects/_/sessions/_/workflows/_/runs/_" },
+          { source: "/projects/:pid", destination: "/projects/_" },
+        ];
       },
     };
 

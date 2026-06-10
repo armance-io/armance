@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("DepthPicker Workflow Launch E2E", () => {
   test("toggles launch configuration options and successfully submits run request", async ({ page }) => {
