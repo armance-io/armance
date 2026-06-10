@@ -4,7 +4,7 @@ import { type FC, useCallback, useEffect, useMemo, useRef, useState } from "reac
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { submitTurn, getSession, getMessages } from "@/lib/api";
+import { submitTurn, getSession, getMessages, ApiError } from "@/lib/api";
 import { useEventStream, type SseEvent } from "@/lib/sse";
 import { assignAgentColour } from "@/lib/agent_colours";
 import { displayAgentName } from "@/lib/agentNames";
@@ -66,11 +66,22 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, ac
     return String(counter.current);
   }, []);
 
-  const { data: sessionData } = useQuery({
+  const { data: sessionData, error: sessionError } = useQuery({
     queryKey: ["session", pid, sid],
     queryFn: () => getSession(pid, sid),
     enabled: Boolean(pid && sid),
+    retry: false,
   });
+
+  // The URL's sid may not belong to this project (a stale id carried across a
+  // project switch → the session lives under another project's root). Rather
+  // than render an empty, broken page (no staff, no library), bounce to the
+  // project entry, which resolves THIS project's latest session.
+  useEffect(() => {
+    if (sessionError instanceof ApiError && sessionError.status === 404 && pid) {
+      window.location.replace(`/projects/${pid}`);
+    }
+  }, [sessionError, pid]);
 
   const agents: AgentInfo[] = useMemo(() => sessionData?.agents ?? [], [sessionData]);
 

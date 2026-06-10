@@ -30,9 +30,15 @@ class LockInfo:
     started_at: float
 
 
-def pidfile_path(root: Path) -> Path:
-    """Return the pidfile path for the project rooted at *root*."""
-    return root / ".armance" / PIDFILE_NAME
+def pidfile_path(data_dir: Path) -> Path:
+    """Return the pidfile path inside *data_dir*.
+
+    *data_dir* is the directory that holds the server's runtime files — for a
+    project it is ``<folder>/.armance``; for the global launcher it is the
+    global config dir itself (so the launcher does not nest a redundant
+    ``.armance`` under ``~/.config/armance``).
+    """
+    return data_dir / PIDFILE_NAME
 
 
 def _pid_alive(pid: int) -> bool:
@@ -51,13 +57,13 @@ def _pid_alive(pid: int) -> bool:
     return True
 
 
-def read_lock(root: Path) -> LockInfo | None:
-    """Return the live lock for *root*, or None.
+def read_lock(data_dir: Path) -> LockInfo | None:
+    """Return the live lock in *data_dir*, or None.
 
     A pidfile whose process is no longer running is stale: it is removed and
     None is returned, so a fresh launch can proceed.
     """
-    path = pidfile_path(root)
+    path = pidfile_path(data_dir)
     if not path.exists():
         return None
     try:
@@ -77,17 +83,17 @@ def read_lock(root: Path) -> LockInfo | None:
     return info
 
 
-def write_lock(root: Path, pid: int, port: int) -> None:
+def write_lock(data_dir: Path, pid: int, port: int) -> None:
     """Record the running server's pid + port."""
-    path = pidfile_path(root)
+    path = pidfile_path(data_dir)
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {"pid": pid, "port": port, "started_at": time.time()}
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
-def clear_lock(root: Path) -> None:
+def clear_lock(data_dir: Path) -> None:
     """Remove the pidfile (no-op if absent)."""
-    _remove(pidfile_path(root))
+    _remove(pidfile_path(data_dir))
 
 
 def _remove(path: Path) -> None:
@@ -99,14 +105,14 @@ def _remove(path: Path) -> None:
         logger.warning("could not remove pidfile %s: %s", path, exc)
 
 
-def stop_server(root: Path, *, timeout: float = 10.0) -> tuple[bool, str]:
-    """Stop the running server for *root*.
+def stop_server(data_dir: Path, *, timeout: float = 10.0) -> tuple[bool, str]:
+    """Stop the running server recorded in *data_dir*.
 
     Returns ``(stopped, message)``. ``stopped`` is False when no live server
     was found. Sends SIGTERM (to the process group on POSIX), waits up to
     *timeout* seconds, then escalates to SIGKILL.
     """
-    info = read_lock(root)
+    info = read_lock(data_dir)
     if info is None:
         return False, "no running server found for this folder"
 
@@ -116,7 +122,7 @@ def stop_server(root: Path, *, timeout: float = 10.0) -> tuple[bool, str]:
     deadline = time.time() + timeout
     while time.time() < deadline:
         if not _pid_alive(pid):
-            clear_lock(root)
+            clear_lock(data_dir)
             return True, f"stopped web server (pid {pid})"
         time.sleep(0.2)
 
@@ -124,7 +130,7 @@ def stop_server(root: Path, *, timeout: float = 10.0) -> tuple[bool, str]:
     # SIGTERM there (the only signal os.kill honours on that platform).
     _signal(pid, getattr(signal, "SIGKILL", signal.SIGTERM))
     time.sleep(0.3)
-    clear_lock(root)
+    clear_lock(data_dir)
     if _pid_alive(pid):
         return True, f"sent SIGKILL to web server (pid {pid}) — verify it exited"
     return True, f"killed web server (pid {pid})"

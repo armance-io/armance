@@ -15,23 +15,30 @@ from .conftest import AUTH_COOKIES
 import os
 
 
+def _global_env():
+    from armance import paths
+    paths.global_config_dir().mkdir(parents=True, exist_ok=True)
+    return paths.global_env_path()
+
+
+
 @pytest.mark.asyncio
 async def test_delete_secret_removes_key(client: AsyncClient, armance_root: Path) -> None:
-    (armance_root / ".env").write_text("MY_KEY=val\nOTHER=x\n", encoding="utf-8")
+    _global_env().write_text("MY_KEY=val\nOTHER=x\n", encoding="utf-8")
 
     resp = await client.delete("/projects/default/admin/secrets/MY_KEY")
 
     assert resp.status_code == 200
     assert resp.json()["deleted"] is True
 
-    env_text = (armance_root / ".env").read_text()
+    env_text = _global_env().read_text()
     assert "MY_KEY" not in env_text
     assert "OTHER=x" in env_text
 
 
 @pytest.mark.asyncio
 async def test_delete_secret_key_not_present(client: AsyncClient, armance_root: Path) -> None:
-    (armance_root / ".env").write_text("OTHER=x\n", encoding="utf-8")
+    _global_env().write_text("OTHER=x\n", encoding="utf-8")
 
     resp = await client.delete("/projects/default/admin/secrets/MISSING_KEY")
 

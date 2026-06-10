@@ -15,6 +15,24 @@ def get_app_state(request: Request) -> AppState:
     return request.app.state.app_state
 
 
+def resolve_root_or_404(app_state: AppState, pid: str):
+    """Resolve project *pid*'s data root, raising 404 on an unknown pid.
+
+    Plain helper for route bodies (multi-project, grandma launcher).
+    ``pid=default`` keeps the boot root; a registry pid resolves to its folder;
+    an unknown pid is a 404 — a raw pid never addresses an arbitrary folder.
+    """
+    root = app_state.resolve_root(pid)
+    if root is None:
+        raise HTTPException(status_code=404, detail="project_not_found")
+    return root
+
+
+def get_project_root(pid: str, app_state: AppState = Depends(get_app_state)):
+    """Depends() form of :func:`resolve_root_or_404`."""
+    return resolve_root_or_404(app_state, pid)
+
+
 def get_web_session(
     sid: str,
     app_state: AppState = Depends(get_app_state),

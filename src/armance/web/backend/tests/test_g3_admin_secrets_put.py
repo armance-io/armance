@@ -15,6 +15,13 @@ from .conftest import AUTH_COOKIES
 import os
 
 
+def _global_env():
+    from armance import paths
+    paths.global_config_dir().mkdir(parents=True, exist_ok=True)
+    return paths.global_env_path()
+
+
+
 @pytest.mark.asyncio
 async def test_put_secret_writes_env(client: AsyncClient, armance_root: Path) -> None:
     resp = await client.put(
@@ -27,7 +34,7 @@ async def test_put_secret_writes_env(client: AsyncClient, armance_root: Path) ->
     assert body["name"] == "MY_API_KEY"
     assert body["set"] is True
 
-    env_text = (armance_root / ".env").read_text()
+    env_text = _global_env().read_text()
     assert "MY_API_KEY=secret-value-xyz" in env_text
 
 
@@ -67,7 +74,7 @@ async def test_put_secret_from_non_loopback_forbidden(armance_root: Path) -> Non
 
 @pytest.mark.asyncio
 async def test_put_secret_overwrites_existing(client: AsyncClient, armance_root: Path) -> None:
-    (armance_root / ".env").write_text("MY_KEY=old_value\n", encoding="utf-8")
+    _global_env().write_text("MY_KEY=old_value\n", encoding="utf-8")
 
     resp = await client.put(
         "/projects/default/admin/secrets/MY_KEY",
@@ -75,6 +82,6 @@ async def test_put_secret_overwrites_existing(client: AsyncClient, armance_root:
     )
 
     assert resp.status_code == 200
-    env_text = (armance_root / ".env").read_text()
+    env_text = _global_env().read_text()
     assert "MY_KEY=new_value" in env_text
     assert "old_value" not in env_text

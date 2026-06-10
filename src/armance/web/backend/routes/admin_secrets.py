@@ -4,6 +4,7 @@ All routes are V2 IP-guarded: only accessible from 127.0.0.1 or ::1.
 """
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request
@@ -19,6 +20,13 @@ router = APIRouter()
 
 _LOOPBACK = {"127.0.0.1", "::1"}
 
+
+def _global_config_dir() -> Path:
+    """Secrets live in the GLOBAL config dir (clean break), not per-project."""
+    from armance import paths
+
+    return paths.global_config_dir()
+
 @router.get("/projects/{pid}/admin/secrets")
 async def get_secrets(
     pid: str,
@@ -30,7 +38,7 @@ async def get_secrets(
     host = request.client.host if request.client else None
     if host not in _LOOPBACK:
         return JSONResponse(status_code=403, content={"error": "secrets_localhost_only"})
-    storage = LocalFilesystemStorage(root=app_state.armance_root)
+    storage = LocalFilesystemStorage(root=_global_config_dir())
     return await list_secrets(storage, reveal=reveal)
 
 
@@ -47,7 +55,7 @@ async def put_secret(
     if host not in _LOOPBACK:
         return JSONResponse(status_code=403, content={"error": "secrets_localhost_only"})
     value = body.get("value", "")
-    storage = LocalFilesystemStorage(root=app_state.armance_root)
+    storage = LocalFilesystemStorage(root=_global_config_dir())
     try:
         await set_secret(storage, name, value)
     except EnvKeyError as exc:
@@ -66,6 +74,6 @@ async def delete_secret_route(
     host = request.client.host if request.client else None
     if host not in _LOOPBACK:
         return JSONResponse(status_code=403, content={"error": "secrets_localhost_only"})
-    storage = LocalFilesystemStorage(root=app_state.armance_root)
+    storage = LocalFilesystemStorage(root=_global_config_dir())
     found = await delete_secret(storage, name)
     return {"deleted": found}
