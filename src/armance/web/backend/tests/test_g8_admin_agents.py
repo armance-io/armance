@@ -194,3 +194,31 @@ async def test_patch_persona_rejected(session_with_agents, armance_root: Path) -
     body = resp.json()
     detail = body.get("detail", body)
     assert detail.get("error") == "persona_via_malik_only"
+
+
+@pytest.mark.asyncio
+async def test_fresh_project_staff_resolves_from_global_dir(
+    armance_root: Path, client: AsyncClient, session_with_agents
+) -> None:
+    """Regression (grandma-launcher split): a fresh project has NO local
+    system-*.md — staff must resolve from the GLOBAL agents dir, otherwise
+    the web sidebar shows no staff at all (TUI already resolved global)."""
+    from armance import paths
+
+    app, ws = session_with_agents
+    # Fresh project: remove the local staff file the fixture wrote.
+    local_staff = armance_root / "agents" / "system-context.md"
+    local_staff.unlink()
+    ws.ctx.agents = [a for a in ws.ctx.agents if a.name != "system-context"]
+
+    # Global dir (isolated by conftest) holds the installed base staff.
+    staff = _make_agent("system-context", model="claude-haiku-4-5", is_staff=True)
+    _write_agent_file(paths.global_agents_dir(), staff)
+
+    from httpx import AsyncClient as AC, ASGITransport
+    async with AC(transport=ASGITransport(app=app), base_url="http://test", cookies=AUTH_COOKIES) as c:
+        resp = await c.get(f"/projects/default/sessions/{ws.sid}/agents")
+
+    assert resp.status_code == 200
+    names = {a["name"] for a in resp.json()}
+    assert "Armance" in names, f"staff missing from fresh project: {names}"
