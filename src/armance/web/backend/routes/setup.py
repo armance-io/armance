@@ -62,7 +62,7 @@ async def setup_init(
     from armance.config import (
         Config,
         ProviderConfig,
-        ensure_armance_tree,
+        ensure_data_tree,
         ensure_global_setup,
         save_config,
         write_env,
@@ -119,7 +119,7 @@ async def setup_init(
         ensure_global_setup(cfg)
         save_config(cfg)
         write_env(providers_list)
-        ensure_armance_tree(app_state.armance_root.parent, cfg)
+        ensure_data_tree(app_state.armance_root)
         from armance.providers.discovery import reset_cache
         reset_cache()
     except Exception as exc:
