@@ -136,3 +136,26 @@ def test_default_provider_gets_env_overlay(isolate_global_config: Path, monkeypa
     p = cfg.provider("custom-openai")
     assert p.api_key == "k-123"
     assert p.base_url == "http://localhost:11434/v1"
+
+
+def test_ensure_data_tree_skips_global_config_dir(isolate_global_config, tmp_path):
+    """Launcher boot root = the global config dir: no project tree (and no
+    parasite ~/.config/.armance via the old .parent dance)."""
+    from armance import paths
+    from armance.config import ensure_data_tree
+
+    root = paths.global_config_dir()
+    ensure_data_tree(root)
+    assert not (root / "judge").exists()
+    assert not (root.parent / ".armance").exists()
+
+
+def test_ensure_data_tree_provisions_project_root(tmp_path):
+    from armance.config import ensure_data_tree
+
+    root = tmp_path / "proj" / ".armance"
+    ensure_data_tree(root)
+    assert (root / "judge").is_dir()
+    assert (root / "exports").exists() is False  # created on demand by runs
+    readme = (root / "README.md").read_text(encoding="utf-8")
+    assert "exports/<workflow>/<run-id>/" in readme
