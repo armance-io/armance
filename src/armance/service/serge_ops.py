@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import logging
 import re
-from pathlib import Path
 
 from armance.nls import t
 from armance.service.agent_sandbox import scrub_reply

@@ -1,7 +1,6 @@
 """`armance install-shortcut` dispatch (grandma launcher, sub-feature 4)."""
 from __future__ import annotations
 
-from pathlib import Path
 
 from armance import cli
 from armance.service import shortcuts
