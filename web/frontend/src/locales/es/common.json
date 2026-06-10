@@ -93,7 +93,20 @@
       "zone": {
         "wor": "Mundo — intensidad de carbono media global",
         "unknown": "Zona desconocida"
-      }
+      },
+      "desc_computed": "Estimación calculada a partir del número de parámetros declarado por el proveedor.",
+      "desc_estimated": "Proyección mediante un modelo de referencia similar, o una clase de tamaño prudente por proveedor.",
+      "method_categories_title": "Leer las categorías de precisión",
+      "cat_declared_long": "Declarado — el modelo (o un alias documentado) figura en el registro EcoLogits. El caso más fiable — una modelización, nunca una medición.",
+      "cat_computed_long": "Calculado — sin perfil en el registro, pero el proveedor declara el número de parámetros; el mismo modelo físico se aplica a ese tamaño.",
+      "cat_estimated_long": "Estimado — nada declarado. Tomamos el perfil de un modelo similar de la misma familia, o una clase de tamaño prudente. Marcado «~»; la cifra real puede variar en varios factores.",
+      "cat_bounded_long": "Acotado — no se sabe nada (típicamente modelos «:free»). Nos negamos a inventar una cifra: obtiene un intervalo físico mín/máx (0,1–33 Wh por petición, Jegham et al. 2025).",
+      "method_assumptions_title": "Nuestras hipótesis",
+      "method_assumptions": "• La energía se deduce de los tokens producidos y la latencia — nunca vemos la GPU.\n• PUE y WUE son medias sectoriales, no las cifras reales del proveedor.\n• La fabricación del hardware se amortiza en 3 años.\n• Su zona eléctrica aplica una intensidad media anual, no el mix del instante.\n• El batching se supone en los valores por defecto de la metodología.",
+      "method_known_title": "Lo que sabemos de verdad",
+      "method_known": "El recuento exacto de tokens y la latencia de cada llamada, el modelo y proveedor, su zona eléctrica, y — para modelos del registro — un perfil documentado.",
+      "method_unknown_title": "Lo que no podemos saber",
+      "method_unknown": "La GPU y el centro de datos reales, el mix eléctrico del momento, los PUE/WUE reales, el batching entre clientes — y la energía de los tokens de entrada, no modelada por EcoLogits: el total real es algo MAYOR que el mostrado."
     }
   },
   "workflow": {

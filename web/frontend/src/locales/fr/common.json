@@ -556,11 +556,22 @@
       "show_tiers": "Détails de précision et paliers",
       "models_used": "Modèles appelés",
       "desc_declared": "Modèle documenté et validé au registre EcoLogits.",
-      "desc_computed": "Estimation calculée à partir du nombre de paramètres déclaré.",
-      "desc_estimated": "Consommation projetée via un modèle similaire de référence.",
+      "desc_computed": "Estimation calculée à partir du nombre de paramètres déclaré par le fournisseur.",
+      "desc_estimated": "Projection via un modèle de référence proche, ou une classe de taille prudente par fournisseur quand rien de plus proche n'existe.",
       "desc_bounded": "Consommation inconnue, bornée entre nano (0,1 Wh) et grand MoE (33 Wh).",
       "bounding_calc_title": "Calcul du bornage physique :",
-      "bounding_calc_desc": "En l'absence de métadonnées, l'empreinte est bornée entre deux extrêmes de la littérature (Jegham et al. 2025) : 0,1 Wh (nano-modèle 1-3B sur H100) et 33 Wh (MoE/dense >400B sur A100), mis à l'échelle selon les jetons de sortie et multipliés par le mix carbone de la zone."
+      "bounding_calc_desc": "En l'absence de métadonnées, l'empreinte est bornée entre deux extrêmes de la littérature (Jegham et al. 2025) : 0,1 Wh (nano-modèle 1-3B sur H100) et 33 Wh (MoE/dense >400B sur A100), mis à l'échelle selon les jetons de sortie et multipliés par le mix carbone de la zone.",
+      "method_categories_title": "Lire les catégories de précision",
+      "cat_declared_long": "Déclaré — le modèle (ou un alias documenté) figure au registre EcoLogits : architecture et taille publiques ou bien documentées. Le cas le plus fiable — une modélisation, jamais une mesure.",
+      "cat_computed_long": "Calculé — pas de profil au registre, mais le fournisseur déclare le nombre de paramètres ; le même modèle physique s'applique à cette taille déclarée. Aussi fiable que la déclaration.",
+      "cat_estimated_long": "Estimé — rien de déclaré. On emprunte le profil d'un modèle proche de la même famille, ou une classe de taille prudente pour ce fournisseur. Marqué « ~ » ; le chiffre réel peut varier de quelques facteurs.",
+      "cat_bounded_long": "Borné — rien n'est connu (typiquement les modèles « :free » communautaires). On refuse d'inventer un chiffre : vous obtenez un intervalle physique min/max (0,1–33 Wh par requête, Jegham et al. 2025), proportionné aux tokens produits et à votre zone électrique.",
+      "method_assumptions_title": "Nos hypothèses",
+      "method_assumptions": "• L'énergie est déduite des tokens produits et de la latence — nous ne voyons jamais le GPU.\n• Le surcoût datacenter (PUE) et l'eau (WUE) sont des moyennes sectorielles, pas les chiffres réels du fournisseur.\n• La fabrication du matériel (impact incorporé) est amortie sur 3 ans.\n• Votre zone électrique applique une intensité carbone moyenne annuelle — pas le mix réel à l'instant de la requête.\n• Le batching et les optimisations de service sont supposés aux valeurs par défaut de la méthodologie.",
+      "method_known_title": "Ce que nous savons vraiment",
+      "method_known": "Le décompte exact de tokens et la latence de chaque appel, le modèle et le fournisseur qui ont servi, votre zone électrique choisie, et — pour les modèles au registre — un profil matériel et paramétrique documenté.",
+      "method_unknown_title": "Ce que nous ne pouvons pas savoir",
+      "method_unknown": "Le GPU et le datacenter réels derrière l'API, le mix électrique à cet instant précis, les vrais PUE/WUE du fournisseur, le batching entre clients — et l'énergie des tokens d'entrée (prompt), non modélisée par EcoLogits à ce jour : le total réel est donc un peu PLUS ÉLEVÉ qu'affiché."
     }
   },
   "audio": {
