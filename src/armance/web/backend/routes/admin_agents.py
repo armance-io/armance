@@ -95,9 +95,9 @@ async def list_agents(
     # The 5 permanent staff (Armance/Malik/Kim/Mona/Serge) live as
     # system-*.md files and are NOT in ctx.agents (which holds only the
     # specialists Malik recruits). Surface staff first, then specialists.
-    from pathlib import Path
-    import armance
-    from armance import paths
+    # Staff files resolve like the runtime does (resolve_agent_path):
+    # project-local override first, then the global agents dir.
+    from armance.service.chat_handlers.common import resolve_agent_path
 
     cfg = ws.ctx.cfg
     dp = getattr(cfg, "default_provider", "") or ""
@@ -106,8 +106,8 @@ async def list_agents(
     seen: set[str] = set()
     boosted_names = ws.session.state.boosted_agents
     for slug, first_name, _role in META_AGENTS:
-        path = paths.global_agents_dir() / f"{slug}.md"
-        if not path.exists():
+        path = resolve_agent_path(ws.ctx.armance_root, slug)
+        if path is None:
             continue
         try:
             agent = Agent.load(path)
@@ -132,9 +132,8 @@ async def patch_agent(
     ws: WebSession = Depends(get_web_session),
     app_state: AppState = Depends(get_app_state),
 ) -> dict[str, Any]:
-    from pathlib import Path
-    import armance
     from armance import paths
+    from armance.service.chat_handlers.common import resolve_agent_path
 
     if not _SAFE_NAME_RE.match(name):
         raise HTTPException(status_code=400, detail="invalid_agent_name")
@@ -156,11 +155,10 @@ async def patch_agent(
             if name in (slug, first_name):
                 is_staff = True
                 target_slug = slug
-                # Try loading from global
-                path = paths.global_agents_dir() / f"{slug}.md"
-                if path.exists():
+                staff_path = resolve_agent_path(ws.ctx.armance_root, slug)
+                if staff_path is not None:
                     try:
-                        agent = Agent.load(path)
+                        agent = Agent.load(staff_path)
                     except Exception:
                         pass
                 break
@@ -169,7 +167,10 @@ async def patch_agent(
         raise HTTPException(status_code=404, detail="agent_not_found")
 
     if is_staff:
-        path = paths.global_agents_dir() / f"{target_slug}.md"
+        # Write where the file actually lives (local override wins),
+        # falling back to the global dir for a fresh machine.
+        path = resolve_agent_path(ws.ctx.armance_root, target_slug) \
+            or paths.global_agents_dir() / f"{target_slug}.md"
         path.parent.mkdir(parents=True, exist_ok=True)
     else:
         path = agent_path(resolve_root_or_404(app_state, pid), target_slug)
