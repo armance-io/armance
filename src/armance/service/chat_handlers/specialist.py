@@ -50,18 +50,11 @@ async def cmd_chat(text: str, ctx: LoopContext) -> str:
         history = visible_turns(ctx.session.conversation.turns, agent_name)
         ctx.session.conversation.append("user", text, agent=agent_name)
 
-        user_text_lower = text.lower()
-        if "caveman" in user_text_lower:
-            if "full" in user_text_lower:
-                chat_caveman = "full"
-            elif "ultra" in user_text_lower:
-                chat_caveman = "ultra"
-            elif "none" in user_text_lower:
-                chat_caveman = "none"
-            else:
-                chat_caveman = "ultra"
-        else:
-            chat_caveman = "none"
+        # A2H invariant: compression protocols apply to agent-to-agent
+        # (workflow) calls only. A direct chat with the human always uses
+        # the natural register — no keyword opt-in (it leaked telegraphic
+        # replies into human-facing conversations).
+        chat_caveman = "none"
 
         if agent_obj is not None:
             view = f"dm:{agent_name}"
