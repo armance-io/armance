@@ -406,6 +406,8 @@ const StatsTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) => 
           gco2e_max: f.gco2e_max,
           water_ml_min: f.water_ml_min,
           water_ml_max: f.water_ml_max,
+          tiers: f.tiers,
+          details: f.details,
         } satisfies AgentStat;
       });
 

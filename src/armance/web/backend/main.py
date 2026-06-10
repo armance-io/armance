@@ -84,7 +84,23 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     armance_root = _resolve_armance_root()
     app_state = AppState(armance_root=armance_root)
     app.state.app_state = app_state
+
+    from armance.config import load_config
+    from armance.service import security
+    try:
+        cfg = load_config()
+    except Exception:  # noqa: BLE001
+        from armance.config import Config
+        cfg = Config()
+    secret = security.resolve_web_secret(cfg)
+    auto = security.was_auto_generated(cfg)
+
     logger.info("Armance web backend started; armance_root=%s", armance_root)
+    if auto:
+        logger.info("[SECURITY] Web interface access token: %s", secret)
+    else:
+        logger.info("[SECURITY] Web interface protected by your configured password.")
+
     yield
     logger.info("Armance web backend shutting down")
 

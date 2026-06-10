@@ -972,8 +972,8 @@ Preserve all factual content. Skip conversational filler. Output ONLY raw Markdo
         Armance when the user is lost. Cached on first call."""
         if hasattr(self, "_concepts_cache"):
             return self._concepts_cache
-        from pathlib import Path as _Path
-        concepts_path = _Path(__file__).parent / "builtin" / "_armance_concepts.md"
+        from armance import paths
+        concepts_path = paths.global_agents_dir() / "_armance_concepts.md"
         try:
             self._concepts_cache = concepts_path.read_text(encoding="utf-8")
         except Exception:

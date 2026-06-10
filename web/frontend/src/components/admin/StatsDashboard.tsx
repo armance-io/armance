@@ -2,6 +2,7 @@ import { type CSSProperties, type FC, useMemo, useState } from "react";
 import { tokens } from "../_shared/armance-tokens";
 import { displayAgentName } from "@/lib/agentNames";
 import type { FootprintEquiv } from "@/lib/footprint";
+import { FootprintTiersBreakdown, type FootprintTierDetails } from "./FootprintTiersBreakdown";
 
 export interface AgentStat {
   agent: string;
@@ -17,6 +18,13 @@ export interface AgentStat {
   gco2e_max?: number | undefined;
   water_ml_min?: number | undefined;
   water_ml_max?: number | undefined;
+  tiers?: {
+    declared: number;
+    computed: number;
+    estimated: number;
+    bounded: number;
+  } | undefined;
+  details?: FootprintTierDetails[] | undefined;
 }
 
 const EN_DASH = "–";
@@ -70,15 +78,54 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
           // Bounds fall back to the midpoint when a record carries no range.
           gco2e_min: acc.gco2e_min + (a.gco2e_min ?? a.gco2e ?? 0),
           gco2e_max: acc.gco2e_max + (a.gco2e_max ?? a.gco2e ?? 0),
+          water_ml_min: acc.water_ml_min + (a.water_ml_min ?? a.water_ml ?? 0),
+          water_ml_max: acc.water_ml_max + (a.water_ml_max ?? a.water_ml ?? 0),
           has_estimate: acc.has_estimate || Boolean(a.has_estimate),
         }),
         {
           tokens_in: 0, tokens_out: 0, cost: 0, messages: 0,
-          gco2e: 0, water_ml: 0, gco2e_min: 0, gco2e_max: 0, has_estimate: false,
+          gco2e: 0, water_ml: 0, gco2e_min: 0, gco2e_max: 0, 
+          water_ml_min: 0, water_ml_max: 0, has_estimate: false,
         },
       ),
     [agents],
   );
+
+  const globalTiers = useMemo(() => {
+    const sum = { declared: 0, computed: 0, estimated: 0, bounded: 0 };
+    for (const a of agents) {
+      if (a.tiers) {
+        sum.declared += a.tiers.declared || 0;
+        sum.computed += a.tiers.computed || 0;
+        sum.estimated += a.tiers.estimated || 0;
+        sum.bounded += a.tiers.bounded || 0;
+      }
+    }
+    return sum;
+  }, [agents]);
+
+  const globalDetails = useMemo(() => {
+    const list: FootprintTierDetails[] = [];
+    for (const a of agents) {
+      if (a.details) {
+        for (const d of a.details) {
+          const found = list.find(
+            (item) =>
+              item.category === d.category &&
+              item.model === d.model &&
+              item.proxy_model === d.proxy_model,
+          );
+          if (found) {
+            found.gco2e += d.gco2e;
+            found.calls += d.calls;
+          } else {
+            list.push({ ...d });
+          }
+        }
+      }
+    }
+    return list;
+  }, [agents]);
 
   const top5 = useMemo(
     () => [...agents].sort((a, b) => b.cost - a.cost).slice(0, 5),
@@ -131,6 +178,13 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
           accentColor="#2e6f40"
         />
       </div>
+
+      {/* Global Precision Tiers Breakdown */}
+      {totals.gco2e > 0 && (
+        <div style={{ marginTop: -16 }}>
+          <FootprintTiersBreakdown tiers={globalTiers} details={globalDetails} t={t} />
+        </div>
+      )}
 
       {/* ADEME human-scale equivalences — make the abstract gCO₂e tangible. */}
       {equiv && totals.gco2e > 0 && (
@@ -221,6 +275,13 @@ export const StatsDashboard: FC<StatsDashboardProps> = ({
                   </span>
                 </div>
               </div>
+
+              {/* Per-agent Precision Tiers Breakdown */}
+              {a.gco2e && a.gco2e > 0 && (
+                <div style={{ marginBottom: 12 }}>
+                  <FootprintTiersBreakdown tiers={a.tiers} details={a.details} t={t} />
+                </div>
+              )}
 
               {/* Tokens & Cost listed SECOND */}
               <div

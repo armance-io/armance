@@ -272,12 +272,13 @@ class ChallengerAgent:
 
     def _load_serge(self):
         from armance.core.models.agent import Agent
+        from armance import paths
 
-        local = self.armance_root / "agents" / "system-challenger.md"
-        if local.exists():
-            return Agent.load(local)
+        global_path = paths.global_agents_dir() / "system-challenger.md"
+        if global_path.exists():
+            return Agent.load(global_path)
 
-        builtin = Path(__file__).parent / "builtin" / "system-challenger.md"
+        builtin = paths.global_agents_dir() / "system-challenger.md"
         if builtin.exists():
             return Agent.load(builtin)
 

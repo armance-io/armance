@@ -33,17 +33,17 @@ def test_launcher_first_run_opens_setup(monkeypatch, isolate_global_config: Path
     """No global config → launcher boots in setup mode (browser → /setup)."""
     opened = {}
 
-    def _fake_cmd_web(root=None, remaining=None, *, data_dir=None) -> int:
+    def _fake_cmd_web(root=None, remaining=None, *, data_dir=None, launch_url_suffix="") -> int:
         opened["root"] = root
         opened["remaining"] = remaining
         opened["data_dir"] = data_dir
+        opened["path"] = launch_url_suffix
         return 0
 
     # A fixed password → no token in the URL (a configured secret never travels
     # in the query string).
     monkeypatch.setenv("ARMANCE_WEB_PASSWORD", "fixed-secret")
     monkeypatch.setattr(cli, "cmd_web", _fake_cmd_web)
-    monkeypatch.setattr(cli, "_open_launcher_browser", lambda path: opened.setdefault("path", path))
 
     # No global config.yaml exists (isolate_global_config is empty).
     assert not paths.global_config_path().exists()
@@ -69,8 +69,10 @@ def test_launcher_auto_token_in_url(monkeypatch, isolate_global_config: Path) ->
     monkeypatch.delenv("ARMANCE_WEB_PASSWORD", raising=False)
     security.reset_web_secret_cache()
     opened = {}
-    monkeypatch.setattr(cli, "cmd_web", lambda root=None, remaining=None, **kw: 0)
-    monkeypatch.setattr(cli, "_open_launcher_browser", lambda path: opened.setdefault("path", path))
+    def _fake_cmd_web(root=None, remaining=None, *, data_dir=None, launch_url_suffix="") -> int:
+        opened["path"] = launch_url_suffix
+        return 0
+    monkeypatch.setattr(cli, "cmd_web", _fake_cmd_web)
 
     rc = cli.cmd_launcher()
     assert rc == 0
@@ -111,8 +113,10 @@ def test_launcher_stop_targets_global_home(monkeypatch, isolate_global_config: P
 def test_launcher_configured_opens_launcher(monkeypatch, isolate_global_config: Path) -> None:
     """Global config present → browser opens the launcher window."""
     opened = {}
-    monkeypatch.setattr(cli, "cmd_web", lambda root=None, remaining=None, **kw: 0)
-    monkeypatch.setattr(cli, "_open_launcher_browser", lambda path: opened.setdefault("path", path))
+    def _fake_cmd_web(root=None, remaining=None, *, data_dir=None, launch_url_suffix="") -> int:
+        opened["path"] = launch_url_suffix
+        return 0
+    monkeypatch.setattr(cli, "cmd_web", _fake_cmd_web)
 
     paths.global_config_path().write_text("language: en\n", encoding="utf-8")
     rc = cli.cmd_launcher()

@@ -28,6 +28,19 @@ export interface FootprintBucket {
   /** EcoLogits water range bounds (absent on pre-D1 records). */
   water_ml_min?: number;
   water_ml_max?: number;
+  tiers?: {
+    declared: number;
+    computed: number;
+    estimated: number;
+    bounded: number;
+  };
+  details?: Array<{
+    category: "declared" | "computed" | "estimated" | "bounded";
+    model: string;
+    proxy_model?: string | null;
+    gco2e: number;
+    calls: number;
+  }>;
 }
 
 /** ADEME human-scale equivalences for the project total (midpoint). */

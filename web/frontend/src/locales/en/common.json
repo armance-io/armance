@@ -547,7 +547,20 @@
       "method_tiers": "Accuracy depends on what is known about the model. Six tiers, most to least reliable: exact (registry model), alias (known equivalent), params (declared size), similar and provider-default (approximate families), then dynamic bounding — a best/worst-case physical range when the model is unknown (e.g. ':free' models with no metadata). We never show '?': always an honest range, marked '~' when it is an estimate.",
       "method_zone_label": "Carbon-intensity zone",
       "method_providers_title": "Providers in this session",
-      "method_provider_note": "Anthropic and OpenAI do not publish their hardware; we use EcoLogits per-family averages. OpenRouter ':free' models often fall through to dynamic bounding for lack of metadata."
+      "method_provider_note": "Anthropic and OpenAI do not publish their hardware; we use EcoLogits per-family averages. OpenRouter ':free' models often fall through to dynamic bounding for lack of metadata.",
+      "tier_declared": "Declared",
+      "tier_computed": "Computed",
+      "tier_estimated": "Estimated",
+      "tier_bounded": "Bounded",
+      "hide_tiers": "Hide precision details",
+      "show_tiers": "Precision details and tiers",
+      "models_used": "Models called",
+      "desc_declared": "Model documented and verified in the EcoLogits registry.",
+      "desc_computed": "Estimate calculated from the declared parameter count.",
+      "desc_estimated": "Consumption projected via a similar reference model.",
+      "desc_bounded": "Unknown consumption, bounded between nano (0.1 Wh) and large MoE (33 Wh).",
+      "bounding_calc_title": "Physical bounding calculation:",
+      "bounding_calc_desc": "With no metadata available, the footprint is bounded between two physical extremes from the literature (Jegham et al. 2025): 0.1 Wh (nano model 1-3B on H100) and 33 Wh (MoE/dense >400B on A100), scaled by output tokens and multiplied by the carbon mix of the zone."
     }
   },
   "audio": {
