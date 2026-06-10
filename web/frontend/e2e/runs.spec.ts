@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Workflow Runs Detail E2E", () => {
   test("loads the run detail page and renders stats and steps", async ({ page }) => {

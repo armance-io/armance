@@ -1,4 +1,4 @@
-import { test } from "@playwright/test";
+import { test } from "./fixtures";
 
 test.describe("RunNode Live Polling E2E", () => {
   test.skip("polls live workflow runs and updates status dynamically", async () => {

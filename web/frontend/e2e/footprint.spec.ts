@@ -1,7 +1,7 @@
 /**
  * EI.8 Playwright spec — footprint chip + Empreinte admin tab.
  */
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 const ADMIN_URL = "/projects/default/admin";
 

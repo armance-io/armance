@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Landing page / AppShell e2e", () => {
   test("loads the landing page and shows AppShell elements", async ({ page }) => {
@@ -10,7 +10,7 @@ test.describe("Landing page / AppShell e2e", () => {
 
     // Footer shows fleuron (❦) and motto
     await expect(page.locator("footer")).toContainText("❦");
-    await expect(page.locator("footer")).toContainText("A house of thinking agents.");
+    await expect(page.locator("footer")).toContainText("A house of agents to sharpen your thinking.");
     await expect(page.locator("footer")).toContainText("armance.io · 2026 · made in France");
 
     // Main content area renders EmptySession

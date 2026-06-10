@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Workflow Graph Preview E2E", () => {
   test("renders 3 topological nodes and their connections LR", async ({ page }) => {

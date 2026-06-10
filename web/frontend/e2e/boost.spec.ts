@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Agent Boost E2E", () => {
   test.beforeEach(async ({ page }) => {
