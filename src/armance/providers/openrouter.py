@@ -18,7 +18,32 @@ DEFAULT_TIMEOUT = 120.0
 
 
 class LLMHTTPError(RuntimeError):
-    """Raised on non-2xx responses from the upstream LLM API."""
+    """Raised on non-2xx responses from the upstream LLM API.
+
+    ``status_code`` lets callers special-case retryable statuses (429);
+    ``retry_after`` carries the provider's Retry-After hint in seconds,
+    when present.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int | None = None,
+        retry_after: float | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.retry_after = retry_after
+
+
+def _retry_after_seconds(response: Any) -> float | None:
+    """Numeric Retry-After response header in seconds, if present."""
+    try:
+        raw = response.headers.get("retry-after")
+        return float(raw) if raw else None
+    except Exception:
+        return None
 
 
 class OpenRouterClient(LLMClient):
@@ -54,7 +79,9 @@ class OpenRouterClient(LLMClient):
         response = await self._client.post(url, headers=headers, json=payload)
         if response.status_code >= 400:
             raise LLMHTTPError(
-                f"openrouter call failed: {response.status_code} {response.text}"
+                f"openrouter call failed: {response.status_code} {response.text}",
+                status_code=response.status_code,
+                retry_after=_retry_after_seconds(response),
             )
 
         data = response.json()
@@ -85,7 +112,9 @@ class OpenRouterClient(LLMClient):
             )
             if response.status_code >= 400:
                 raise LLMHTTPError(
-                    f"openrouter embeddings failed: {response.status_code} {response.text}"
+                    f"openrouter embeddings failed: {response.status_code} {response.text}",
+                    status_code=response.status_code,
+                    retry_after=_retry_after_seconds(response),
                 )
             data = response.json()
             usage = data.get("usage") or {}
@@ -137,7 +166,9 @@ class OpenRouterClient(LLMClient):
                 response = client.post(url, headers=headers, json={"model": model, "input": text})
             if response.status_code >= 400:
                 raise LLMHTTPError(
-                    f"openrouter embeddings failed: {response.status_code} {response.text}"
+                    f"openrouter embeddings failed: {response.status_code} {response.text}",
+                    status_code=response.status_code,
+                    retry_after=_retry_after_seconds(response),
                 )
             data = response.json()
             usage = data.get("usage") or {}
@@ -186,7 +217,9 @@ class OpenRouterClient(LLMClient):
             if response.status_code >= 400:
                 body = (await response.aread()).decode("utf-8", errors="replace")
                 raise LLMHTTPError(
-                    f"openrouter call failed: {response.status_code} {body}"
+                    f"openrouter call failed: {response.status_code} {body}",
+                    status_code=response.status_code,
+                    retry_after=_retry_after_seconds(response),
                 )
 
             async for line in response.aiter_lines():

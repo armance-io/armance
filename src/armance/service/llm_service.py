@@ -363,19 +363,24 @@ async def call_with_ledger(
 
     log_request(agent_name, model, messages)
 
+    from armance.service.rate_limit import backoff_for, provider_semaphore
+
     max_retries = 3
     backoff = 2.0
     for attempt in range(1, max_retries + 1):
         try:
             t0 = time.perf_counter()
-            if on_token:
-                response = await client.stream_complete(
-                    messages, model, on_token=on_token, **params
-                )
-            else:
-                response = await complete_with_continuation(
-                    client, messages, model, **params
-                )
+            # Per-provider concurrency cap: background workflow steps +
+            # live chat must not hammer one (free-tier) provider at once.
+            async with provider_semaphore(provider):
+                if on_token:
+                    response = await client.stream_complete(
+                        messages, model, on_token=on_token, **params
+                    )
+                else:
+                    response = await complete_with_continuation(
+                        client, messages, model, **params
+                    )
             latency_s = time.perf_counter() - t0
 
             footprint: Footprint | None = None
@@ -412,11 +417,12 @@ async def call_with_ledger(
             if attempt == max_retries:
                 raise
 
+            wait_s = backoff_for(exc, attempt, backoff)
             if on_token:
                 try:
                     on_token(
                         f"\n[⚠️ {agent_name} : Error {exc!s}. "
-                        f"Retrying in {backoff}s... "
+                        f"Retrying in {wait_s:.0f}s... "
                         f"(Attempt {attempt}/{max_retries})]\n"
                     )
                 except Exception:
@@ -424,7 +430,7 @@ async def call_with_ledger(
 
             import asyncio
 
-            await asyncio.sleep(backoff)
+            await asyncio.sleep(wait_s)
             backoff *= 1.5
     # Unreachable — the loop either returns or raises.
     raise RuntimeError("call_with_ledger exhausted retries without returning")

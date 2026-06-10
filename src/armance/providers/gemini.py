@@ -17,7 +17,31 @@ DEFAULT_TIMEOUT = 120.0
 
 
 class GeminiHTTPError(RuntimeError):
-    """Raised on non-2xx responses."""
+    """Raised on non-2xx responses.
+
+    Carries ``status_code`` / ``retry_after`` so the service-layer retry
+    can special-case 429 rate limits (same shape as LLMHTTPError).
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int | None = None,
+        retry_after: float | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+        self.retry_after = retry_after
+
+
+def _retry_after_seconds(response: Any) -> float | None:
+    """Numeric Retry-After response header in seconds, if present."""
+    try:
+        raw = response.headers.get("retry-after")
+        return float(raw) if raw else None
+    except Exception:
+        return None
 
 
 class GeminiClient(LLMClient):
@@ -54,7 +78,9 @@ class GeminiClient(LLMClient):
         response = await self._client.post(url, json=payload)
         if response.status_code >= 400:
             raise GeminiHTTPError(
-                f"gemini call failed: {response.status_code} {response.text}"
+                f"gemini call failed: {response.status_code} {response.text}",
+                status_code=response.status_code,
+                retry_after=_retry_after_seconds(response),
             )
 
         data = response.json()
@@ -77,7 +103,9 @@ class GeminiClient(LLMClient):
         response = await self._client.post(url, headers=headers, json=payload)
         if response.status_code >= 400:
             raise GeminiHTTPError(
-                f"gemini embeddings failed: {response.status_code} {response.text}"
+                f"gemini embeddings failed: {response.status_code} {response.text}",
+                status_code=response.status_code,
+                retry_after=_retry_after_seconds(response),
             )
 
         data = response.json()
@@ -101,7 +129,9 @@ class GeminiClient(LLMClient):
             response = client.post(url, headers=headers, json=payload)
         if response.status_code >= 400:
             raise GeminiHTTPError(
-                f"gemini embeddings failed: {response.status_code} {response.text}"
+                f"gemini embeddings failed: {response.status_code} {response.text}",
+                status_code=response.status_code,
+                retry_after=_retry_after_seconds(response),
             )
         return response.json()["embedding"]["values"]
 
@@ -124,7 +154,9 @@ class GeminiClient(LLMClient):
         response = await self._client.post(url, json=payload, stream=True)
         if response.status_code >= 400:
             raise GeminiHTTPError(
-                f"gemini call failed: {response.status_code} {response.text}"
+                f"gemini call failed: {response.status_code} {response.text}",
+                status_code=response.status_code,
+                retry_after=_retry_after_seconds(response),
             )
 
         text_parts: list[str] = []
