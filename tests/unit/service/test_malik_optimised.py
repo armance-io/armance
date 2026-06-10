@@ -91,3 +91,47 @@ class TestMalikCarbonOrdering:
 
         ids = [m.id for m in ordered]
         assert ids == ["vendor/green", "vendor/dirty", "vendor/mid"]
+
+
+class TestOptimisedRecruitGuard:
+    @staticmethod
+    def _recruit(tmp_path, base_model: str):
+        from armance.config import Config, ProviderConfig
+        from armance.core.models.agent import Agent
+        from armance.service.agents.recruiter_agent import RecruiterAgentService
+
+        cfg = Config(
+            providers=[ProviderConfig(name="openrouter")],
+            default_provider="openrouter",
+            default_model="openai/gpt-5.2",
+            budget_effort="optimised",
+        )
+        malik = Agent(
+            name="system-hr", domain="meta", character="balanced",
+            provider="openrouter", model="openai/gpt-5.2",
+            system_prompt="You are Malik.",
+        )
+        recruiter = RecruiterAgentService(malik, tmp_path, cfg)
+        yaml_text = (
+            "```yaml\n"
+            "agents:\n"
+            "  - name: Sarah\n"
+            "    role: finance\n"
+            "    persona: positivist\n"
+            "    provider: openrouter\n"
+            f"    model: {base_model}\n"
+            "    system_prompt: You are Sarah.\n"
+            "```\n"
+        )
+        return recruiter._parse_agents_yaml(yaml_text, "finance")
+
+    def test_missing_boost_falls_back_to_default_model(self, tmp_path) -> None:
+        """Optimised posture: a recruit entry without boost_model gets the
+        user's flagship default as deterministic augment fallback."""
+        agents = self._recruit(tmp_path, "google/gemma-2-9b-it:free")
+        assert agents[0].boost_model == "openai/gpt-5.2"
+        assert agents[0].boost_provider == "openrouter"
+
+    def test_no_fallback_when_base_is_default(self, tmp_path) -> None:
+        agents = self._recruit(tmp_path, "openai/gpt-5.2")
+        assert agents[0].boost_model is None
