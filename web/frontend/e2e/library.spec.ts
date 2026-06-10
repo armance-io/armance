@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Library Page E2E", () => {
   test("shows empty library when GET /library returns no documents", async ({ page }) => {

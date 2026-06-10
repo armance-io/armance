@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Workflow Graph Live E2E", () => {
   test("renders step nodes in parallel concurrent lanes for overlapping intervals", async ({ page }) => {

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Workflow Live Interruption E2E", () => {
   test("allows active workflow runs to be interrupted with popover confirmation", async ({ page }) => {

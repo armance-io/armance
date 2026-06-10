@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test.describe("Workflow Assembly & Transition E2E (D-WIRE.8)", () => {
   test("transitions from idle depth-picker launcher to live panel upon successful launch", async ({ page }) => {
