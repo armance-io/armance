@@ -8,7 +8,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Query
 
 from armance.platform.user import get_current_user
-from armance.web.backend.deps import get_app_state
+from armance.web.backend.deps import get_app_state, resolve_root_or_404
 from armance.web.backend.state import AppState
 
 router = APIRouter()
@@ -46,7 +46,7 @@ async def get_logs(
     _user: str = Depends(get_current_user),
     app_state: AppState = Depends(get_app_state),
 ) -> dict[str, Any]:
-    logs_dir = app_state.armance_root / "logs"
+    logs_dir = resolve_root_or_404(app_state, pid) / "logs"
     all_lines = _read_all_lines(logs_dir)
     all_lines.reverse()
 

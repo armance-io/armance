@@ -750,4 +750,53 @@ export async function initSetup(body: SetupInitIn): Promise<{ configured: boolea
   return api.post<{ configured: boolean; project_id: string }>("/setup/init", body);
 }
 
+// ── Launcher (grandma launcher) ──────────────────────────────────────────────
+
+export interface LauncherProject {
+  id: string;
+  name: string;
+  path: string;
+  last_opened: string;
+  exists: boolean;
+}
+
+export interface OpenedProject {
+  id: string;
+  name: string;
+  path: string;
+}
+
+export interface BrowseEntry {
+  name: string;
+  path: string;
+}
+
+export interface BrowseResult {
+  path: string;
+  root: string;
+  parent: string | null;
+  dirs: BrowseEntry[];
+}
+
+export async function getLauncher(): Promise<{ projects: LauncherProject[] }> {
+  return api.get<{ projects: LauncherProject[] }>("/launcher");
+}
+
+export async function openProject(path: string): Promise<OpenedProject> {
+  return api.post<OpenedProject>("/launcher/open", { path });
+}
+
+export async function newProject(path: string): Promise<OpenedProject> {
+  return api.post<OpenedProject>("/launcher/new", { path });
+}
+
+export async function browseFolders(path?: string): Promise<BrowseResult> {
+  const q = path ? `?path=${encodeURIComponent(path)}` : "";
+  return api.get<BrowseResult>(`/launcher/browse${q}`);
+}
+
+export async function makeFolder(path: string, name: string): Promise<BrowseEntry> {
+  return api.post<BrowseEntry>("/launcher/mkdir", { path, name });
+}
+
 
