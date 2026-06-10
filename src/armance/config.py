@@ -188,11 +188,26 @@ def ensure_armance_tree(repo_root: Path, config: Config | None = None) -> Path:
     """
     from armance import paths
 
-    armance = paths.local_data_dir(repo_root)
+    return ensure_data_tree(paths.local_data_dir(repo_root))
+
+
+def ensure_data_tree(armance_root: Path) -> Path:
+    """Provision the project data tree directly under ``armance_root``.
+
+    Use this when you already hold the data root (web routes). Deriving the
+    folder via ``armance_root.parent`` is wrong for the launcher server,
+    whose boot root is the GLOBAL config dir (``~/.config/armance``) — the
+    parent dance provisioned a parasite ``~/.config/.armance`` tree. The
+    global dir hosts no project data, so it is left untouched.
+    """
+    from armance import paths
+
+    if armance_root == paths.global_config_dir():
+        return armance_root
     for sub in ARMANCE_DIR_TREE:
-        (armance / sub).mkdir(parents=True, exist_ok=True)
-    _install_readme(armance)
-    return armance
+        (armance_root / sub).mkdir(parents=True, exist_ok=True)
+    _install_readme(armance_root)
+    return armance_root
 
 
 def ensure_global_setup(config: Config | None = None) -> Path:
@@ -210,25 +225,40 @@ def ensure_global_setup(config: Config | None = None) -> Path:
     return global_dir
 
 
-def _install_readme(armance_root: Path) -> None:
-    """Copy bundled README.md into .armance/README.md (install-time user guide)."""
-    from importlib import resources as _res
-    try:
-        pkg_readme = _res.files("armance").joinpath("_data/README.md")
-        content = pkg_readme.read_text(encoding="utf-8")
-    except Exception:
-        # Fallback: look for README.md two levels up from this file
-        try:
-            here = Path(__file__).resolve().parent
-            # src/armance → src → repo_root
-            content = (here.parent.parent / "README.md").read_text(encoding="utf-8")
-        except Exception:
-            return
+_DATA_README = """\
+# .armance — project data folder
 
+Everything Armance knows about THIS project lives here. Plain files,
+no database: safe to read, back up, or version. Config, secrets and the
+base staff are global (`~/.config/armance` or platform equivalent).
+
+## Where to find things
+
+| Folder | Contents |
+|---|---|
+| `exports/<workflow>/<run-id>/` | **Deliverables** — one folder per workflow run: `manifest.json`, per-step outputs, the final synthesis, and any PDF/DOCX/PPTX you asked Mona to produce. `runs.json` indexes the runs. |
+| `reports/` | One-shot specialist reports saved outside a workflow run. |
+| `docs/` | Drop your documents here (PDF, DOCX, MD, TXT). Armance proposes to index (library) and/or load them. |
+| `context/` | The shared project brief (L0) and per-role briefs (L1) — versioned Markdown, the team's memory. |
+| `sessions/` | Conversation history, per session (`conversation.md`, events, ledger). |
+| `agents/` | Specialists recruited for THIS project (one `.md` per agent). The permanent staff lives in the global dir. |
+| `workflows/` | Workflow definitions designed by Kim (`.yaml`). |
+| `judge/` | Mona's standalone judge reports (`/judge` command). |
+| `logs/` | Runtime logs, incl. `llm_exchanges.jsonl` (every LLM call: tokens, cost, CO2e). |
+| `vector/` | The library's search index (sqlite). Deletable; rebuilt by re-indexing. |
+| `.archive/` | Soft-deleted items. |
+
+Delete this folder and the project forgets everything — nothing else on
+the machine changes.
+"""
+
+
+def _install_readme(armance_root: Path) -> None:
+    """Write the data-folder guide into .armance/README.md (once)."""
     target = armance_root / "README.md"
     if not target.exists():
         try:
-            target.write_text(content, encoding="utf-8")
+            target.write_text(_DATA_README, encoding="utf-8")
         except Exception:
             pass
 
