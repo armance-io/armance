@@ -3,6 +3,7 @@
 import { useState, useEffect, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 import { Fleuron } from "@/components/visual/Fleuron";
+import { LanguageFlag } from "@/components/visual/LanguageFlag";
 import { ThemeToggle } from "@/components/visual/ThemeToggle";
 import {
   initSetup,
@@ -83,12 +84,12 @@ const BUDGETS = [
 ];
 
 const LANGUAGES = [
-  { id: "en" as const, label: "English", emoji: "🇬🇧" },
-  { id: "fr" as const, label: "Français", emoji: "🇫🇷" },
-  { id: "es" as const, label: "Español", emoji: "🇪🇸" },
-  { id: "de" as const, label: "Deutsch", emoji: "🇩🇪" },
-  { id: "zh" as const, label: "中文", emoji: "🇨🇳" },
-  { id: "ja" as const, label: "日本語", emoji: "🇯🇵" },
+  { id: "en" as const, label: "English" },
+  { id: "fr" as const, label: "Français" },
+  { id: "es" as const, label: "Español" },
+  { id: "de" as const, label: "Deutsch" },
+  { id: "zh" as const, label: "中文" },
+  { id: "ja" as const, label: "日本語" },
 ];
 
 // Soft cost-tier pill (DESIGN.md: muted gems, no saturated colours).
@@ -333,7 +334,18 @@ export default function SetupPage() {
         payload.embedding_provider = embeddingProvider || embeddingProviderChoices[0] || "";
       }
 
-      await initSetup(payload);
+      const res = await initSetup(payload);
+
+      // Surface where config landed — on Windows this is %APPDATA%\armance, not
+      // the POSIX ~/.config/armance some users look for. Stash it so the launcher
+      // (or a curious user) can find their config/secrets/agents on disk.
+      if (res.config_dir) {
+        try {
+          sessionStorage.setItem("armance.config-dir", res.config_dir);
+        } catch {
+          /* sessionStorage unavailable — non-fatal */
+        }
+      }
 
       // Setup writes the GLOBAL config only (clean break). Land on the
       // launcher — creating the first project is the launcher's job, not the
@@ -575,10 +587,11 @@ export default function SetupPage() {
                       justifyContent: "center",
                       transition: "border-color 0.2s, background 0.2s",
                       gap: "6px",
+                      color: selected ? "var(--accent)" : "var(--ink-soft)",
                     }}
                   >
-                    <span style={{ fontSize: "24px" }}>{l.emoji}</span>
-                    <span style={{ fontSize: "13px", fontWeight: 500 }}>{l.label}</span>
+                    <LanguageFlag id={l.id} />
+                    <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--ink)" }}>{l.label}</span>
                   </div>
                 );
               })}
