@@ -55,6 +55,29 @@ export const SessionSelector: FC<{ t: (k: string) => string }> = ({ t }) => {
         >
           <button
             type="button"
+            data-testid="session-back"
+            onClick={() => {
+              // The new session and the older ones below are reached via full
+              // navigation (each pushes a history entry), so the browser Back
+              // button works — but new users don't discover it. Give them an
+              // explicit way back to where they came from.
+              setOpen(false);
+              if (window.history.length > 1) window.history.back();
+            }}
+            style={{
+              display: "flex", alignItems: "center", gap: 8, padding: "8px 10px",
+              width: "100%", border: "none", background: "transparent",
+              borderRadius: tokens.radiusSm, cursor: "pointer",
+              color: tokens.inkSoft, fontWeight: 500, textAlign: "left",
+              fontFamily: tokens.ffSans, fontSize: 12,
+            }}
+          >
+            <span aria-hidden="true">←</span>
+            <span>{t("session:selector.back")}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={async () => {
               try {
                 const newSession = await createSession(pid);
