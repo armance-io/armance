@@ -125,6 +125,8 @@ async def setup_init(
             raise HTTPException(status_code=400, detail="unknown_zone")
         cfg.footprint.electricity_mix_zone = body.electricity_zone
 
+    from armance import paths
+
     try:
         ensure_global_setup(cfg)
         save_config(cfg)
@@ -136,4 +138,31 @@ async def setup_init(
         logger.exception("Failed to initialise config from setup wizard")
         raise HTTPException(status_code=500, detail=str(exc))
 
-    return {"configured": True, "project_id": "default"}
+    # Write self-check: confirm config.yaml landed on disk and parses. A silent
+    # write failure (Windows %APPDATA% perms / AV / sandbox) otherwise looks like
+    # success here but redirects back to /setup on the next boot ("lost info").
+    config_dir = paths.global_config_dir()
+    config_path = paths.global_config_path()
+    if not config_path.exists():
+        logger.error("config.yaml absent after save: %s", config_path)
+        raise HTTPException(
+            status_code=500,
+            detail=f"config_write_failed: {config_path} was not created on disk",
+        )
+    try:
+        from armance.config import load_config
+
+        load_config()
+    except Exception as exc:
+        logger.exception("config.yaml unreadable after save: %s", config_path)
+        raise HTTPException(
+            status_code=500,
+            detail=f"config_write_corrupt: {config_path}: {exc}",
+        )
+
+    logger.info("setup config persisted at %s", config_dir)
+    return {
+        "configured": True,
+        "project_id": "default",
+        "config_dir": str(config_dir),
+    }

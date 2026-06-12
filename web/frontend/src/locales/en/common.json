@@ -618,7 +618,8 @@
       "empty": "No previous sessions",
       "summary": "{turns} turns · ~{tokens} tk",
       "locked_aria": "Active session (locked after first message)",
-      "id_label": "Session ID"
+      "id_label": "Session ID",
+      "back": "Back"
     }
   },
   "auth": {
@@ -635,6 +636,7 @@
     "open": "Open",
     "new_project": "New project",
     "no_projects": "No projects yet. Create your first one.",
+    "config_saved": "Configuration saved to",
     "last_opened": "Last opened",
     "stale": "Folder not found",
     "stale_hint": "This folder no longer exists at its recorded path.",

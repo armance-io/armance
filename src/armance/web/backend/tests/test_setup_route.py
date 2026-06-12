@@ -63,11 +63,16 @@ async def test_setup_init_success(
         },
     )
     assert resp.status_code == 201
-    assert resp.json() == {"configured": True, "project_id": "default"}
+    body = resp.json()
+    assert body["configured"] is True
+    assert body["project_id"] == "default"
 
     # Verify config.yaml + .env were written to the GLOBAL dir (clean break).
     from armance import paths
 
+    # The response surfaces the resolved config dir (discoverability + the
+    # write self-check landing point).
+    assert body["config_dir"] == str(paths.global_config_dir())
     assert paths.global_config_path().exists()
     env_file = paths.global_env_path()
     assert env_file.exists()

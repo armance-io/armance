@@ -20,6 +20,10 @@ export default function LauncherPage() {
   const [loading, setLoading] = useState(true);
   const [picking, setPicking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Where setup just wrote the global config (config.yaml / .env / agents).
+  // Surfaced once after first-time setup so the on-disk location is discoverable
+  // (on Windows it is %APPDATA%\armance, not the POSIX ~/.config/armance).
+  const [configDir, setConfigDir] = useState<string | null>(null);
 
   useEffect(() => {
     getLauncher()
@@ -27,6 +31,18 @@ export default function LauncherPage() {
       .catch(() => setError(t("launcher:error.open_failed")))
       .finally(() => setLoading(false));
   }, [t]);
+
+  useEffect(() => {
+    try {
+      const dir = sessionStorage.getItem("armance.config-dir");
+      if (dir) {
+        setConfigDir(dir);
+        sessionStorage.removeItem("armance.config-dir");
+      }
+    } catch {
+      /* sessionStorage unavailable — non-fatal */
+    }
+  }, []);
 
   function goToProject(pid: string) {
     window.location.assign(`/projects/${pid}`);
@@ -69,6 +85,16 @@ export default function LauncherPage() {
         {error && (
           <p className="launcher-error" role="alert" data-testid="launcher-error">
             {error}
+          </p>
+        )}
+
+        {configDir && (
+          <p
+            className="launcher-subtitle"
+            data-testid="launcher-config-dir"
+            style={{ fontFamily: "var(--ff-mono)", fontSize: "12px", color: "var(--ink-soft)" }}
+          >
+            {t("launcher:config_saved")} <span style={{ color: "var(--ink)" }}>{configDir}</span>
           </p>
         )}
 
