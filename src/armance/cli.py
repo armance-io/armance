@@ -509,10 +509,13 @@ def cmd_init(
     write_env(providers)
     ensure_armance_tree(root, cfg)
 
+    from armance import paths as _paths
+
     armance_readme = root / ".armance" / "README.md"
     print()
     print("─" * 60)
     print(f"✅  Armance initialisé dans {root / '.armance'}")
+    print(f"    Config globale (config.yaml / .env / agents) : {_paths.global_config_dir()}")
     print()
     print("  Prochaines étapes :")
     print("    1. Déposez vos documents dans  .armance/docs/")

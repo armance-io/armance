@@ -241,7 +241,7 @@ base staff are global (`~/.config/armance` or platform equivalent).
 | `docs/` | Drop your documents here (PDF, DOCX, MD, TXT). Armance proposes to index (library) and/or load them. |
 | `context/` | The shared project brief (L0) and per-role briefs (L1) — versioned Markdown, the team's memory. |
 | `sessions/` | Conversation history, per session (`conversation.md`, events, ledger). |
-| `agents/` | Specialists recruited for THIS project (one `.md` per agent). The permanent staff lives in the global dir. |
+| `agents/` | Specialists recruited by Malik for THIS project — one editable `.md` per agent (e.g. `agents/<name>.md`), indexed by `agents/registry.json`. The permanent staff (Armance, Malik, Kim, Mona) lives in the global dir. |
 | `workflows/` | Workflow definitions designed by Kim (`.yaml`). |
 | `judge/` | Mona's standalone judge reports (`/judge` command). |
 | `logs/` | Runtime logs, incl. `llm_exchanges.jsonl` (every LLM call: tokens, cost, CO2e). |

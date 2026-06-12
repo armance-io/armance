@@ -618,7 +618,8 @@
       "empty": "Aucune session précédente",
       "summary": "{turns} tours · ~{tokens} jetons",
       "locked_aria": "Session active (verrouillée après le premier message)",
-      "id_label": "Session ID"
+      "id_label": "Session ID",
+      "back": "Retour"
     }
   },
   "auth": {
@@ -635,6 +636,7 @@
     "open": "Ouvrir",
     "new_project": "Nouveau projet",
     "no_projects": "Aucun projet pour l'instant. Créez le premier.",
+    "config_saved": "Configuration enregistrée dans",
     "last_opened": "Dernière ouverture",
     "stale": "Dossier introuvable",
     "stale_hint": "Ce dossier n'existe plus à l'emplacement enregistré.",

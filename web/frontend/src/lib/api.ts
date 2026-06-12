@@ -747,8 +747,10 @@ export async function getSetupStatus(): Promise<SetupStatusResponse> {
   return api.get<SetupStatusResponse>("/setup/status");
 }
 
-export async function initSetup(body: SetupInitIn): Promise<{ configured: boolean; project_id: string }> {
-  return api.post<{ configured: boolean; project_id: string }>("/setup/init", body);
+export async function initSetup(
+  body: SetupInitIn,
+): Promise<{ configured: boolean; project_id: string; config_dir?: string }> {
+  return api.post<{ configured: boolean; project_id: string; config_dir?: string }>("/setup/init", body);
 }
 
 // ── Launcher (grandma launcher) ──────────────────────────────────────────────
