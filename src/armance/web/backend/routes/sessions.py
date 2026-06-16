@@ -77,7 +77,10 @@ def _load_web_session(
     session = Session(state, armance_root)
 
     ledger_path = Path(state.ledger_path) if state.ledger_path else None
-    ledger = TokenLedger(persist_path=ledger_path) if ledger_path else TokenLedger()
+    if ledger_path:
+        ledger = TokenLedger(persist_path=ledger_path, log_dir=armance_root / "logs", session_id=state.id)
+    else:
+        ledger = TokenLedger(log_dir=armance_root / "logs", session_id=state.id)
     set_ledger(ledger)
     # Prefix llm_exchanges logs per session, exactly like the TUI — otherwise
     # web exchanges land in the unprefixed .armance/logs/llm_exchanges.jsonl.
@@ -195,6 +198,7 @@ async def get_session(
     try:
         ws = _load_web_session(app_state, armance_root, pid, sid, client_id=user)
     except Exception:
+        logger.exception("failed to load web session pid=%s sid=%s", pid, sid)
         raise HTTPException(status_code=404, detail="session_not_found")
 
     state = ws.session.state
