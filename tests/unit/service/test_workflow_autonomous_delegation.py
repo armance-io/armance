@@ -79,6 +79,61 @@ async def test_mona_proxy_checkpoint_includes_critical_instruction(tmp_path: Pat
         called_task = args[1]
         assert "CRITICAL" in called_task.prompt
         assert "[ASK_USER]" in called_task.prompt
+        # Trou 2: autonomous decisions must be marked as a contestable
+        # hypothesis so the HypothesisList UI can surface them.
+        assert "**Hypothèse (Mona) :**" in called_task.prompt
+
+
+@pytest.mark.asyncio
+async def test_autonomous_decision_persisted_as_step_file(
+    armance_root: Path, cfg: Config
+) -> None:
+    """Trou 2: when Mona decides (not [ASK_USER]), her answer is written to a
+    step-*.md so the hypotheses route can scan the `**Hypothèse (Mona) :**`
+    marker and the UI shows it."""
+    wf_path = armance_root / ".armance" / "workflows" / "hyp_wf.yaml"
+    wf_path.write_text(
+        "name: hyp_wf\n"
+        "strategy: rapide\n"
+        "steps:\n"
+        "  - id: gate\n"
+        "    kind: human_checkpoint\n"
+        "    prompt: 'Which target market?'\n"
+    )
+
+    from armance.service.loop_context import LoopContext
+    from armance.service.session import Session, SessionState
+    from armance.service.llm_service import TokenLedger
+
+    state = SessionState.new()
+    session = Session(state, armance_root)
+    ctx = LoopContext(
+        armance_root=armance_root, cfg=cfg, state=state, session=session,
+        ledger=TokenLedger(), statuses=[], agents=[],
+    )
+    ctx.checkpoint_handler = AsyncMock()  # should NOT be prompted when Mona decides
+
+    decision = "**Hypothèse (Mona) :** Cibler l'Europe. Raison : marché mûr ; invalidé si la régulation change."
+    mock_compile = AsyncMock(return_value="Summary\n---\nRegister")
+
+    with patch("armance.service.handlers._mona_proxy_checkpoint",
+               new_callable=AsyncMock, return_value=decision), \
+         patch("armance.service.agents.judge_agent.JudgeAgent.compile_assumptions", mock_compile):
+        await _cmd_workflow_run(
+            "hyp_wf", enrich_sid=None, ctx=ctx,
+            skip_preflight=True, user_prompt_override="test",
+            run_mode="autonomous",
+        )
+
+    # Mona decided → user was never prompted.
+    ctx.checkpoint_handler.prompt.assert_not_called()
+
+    # The decision landed in step-gate.md with the marker intact.
+    run_dirs = list((armance_root / "exports" / "hyp_wf").glob("run-*"))
+    assert len(run_dirs) == 1
+    step_file = run_dirs[0] / "step-gate.md"
+    assert step_file.exists()
+    assert "**Hypothèse (Mona) :**" in step_file.read_text(encoding="utf-8")
 
 
 @pytest.mark.asyncio

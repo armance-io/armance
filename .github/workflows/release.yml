@@ -1,21 +1,105 @@
 name: Release
 
-# Publishes the package to PyPI when a version tag is pushed.
+# Two ways to cut a release:
+#
+#   A. Two-click, from the Actions tab — "Run workflow", pick the channel:
+#        • beta → publishes a pre-release (version MUST carry a pre-release
+#          suffix, e.g. 0.2-beta.4). The install.sh / install.ps1 scripts
+#          pass --pre, so beta users get it immediately; plain
+#          `pip install armance` does NOT.
+#        • ga   → publishes a stable release (version MUST be final, e.g.
+#          0.3.0). Becomes the default for everyone.
+#      This path validates version↔channel coherence, creates the matching
+#      `v<version>` tag, then builds + publishes + drafts a GitHub Release.
+#
+#   B. Push a `v*` tag by hand — the classic path; channel is inferred from
+#      whether the version has a pre-release suffix.
+#
 # Auth is PyPI Trusted Publishing (OIDC) — no API token/secret required.
-# The PyPI publisher must be configured for: armance-io/armance,
-# workflow release.yml.
+# The PyPI publisher must be configured for: armance-io/armance, release.yml.
 
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Release channel"
+        required: true
+        type: choice
+        options:
+          - beta
+          - ga
+
+permissions:
+  contents: write  # create tags + GitHub Releases
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # Dispatch path only: validate version↔channel, then create the v<ver> tag.
+  # The tag push does NOT re-trigger this workflow (GITHUB_TOKEN-pushed tags
+  # don't fire `on: push`), so we carry the version forward via job outputs.
+  # ---------------------------------------------------------------------------
+  tag:
+    name: Validate channel + tag
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.read.outputs.version }}
+      is_prerelease: ${{ steps.read.outputs.is_prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version + check channel coherence
+        id: read
+        run: |
+          ver=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          echo "version=$ver"
+          # A pre-release version carries a non-numeric suffix after the
+          # major.minor.patch core (e.g. -beta.4, a1, rc2, .dev0).
+          if echo "$ver" | grep -Eq '^[0-9]+(\.[0-9]+)*$'; then
+            is_pre=false
+          else
+            is_pre=true
+          fi
+          channel="${{ inputs.channel }}"
+          if [ "$channel" = "beta" ] && [ "$is_pre" != "true" ]; then
+            echo "::error::channel=beta but version '$ver' is a final release. Bump to a pre-release (e.g. 0.2-beta.N) first."
+            exit 1
+          fi
+          if [ "$channel" = "ga" ] && [ "$is_pre" = "true" ]; then
+            echo "::error::channel=ga but version '$ver' is a pre-release. Drop the suffix (e.g. 0.3.0) first."
+            exit 1
+          fi
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=$is_pre" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ver="${{ steps.read.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git rev-parse "v$ver" >/dev/null 2>&1; then
+            echo "::error::tag v$ver already exists — bump the version in pyproject.toml."
+            exit 1
+          fi
+          git tag "v$ver"
+          git push origin "v$ver"
+
   build:
     name: Build sdist + wheel
+    # Tag-push path runs directly; dispatch path waits for the tag job.
+    needs: [tag]
+    if: always() && (github.event_name == 'push' || needs.tag.result == 'success')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Dispatch path: check out the tag the previous job just created.
+          ref: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', needs.tag.outputs.version) || github.ref }}
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
@@ -28,6 +112,7 @@ jobs:
           version: "latest"
 
       - name: Verify tag matches pyproject version
+        if: github.event_name == 'push'
         run: |
           tag="${GITHUB_REF_NAME#v}"
           pkg=$(uv run python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
@@ -76,3 +161,50 @@ jobs:
 
       - name: Publish
         uses: pypa/gh-action-pypi-publish@release/v1
+
+  github_release:
+    name: Draft GitHub Release
+    needs: [publish, tag]
+    if: always() && needs.publish.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Resolve version + prerelease flag
+        id: meta
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=v${{ needs.tag.outputs.version }}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=${{ needs.tag.outputs.is_prerelease }}" >> "$GITHUB_OUTPUT"
+          else
+            ver="${GITHUB_REF_NAME#v}"
+            if echo "$ver" | grep -Eq '^[0-9]+(\.[0-9]+)*$'; then pre=false; else pre=true; fi
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            echo "prerelease=$pre" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          prerelease: ${{ steps.meta.outputs.prerelease == 'true' }}
+          generate_release_notes: true
+          files: dist/*
+          body: |
+            Install / upgrade (everyone, all OSes):
+
+            ```sh
+            # Linux / macOS
+            curl -fsSL https://armance.io/install.sh | sh
+            ```
+
+            ```powershell
+            # Windows
+            powershell -ExecutionPolicy Bypass -c "irm https://armance.io/install.ps1 | iex"
+            ```
+
+            The installers pull this build from PyPI (`pipx install armance --pre`).
