@@ -212,6 +212,31 @@ This needs Node + pnpm on the build machine (CI), never on the user's. The
 script fails loudly if the bundle is missing from the resulting wheel.
 Publish the `dist/*.whl` and `dist/*.tar.gz` it produces.
 
+### Cutting a release — two clicks
+
+CI (`.github/workflows/release.yml`) does the build + publish. Two ways in:
+
+1. **From the Actions tab (recommended).** Set the version in `pyproject.toml`,
+   commit, then **Actions → Release → Run workflow** and pick the channel:
+   - **beta** — the version *must* carry a pre-release suffix (e.g.
+     `0.2-beta.4`). Published as a PyPI pre-release + a GitHub *pre-release*.
+     The `install.sh` / `install.ps1` scripts pass `--pre`, so beta users get
+     it; plain `pip install armance` does not.
+   - **ga** — the version *must* be final (e.g. `0.3.0`). Becomes the default
+     for everyone.
+
+   The workflow refuses a channel/version mismatch (beta with a final version,
+   or ga with a pre-release), creates the `v<version>` tag for you, builds,
+   publishes to PyPI via OIDC, and drafts a GitHub Release with install
+   instructions. No tokens, no manual tagging.
+
+2. **By hand.** `git tag vX.Y.Z && git push origin vX.Y.Z` — the channel is
+   inferred from whether the version has a pre-release suffix.
+
+The Linux/macOS/Windows installers live in the **armance.io** site repo and
+always `pipx install armance --pre` from PyPI, so a published release is
+available on all three OSes the moment it lands — nothing else to ship.
+
 ---
 
 ## Reporting bugs

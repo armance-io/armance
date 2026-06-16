@@ -273,8 +273,13 @@ async def _mona_proxy_checkpoint(
         f"## Checkpoint question (step id: {getattr(step, 'id', '?')})\n"
         f"{getattr(step, 'prompt', '(none)')}\n\n"
         f"## Upstream outputs so far\n{upstream or '(none)'}\n\n"
-        f"Reply with a concise decision (1-3 sentences) that lets the "
-        f"workflow proceed."
+        f"You are deciding WITHOUT the CEO present, so this decision is a "
+        f"working hypothesis they must be able to review and contest. Unless "
+        f"you delegate with `[ASK_USER]`, you MUST open your reply with the "
+        f"exact marker `**Hypothèse (Mona) :**` (or `**Hypothesis (Mona):**` "
+        f"if the configured language is English), state the decision in one "
+        f"sentence, then give the reason and what would invalidate it. Keep it "
+        f"to 1-3 sentences so the workflow can proceed."
     )
     task = Task(prompt=prompt, domain="meta", mode="light")
     try:
@@ -553,6 +558,16 @@ async def _cmd_workflow_run(
                 await _emit_qa(step, question, response.content, "user")
                 return response.content
             await _emit_qa(step, question, proxy_res, "Mona")
+            # Persist Mona's autonomous decision as a step file so the
+            # hypotheses route (which scans step-*.md for the
+            # `**Hypothèse (Mona) :**` marker) can surface it in the UI.
+            try:
+                write_step_output(
+                    artefact, getattr(step, "id", "checkpoint"),
+                    f"## Checkpoint — {question}\n\n{proxy_res}",
+                )
+            except Exception:
+                logger.debug("could not persist mona checkpoint step file", exc_info=True)
             return proxy_res
 
         if ctx.checkpoint_handler is None:

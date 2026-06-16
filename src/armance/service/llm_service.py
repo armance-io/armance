@@ -7,6 +7,7 @@ in `armance.service.*` and `armance.client.*` keeps working unchanged.
 """
 from __future__ import annotations
 
+import contextvars
 import datetime
 import json
 import logging
@@ -46,6 +47,17 @@ def set_current_session_id(session_id: str | None) -> None:
     _CURRENT_SESSION_ID = session_id
 
 
+# Per-task (contextvar) overrides for the exchange-log destination. Set by
+# call_with_ledger from the ledger's persist_path so concurrent web sessions
+# each log to their own file, even when they share the module-level globals.
+_ACTIVE_LOG_DIR: contextvars.ContextVar[Path | None] = contextvars.ContextVar(
+    "_ACTIVE_LOG_DIR", default=None
+)
+_ACTIVE_SESSION_ID: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "_ACTIVE_SESSION_ID", default=None
+)
+
+
 def get_client(provider_name: str, config: Config) -> LLMClient:
     """Service-side wrapper that also caches the current Config for logging."""
     set_current_config(config)
@@ -78,10 +90,14 @@ class TokenLedger:
         self,
         persist_path: Path | None = None,
         budget_cap_usd: float | None = None,
+        log_dir: Path | None = None,
+        session_id: str | None = None,
     ) -> None:
         self.entries: list[LedgerEntry] = []
         self.persist_path = persist_path
         self.budget_cap_usd = budget_cap_usd
+        self.log_dir = log_dir
+        self.session_id = session_id
         self._lock = threading.RLock()
 
         if persist_path and persist_path.exists():
@@ -252,13 +268,17 @@ def log_exchange_details(
     data: dict[str, Any],
 ) -> None:
     try:
-        log_dir = Path.cwd() / ".armance" / "logs"
+        ldir = _ACTIVE_LOG_DIR.get()
+        log_dir = ldir if ldir is not None else Path.cwd() / ".armance" / "logs"
         log_dir.mkdir(parents=True, exist_ok=True)
         # One log file per session so a run's exchanges stay isolated and
         # the file can be deleted with the session. Fall back to the legacy
         # single-file name when no session has been registered yet (e.g.
         # tests, doctor, workflow-run outside a TUI).
-        if _CURRENT_SESSION_ID:
+        sid = _ACTIVE_SESSION_ID.get()
+        if sid is not None:
+            log_file = log_dir / f"{sid}-llm_exchanges.jsonl"
+        elif _CURRENT_SESSION_ID:
             log_file = log_dir / f"{_CURRENT_SESSION_ID}-llm_exchanges.jsonl"
         else:
             log_file = log_dir / "llm_exchanges.jsonl"
@@ -401,6 +421,20 @@ async def call_with_ledger(
     """
     target = ledger or _GLOBAL_LEDGER
     target.check_budget()
+
+    # Bind the exchange-log destination for this task. Prefer the explicit
+    # log_dir/session_id the caller set on the ledger; fall back to deriving
+    # them from the ledger's persist_path (sessions/<sid>/ledger.json) so
+    # older call sites that only pass persist_path still isolate their logs.
+    log_dir = getattr(target, "log_dir", None)
+    sid = getattr(target, "session_id", None)
+    if (log_dir is None or sid is None) and target.persist_path:
+        sid = sid or target.persist_path.parent.name
+        log_dir = log_dir or target.persist_path.parent.parent.parent / "logs"
+    if log_dir is not None:
+        _ACTIVE_LOG_DIR.set(log_dir)
+    if sid is not None:
+        _ACTIVE_SESSION_ID.set(sid)
 
     log_request(agent_name, model, messages)
 
