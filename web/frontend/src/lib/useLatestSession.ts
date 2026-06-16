@@ -15,13 +15,15 @@ export function useLatestSession(): SessionInfo {
   useEffect(() => {
     if (urlSid) {
       setSid(urlSid);
+      const storageKey = `armance.latest-session-id-${pid}`;
       if (typeof localStorage !== "undefined" && typeof localStorage.setItem === "function") {
-        localStorage.setItem("armance.latest-session-id", urlSid);
+        localStorage.setItem(storageKey, urlSid);
       }
       setLoading(false);
     } else {
+      const storageKey = `armance.latest-session-id-${pid}`;
       const stored = typeof localStorage !== "undefined" && typeof localStorage.getItem === "function"
-        ? localStorage.getItem("armance.latest-session-id")
+        ? localStorage.getItem(storageKey)
         : null;
       if (stored) {
         setSid(stored);
@@ -29,13 +31,14 @@ export function useLatestSession(): SessionInfo {
       } else {
         setLoading(true);
         // Fallback to fetch latest session
-        fetch("/api/projects/default/sessions/latest")
+        const targetPid = pid && pid !== "_" ? pid : "default";
+        fetch(`/api/projects/${targetPid}/sessions/latest`)
           .then((res) => (res.ok ? res.json() : null))
           .then((data) => {
             if (data && data.id) {
               setSid(data.id);
               if (typeof localStorage !== "undefined" && typeof localStorage.setItem === "function") {
-                localStorage.setItem("armance.latest-session-id", data.id);
+                localStorage.setItem(storageKey, data.id);
               }
             }
           })
@@ -43,7 +46,7 @@ export function useLatestSession(): SessionInfo {
           .finally(() => setLoading(false));
       }
     }
-  }, [urlSid]);
+  }, [urlSid, pid]);
 
   return { pid, sid, loading };
 }

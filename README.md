@@ -289,6 +289,34 @@ The environmental footprint of LLM usage is estimated using [EcoLogits](https://
                  └──────────────────────────────────────────────┘
 ```
 
+### Deliberation restitution — the process, not just the output
+
+A run hands you more than a synthesis: it shows you *how the room got there*.
+Every run directory carries, alongside the synthesis:
+
+- **`arguments.json` / `sources.json`** — the **argument ledger**. Mona tags
+  each argument the panel **retained** vs **rejected**, with who proposed it,
+  who rejected it and *why*, and the source it leaned on. The web UI renders
+  this as two columns (retained / rejected); rejected arguments are struck
+  through with their rejection reason, sources are click-to-jump chips.
+- **`assumptions.md`** — in **autonomous** mode, every hypothesis Mona made on
+  the absent user's behalf, plus the `HYPOTHESIS:` / `QUESTION:` markers the
+  specialists raised under the strict no-hallucination policy. Surfaced in the
+  UI's hypothesis list so an autonomous run's guesses are never silent.
+- **`trace.md`** — the human-readable agent trace (arguments kept, dropped,
+  adopted from a peer, Serge's objections and how they were addressed).
+
+Two guarantees make this trustworthy:
+
+- **Interactive (HITL) run — no hallucination.** Each specialist runs under a
+  strict anti-hallucination policy: when it lacks a fact it must emit
+  `QUESTION:` / `HYPOTHESIS:` rather than invent. Agents work with what they have.
+- **Autonomous run — Mona's hypotheses are identifiable.** Mona breaks ties on
+  the user's behalf, but every decision is marked `**Hypothèse (Mona) :**` and
+  logged to the assumption ledger; on a critical/high-risk call she refuses to
+  guess and escalates back to the user (`[ASK_USER]`). Each checkpoint records
+  **who** answered — the user, or Mona.
+
 ### Storage layout — everything is a file
 
 ```
@@ -303,6 +331,7 @@ The environmental footprint of LLM usage is estimated using [EcoLogits](https://
   reports/            versioned <agent>_v<N>.md per step
   sessions/<id>/      state.json + ledger.json + conversation.md
   exports/<wf>/run-<ts>/  per-run manifest + per-step outputs + synthesis
+                      + trace.md, assumptions.md, arguments.json, sources.json
   config.yaml         non-secret config (providers, default model, language)
   .env                provider API keys — gitignored
 ```
