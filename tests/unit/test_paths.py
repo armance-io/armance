@@ -16,9 +16,25 @@ from armance import paths
 def test_global_config_dir_uses_platformdirs(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("ARMANCE_CONFIG_DIR", raising=False)
     monkeypatch.setattr(
-        paths.platformdirs, "user_config_dir", lambda app: f"/fake/cfg/{app}"
+        paths.platformdirs,
+        "user_config_dir",
+        lambda app, appauthor=None: f"/fake/cfg/{app}",
     )
     assert paths.global_config_dir() == Path("/fake/cfg/armance")
+
+
+def test_global_config_dir_drops_redundant_author(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``appauthor=False`` is forwarded so Windows avoids ``armance\\armance``."""
+    monkeypatch.delenv("ARMANCE_CONFIG_DIR", raising=False)
+    captured: dict[str, object] = {}
+
+    def _fake(app: str, appauthor: object = None) -> str:
+        captured["appauthor"] = appauthor
+        return f"/fake/cfg/{app}"
+
+    monkeypatch.setattr(paths.platformdirs, "user_config_dir", _fake)
+    paths.global_config_dir()
+    assert captured["appauthor"] is False
 
 
 def test_global_config_dir_env_override(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

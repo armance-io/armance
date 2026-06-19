@@ -961,8 +961,17 @@ def cmd_web(
     *,
     data_dir: Path | None = None,
     launch_url_suffix: str = "",
+    web_secret: str | None = None,
+    web_secret_auto: bool | None = None,
 ) -> int:
-    """Start the Armance web UI (FastAPI backend + optional browser open)."""
+    """Start the Armance web UI (FastAPI backend + optional browser open).
+
+    ``web_secret`` / ``web_secret_auto`` let a caller (the launcher) pin the
+    secret it already resolved. They must be passed together. This avoids
+    re-deriving ``was_auto_generated`` here: the launcher pins the secret for
+    the child via the env it builds below, which would otherwise make the
+    re-derivation see a "configured" secret and wrongly hide the token.
+    """
     import argparse
     import subprocess
 
@@ -1069,15 +1078,19 @@ def cmd_web(
     # Epic S · security gate. Resolve the web secret in the parent so the
     # printed URL and the child server agree, then hand it to the child via
     # ARMANCE_WEB_PASSWORD (so the child does not generate its own token).
-    from armance.config import load_config as _load_cfg
-    from armance.service import security as _security
-    try:
-        _web_cfg = _load_cfg()
-    except Exception:  # noqa: BLE001 — config may be absent; fall back to a token
-        from armance.config import Config as _Cfg2
-        _web_cfg = _Cfg2()
-    _web_secret = _security.resolve_web_secret(_web_cfg)
-    _web_secret_auto = _security.was_auto_generated(_web_cfg)
+    if web_secret is not None:
+        _web_secret = web_secret
+        _web_secret_auto = bool(web_secret_auto)
+    else:
+        from armance.config import load_config as _load_cfg
+        from armance.service import security as _security
+        try:
+            _web_cfg = _load_cfg()
+        except Exception:  # noqa: BLE001 — config may be absent; fall back to a token
+            from armance.config import Config as _Cfg2
+            _web_cfg = _Cfg2()
+        _web_secret = _security.resolve_web_secret(_web_cfg)
+        _web_secret_auto = _security.was_auto_generated(_web_cfg)
     # The auto-generated token is safe to put in the URL (ephemeral, local).
     # A persistent password must never travel in the query string.
     if launch_url_suffix:
@@ -1267,10 +1280,11 @@ def cmd_launcher(stop: bool = False) -> int:
     launcher window.
 
     Epic S: the page's first API call is gated. We resolve the web secret in the
-    parent, pin it via ``ARMANCE_WEB_PASSWORD`` so the child server agrees, and
-    open the browser with ``?token=`` when the secret was auto-generated — so
-    SEC5 auto-login sets the cookie and the grandma never hits a login wall. A
-    configured password is never put in the URL.
+    parent and hand it (plus whether it was auto-generated) to ``cmd_web``,
+    which pins it for the child server, and open the browser with ``?token=``
+    when the secret was auto-generated — so SEC5 auto-login sets the cookie and
+    the grandma never hits a login wall. A configured password is never put in
+    the URL.
     """
     from armance import paths
     from armance.config import Config, load_config
@@ -1298,15 +1312,48 @@ def cmd_launcher(stop: bool = False) -> int:
     # otherwise make was_auto_generated see a "configured" secret).
     secret = security.resolve_web_secret(cfg)
     auto = security.was_auto_generated(cfg)
-    os.environ["ARMANCE_WEB_PASSWORD"] = secret  # child server uses the same secret
-
+    # Hand the resolved secret + its origin straight to cmd_web; do NOT pin it
+    # into the parent's os.environ first. Doing so used to make cmd_web's own
+    # was_auto_generated() see a "configured" secret and print "protected by
+    # your configured password" instead of the token (Windows first-run could
+    # then never reach setup). cmd_web injects the secret into the child's env.
     query = f"?token={secret}" if auto else ""
-    return cmd_web(launcher_home, [], data_dir=launcher_home, launch_url_suffix=f"{target}{query}")
+    return cmd_web(
+        launcher_home,
+        [],
+        data_dir=launcher_home,
+        launch_url_suffix=f"{target}{query}",
+        web_secret=secret,
+        web_secret_auto=auto,
+    )
+
+
+def _make_console_utf8_safe() -> None:
+    """Stop emoji in our output from crashing the legacy Windows console.
+
+    The default Windows console encoding (e.g. cp1252) cannot encode the
+    ✓/⚠/emoji characters Armance prints, so a single such ``print`` raises
+    ``UnicodeEncodeError`` and truncates everything after it — including the
+    access token line a first-run user needs. Re-encode as UTF-8 with a
+    replacement fallback so output is always emitted, never aborted.
+    """
+    if sys.platform != "win32":
+        return
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001 — best-effort; never block startup
+            pass
 
 
 def main(argv: list[str] | None = None) -> int:
     import argparse
     import importlib.metadata
+
+    _make_console_utf8_safe()
 
     argv = argv if argv is not None else sys.argv[1:]
 
