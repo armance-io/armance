@@ -1,0 +1,434 @@
+# Armance NLS catalogue — Japanese
+# Claves faltantes → fallback a en.yaml (master).
+
+# ---------------------------------------------------------------------------
+# Envolturas de mensajes del sistema genéricos
+# ---------------------------------------------------------------------------
+system:
+  ok: "*(システム: {body})*"
+  info: "*(システム: ℹ️ {body})*"
+  warn: "*(システム: 注意 — {body})*"
+  error: "*(システム: {body})*"
+
+# ---------------------------------------------------------------------------
+# Ciclo de vida de documentos / biblioteca
+# ---------------------------------------------------------------------------
+ingest:
+  no_docs: "`.armance/docs/` にドキュメントが見つかりませんでした。ファイルをそこに置いてから再試行してください。"
+  part_indexed: "{n} 件の新しいドキュメントがライブラリに追加されました"
+  part_chunks: "合計 {n} セグメント"
+  part_skipped: "{n} 件のドキュメントはすでにライブラリに存在します（内容の変更なし）"
+  part_deleted: "ライブラリから {n} 件削除されました"
+  per_doc_line: "  • `{name}` → {chunks} セグメント"
+  success_suffix: "すべてのドキュメントがチームによって検索可能になりました。"
+  failed: "インポート失敗 — {error}"
+  embed_init_failed: "埋め込み (embedding) クライアントを初期化できませんでした。`.armance/config.yaml` / `.env` の `embedding_provider`、`embedding_model`、および API キーを確認してください。ドキュメントはディスク上に存在しますが、RAG ライブラリを更新できません。"
+  nothing_to_do: "ライブラリのすべての内容がすでに最新の状態です。変更は検出されませんでした。"
+
+load:
+  not_found: "`.armance/docs/` に `{filename}` が見つかりませんでした。"
+  binary_format: "`{filename}` はバイナリフォーマット ({suffix}) です。直接ロードは .md/.txt のみをサポートしています。このファイルは RAG を介してライブラリにインデックス化することは可能です。"
+  queued: "*(システム: 📖 `{filename}` がコンテキストに読み込まれました。次の質問をしてください。その内容を考慮して回答します。)*"
+  queued_tui: "*(システム: 📖 `{filename}` がロード待ち行列に追加されました。Armance に次の質問をしてください。その内容を考慮して回答します。)*"
+  usage: "使用法: /load <ファイル名>"
+
+forget:
+  not_in_library: "`{filename}` はライブラリにありませんでした — 削除するものはありません。"
+  success: "`{filename}` がライブラリから削除されました — {chunks} セグメントが削除されました。チームはこれを検索できなくなります。過去の会話ターンで参照されている可能性があります。クリーンな状態にするには、セッションを再起動してください。"
+  failed: "削除失敗 — {error}"
+  usage: "使用法: /forget <ファイル名>"
+
+rag_status:
+  failed: "rag-status 取得失敗 — {error}"
+
+scan:
+  title: "## `.armance/docs/` のスキャン"
+  all_clean: "ディスク上のすべてのドキュメントがインデックスされ、最新です。孤立ファイルはありません。"
+  unread_header: "### 未インデックス（ライブラリに追加しますか？）"
+  stale_header: "### 前回のインデックス以降に変更あり（更新が必要）"
+  orphans_header: "### 孤立ファイル（ライブラリにあるが、実ファイルが削除されたもの）"
+  orphan_line: "- `{name}` — `/forget {name}` を使用してクリーンアップしてください"
+
+# ---------------------------------------------------------------------------
+# Informe RAG
+# ---------------------------------------------------------------------------
+rag_report:
+  title: "## RAG ライブラリ"
+  embedding_with_provider: "**埋め込み**: `{provider}` / `{model}`"
+  embedding_no_provider: "**埋め込み**: {model}"
+  embedding_none: "_(なし — 辞書検索のみ)_"
+  stats: "**セグメント**: {chunks} | **サイズ**: {size_kb} KB | **トークン数（推定）**: ~{tokens}"
+  no_docs_line: "_`.armance/docs/` にドキュメントはありません。_"
+  no_docs_hint: "> PDF、MD、DOCX、または TXT ファイルを `.armance/docs/` に置いて、Armance にインデックス化を依頼してください。"
+  files_header: "### `.armance/docs/` 内のファイル"
+  status_stale: "🔄 変更あり（再インデックスが必要）"
+  status_retained: "インデックス済み（{chunks} セグメント、約 {tokens} トークン）"
+  status_manifest_only: "注意 — マニフェストには存在しますが、DB に見つかりません（取り込みエラー？）"
+  status_not_retained: "⏳ 未インデックス"
+  doc_line: "- **{name}** ({size_kb} KB) — {status}"
+  orphans_header: "### 孤立ファイル（ライブラリにあるが、ファイルが `.armance/docs/` から削除されたもの）"
+  orphan_line: "- **{name}** — {chunks} セグメントのクリーンアップが必要"
+  orphans_hint: "> These docs are still searchable but their source files are gone. Ask Armance to forget them."
+
+# ---------------------------------------------------------------------------
+# Sección docs injectada en los system prompts
+# ---------------------------------------------------------------------------
+docs_section:
+  title: "## `.armance/docs/` 内のドキュメント（ライブラリの状態）"
+  empty_title: "## `.armance/docs/` 内のドキュメント"
+  empty_body: "_ドキュメントはまだありません。_ ユーザーに対し、PDF / DOCX / MD / TXT ファイルを `.armance/docs/` に置いて、**インデックス**（ライブラリに追加、セグメント検索可能）するか、**ロード**（全エージェントがテキスト全体を読み込む）するかを選択できると伝えてください。"
+  empty_body_no_library: "_ドキュメントはまだありません。_ ユーザーに対し、PDF / DOCX / MD / TXT ファイルを `.armance/docs/` に置いて、どれを**ロード**（全エージェントが本セッション中にテキスト全体を読み込む）するか選択できると伝えてください。検索可能なライブラリは**この環境では設定されていません**（埋め込みモデルがありません）。そのためインデックス化は利用できません。インデックス化を提案しないでください。ユーザーから尋ねられた場合は、`armance init` を再実行して埋め込みモデルを選択することで、ライブラリを有効化できることを説明してください。"
+  status_retained: "ライブラリにインデックス済み（セグメント検索可能）"
+  status_unread: "⏳ 未インデックス（インデックス化またはロードを提案）"
+  file_line: "- `{name}` — {status}"
+  orphans_header: "### 孤立ファイル（ライブラリに残っているが、ファイルが `.armance/docs/` から削除されたもの）"
+  orphan_line: "- `{name}` — `[EXECUTE:/library-unindex:{name}]` による削除を提案してください"
+  changes_header: "### 前回のセッションからの変更点"
+  change_added: "- ➕ 追加: `{name}` — これをアナウンスし、**インデックス**（ライブラリに追加）、**ロード**（全エージェントが読み込む）、または無視のどれを行うか尋ねてください"
+  change_removed: "- ➖ 削除: `{name}` — ライブラリから削除するかどうかユーザーに尋ねてください"
+  rules: |2
+
+    ## ドキュメント処理ルール (重要)
+    - ユーザー向け用語: **'ライブラリ'**（'データベース' / 'RAG' / '埋め込み' は使用しない）、**'インデックス'** または **'取り込み'**（ドキュメントを**セグメント/チャンク**としてライブラリに追加すること）、**'ロード' / '読み込み'**（テキスト全体をチームのワーキングメモリに入れること）。
+    - 複数の保留ドキュメントがある場合の明確な説明分け:
+      - ドキュメントを**インデックス**する = そのセグメントがライブラリのインデックスに追加されます。検索によって一節を取得できますが、エージェントは全体を読み込んでいません。
+      - ドキュメントを**ロード（読み込み）**する = 全体を取り込みます。すべてのエージェントがセッション中にそれを考慮します。`--persist` でセッションをまたいで保持されます。
+    - 複数のドキュメントが保留中の場合は、**1つずつリストアップ**して尋ねてください: インデックス？ロード？スキップ？裏で静かに一括処理しないでください。
+    - ドキュメントを**インデックス**する場合: ユーザーの確認後、単独の行で `[EXECUTE:/library-index]` を出力します。
+    - ドキュメントを**ロード**する場合: 単独の行で `[EXECUTE:/library-load:<filename>]` を出力します。
+    - ドキュメントを**アンロード**する場合: `[EXECUTE:/library-unload:<filename>]` を出力します。
+    - ライブラリから**インデックス削除**する場合: `[EXECUTE:/library-unindex:<filename>]` を出力します。
+    - sessionの**最初のメッセージ**にて: 上記の `⏳`, `➕ 追加` または `➖ 削除` の項目が表示された場合、プロジェクトについて尋ねる前に、まずこれらを報告し、どうするか尋ねてください。
+
+# ---------------------------------------------------------------------------
+# TUI — bienvenida, barra lateral, chat
+# ---------------------------------------------------------------------------
+agent_handoff:
+  hint: "💡 ヒント: `@{target}` と入力すると、{target} に会話を移管して続行できます。"
+
+quit:
+  ctrl_c_again: "終了するにはもう一度 Ctrl+C を押してください"
+  save_prompt: "終了する前にセッションコンテキストを保存しますか？"
+  saved: "コンテキストが保存されました。"
+
+mona:
+  deliverable_saved: "📄 総合レポートが `{path}` に保存されました（ライブラリにインデックス化可能です）。"
+  run_queued: "📥 実行タスク `{workflow}/{run_id}` が次の質問向けにキューに追加されました。"
+
+greeting:
+  welcome: "歓迎します。プロジェクトの概要を説明するか、質問をして開始してください。"
+  hint: |-
+    ヒント — 専門家を召集する準備ができたら [italic]"@Malik チームを招募"[/] と言うか、[bold]/help[/] と入力して他に何ができるかを確認してください。
+
+sidebar:
+  staff: "常駐チーム"
+  roles_agents: "役割とエージェント"
+  workflows: "ワークフロー"
+  tasks: "個別タスク"
+  library: "📚 ライブラリ"
+  no_agents: "エージェント未登録"
+  no_workflows: "ワークフローなし"
+  idle: "待機中"
+  library_inactive: "無効"
+  library_inactive_line: "[grey50]✗ 無効 — 埋め込みモデル未設定[/]"
+  library_active_line: "[green]✓ 有効[/] [grey50]{provider}/{model}[/]\n  {docs} 件のドキュメント · {chunks} セグメント"
+
+chat:
+  copy_nothing: "コピーする内容がありません"
+  copy_ok: "メッセージ #{idx} をコピーしました（{chars} 文字）"
+  copy_failed: "コピー失敗: {error}"
+
+prompts:
+  provider: "プロバイダー:"
+  model: "モデル:"
+  reasoning_effort: "推理深度 (Reasoning effort):"
+  workflow_prompt: "ワークフロープロンプト:"
+  cost_estimate: "[コスト見積もり] {steps} 回のステップ呼び出しで約 ${total} USD"
+  confirm_run: "続行しますか？ (約 ${total} USD)"
+
+help_cmd:
+  switch:      "/switch <エージェント>            活動中のエージェントを切り替える"
+  model:       "/model                            プロバイダー ＋ モデルを選択する"
+  effort:      "/effort                           推理深度を選択する"
+  save:        "/save                             プロジェクトコンテキストを凍結する (L0)"
+  report:      "/report                           最後の回答からレポートを作成する"
+  judge:       "/judge @ファイル …                 カメレオン裁判官 (Chameleon Judge) を実行する"
+  export:      "/export <宛先|all>                下流エージェント用ドキュメントを出力する"
+  workflow:    "/workflow run|design <名前>       ワークフローを実行または設計する"
+  task:        "/task <ドメイン> <プロンプト>     シングルエージェントのタスク"
+  deliverable: "/deliverable <形式> [from=...]     PPTX/DOCX/PDF/MD 形式で出力する"
+  role:        "/role list|show [<名前>]          役割とエージェントを管理する"
+  library:     "/library status|index|unindex|load|unload  ライブラリ（セグメント）とチーム全体の既読状態を管理する"
+  help:        "/help                             このヘルプを表示する"
+  quit:        "/quit                             armance を終了する"
+
+# ---------------------------------------------------------------------------
+# Indicador de pensamiento (spinner)
+# ---------------------------------------------------------------------------
+thinking:
+  default: "思考中…"
+  indexing: "ドキュメントをライブラリにインデックス中…"
+  loading: "ドキュメントをロード中…"
+
+# ---------------------------------------------------------------------------
+# Comandos /library (biblioteca + estado de lectura)
+# ---------------------------------------------------------------------------
+library_status:
+  active: "## ライブラリのステータス\n**ライブラリ有効** ({provider} / {model}) — インデックス済み {docs} 件、計 {chunks} セグメント。オプション A (インデックス) と C (両方) を自由に提案できます。\n"
+  inactive: "## ライブラリのステータス\n**ライブラリ無効** — 埋め込みモデルが設定されていません。オプション A (インデックス) または C (両方) を提案してはいけません。オプション B (セッションメモリへのロード) と D (何もしない) のみが有効です。ユーザーから理由や有効化方法を尋ねられた場合は、以下の ## Armanceの基本概念 セクションを使用して説明してください。\n"
+
+library:
+  unknown_sub: "未知のサブコマンド: /{sub}。利用可能: status, scan, index, unindex, load, unload。"
+  unindex_usage: "使用法: /library unindex <ファイル名>"
+  load_usage: "使用法: /library load <ファイル名> [--persist]"
+  unload_usage: "使用法: /library unload <ファイル名>"
+  load_ok_session: "📖 `{filename}` が本セッション用にロードされました。セッションが有効である間、各エージェントはこれを記憶します。（再起動後もロード状態を維持するには `--persist` を指定してください。）"
+  load_ok_persist: "📖 `{filename}` が永続的にロードされました（セッション開始ごとに自動的にロードされます）。"
+  unload_ok: "`{filename}` がアンロードされました。エージェントはテキスト全体を持たなくなります（インデックスされている場合、ライブラリで検索することは可能です）。"
+  unload_not_loaded: "`{filename}` はロードされていませんでした。"
+  read_header: "### ロードされたドキュメント（全エージェント既読）"
+  read_line: "- 📖 `{name}`"
+
+# ---------------------------------------------------------------------------
+# Errores del despachador TUI
+# ---------------------------------------------------------------------------
+dispatch:
+  usage_command: "使用法: /<コマンド> [引数]"
+  unknown_command: "未知のコマンド: /{cmd}"
+  handler_error: "/{cmd} の実行中にエラーが発生しました: {error}"
+
+# ---------------------------------------------------------------------------
+# Cambio de agente por lenguaje natural
+# ---------------------------------------------------------------------------
+nl_switch:
+  switched_meta: "OK — {label} に切り替えました。"
+  switched_agent: "OK — エージェント {label} に切り替えました。どうぞ。"
+  switched_by_role: "OK — {label} に切り替えました。"
+  multiple_for_role: "複数の {target} エージェントが存在します: {names}\n選択するには `/switch <名前>` または `@<名前>` で返信してください。"
+
+# ---------------------------------------------------------------------------
+# /switch
+# ---------------------------------------------------------------------------
+switch:
+  usage: "使用法: /switch <エージェント>"
+  switched_meta: "{name} に切り替えました"
+  switched_agent: "エージェントに切り替えました: {name}"
+  load_error: "エージェント {name} のロード中にエラーが発生しました: {error}"
+  multiple_matches: "'{name}' に複数の候補が一致しました: {options}。 /switch <フルネーム> を使用してください。"
+  not_found: "エラー: '{name}' に一致するエージェントが見つかりません（/role list で利用可能なエージェントを確認してください）"
+
+# ---------------------------------------------------------------------------
+# /model, /effort, /task
+# ---------------------------------------------------------------------------
+common:
+  cancelled: "キャンセルされました"
+  error: "エラー: {error}"
+  no_agents_loaded: "エラー: エージェントがロードされていません"
+
+system_msg:
+  dismissed: "*(システム: {n} 名のエージェントを解散しました: {names})*"
+  dismiss_empty: "*(システム: 解散するユーザーエージェントが見つかりません)*"
+  recruited: "*(システム: {n} 名のエージェントを正常に召集しました)*"
+  updated: "*(システム: {n} 名のエージェントを正常に更新しました: {names})*"
+  staff_updated: "*(システム: 常駐エージェント {n} 名のモデルを正常に更新しました: {details})*"
+  skipped_collision: "*(システム: 警告 — 名前/役割の衝突により {n} 名のエージェントをスキップしました: {names})*"
+  recruit_failed: "*(システム: エージェントの招募に失敗しました: {error})*"
+  auto_dismissed_before_recruit: "*(システム: チームの完全な再編を検出しました — 新チームを招募する前に、以前の {n} 名の専門家を自動的に解散しました)*"
+  forwarded: "— {target} に転送 —"
+  health_warning: "注意 — 接続テスト中に到達不能なモデルが検出されました: {agents}。@Malik に他のモデルを提案するよう依頼してください。"
+  workflow_health_block: "ワークルフローを開始できません。到達不能なエージェント: {agents}。@Malik にモデルの変更を求めるか、彼らなしでの実行を承認してください。"
+
+model:
+  set: "モデル設定: {provider}/{model}"
+
+effort:
+  set: "推理深度設定: {choice}"
+
+task:
+  usage: "使用法: /task <ドメイン> <プロンプト>"
+  no_agent_for_domain: "ドメインに適合するエージェントが見つかりません: {domain}"
+
+# ---------------------------------------------------------------------------
+# /report, /judge, /export
+# ---------------------------------------------------------------------------
+report:
+  no_output: "保存する出力がありません"
+  saved: "レポート保存完了: {path}"
+
+judge:
+  usage: "使用法: /judge @ファイル ..."
+  no_files_matched: "パターンに一致するファイルがありません: {pattern}"
+  no_paths: "解決されたレポートパスがありません"
+
+export:
+  usage: "使用法: /export <宛先|all>"
+  exported_list: "出力完了: {paths}"
+  exported_one: "出力完了: {path}"
+
+# ---------------------------------------------------------------------------
+# /workflow
+# ---------------------------------------------------------------------------
+workflow:
+  run_started: "▶️ 実行開始 → 出力先 `{path}/`"
+  run_finished: "実行完了。すべての出力は `{path}/` にあります。Mona に総合レポートを依頼するか、以前の実行と比較してください。"
+  run_preview: "実行完了 → `{path}/`\n\n**プレビュー:** {preview}…\n\n{mona_offer}"
+  run_mona_offer: "Mona による総合レポートと報告会を希望されますか？その旨をお伝えください。"
+  run_aborted: "チェックポイント `{step_id}` でワークフローが中止されました。部分的な実行結果はステータス `canceled` として `{path}/` に保存されています。"
+  assumptions_header: "\n\n### 🔍 Mona 意思決定レポート（主要仮説と重要な不確実性）\n\n"
+  list_usage: "使用法: /workflow list <名前>"
+  list_header: "**{workflow}** の実行履歴 ({n}):"
+  list_empty: "`{workflow}` の実行履歴はありません。"
+  compare_usage: "使用法: /workflow compare <名前> <run1> <run2>"
+  compare_not_found: "`{workflow}` の実行結果 `{run1}` および/または `{run2}` をロードできませんでした。"
+  compare_queued: "📥 実行結果 `{run1}` と `{run2}` がロードされました。Mona が待機しています。比較用の質問をしてください。"
+  design_blocked_no_team: "チームがまだ招募されていません。専門家がいないワークフローはどのステップも実行できません。@Malik にプロジェクト用のチーム構築を依頼してから戻ってください。"
+  run_blocked_no_team: "専門家が招募されていません — このワークフローを実行できません。まず `@Malik` にチームの招募を依頼してください。"
+  aborted_no_agents: "ワークフロー中止: 利用可能なエージェントのないステップが多すぎます（ステップ `{step_id}` のドメイン `{domain}`）。 `@Malik` とチーム構成を確認してください。"
+  warn_critique_single_family: "注意 — 批判プレッシャーが制限されています。裁判官、実行者、挑戦者が同じモデル家族 ({family}) をシェアしています。ワークフローは実行されますが、認識の多様性は低くなります。より良い結果を得るには、`.armance/config.yaml` に 2 つ目のプロバイダー家族を設定してください。"
+  warn_judge_single_family: "注意 — Mona は実行者と同じプロバイダー家族 ({family}) をシェアしています。盲点が生じる可能性があります。家族が異なる裁判官の採用を検討してください。"
+  not_found: "ワークフローが見つかりません: {name}（.armance/workflows/ および workflows/ を検索しました）"
+  no_agent_for_step: "[ステップ {step_id} のドメイン {domain} にエージェントがいません]"
+  step_error: "[{step_id} エラー: {error}]"
+  aborted: "[ワークフロー中止]"
+  usage_root: "使用法: /workflow run|design <名前>"
+  deprecated_design: "非推奨: 代わりに '/workflow design <名前>'（Kim の対話モード）を使用してください"
+  design_missing_yaml: "注意 — 提案の中に YAML ブロックが見つかりません。Kim は `name`, `steps` を含む ```yaml ... ``` ブロックを添付する必要があります。"
+  design_invalid_yaml: "注意 — 无效的 YAML: {error}"
+  design_invalid_workflow: "注意 — 无效的工作流: {error}"
+  design_created: "ワークフロー **{name}** が作成されました ✓ ({gem} {label})\nファイル: `.armance/workflows/{filename}`\n"
+  usage_run: "使用法: /workflow run <名前> [--enrich <session_id>] [--yes]"
+  usage_design: "使用法: /workflow design <名前>"
+  unknown_sub: "未知のワークフローサブコマンド: {sub}"
+
+# ---------------------------------------------------------------------------
+# 常驻エージェント欠落
+# ---------------------------------------------------------------------------
+meta_agent:
+  kim_missing: "エラー: system-orchestrator エージェントが見つかりません"
+  malik_missing: "エラー: Malik (人事) エージェントの定義がありません"
+  armance_missing: "エラー: コンテキストエージェントが見つかりません"
+
+# ---------------------------------------------------------------------------
+# /deliverable
+# ---------------------------------------------------------------------------
+deliverable:
+  usage: "使用法: /deliverable <pptx|docx|pdf|md> [from=latest_judge|step_id] [出力ファイル名]"
+  unsupported_format: "サポートされていない形式: {fmt}。以下から選択してください: pptx, docx, pdf, md"
+  no_content: "レンダリングするコンテンツがありません (source={source})"
+  parse_error: "レポートの解析中にエラーが発生しました: {error}"
+  no_renderer: "形式 {fmt} に対応するレンダラーがありません"
+  error: "成果物エラー: {error}"
+  created: "成果物が作成されました: {path}"
+
+# ---------------------------------------------------------------------------
+# /save
+# ---------------------------------------------------------------------------
+save:
+  too_brief: "エラー: 保存するにはコンテキストが短すぎます（プロジェクトの枠組みを定義するには、挨拶を除いて最低 30 文字必要です）"
+  saved: "コンテキストが L0_v{version} として保存されました"
+  error: "コンテキスト保存中にエラーが発生しました: {error}"
+
+# ---------------------------------------------------------------------------
+# /role
+# ---------------------------------------------------------------------------
+role:
+  usage: "使用法: /role list|show [<名前>]"
+  add_hint: "召集するには、'@Malik、<プロジェクト名> 向けに招募' と指示してください。Malik が対応します。"
+  unknown_action: "未知の役割アクション: {action}"
+  list_empty: "役割はまだ定義されていません。"
+  show_usage: "使用法: /role show <名前>"
+  not_found: "役割 '{name}' が見つかりません"
+
+# ---------------------------------------------------------------------------
+# /agent
+# ---------------------------------------------------------------------------
+agent_cmd:
+  usage: "使用法: /agent edit|replace|promote|demote|archive|list"
+  error: "エラー: {error}"
+  unknown_action: "未知のエージェントアクション: {sub}"
+
+# ---------------------------------------------------------------------------
+# /feedback-loop, /iterate-from
+# ---------------------------------------------------------------------------
+feedback:
+  usage_with_pending: "使用法: `/feedback-loop <run-id>` または現在の提案に対して `ja`/`nein` (はい／いいえ) で返信してください。"
+  usage: "使用法: `/feedback-loop <run-id>`"
+
+iterate:
+  usage: "使用法: `/iterate-from <run-id> [<ワークフロー名>]`"
+
+# ---------------------------------------------------------------------------
+# Asistente `armance init` — RAG / embedding picker
+# ---------------------------------------------------------------------------
+init:
+  rag:
+    title: "ドキュメントメモリ (RAG)"
+    intro: |2
+        Armance はドキュメント (.armance/docs/) をインデックス化し、セマンティック検索を可能にします。
+
+        仕組み:
+        埋め込みモデルが一節ごとに数値の指纹へと変換します。
+        質問をすると、Armance が最も関連性の高い一節を検出します。
+
+        → 埋め込みあり : ドキュメント全体から正確なセマンティック検索が可能。
+        → 埋め込みなし : ドキュメントは一覧表示されますが、検索はされません。
+                         （後から config.yaml を編集して有効化できます）
+    querying: "利用可能な埋め込みモデルの API を照会中..."
+    found: "{count} 個のモデルが見つかりました"
+    none_found: "見つかりませんでした"
+    skip_label: "なし"
+    custom_sentinel: "[custom-openai]  手動入力 →"
+    custom_only_hint: |2
+        custom-openai はモデル一覧を公開していません。以下にモデル ID を入力してください。
+        RAG を無効にする場合は空欄のままにしてください。
+    no_models_hint: |2
+        注意 — プロバイダーに埋め込みモデルが見つかりません（API キーを確認してください）。
+           以下に手動で入力することもできます。Enter キーを押して RAG をスキップすることも可能です。
+    prompt_provider: "この埋め込みモデルのプロバイダー:"
+    prompt_manual_id: "埋め込みモデル ID（RAG を無効にする場合は空欄）:"
+    prompt_manual_id_custom: "custom-openai の埋め込みモデル ID:"
+    prompt_autocomplete: "埋め込みモデル（入力補完）:"
+    filter_hint: "絞り込むには入力してください（例: 'bge', 'openai'）。RAG をスキップするには 'なし' と入力するか、空欄にしてください。"
+    disabled_short: "RAG は無効化されました。"
+    disabled_edit_yaml: "RAG は無効化されました。後で有効にするには .armance/config.yaml を編集してください。"
+    disabled_edit_keys: "RAG は無効化されました。後で有効にするには .armance/config.yaml の embedding_provider / embedding_model を編集してください。"
+    unrecognised: "モデル '{name}' は認識されません。RAG は無効化されました。"
+    confirmed: "埋め込みモデル: [{provider}] {model}"
+  ssl_skip_prompt: "SSL 証明書の検証をスキップしますか？（自己署名証明書 / 企業内 MITM プロキシの検証で必要になります）"
+
+# ---------------------------------------------------------------------------
+# Huella ambiental (/footprint)
+# ---------------------------------------------------------------------------
+footprint:
+  cmd_title: "環境負荷の排出量"
+  col_agent: "エージェント"
+  col_gco2e: "gCO₂e"
+  col_water: "mL H₂O"
+  col_calls: "呼び出し回数"
+  col_estimate: "推定"
+  total_row: "合計"
+  no_data: "まだ環境負荷データはありません。最初にいくつかのクエリを実行してください。"
+  estimate_note: "~ = 推定値（類似モデルによるプロキシ）"
+  unknown_note: "? = 不明なモデル（データなし）"
+  zone_note: "電力グリッド地域: {zone}"
+  by_day: "日別"
+  by_month: "月別"
+  equiv:
+    phone_charges: "回のスマホ充電"
+    car_km: "km の車走行"
+    water_glasses: "杯の水"
+
+# Roles de personal
+# ---------------------------------------------------------------------------
+staff:
+  role:
+    weaver: "織網手"
+    scout: "斥候"
+    conductor: "指揮手"
+    distiller: "蒸留手"
+    critic: "批判手"
+
+boost:
+  confirm_upgrade: "エージェント {agent} が {boost} への増強を求めています（現在 {base}）。許可しますか？ [Y/n]"
+  confirm_downgrade: "エージェント {agent} の処理が終了し、{base} への復帰を求めています。許可しますか？ [Y/n]"
+  workflow_notice: "お知らせ: この高負荷なワークフローの実行中、{count} 名のエージェントが自動的に増強されます。"
