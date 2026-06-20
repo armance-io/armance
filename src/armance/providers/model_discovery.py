@@ -109,8 +109,8 @@ async def discover_gemini_embedding_models(api_key: str, base_url: str | None = 
 # USD pricing is unavailable; Malik relies on these family tiers instead.
 _CLAUDE_CODE_MODELS = {
     "high": [
+        "claude-opus-4-8",
         "claude-opus-4-7",
-        "claude-opus-4-6",
     ],
     "medium": [
         "claude-sonnet-4-6",
