@@ -33,7 +33,8 @@ def test_launcher_first_run_opens_setup(monkeypatch, isolate_global_config: Path
     """No global config → launcher boots in setup mode (browser → /setup)."""
     opened = {}
 
-    def _fake_cmd_web(root=None, remaining=None, *, data_dir=None, launch_url_suffix="") -> int:
+    def _fake_cmd_web(root=None, remaining=None, *, data_dir=None,
+                      launch_url_suffix="", web_secret=None, web_secret_auto=None) -> int:
         opened["root"] = root
         opened["remaining"] = remaining
         opened["data_dir"] = data_dir
@@ -69,17 +70,26 @@ def test_launcher_auto_token_in_url(monkeypatch, isolate_global_config: Path) ->
     monkeypatch.delenv("ARMANCE_WEB_PASSWORD", raising=False)
     security.reset_web_secret_cache()
     opened = {}
-    def _fake_cmd_web(root=None, remaining=None, *, data_dir=None, launch_url_suffix="") -> int:
+    def _fake_cmd_web(root=None, remaining=None, *, data_dir=None,
+                      launch_url_suffix="", web_secret=None, web_secret_auto=None) -> int:
         opened["path"] = launch_url_suffix
+        opened["web_secret"] = web_secret
+        opened["web_secret_auto"] = web_secret_auto
         return 0
     monkeypatch.setattr(cli, "cmd_web", _fake_cmd_web)
 
     rc = cli.cmd_launcher()
     assert rc == 0
     assert opened["path"].startswith("/setup?token=")
-    # The child server inherits the same secret (parent + gate agree).
+    # The same secret is handed to cmd_web (which pins it for the child), and it
+    # is flagged auto-generated so cmd_web prints the token rather than hiding
+    # it behind a "configured password" notice.
     token = opened["path"].split("token=", 1)[1]
-    assert os.environ["ARMANCE_WEB_PASSWORD"] == token
+    assert opened["web_secret"] == token
+    assert opened["web_secret_auto"] is True
+    # The launcher must NOT poison the parent env: doing so made cmd_web's own
+    # was_auto_generated() see a configured secret and suppress the token.
+    assert os.environ.get("ARMANCE_WEB_PASSWORD") is None
 
 
 def test_bare_stop_routes_to_launcher_stop(monkeypatch) -> None:
@@ -111,14 +121,22 @@ def test_launcher_stop_targets_global_home(monkeypatch, isolate_global_config: P
 
 
 def test_launcher_configured_opens_launcher(monkeypatch, isolate_global_config: Path) -> None:
-    """Global config present → browser opens the launcher window."""
+    """Global config present → browser opens the launcher window (not setup)."""
+    from armance.service import security
+
+    monkeypatch.delenv("ARMANCE_WEB_PASSWORD", raising=False)
+    security.reset_web_secret_cache()
     opened = {}
-    def _fake_cmd_web(root=None, remaining=None, *, data_dir=None, launch_url_suffix="") -> int:
+    def _fake_cmd_web(root=None, remaining=None, *, data_dir=None,
+                      launch_url_suffix="", web_secret=None, web_secret_auto=None) -> int:
         opened["path"] = launch_url_suffix
         return 0
     monkeypatch.setattr(cli, "cmd_web", _fake_cmd_web)
 
+    # Config present but no web.password → secret is auto-generated, so the
+    # token rides along in the URL (SEC5 auto-login). The point is the route:
+    # /launcher, never /setup.
     paths.global_config_path().write_text("language: en\n", encoding="utf-8")
     rc = cli.cmd_launcher()
     assert rc == 0
-    assert opened.get("path") == "/launcher"
+    assert opened.get("path", "").startswith("/launcher")
