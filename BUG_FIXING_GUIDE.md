@@ -53,13 +53,13 @@ Anything the user reads goes through local translation mapping:
   from armance.nls import t
   t("section.key", arg=value)
   ```
-  Keys live in `src/armance/nls_catalogues/{en,fr}.yaml`.
+  Keys live in `src/armance/nls_catalogues/{en,fr,es,de,zh,ja}.yaml`.
 - **Web Frontend**:
   Uses React `t("key")` from i18next.
   Keys live in `web/frontend/src/locales/{en,fr}/common.json`.
 
 If you add a new user-facing string:
-1. Add the key in **both** English and French translation files.
+1. Add the key in all translation files (en, fr, es, de, zh, ja).
 2. Use `t("...")` in the call site.
 3. Logs and Python trace exceptions stay English — they're not user-facing.
 
@@ -181,7 +181,7 @@ that this nearly always identifies the right module.
 | Agent says the wrong thing | `service/agents/<role>_agent.py` + the agent's `.md` in `service/agents/builtin/` |
 | Library shows wrong state | `storage/library_state.py`, `storage/library_availability.py`, `storage/rag_status.py` |
 | Indexation fails / dim mismatch | `storage/ingestion.py` (probe + reset_db_if_embedding_changed), `storage/rag_index.py` |
-| Wrong language in UI | `nls_catalogues/{en,fr}.yaml` + the call site uses `t("key")` |
+| Wrong language in UI | `nls_catalogues/{en,fr,es,de,zh,ja}.yaml` + the call site uses `t("key")` |
 | Provider auth fails | `providers/<name>.py` + `cli.py` doctor + `.armance/.env` reading |
 | Cost off / missing | `service/cost.py`, `providers/model_discovery.py`, `service/llm_service.TokenLedger.record` |
 | Workflow stuck or wrong | `core/models/workflow.py` (simple engine) + `service/workflow_hooks.py` (consensus / cross-family) |
