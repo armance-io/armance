@@ -166,7 +166,7 @@ invariants. The short version:
 - Files ≤ 300 LOC where reasonable. Big monoliths get split.
 - `logging` only — no `print` for diagnostics.
 - **No hardcoded user-facing strings**. Everything goes through
-  `armance.nls.t("key")` and lives in `src/armance/nls_catalogues/{en,fr}.yaml`.
+  `armance.nls.t("key")` and lives in `src/armance/nls_catalogues/{en,fr,es,de,zh,ja}.yaml`.
 - **No hardcoded model lists or pricing**. Models are discovered from
   each provider's live catalogue.
 - Tests: `pytest` + `pytest-asyncio` + `respx` + `monkeypatch`. **No
@@ -184,7 +184,7 @@ Before opening a PR:
 - [ ] `uv run pytest tests/` passes.
 - [ ] `uv run ruff check src/ tests/` passes.
 - [ ] New user-facing strings go through `armance.nls.t()` and have
-      entries in both `en.yaml` and `fr.yaml`.
+      entries in all translation files (en, fr, es, de, zh, ja).
 - [ ] No new hardcoded model ids, pricing, or provider-specific magic.
 - [ ] Tests cover the change (regression test if it's a fix; behaviour
       test if it's a feature).
