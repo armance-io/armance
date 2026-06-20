@@ -54,4 +54,4 @@ def test_anthropic_fallback_includes_three_tiers() -> None:
     ids = {m.id for m in _ANTHROPIC_FB}
     assert "claude-haiku-4-5" in ids
     assert "claude-sonnet-4-6" in ids
-    assert "claude-opus-4-7" in ids
+    assert "claude-opus-4-8" in ids
