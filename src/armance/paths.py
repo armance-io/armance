@@ -34,7 +34,11 @@ def global_config_dir() -> Path:
     override = os.environ.get(CONFIG_DIR_ENV)
     if override:
         return Path(override)
-    return Path(platformdirs.user_config_dir(APP_NAME))
+    # ``appauthor=False`` drops platformdirs' default author segment, which
+    # otherwise defaults to the app name and yields a redundant
+    # ``%LOCALAPPDATA%\armance\armance`` on Windows. POSIX (XDG) ignores the
+    # author segment, so ``~/.config/armance`` is unchanged.
+    return Path(platformdirs.user_config_dir(APP_NAME, appauthor=False))
 
 
 def global_config_path() -> Path:
