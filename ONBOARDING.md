@@ -226,7 +226,7 @@ User-facing vocabulary (English):
 - *load* / *read* (not "inject", "force-load")
 
 Same applies in French (*bibliothèque*, *feuillet*, *indexer*, *charger*).
-The translation source of truth is `src/armance/nls_catalogues/{en,fr}.yaml`.
+The translation source of truth is `src/armance/nls_catalogues/{en,fr,es,de,zh,ja}.yaml`.
 
 ---
 
@@ -381,7 +381,7 @@ bash scripts/check_invariants.sh         # layer + legacy hygiene
 | Slash command misbehaving | `service/handlers.py` (search `_cmd_<name>`) + `service/tui_bridge.py` |
 | Wrong agent answers | `service/agents/<role>_agent.py` + that agent's `.md` |
 | RAG returns nothing | `storage/ingestion.py` (indexing) + `storage/rag_index.py` (query) + `service/agents/_rag_inject.py` |
-| Wrong vocabulary in UI | `nls_catalogues/{en,fr}.yaml` |
+| Wrong vocabulary in UI | `nls_catalogues/{en,fr,es,de,zh,ja}.yaml` |
 | Provider auth failure | `providers/<name>.py` + `cli.py` doctor command |
 | Cost estimate off | `service/cost.py` + `providers/model_discovery.py` |
 | Workflow execution stuck | `core/models/workflow.py::execute_workflow` (single engine) + `service/workflow_hooks.py` (cross-family + Serge consensus hooks) |
