@@ -1,0 +1,434 @@
+# Armance NLS catalogue — Chinese
+# Claves faltantes → fallback a en.yaml (master).
+
+# ---------------------------------------------------------------------------
+# Envolturas de mensajes del sistema genéricos
+# ---------------------------------------------------------------------------
+system:
+  ok: "*(系统: {body})*"
+  info: "*(系统: ℹ️ {body})*"
+  warn: "*(系统: 注意 — {body})*"
+  error: "*(系统: {body})*"
+
+# ---------------------------------------------------------------------------
+# Ciclo de vida de documentos / biblioteca
+# ---------------------------------------------------------------------------
+ingest:
+  no_docs: "在 `.armance/docs/` 中未找到任何文档 — 请将您的文件拖放到该目录并重试。"
+  part_indexed: "已向知识库中添加了 {n} 个新文档"
+  part_chunks: "共 {n} 个分段"
+  part_skipped: "{n} 个文档已在知识库中（内容未更改）"
+  part_deleted: "已从知识库中删除 {n} 个文档"
+  per_doc_line: "  • `{name}` → {chunks} 个分段"
+  success_suffix: "团队可以搜索所有文档。"
+  failed: "知识库导入失败 — {error}"
+  embed_init_failed: "无法初始化向量嵌入 (embedding) 客户端 — 请检查 `.armance/config.yaml` / `.env` 中的 `embedding_provider`、`embedding_model` 以及您的 API 密钥。文档已存在于磁盘上，但 RAG 知识库无法更新。"
+  nothing_to_do: "知识库中的所有内容都已是最新状态。未检测到任何更改。"
+
+load:
+  not_found: "未在 `.armance/docs/` 中找到 `{filename}`。"
+  binary_format: "`{filename}` 是二进制格式 ({suffix})；直接加载仅支持 .md/.txt 文件。该文件仍可通过 RAG 进行导入。"
+  queued: "*(系统: 📖 `{filename}` 已加载到上下文。请提出您的下一个问题，我将结合该文件的内容进行回答。)*"
+  queued_tui: "*(系统: 📖 `{filename}` 已加入加载队列。请向 Armance 提出您的下一个问题，他将结合该文件的内容进行回答。)*"
+  usage: "用法: /load <文件名>"
+
+forget:
+  not_in_library: "`{filename}` 不在知识库中 — 无需清除。"
+  success: "已清除 `{filename}` — 从知识库中删除了 {chunks} 个分段。团队将无法再搜索它。过去的对话轮次可能仍会引用 it；您可以重启会话以清除引用。"
+  failed: "清除失败 — {error}"
+  usage: "用法: /forget <文件名>"
+
+rag_status:
+  failed: "获取 RAG 状态失败 — {error}"
+
+scan:
+  title: "## 扫描 `.armance/docs/`"
+  all_clean: "磁盘上的所有文档均已导入且为最新状态。没有孤立文档。"
+  unread_header: "### 尚未导入（是否拖入知识库？）"
+  stale_header: "### 自上次导入以来已修改（需要刷新）"
+  orphans_header: "### 孤立文档（存在于知识库但源文件已被删除）"
+  orphan_line: "- `{name}` — 使用 `/forget {name}` 进行清理"
+
+# ---------------------------------------------------------------------------
+# Informe RAG
+# ---------------------------------------------------------------------------
+rag_report:
+  title: "## RAG 知识库"
+  embedding_with_provider: "**向量模型**: `{provider}` / `{model}`"
+  embedding_no_provider: "**向量模型**: {model}"
+  embedding_none: "_(无 — 仅使用词法搜索)_"
+  stats: "**分段**: {chunks} | **大小**: {size_kb} KB | **Token 估算**: ~{tokens}"
+  no_docs_line: "_`.armance/docs/` 中没有文档。_"
+  no_docs_hint: "> 请将 PDF、MD、DOCX 或 TXT 文件拖放到 `.armance/docs/` 中，并让 Armance 导入它们。"
+  files_header: "### `.armance/docs/` 中的文件"
+  status_stale: "🔄 已修改（需要重新导入）"
+  status_retained: "已导入（{chunks} 个分段，约 {tokens} Token）"
+  status_manifest_only: "注意 — 存在于清单文件中，但在数据库中缺失（导入错误？）"
+  status_not_retained: "⏳ 未导入"
+  doc_line: "- **{name}** ({size_kb} KB) — {status}"
+  orphans_header: "### 孤立文档（存在于知识库但已从 `.armance/docs/` 中删除）"
+  orphan_line: "- **{name}** — 有 {chunks} 个分段待清理"
+  orphans_hint: "> 这些文档仍可搜索，但它们的源文件已不存在。请让 Armance 清除它们。"
+
+# ---------------------------------------------------------------------------
+# Sección docs injectada en los system prompts
+# ---------------------------------------------------------------------------
+docs_section:
+  title: "## `.armance/docs/` 中的文档（知识库状态）"
+  empty_title: "## `.armance/docs/` 中的文档"
+  empty_body: "_目前没有文档。_ 告知用户他们可以将 PDF / DOCX / MD / TXT 文件拖放到 `.armance/docs/` 中，并选择是**导入**（写入知识库，可分段搜索）和/或**加载**（每个代理都将阅读全文）。"
+  empty_body_no_library: "_目前没有文档。_ 告知用户他们可以将 PDF / DOCX / MD / TXT 文件拖放到 `.armance/docs/` 中，并选择要**加载**哪些文件（每个代理都将在本会话中阅读全文）。此安装未配置可搜索知识库（无向量嵌入模型），因此导入不可用。请不要提议导入。如果用户询问，提到他们可以通过重新运行 `armance init` 并选择一个嵌入模型来启用知识库。"
+  status_retained: "已导入到知识库中（可通过分段搜索）"
+  status_unread: "⏳ 尚未导入（建议导入和/或加载）"
+  file_line: "- `{name}` — {status}"
+  orphans_header: "### 孤立文档（仍存在于知识库，但已从 `.armance/docs/` 中删除）"
+  orphan_line: "- `{name}` — 提议通过 `[EXECUTE:/library-unindex:{name}]` 卸载"
+  changes_header: "### 自上次会话以来的更改"
+  change_added: "- ➕ 新增: `{name}` — 宣布此消息并询问是**导入**（知识库）、**加载**（由每个代理阅读）还是忽略"
+  change_removed: "- ➖ 缺失: `{name}` — 询问用户是否将其从知识库中删除"
+  rules: |2
+
+    ## 文档处理规则 (至关重要)
+    - 用户专用词汇: **'知识库'** (绝不要使用 '数据库' / 'RAG' / '向量嵌入')，**'导入'** (将文档作为**分段/片段**存入知识库)，**'加载' / '阅读'** (将全文读入团队的工作内存)。
+    - 存在多个待处理文档时，需要向用户明确解释两者的区别:
+      - **导入**一个文档 = 将其分段存入知识库索引；我们可以通过搜索检索段落，但代理并没有通读该文件。
+      - **加载 (阅读)** 一个文档 = 让团队通读它；在当前会话中，每个代理都会将其牢记于心。使用 `--persist` 可以跨会话保持加载状态。
+    - 如果有多个文档待处理，请**逐一列出**并询问: 导入？加载？跳过？绝不要在后台静默批量处理。
+    - **导入**文档: 在获得用户确认后，在单独的一行中输出 `[EXECUTE:/library-index]`。
+    - **加载**一个文档: 在单独的一行中输出 `[EXECUTE:/library-load:<filename>]`。
+    - **卸载**一个文档: 输出 `[EXECUTE:/library-unload:<filename>]`。
+    - 从知识库中**删除**: 输出 `[EXECUTE:/library-unindex:<filename>]`。
+    - 在会话的**首条消息**中: 如果上方出现了 `⏳`、`➕ 新增` 或 `➖ 缺失` 项，请先宣布并询问如何处理，然后再询问项目相关问题。
+
+# ---------------------------------------------------------------------------
+# TUI — bienvenida, barra lateral, chat
+# ---------------------------------------------------------------------------
+agent_handoff:
+  hint: "💡 提示: 输入 `@{target}` 可以将对话移交给 {target} 并与他们继续对话。"
+
+quit:
+  ctrl_c_again: "再次按下 Ctrl+C 退出"
+  save_prompt: "退出前是否保存会话上下文？"
+  saved: "上下文已保存。"
+
+mona:
+  deliverable_saved: "📄 综合汇报已保存至 `{path}`（您可以将其导入到知识库中）。"
+  run_queued: "📥 运行任务 `{workflow}/{run_id}` 已加入队列，将在下一个问题中执行。"
+
+greeting:
+  welcome: "欢迎。描述您的项目或提出问题以开始。"
+  hint: |-
+    提示 — 当您准备好召集专家时，说 [italic]"@Malik 招募团队"[/]，或输入 [bold]/help[/] 看看我还能做些什么。
+
+sidebar:
+  staff: "核心成员"
+  roles_agents: "角色与代理"
+  workflows: "工作流"
+  tasks: "单步任务"
+  library: "📚 知识库"
+  no_agents: "尚无代理"
+  no_workflows: "无工作流"
+  idle: "空闲"
+  library_inactive: "未启用"
+  library_inactive_line: "[grey50]✗ 未启用 — 无向量模型[/]"
+  library_active_line: "[green]✓ 已启用[/] [grey50]{provider}/{model}[/]\n  {docs} 篇文档 · {chunks} 个分段"
+
+chat:
+  copy_nothing: "没有内容可复制"
+  copy_ok: "已复制消息 #{idx}（{chars} 个字符）"
+  copy_failed: "复制失败: {error}"
+
+prompts:
+  provider: "服务商:"
+  model: "模型:"
+  reasoning_effort: "推理深度 (Reasoning effort):"
+  workflow_prompt: "工作流提示词:"
+  cost_estimate: "[估算费用] 在 {steps} 步调用中约产生 ${total} USD"
+  confirm_run: "是否继续？(约 ${total} USD)"
+
+help_cmd:
+  switch:      "/switch <代理>                  切换当前活动的代理"
+  model:       "/model                            选择服务商 + 模型"
+  effort:      "/effort                           选择推理深度"
+  save:        "/save                             冻结项目上下文 (L0)"
+  report:      "/report                           根据最新回答编写报告"
+  judge:       "/judge @文件 …                    运行变色龙裁判 (Chameleon Judge)"
+  export:      "/export <目标|all>                输出下游代理文档"
+  workflow:    "/workflow run|design <名称>       运行或设计工作流"
+  task:        "/task <领域> <提示词>             单代理执行任务"
+  deliverable: "/deliverable <格式> [from=...]     生成 PPTX/DOCX/PDF/MD"
+  role:        "/role list|show [<名称>]          管理角色与代理"
+  library:     "/library status|index|unindex|load|unload  管理知识库（分段）以及团队共读状态"
+  help:        "/help                             显示此帮助信息"
+  quit:        "/quit                             退出 armance"
+
+# ---------------------------------------------------------------------------
+# Indicador de pensamiento (spinner)
+# ---------------------------------------------------------------------------
+thinking:
+  default: "思考中…"
+  indexing: "正在将文档导入到知识库中…"
+  loading: "正在加载文档…"
+
+# ---------------------------------------------------------------------------
+# Comandos /library (biblioteca + estado de lectura)
+# ---------------------------------------------------------------------------
+library_status:
+  active: "## 知识库状态\n**知识库已启用** ({provider} / {model}) — 共导入 {docs} 篇文档，共计 {chunks} 个分段。您可以自由提供选项 A（导入）和 C（两者皆选）。\n"
+  inactive: "## 知识库状态\n**知识库未启用** — 未配置向量嵌入模型。请勿提供选项 A（导入）或 C（两者皆选）。仅选项 B（加载到会话内存中）和 D（不执行任何操作）有效。如果用户询问原因或如何启用知识库，请使用下方的 ## Armance 核心概念 章节进行解释。\n"
+
+library:
+  unknown_sub: "未知的子命令: /{sub}。可用子命令: status, scan, index, unindex, load, unload。"
+  unindex_usage: "用法: /library unindex <文件名>"
+  load_usage: "用法: /library load <文件名> [--persist]"
+  unload_usage: "用法: /library unload <文件名>"
+  load_ok_session: "📖 已在本会话中加载 `{filename}`。在当前会话保持活动期间，每个代理都将记住其内容。（传入 `--persist` 可在重新启动后保持加载状态。）"
+  load_ok_persist: "📖 已持久化加载 `{filename}`（将在每次会话开始时自动重新加载）。"
+  unload_ok: "已卸载 `{filename}`。代理不再携带其全文（如果已导入，它仍可在知识库中搜索）。"
+  unload_not_loaded: "`{filename}` 尚未加载。"
+  read_header: "### 已加载的文档（每个代理已阅读）"
+  read_line: "- 📖 `{name}`"
+
+# ---------------------------------------------------------------------------
+# Errores del despachador TUI
+# ---------------------------------------------------------------------------
+dispatch:
+  usage_command: "用法: /<命令> [参数]"
+  unknown_command: "未知命令: /{cmd}"
+  handler_error: "运行 /{cmd} 时出错: {error}"
+
+# ---------------------------------------------------------------------------
+# Cambio de agente por lenguaje natural
+# ---------------------------------------------------------------------------
+nl_switch:
+  switched_meta: "已切换到 {label}。"
+  switched_agent: "已切换到代理 {label}，请继续。"
+  switched_by_role: "已切换到 {label}。"
+  multiple_for_role: "存在多个 {target} 代理: {names}\n请输入 `/switch <名称>` 或 `@{names}` 来选择其中一个。"
+
+# ---------------------------------------------------------------------------
+# /switch
+# ---------------------------------------------------------------------------
+switch:
+  usage: "用法: /switch <代理>"
+  switched_meta: "已切换到 {name}"
+  switched_agent: "已切换到代理: {name}"
+  load_error: "加载代理 {name} 时出错: {error}"
+  multiple_matches: "找到多个匹配 '{name}' 的代理: {options}。请使用 /switch <完整名称>。"
+  not_found: "错误: 没有匹配 '{name}' 的代理（尝试输入 /role list 查看可用代理）"
+
+# ---------------------------------------------------------------------------
+# /model, /effort, /task
+# ---------------------------------------------------------------------------
+common:
+  cancelled: "已取消"
+  error: "错误: {error}"
+  no_agents_loaded: "错误: 未加载任何代理"
+
+system_msg:
+  dismissed: "*(系统: 已解散 {n} 个代理: {names})*"
+  dismiss_empty: "*(系统: 未找到可解散的用户代理)*"
+  recruited: "*(系统: 成功招募了 {n} 个代理)*"
+  updated: "*(系统: 成功更新了 {n} 个代理: {names})*"
+  staff_updated: "*(系统: 成功更新了 {n} 个核心成员的模型: {details})*"
+  skipped_collision: "*(系统: 警告 — 由于名称/角色冲突，跳过了 {n} 个代理: {names})*"
+  recruit_failed: "*(系统: 招募代理失败: {error})*"
+  auto_dismissed_before_recruit: "*(系统: 检测到团队彻底重组 — 在招募新团队之前，自动解散了先前的 {n} 个专家)*"
+  forwarded: "— 已转发给 {target} —"
+  health_warning: "注意 — 在测试时检测到不可达的模型: {agents}。请让 @Malik 为这些代理提议其他模型。"
+  workflow_health_block: "工作流未启动: 存在不可达的代理 — {agents}。请让 @Malik 更换他们的模型，或授权在缺少他们的情况下执行。"
+
+model:
+  set: "模型已设定: {provider}/{model}"
+
+effort:
+  set: "推理深度已设定: {choice}"
+
+task:
+  usage: "用法: /task <领域> <提示词>"
+  no_agent_for_domain: "未找到该领域的代理: {domain}"
+
+# ---------------------------------------------------------------------------
+# /report, /judge, /export
+# ---------------------------------------------------------------------------
+report:
+  no_output: "无输出可保存"
+  saved: "报告已保存: {path}"
+
+judge:
+  usage: "用法: /judge @文件 ..."
+  no_files_matched: "无匹配该模式的文件: {pattern}"
+  no_paths: "未解析出任何报告路径"
+
+export:
+  usage: "用法: /export <目标|all>"
+  exported_list: "已导出: {paths}"
+  exported_one: "已导出: {path}"
+
+# ---------------------------------------------------------------------------
+# /workflow
+# ---------------------------------------------------------------------------
+workflow:
+  run_started: "▶️ 运行已启动 → 输出将保存在 `{path}/` 中"
+  run_finished: "运行已完成。所有输出都在 `{path}/` 中。可以要求 Mona 进行综合汇报，或与之前的运行进行对比。"
+  run_preview: "运行已完成 → `{path}/`\n\n**预览:** {preview}…\n\n{mona_offer}"
+  run_mona_offer: "需要 Mona 为您提供综合汇报与反馈吗？请随时开口。"
+  run_aborted: "工作流在检查点 `{step_id}` 处被终止 — 部分运行状态已保存至 `{path}/` 中，状态为 `canceled`。"
+  assumptions_header: "\n\n### 🔍 Mona 决策汇报（核心假设与关键不确定性）\n\n"
+  list_usage: "用法: /workflow list <名称>"
+  list_header: "**{workflow}** 的运行历史 ({n}):"
+  list_empty: "无 `{workflow}` 的运行记录。"
+  compare_usage: "用法: /workflow compare <名称> <run1> <run2>"
+  compare_not_found: "无法加载 `{workflow}` 的运行记录 `{run1}` 和/或 `{run2}`。"
+  compare_queued: "📥 已加载运行记录 `{run1}` 和 `{run2}`。Mona 已就位 — 请向他提出您的对比问题。"
+  design_blocked_no_team: "尚未招募任何团队。缺少专家的工作流无法执行任何步骤。请让 `@Malik` 为您的项目招募一个团队，然后再回来。"
+  run_blocked_no_team: "未招募专家 — 无法执行此工作流。请让 `@Malik` 先招募团队。"
+  aborted_no_agents: "工作流已终止: 存在过多无可用代理的步骤（步骤 `{step_id}` 中的领域 `{domain}`）。请通过 `@Malik` 检查团队构成。"
+  warn_critique_single_family: "注意 — 对抗压力有限: 裁判、执行者和挑战者共享同一个模型家族 ({family})。工作流会继续运行，但认知多样性较低。请在 `.armance/config.yaml` 中配置第二个模型家族以获得更好的效果。"
+  warn_judge_single_family: "注意 — Mona 与执行者共享同一个模型家族 ({family}) — 可能存在盲区。建议考虑使用跨家族的裁判。"
+  not_found: "未找到工作流: {name}（已尝试在 .armance/workflows/ 和 workflows/ 中查找）"
+  no_agent_for_step: "[步骤 {step_id} 中的领域 {domain} 无可用代理]"
+  step_error: "[{step_id} 出错: {error}]"
+  aborted: "[工作流已终止]"
+  usage_root: "用法: /workflow run|design <名称>"
+  deprecated_design: "已弃用: 请改用 '/workflow design <名称>'（Kim 对话模式）"
+  design_missing_yaml: "注意 — 提案中未找到 YAML 块。Kim 必须附带一个包含 `name`、`steps` 的 ```yaml ... ``` 块。"
+  design_invalid_yaml: "注意 — YAML 格式无效: {error}"
+  design_invalid_workflow: "注意 — 工作流无效: {error}"
+  design_created: "工作流 **{name}** 已创建 ✓ ({gem} {label})\n文件: `.armance/workflows/{filename}`\n"
+  usage_run: "用法: /workflow run <名称> [--enrich <session_id>] [--yes]"
+  usage_design: "用法: /workflow design <名称>"
+  unknown_sub: "未知的工作流子命令: {sub}"
+
+# ---------------------------------------------------------------------------
+# Agent-system definitions missing
+# ---------------------------------------------------------------------------
+meta_agent:
+  kim_missing: "错误: 未找到 system-orchestrator 代理"
+  malik_missing: "错误: 缺少 Malik (HR) 代理定义"
+  armance_missing: "错误: 未找到上下文代理"
+
+# ---------------------------------------------------------------------------
+# /deliverable
+# ---------------------------------------------------------------------------
+deliverable:
+  usage: "用法: /deliverable <pptx|docx|pdf|md> [from=latest_judge|step_id] [输出文件名]"
+  unsupported_format: "不支持的格式: {fmt}。请从以下格式中选择: pptx, docx, pdf, md"
+  no_content: "无内容可渲染 (source={source})"
+  parse_error: "解析报告时出错: {error}"
+  no_renderer: "无该格式 the 渲染器: {fmt}"
+  error: "交付物生成出错: {error}"
+  created: "交付物已创建: {path}"
+
+# ---------------------------------------------------------------------------
+# /save
+# ---------------------------------------------------------------------------
+save:
+  too_brief: "错误: 上下文过短，无法保存（需要至少 30 个非问候性字符来构建项目上下文）"
+  saved: "上下文已保存为 L0_v{version}"
+  error: "保存上下文时出错: {error}"
+
+# ---------------------------------------------------------------------------
+# /role
+# ---------------------------------------------------------------------------
+role:
+  usage: "用法: /role list|show [<名称>]"
+  add_hint: "要招募团队，请说 '@Malik，为 <您的项目> 招募'。Malik 会处理的。"
+  unknown_action: "未知的角色操作: {action}"
+  list_empty: "尚未定义任何角色。"
+  show_usage: "用法: /role show <名称>"
+  not_found: "未找到角色 '{name}'"
+
+# ---------------------------------------------------------------------------
+# /agent
+# ---------------------------------------------------------------------------
+agent_cmd:
+  usage: "用法: /agent edit|replace|promote|demote|archive|list"
+  error: "错误: {error}"
+  unknown_action: "未知的代理操作: {sub}"
+
+# ---------------------------------------------------------------------------
+# /feedback-loop, /iterate-from
+# ---------------------------------------------------------------------------
+feedback:
+  usage_with_pending: "用法: `/feedback-loop <run-id>` 或针对当前的提案回复 `ja`/`nein`。"
+  usage: "用法: `/feedback-loop <run-id>`"
+
+iterate:
+  usage: "用法: `/iterate-from <run-id> [<工作流名称>]`"
+
+# ---------------------------------------------------------------------------
+# Asistente `armance init` — RAG / embedding picker
+# ---------------------------------------------------------------------------
+init:
+  rag:
+    title: "文档共读记忆 (RAG)"
+    intro: |2
+        Armance 可以将您的文档 (.armance/docs/) 建立索引以进行语义搜索。
+
+        工作原理:
+        嵌入模型将每个文本段落转换为数字特征指纹。
+        当您提问时，Armance 会匹配并找到最相关的段落。
+
+        → 启用嵌入: 在您的文档中进行高精度的语义搜索。
+        → 禁用: 仅列出文档，但不可进行段落匹配检索。
+                 (可在后续通过 config.yaml 启用)
+    querying: "正在向 API 查询可用的嵌入模型..."
+    found: "找到 {count} 个模型"
+    none_found: "未找到模型"
+    skip_label: "无"
+    custom_sentinel: "[custom-openai] 手动输入 →"
+    custom_only_hint: |2
+        custom-openai 不公开模型列表 — 请在下方手动输入模型 ID。
+        留空则禁用 RAG。
+    no_models_hint: |2
+        注意 — 您的服务商上未发现嵌入模型（请检查 API 密钥）。
+           您仍可在下方手动输入，或直接按回车跳过 RAG。
+    prompt_provider: "该嵌入模型对应的服务商:"
+    prompt_manual_id: "嵌入模型 ID（留空以禁用 RAG）:"
+    prompt_manual_id_custom: "custom-openai 的嵌入模型 ID:"
+    prompt_autocomplete: "嵌入模型 (联想输入):"
+    filter_hint: "输入以进行过滤（例如 'bge'、'openai'）。输入 '无' 或留空以跳过 RAG。"
+    disabled_short: "RAG 已禁用。"
+    disabled_edit_yaml: "RAG 已禁用。后续可通过编辑 .armance/config.yaml 来启用。"
+    disabled_edit_keys: "RAG 已禁用。后续可通过编辑 .armance/config.yaml 中的 embedding_provider / embedding_model 来启用。"
+    unrecognised: "未识别的模型 '{name}'。RAG 已禁用。"
+    confirmed: "嵌入模型: [{provider}] {model}"
+  ssl_skip_prompt: "是否跳过 SSL 证书验证？（若存在自签名证书或公司 MITM 代理则需要）"
+
+# ---------------------------------------------------------------------------
+# Huella ambiental (/footprint)
+# ---------------------------------------------------------------------------
+footprint:
+  cmd_title: "环境足迹"
+  col_agent: "代理"
+  col_gco2e: "克二气 (gCO₂e)"
+  col_water: "毫升水 (mL H₂O)"
+  col_calls: "调用次数"
+  col_estimate: "估算"
+  total_row: "总计"
+  no_data: "尚无足迹数据。请先运行一些查询。"
+  estimate_note: "~ = 估算值 (使用相似模型替代)"
+  unknown_note: "? = 未知模型 (无数据)"
+  zone_note: "电网碳强度区域: {zone}"
+  by_day: "按天"
+  by_month: "按月"
+  equiv:
+    phone_charges: "次手机充电"
+    car_km: "公里汽车行驶"
+    water_glasses: "杯水"
+
+# Roles de personal
+# ---------------------------------------------------------------------------
+staff:
+  role:
+    weaver: "织网者"
+    scout: "侦察兵"
+    conductor: "指挥家"
+    distiller: "蒸馏师"
+    critic: "批判者"
+
+boost:
+  confirm_upgrade: "代理 {agent} 请求从 {base} 升级到 {boost}。是否允许？ [Y/n]"
+  confirm_downgrade: "代理 {agent} 的高强度任务已结束，请求返回到 {base}。是否允许？ [Y/n]"
+  workflow_notice: "注意: 在此高强度工作流运行期间，{count} 个代理将被自动增强。"
