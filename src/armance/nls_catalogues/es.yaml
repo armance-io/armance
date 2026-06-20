@@ -1,0 +1,434 @@
+# Armance NLS catalogue — Spanish
+# Claves faltantes → fallback a en.yaml (master).
+
+# ---------------------------------------------------------------------------
+# Envolturas de mensajes del sistema genéricos
+# ---------------------------------------------------------------------------
+system:
+  ok: "*(Sistema: {body})*"
+  info: "*(Sistema: ℹ️ {body})*"
+  warn: "*(Sistema: Atención — {body})*"
+  error: "*(Sistema: {body})*"
+
+# ---------------------------------------------------------------------------
+# Ciclo de vida de documentos / biblioteca
+# ---------------------------------------------------------------------------
+ingest:
+  no_docs: "No se encontraron documentos en `.armance/docs/` — coloque sus archivos allí y vuelva a intentarlo."
+  part_indexed: "{n} nuevo(s) documento(s) agregado(s) a la biblioteca"
+  part_chunks: "{n} fragmento(s) en total"
+  part_skipped: "{n} documento(s) ya en la biblioteca (sin cambios de contenido)"
+  part_deleted: "{n} eliminado(s) de la biblioteca"
+  per_doc_line: "  • `{name}` → {chunks} fragmento(s)"
+  success_suffix: "Todos los documentos son buscables por el equipo."
+  failed: "error de indexación — {error}"
+  embed_init_failed: "El cliente de embedding no pudo inicializarse — verifique `embedding_provider`, `embedding_model` y su clave API en `.armance/config.yaml` / `.env`. Los documentos están presentes en el disco pero la biblioteca RAG no se puede actualizar."
+  nothing_to_do: "Todo ya está al día en la biblioteca. No se detectaron cambios."
+
+load:
+  not_found: "`{filename}` no encontrado en `.armance/docs/`."
+  binary_format: "`{filename}` es un formato binario ({suffix}); la carga sin formato solo admite .md/.txt. El archivo aún se puede indexar a través de RAG."
+  queued: "*(Sistema: 📖 `{filename}` cargado en el contexto. Haga su siguiente pregunta y responderé teniendo en cuenta su contenido.)*"
+  queued_tui: "*(Sistema: 📖 `{filename}` en cola para cargar. Haga su siguiente pregunta a Armance y él responderá teniendo en cuenta su contenido.)*"
+  usage: "uso: /load <nombre_archivo>"
+
+forget:
+  not_in_library: "`{filename}` no estaba en la biblioteca — nada que olvidar."
+  success: "`{filename}` olvidado — {chunks} fragmentos eliminados de la biblioteca. El equipo ya no puede buscarlo. Los turnos de conversación anteriores aún pueden hacer referencia a él; reinicie la sesión para comenzar de cero."
+  failed: "error al olvidar — {error}"
+  usage: "uso: /forget <nombre_archivo>"
+
+rag_status:
+  failed: "error de estado de rag — {error}"
+
+scan:
+  title: "## Escaneo de `.armance/docs/`"
+  all_clean: "Todos los documentos en el disco están indexados y al día. Sin huérfanos."
+  unread_header: "### Aún no indexados (¿agregar a la biblioteca?)"
+  stale_header: "### Modificados desde la última indexación (necesita actualización)"
+  orphans_header: "### Huérfanos (en la biblioteca pero archivo eliminado)"
+  orphan_line: "- `{name}` — use `/forget {name}` para limpiar"
+
+# ---------------------------------------------------------------------------
+# Informe RAG
+# ---------------------------------------------------------------------------
+rag_report:
+  title: "## Biblioteca RAG"
+  embedding_with_provider: "**Embedding**: `{provider}` / `{model}`"
+  embedding_no_provider: "**Embedding**: {model}"
+  embedding_none: "_(ninguno — solo búsqueda léxica)_"
+  stats: "**Fragmentos**: {chunks} | **Tamaño**: {size_kb} KB | **Tokens (est.)**: ~{tokens}"
+  no_docs_line: "_No hay documentos en `.armance/docs/`._"
+  no_docs_hint: "> Coloque archivos PDF, MD, DOCX o TXT en `.armance/docs/` y pídale a Armance que los indexe."
+  files_header: "### Archivos en `.armance/docs/`"
+  status_stale: "🔄 modificado (necesita volver a indexarse)"
+  status_retained: "indexado ({chunks} fragmentos, ~{tokens} tokens)"
+  status_manifest_only: "Atención — en el manifiesto pero falta en la base de datos (¿error de ingestión?)"
+  status_not_retained: "⏳ no indexado"
+  doc_line: "- **{name}** ({size_kb} KB) — {status}"
+  orphans_header: "### Huérfanos (en la biblioteca pero archivo eliminado de `.armance/docs/`)"
+  orphan_line: "- **{name}** — {chunks} fragmentos para limpiar"
+  orphans_hint: "> Estos documentos siguen siendo buscables pero sus archivos de origen ya no existen. Pídale a Armance que los olvide."
+
+# ---------------------------------------------------------------------------
+# Sección docs injectada en los system prompts
+# ---------------------------------------------------------------------------
+docs_section:
+  title: "## Documentos en `.armance/docs/` (estado de la biblioteca)"
+  empty_title: "## Documentos en `.armance/docs/`"
+  empty_body: "_Ningún documento todavía._ Dígale al usuario que puede colocar archivos PDF / DOCX / MD / TXT en `.armance/docs/` y elegir cuáles **indexar** (biblioteca, buscable por fragmentos) y/o **cargar** (cada agente lee el texto completo)."
+  empty_body_no_library: "_Ningún documento todavía._ Dígale al usuario que puede colocar archivos PDF / DOCX / MD / TXT en `.armance/docs/` y elegir cuáles **cargar** (cada agente lee el texto completo en esta sesión). La biblioteca buscable **no está configurada** en esta instalación (sin modelo de embedding), por lo que la indexación no está disponible. No proponga indexar. Si el usuario pregunta, mencione que puede habilitar la biblioteca volviendo a ejecutar `armance init` y eligiendo un modelo de embedding."
+  status_retained: "indexado en la biblioteca (buscable por fragmentos)"
+  status_unread: "⏳ aún no indexado (ofrecer indexar y/o cargar)"
+  file_line: "- `{name}` — {status}"
+  orphans_header: "### Huérfanos (aún en la biblioteca, archivo eliminado de `.armance/docs/`)"
+  orphan_line: "- `{name}` — proponer olvidar mediante `[EXECUTE:/library-unindex:{name}]`"
+  changes_header: "### Cambios desde la última sesión"
+  change_added: "- ➕ nuevo: `{name}` — anúncielo y pregunte si se debe **indexar** (biblioteca), **cargar** (leído por cada agente) o ignorar"
+  change_removed: "- ➖ desaparecido: `{name}` — pregunte al usuario si desea retirarlo de la biblioteca"
+  rules: |2
+
+    ## Reglas de manejo de documentos (CRÍTICO)
+    - Vocabulario para el usuario: **'biblioteca'** (nunca 'base de datos' / 'RAG' / 'embeddings'), **'indexar'** o **'retener'** (colocar un doc en la biblioteca como **fragmentos**), **'cargar' / 'leer'** (llevar todo el texto a la memoria de trabajo del equipo).
+    - Distinción a explicar claramente cuando hay varios docs pendientes:
+      - **Indexar** un doc = sus fragmentos van al índice de la biblioteca; podemos recuperar pasajes mediante búsqueda, pero ningún agente lo ha leído.
+      - **Cargar (leer)** un doc = asimilarlo; cada agente lo tiene presente para esta sesión. `--persist` lo mantiene cargado entre sesiones.
+    - Si hay varios documentos pendientes, **lístelos uno por uno** y pregunte: ¿indexar? ¿cargar? ¿omitir? No los procese en lote en silencio.
+    - Para **indexar** docs: emita `[EXECUTE:/library-index]` en su propia línea, después de la confirmación del usuario.
+    - Para **cargar** un doc: emita `[EXECUTE:/library-load:<filename>]` en su propia línea.
+    - Para **descargar** un doc: emita `[EXECUTE:/library-unload:<filename>]`.
+    - Para **retirar** de la biblioteca: emita `[EXECUTE:/library-unindex:<filename>]`.
+    - En el **primer mensaje** de una sesión: si aparece algún elemento `⏳`, `➕ nuevo` o `➖ desaparecido` arriba, anuncio y pregunte qué hacer ANTES de preguntar sobre el proyecto.
+
+# ---------------------------------------------------------------------------
+# TUI — bienvenida, barra lateral, chat
+# ---------------------------------------------------------------------------
+agent_handoff:
+  hint: "💡 Consejo: escriba `@{target}` para pasar el turno a {target} y continuar con ellos."
+
+quit:
+  ctrl_c_again: "Presione Ctrl+C nuevamente para salir"
+  save_prompt: "¿Guardar el contexto de la sesión antes de salir?"
+  saved: "Contexto guardado."
+
+mona:
+  deliverable_saved: "📄 Síntesis guardada en `{path}` (puede indexarla en la biblioteca)."
+  run_queued: "📥 Ejecución `{workflow}/{run_id}` en cola para la próxima pregunta."
+
+greeting:
+  welcome: "Bienvenido. Describa su proyecto o haga una pregunta para comenzar."
+  hint: |-
+    Consejo — diga [italic]"@Malik reclutar un equipo"[/] cuando esté listo para traer especialistas, o escriba [bold]/help[/] para ver qué más puedo hacer.
+
+sidebar:
+  staff: "Personal permanente"
+  roles_agents: "Roles y agentes"
+  workflows: "Flujos de trabajo"
+  tasks: "Tareas"
+  library: "📚 Biblioteca"
+  no_agents: "ningún agente aún"
+  no_workflows: "ningún flujo"
+  idle: "inactivo"
+  library_inactive: "inactiva"
+  library_inactive_line: "[grey50]✗ inactiva — sin modelo de embedding[/]"
+  library_active_line: "[green]✓ activa[/] [grey50]{provider}/{model}[/]\n  {docs} doc(s) · {chunks} fragmento(s)"
+
+chat:
+  copy_nothing: "nada que copiar"
+  copy_ok: "mensaje #{idx} copiado ({chars} caracteres)"
+  copy_failed: "error al copiar: {error}"
+
+prompts:
+  provider: "Proveedor:"
+  model: "Modelo:"
+  reasoning_effort: "Esfuerzo de razonamiento:"
+  workflow_prompt: "Prompt del flujo de trabajo:"
+  cost_estimate: "[estimación de costo] ~${total} USD en {steps} invocación(es) de paso"
+  confirm_run: "¿Continuar? (~${total} USD)"
+
+help_cmd:
+  switch:      "/switch <agente>                 cambiar de agente activo"
+  model:       "/model                            elegir proveedor + modelo"
+  effort:      "/effort                           elegir esfuerzo de razonamiento"
+  save:        "/save                             congelar el contexto del proyecto (L0)"
+  report:      "/report                           escribir un informe a partir de la última respuesta"
+  judge:       "/judge @archivo …                 ejecutar el juez camaleón"
+  export:      "/export <destino|all>             emitir documentos de agentes descendentes"
+  workflow:    "/workflow run|design <nombre>     ejecutar o diseñar un flujo de trabajo"
+  task:        "/task <dominio> <prompt>          tarea de un solo agente"
+  deliverable: "/deliverable <fmt> [from=...]     generar PPTX/DOCX/PDF/MD"
+  role:        "/role list|show [<nombre>]        gestionar roles y agentes"
+  library:     "/library status|index|unindex|load|unload  gestionar la biblioteca (fragmentos) y la lectura del equipo"
+  help:        "/help                             mostrar esta ayuda"
+  quit:        "/quit                             salir de armance"
+
+# ---------------------------------------------------------------------------
+# Indicador de pensamiento (spinner)
+# ---------------------------------------------------------------------------
+thinking:
+  default: "Pensando…"
+  indexing: "Indexando documentos en la biblioteca…"
+  loading: "Cargando documento…"
+
+# ---------------------------------------------------------------------------
+# Comandos /library (biblioteca + estado de lectura)
+# ---------------------------------------------------------------------------
+library_status:
+  active: "## Estado de la biblioteca\n**Biblioteca ACTIVA** ({provider} / {model}) — {docs} doc(s) indexado(s), {chunks} fragmento(s) en total. Puede ofrecer libremente la opción A (indexar) y C (ambas).\n"
+  inactive: "## Estado de la biblioteca\n**Biblioteca INACTIVA** — sin modelo de embedding configurado. NO debe ofrecer la opción A (indexar) ni la C (ambas). Solo son válidas la B (cargar en memoria de la sesión) y la D (no hacer nada). Si el usuario pregunta por qué o cómo activar la biblioteca, explíquelo usando la sección ## Conceptos de Armance de abajo.\n"
+
+library:
+  unknown_sub: "subcomando desconocido: /{sub}. Disponibles: status, scan, index, unindex, load, unload."
+  unindex_usage: "uso: /library unindex <nombre_archivo>"
+  load_usage: "uso: /library load <nombre_archivo> [--persist]"
+  unload_usage: "uso: /library unload <nombre_archivo>"
+  load_ok_session: "📖 `{filename}` cargado para esta sesión. Cada agente lo tendrá presente mientras la sesión esté activa. (Pase `--persist` para mantenerlo cargado al reiniciar.)"
+  load_ok_persist: "📖 `{filename}` cargado persistentemente (se volverá a cargar al iniciar cada sesión)."
+  unload_ok: "`{filename}` descargado. Los agentes ya no llevan su texto completo (sigue siendo buscable en la biblioteca si está indexado)."
+  unload_not_loaded: "`{filename}` no estaba cargado."
+  read_header: "### Documentos cargados (leídos por cada agente)"
+  read_line: "- 📖 `{name}`"
+
+# ---------------------------------------------------------------------------
+# Errores del despachador TUI
+# ---------------------------------------------------------------------------
+dispatch:
+  usage_command: "uso: /<comando> [argumentos]"
+  unknown_command: "comando desconocido: /{cmd}"
+  handler_error: "error en /{cmd}: {error}"
+
+# ---------------------------------------------------------------------------
+# Cambio de agente por lenguaje natural
+# ---------------------------------------------------------------------------
+nl_switch:
+  switched_meta: "OK — cambiado a {label}."
+  switched_agent: "OK — cambiado a {label}. Adelante."
+  switched_by_role: "OK — cambiado a {label}."
+  multiple_for_role: "Varios agentes {target}: {names}\nResponda con `/switch <nombre>` o `@{names}` para elegir uno."
+
+# ---------------------------------------------------------------------------
+# /switch
+# ---------------------------------------------------------------------------
+switch:
+  usage: "uso: /switch <agente>"
+  switched_meta: "cambiado a {name}"
+  switched_agent: "cambiado al agente: {name}"
+  load_error: "error al cargar el agente {name}: {error}"
+  multiple_matches: "varias coincidencias para '{name}': {options}. Use /switch <nombre-completo>."
+  not_found: "error: ningún agente coincide con '{name}' (pruebe /role list para ver los agentes disponibles)"
+
+# ---------------------------------------------------------------------------
+# /model, /effort, /task
+# ---------------------------------------------------------------------------
+common:
+  cancelled: "cancelado"
+  error: "error: {error}"
+  no_agents_loaded: "error: ningún agente cargado"
+
+system_msg:
+  dismissed: "*(Sistema: se descartaron {n} agente(s): {names})*"
+  dismiss_empty: "*(Sistema: no se encontraron agentes de usuario para descartar)*"
+  recruited: "*(Sistema: {n} agente(s) reclutado(s) con éxito)*"
+  updated: "*(Sistema: se actualizaron con éxito {n} agente(s): {names})*"
+  staff_updated: "*(Sistema: se actualizó con éxito el modelo para {n} miembro(s) del personal: {details})*"
+  skipped_collision: "*(Sistema: atención — se omitieron {n} agente(s) debido a colisión de nombre/rol: {names})*"
+  recruit_failed: "*(Sistema: error al reclutar agentes: {error})*"
+  auto_dismissed_before_recruit: "*(Sistema: se detectó reestructuración completa del equipo — se descartaron automáticamente {n} especialista(s) anterior(es) antes de reclutar el nuevo equipo)*"
+  forwarded: "— reenviado a {target} —"
+  health_warning: "Atención — Se detectaron modelos inaccesibles durante la prueba de conexión: {agents}. Pídale a @Malik que proponga otro modelo para estos agentes."
+  workflow_health_block: "Flujo de trabajo no iniciado: agente(s) inaccesible(s) — {agents}. Pídale a @Malik que cambie su modelo, o autorice la ejecución sin ellos."
+
+model:
+  set: "modelo establecido: {provider}/{model}"
+
+effort:
+  set: "esfuerzo establecido: {choice}"
+
+task:
+  usage: "uso: /task <dominio> <prompt>"
+  no_agent_for_domain: "ningún agente encontrado para el dominio: {domain}"
+
+# ---------------------------------------------------------------------------
+# /report, /judge, /export
+# ---------------------------------------------------------------------------
+report:
+  no_output: "nada de salida que guardar"
+  saved: "informe guardado: {path}"
+
+judge:
+  usage: "uso: /judge @archivo ..."
+  no_files_matched: "ningún archivo coincide con: {pattern}"
+  no_paths: "ninguna ruta de informe resuelta"
+
+export:
+  usage: "uso: /export <destino|all>"
+  exported_list: "exportado: {paths}"
+  exported_one: "exportado: {path}"
+
+# ---------------------------------------------------------------------------
+# /workflow
+# ---------------------------------------------------------------------------
+workflow:
+  run_started: "▶️ Ejecución iniciada → salidas en `{path}/`"
+  run_finished: "Ejecución finalizada. Todas las salidas están en `{path}/`. Pídale a Mona una síntesis o compare con una ejecución anterior."
+  run_preview: "Ejecución finalizada → `{path}/`\n\n**Vista previa:** {preview}…\n\n{mona_offer}"
+  run_mona_offer: "¿Desea que Mona le ofrezca una síntesis y un informe? Solo dígalo."
+  run_aborted: "Flujo de trabajo abortado en el punto de control `{step_id}` — ejecución parcial guardada en `{path}/` con el estado `canceled`."
+  assumptions_header: "\n\n### 🔍 Resumen ejecutivo de Mona (Supuestos e incertidumbres críticas)\n\n"
+  list_usage: "uso: /workflow list <nombre>"
+  list_header: "Ejecuciones de **{workflow}** ({n}):"
+  list_empty: "No hay ejecuciones para `{workflow}`."
+  compare_usage: "uso: /workflow compare <nombre> <run1> <run2>"
+  compare_not_found: "No se pudieron cargar las ejecuciones `{run1}` y/o `{run2}` para `{workflow}`."
+  compare_queued: "📥 Ejecuciones `{run1}` y `{run2}` cargadas. Mona está activo — hágale su pregunta de comparación."
+  design_blocked_no_team: "Aún no se ha reclutado ningún equipo. Un flujo de trabajo sin especialistas no puede ejecutar ningún paso. Pídale a `@Malik` que asamblee un equipo para su proyecto, luego regrese."
+  run_blocked_no_team: "No hay especialistas reclutados — no se puede ejecutar este flujo de trabajo. Pídale a `@Malik` que reclute al equipo primero."
+  aborted_no_agents: "Flujo de trabajo abortado: demasiados pasos sin ningún agente disponible (dominio `{domain}` en el paso `{step_id}`). Verifique la composición del equipo con `@Malik`."
+  warn_critique_single_family: "Atención — La presión adversarial es limitada: el juez, los ejecutores y el retador comparten la misma familia ({family}). El flujo de trabajo se ejecutará, pero la diversidad epistémica es baja. Configure una segunda familia de proveedores en `.armance/config.yaml` para obtener mejores resultados."
+  warn_judge_single_family: "Atención — Mona comparte la misma familia de proveedores ({family}) que los ejecutores — posible punto ciego. Considere un juez de familias cruzadas."
+  not_found: "flujo de trabajo no encontrado: {name} (se intentó en .armance/workflows/ y workflows/)"
+  no_agent_for_step: "[ningún agente para el dominio {domain} en el paso {step_id}]"
+  step_error: "[error en {step_id}: {error}]"
+  aborted: "[flujo de trabajo abortado]"
+  usage_root: "uso: /workflow run|design <nombre>"
+  deprecated_design: "obsoleto: use '/workflow design <nombre>' (diálogo de Kim) en su lugar"
+  design_missing_yaml: "Atención — No se encontró ningún bloque YAML en la propuesta. Kim debe adjuntar un bloque ```yaml ... ``` con `name`, `steps`."
+  design_invalid_yaml: "Atención — YAML inválido: {error}"
+  design_invalid_workflow: "Atención — Flujo de trabajo inválido: {error}"
+  design_created: "Flujo de trabajo **{name}** creado ✓  ({gem} {label})\nArchivo: `.armance/workflows/{filename}`\n"
+  usage_run: "uso: /workflow run <nombre> [--enrich <session_id>] [--yes]"
+  usage_design: "uso: /workflow design <nombre>"
+  unknown_sub: "subcomando de flujo de trabajo desconocido: {sub}"
+
+# ---------------------------------------------------------------------------
+# Agentes del sistema faltantes
+# ---------------------------------------------------------------------------
+meta_agent:
+  kim_missing: "error: no se encontró el agente system-orchestrator"
+  malik_missing: "error: falta la definición del agente Malik (RRHH)"
+  armance_missing: "error: no se encontró el agente de contexto"
+
+# ---------------------------------------------------------------------------
+# /deliverable
+# ---------------------------------------------------------------------------
+deliverable:
+  usage: "uso: /deliverable <pptx|docx|pdf|md> [from=latest_judge|step_id] [nombre_salida]"
+  unsupported_format: "formato no soportado: {fmt}. Elija entre: pptx, docx, pdf, md"
+  no_content: "no hay contenido para renderizar (source={source})"
+  parse_error: "error al analizar el informe: {error}"
+  no_renderer: "no hay renderizador para el formato: {fmt}"
+  error: "error de entregable: {error}"
+  created: "entregable creado: {path}"
+
+# ---------------------------------------------------------------------------
+# /save
+# ---------------------------------------------------------------------------
+save:
+  too_brief: "error: el contexto es demasiado breve para guardar (se requiere un mínimo de 30 caracteres que no sean de saludo para enmarcar el contexto de un proyecto)"
+  saved: "contexto guardado como L0_v{version}"
+  error: "error al guardar el contexto: {error}"
+
+# ---------------------------------------------------------------------------
+# /role
+# ---------------------------------------------------------------------------
+role:
+  usage: "uso: /role list|show [<nombre>]"
+  add_hint: "Para reclutar, diga '@Malik, recluta para <su proyecto>'. Malik se encargará de ello."
+  unknown_action: "acción de rol desconocida: {action}"
+  list_empty: "ningún rol definido todavía."
+  show_usage: "uso: /role show <nombre>"
+  not_found: "rol '{name}' no encontrado"
+
+# ---------------------------------------------------------------------------
+# /agent
+# ---------------------------------------------------------------------------
+agent_cmd:
+  usage: "uso: /agent edit|replace|promote|demote|archive|list"
+  error: "Error: {error}"
+  unknown_action: "acción de agente desconocida: {sub}"
+
+# ---------------------------------------------------------------------------
+# /feedback-loop, /iterate-from
+# ---------------------------------------------------------------------------
+feedback:
+  usage_with_pending: "Uso: `/feedback-loop <run-id>` o responda `oui`/`non` (sí/no) a la propuesta actual."
+  usage: "Uso: `/feedback-loop <run-id>`"
+
+iterate:
+  usage: "Uso: `/iterate-from <run-id> [<nombre-flujo>]`"
+
+# ---------------------------------------------------------------------------
+# Asistente `armance init` — RAG / embedding picker
+# ---------------------------------------------------------------------------
+init:
+  rag:
+    title: "Memoria de documentos (RAG)"
+    intro: |2
+        Armance puede indexar sus documentos (.armance/docs/) para búsqueda semántica.
+
+        Cómo funciona:
+        Un modelo de embedding convierte cada pasaje en una huella digital numérica.
+        Cuando hace una pregunta, Armance encuentra los pasajes más relevantes.
+
+        → Con embedding : búsqueda semántica precisa en sus documentos.
+        → Sin embedding : documentos listados pero no buscados.
+                          (se puede habilitar más tarde mediante config.yaml)
+    querying: "Consultando las APIs para obtener los modelos de embedding disponibles..."
+    found: "{count} modelo(s) encontrado(s)"
+    none_found: "ninguno encontrado"
+    skip_label: "ninguno"
+    custom_sentinel: "[custom-openai]  ingresar manualmente →"
+    custom_only_hint: |2
+        custom-openai no expone una lista de modelos — ingrese el id del modelo a continuación.
+        Deje en blanco para deshabilitar RAG.
+    no_models_hint: |2
+        Atención — No se encontró ningún modelo de embedding en sus proveedores (verifique sus claves API).
+           Aún puede ingresar uno manualmente a continuación, o presione Enter para omitir RAG.
+    prompt_provider: "Proveedor para este modelo de embedding:"
+    prompt_manual_id: "Id del modelo de embedding (deje en blanco para deshabilitar RAG):"
+    prompt_manual_id_custom: "Id del modelo de embedding para custom-openai:"
+    prompt_autocomplete: "Modelo de embedding (autocompletar):"
+    filter_hint: "Escriba para filtrar (por ejemplo, 'bge', 'openai'). Escriba 'ninguno' o deje en blanco para omitir RAG."
+    disabled_short: "RAG deshabilitado."
+    disabled_edit_yaml: "RAG deshabilitado. Edite .armance/config.yaml para habilitarlo más tarde."
+    disabled_edit_keys: "RAG deshabilitado. Edite embedding_provider / embedding_model en .armance/config.yaml para habilitarlo más tarde."
+    unrecognised: "Modelo '{name}' no reconocido. RAG deshabilitado."
+    confirmed: "Embedding : [{provider}]  {model}"
+  ssl_skip_prompt: "¿Omitir la verificación del certificado SSL? (necesario para certificados autofirmados / proxys corporativos MITM)"
+
+# ---------------------------------------------------------------------------
+# Huella ambiental (/footprint)
+# ---------------------------------------------------------------------------
+footprint:
+  cmd_title: "Huella ambiental"
+  col_agent: "Agente"
+  col_gco2e: "gCO₂e"
+  col_water: "mL H₂O"
+  col_calls: "Llamadas"
+  col_estimate: "Est."
+  total_row: "TOTAL"
+  no_data: "No hay datos de huella ambiental todavía. Realice algunas consultas primero."
+  estimate_note: "~ = estimado (modelo proxy similar)"
+  unknown_note: "? = modelo desconocido (sin datos)"
+  zone_note: "Zona eléctrica: {zone}"
+  by_day: "Por día"
+  by_month: "Por mes"
+  equiv:
+    phone_charges: "cargas de teléfono"
+    car_km: "km en coche"
+    water_glasses: "vasos de agua"
+
+# Roles de personal
+# ---------------------------------------------------------------------------
+staff:
+  role:
+    weaver: "tejedora"
+    scout: "explorador"
+    conductor: "directora"
+    distiller: "destiladora"
+    critic: "crítico"
+
+boost:
+  confirm_upgrade: "El agente {agent} solicita ser aumentado a {boost} (desde {base}). ¿Permitir? [Y/n]"
+  confirm_downgrade: "El agente {agent} ha terminado y desea volver a {base}. ¿Permitir? [Y/n]"
+  workflow_notice: "Aviso: {count} agente(s) se aumentarán automáticamente durante esta intensa ejecución de flujo de trabajo."
