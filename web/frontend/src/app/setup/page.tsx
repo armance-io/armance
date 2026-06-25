@@ -154,6 +154,9 @@ export default function SetupPage() {
   const [embeddingModel, setEmbeddingModel] = useState("");
   const [embeddingProvider, setEmbeddingProvider] = useState("");
   const [embeddingOptions, setEmbeddingOptions] = useState<EmbeddingModel[]>([]);
+  // Optional rerank model — uses the same provider as the embedding model.
+  // Two-stage retrieval: retrieve wide, then rerank to a small precise set.
+  const [rerankModel, setRerankModel] = useState("");
 
   // Embedding-capable providers among those selected at step 2. claude-code
   // has no embeddings endpoint, so it is excluded.
@@ -332,6 +335,10 @@ export default function SetupPage() {
       if (embeddingModel.trim()) {
         payload.embedding_model = embeddingModel.trim();
         payload.embedding_provider = embeddingProvider || embeddingProviderChoices[0] || "";
+        if (rerankModel.trim()) {
+          payload.rerank_model = rerankModel.trim();
+          payload.rerank_provider = embeddingProvider || embeddingProviderChoices[0] || "";
+        }
       }
 
       const res = await initSetup(payload);
@@ -850,6 +857,27 @@ export default function SetupPage() {
                       </option>
                     ))}
                 </datalist>
+
+                {/* Optional rerank model — only meaningful once an embedding
+                    model is set (rerank refines the vector recall stage). Uses
+                    the same provider as the embedding model. */}
+                {embeddingModel.trim() && (
+                  <div style={{ marginTop: "14px" }}>
+                    <label style={{ ...formLabel, marginBottom: "6px" }}>
+                      {t("setup:rerank_label")}
+                    </label>
+                    <p style={{ fontSize: "11px", color: "var(--ink-soft)", marginBottom: "8px" }}>
+                      {t("setup:rerank_hint")}
+                    </p>
+                    <input
+                      data-testid="setup-rerank-model"
+                      value={rerankModel}
+                      onChange={(e) => setRerankModel(e.target.value)}
+                      placeholder={t("setup:rerank_placeholder")}
+                      style={{ ...inputStyle, width: "100%" }}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
