@@ -315,15 +315,17 @@ class ContextService:
         base_context: str,
         query: str,
         k: int = 5,
+        config=None,
     ) -> str:
         """Query RAG and inject top-K chunks into base_context.
-        
+
         Per T-27: L1 enrichment with retrieved chunks at load time.
+        When ``config`` has a rerank model configured, retrieval is two-stage.
         """
         from armance.storage.rag_index import context_with_rag
-        
+
         # We can pass the root to the helper which handles the async-in-thread logic
-        rag_context = context_with_rag(self.armance_root, query, k=k)
+        rag_context = context_with_rag(self.armance_root, query, k=k, config=config)
         
         if not rag_context:
             return base_context

@@ -286,7 +286,7 @@ class RagService:
 
 # ── Convenience helper ────────────────────────────────────────────────────────
 
-def context_with_rag(armance_root: Path, query: str, k: int = 8) -> str:
+def context_with_rag(armance_root: Path, query: str, k: int = 8, config=None) -> str:
     """Return top-k RAG chunks formatted for prompt injection.
 
     Format per chunk: ``[source: filename p.N] text``
@@ -305,7 +305,13 @@ def context_with_rag(armance_root: Path, query: str, k: int = 8) -> str:
         chunks: list[Chunk] = []
 
         def _run() -> None:
-            chunks.extend(asyncio.run(store.query(query, top_k=k)))
+            from armance.config import rerank_active
+            if config is not None and rerank_active(config):
+                cands = asyncio.run(store.query(query, top_k=config.rerank_candidate_k))
+                from armance.service.agents._rag_inject import _rerank_chunks
+                chunks.extend(asyncio.run(_rerank_chunks(query, cands, config)))
+            else:
+                chunks.extend(asyncio.run(store.query(query, top_k=k)))
 
         t = threading.Thread(target=_run)
         t.start()
