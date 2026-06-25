@@ -212,6 +212,32 @@ def _ask_embedding(
     return (prov, model)
 
 
+def _ask_rerank(
+    embedding_provider: str,
+    embedding_model: str,
+    selected_providers: list[str],
+    providers: list["ProviderConfig"],
+    language: str = "en",
+) -> tuple[str, str]:
+    """Optional rerank model, asked right below the embedding model.
+
+    Returns (rerank_provider, rerank_model). ("", "") when skipped or when
+    no embedding is configured (rerank needs a recall stage to refine)."""
+    if not embedding_provider or not embedding_model:
+        return ("", "")
+    print()
+    print("  🔎  Optional: rerank model (improves library precision, fewer tokens).")
+    print(f"      Leave blank to skip. Uses provider: {embedding_provider}")
+    model_id = (questionary.text(
+        f"Rerank model id for {embedding_provider} (blank = skip)"
+    ).ask() or "").strip()
+    if not model_id:
+        print("  Rerank disabled.\n")
+        return ("", "")
+    print(f"\n  ✅  Rerank: {embedding_provider}/{model_id}\n")
+    return (embedding_provider, model_id)
+
+
 def _fetch_chat_models(
     provider_name: str,
     providers: list["ProviderConfig"],
@@ -466,6 +492,9 @@ def cmd_init(
     ).ask() or "optimised"
 
     embedding_provider, embedding_model = _ask_embedding(selected, providers, language=language)
+    rerank_provider, rerank_model = _ask_rerank(
+        embedding_provider, embedding_model, selected, providers, language=language
+    )
 
     # Carbon-intensity zone — refines the CO2 footprint estimate to the user's
     # electricity grid. Defaults to the world average (WOR).
@@ -501,6 +530,9 @@ def cmd_init(
         # Explicit "none" sentinel — disable RAG embeddings
         cfg_kwargs["embedding_provider"] = ""
         cfg_kwargs["embedding_model"] = ""
+    if rerank_provider:
+        cfg_kwargs["rerank_provider"] = rerank_provider
+        cfg_kwargs["rerank_model"] = rerank_model
 
     cfg = Config(**cfg_kwargs)
 
