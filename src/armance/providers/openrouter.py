@@ -9,7 +9,7 @@ from typing import Any
 import httpx
 
 from armance.config import ProviderConfig
-from armance.core.protocols.llm import FinishReason, LLMClient, LLMResponse
+from armance.core.protocols.llm import FinishReason, LLMClient, LLMResponse, RerankHit
 
 logger = logging.getLogger(__name__)
 
@@ -133,6 +133,64 @@ class OpenRouterClient(LLMClient):
             return data["data"][0]["embedding"]
         except Exception as exc:
             log_failure("embedding", model, exc, attempt=1, max_retries=1)
+            raise
+
+    async def rerank(
+        self,
+        query: str,
+        documents: list[str],
+        model: str,
+        *,
+        top_n: int | None = None,
+    ) -> list[RerankHit]:
+        """Native cross-encoder rerank via POST /rerank (Cohere-style).
+
+        Serves both `openrouter` and `custom-openai` (same client class).
+        Logs to the exchange log + ledger like embed."""
+        from armance.service.llm_service import (
+            get_ledger,
+            log_failure,
+            log_request,
+            log_response,
+        )
+
+        log_request("rerank", model, [{"role": "user", "content": query[:200]}])
+        url = self.base_url.rstrip("/") + "/rerank"
+        headers = {"Content-Type": "application/json"}
+        if self._provider.api_key:
+            headers["Authorization"] = f"Bearer {self._provider.api_key}"
+        body: dict[str, Any] = {"model": model, "query": query, "documents": documents}
+        if top_n is not None:
+            body["top_n"] = top_n
+        try:
+            response = await self._client.post(url, headers=headers, json=body)
+            if response.status_code >= 400:
+                raise LLMHTTPError(
+                    f"openrouter rerank failed: {response.status_code} {response.text}",
+                    status_code=response.status_code,
+                    retry_after=_retry_after_seconds(response),
+                )
+            data = response.json()
+            results = data.get("results") or []
+            hits = [
+                RerankHit(index=int(r["index"]), score=float(r.get("relevance_score", 0.0)))
+                for r in results
+            ]
+            hits.sort(key=lambda h: h.score, reverse=True)
+            usage = data.get("usage") or {}
+            tokens_in = int(usage.get("total_tokens") or 0)
+            log_response("rerank", model, LLMResponse(
+                text=f"<rerank results={len(hits)}>",
+                tokens_in=tokens_in, tokens_out=0,
+                finish_reason="stop", cost_usd=None,
+            ))
+            try:
+                get_ledger().record("rerank", tokens_in, 0, None)
+            except Exception:
+                pass
+            return hits
+        except Exception as exc:
+            log_failure("rerank", model, exc, attempt=1, max_retries=1)
             raise
 
     def embed_sync(self, text: str, model: str, timeout: float = 60.0) -> list[float]:
