@@ -15,7 +15,30 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from armance.service.llm_service import get_client
+
 logger = logging.getLogger(__name__)
+
+
+async def _rerank_chunks(query: str, candidates: list, config) -> list:
+    """Two-stage precision step: rerank candidates, keep top rerank_keep_n.
+
+    Degrades to vector order on ANY failure (unsupported provider, HTTP,
+    timeout, bad payload). Never raises."""
+    keep_n = getattr(config, "rerank_keep_n", 5)
+    try:
+        client = get_client(config.rerank_provider, config)
+        hits = await client.rerank(
+            query, [c.text for c in candidates], config.rerank_model, top_n=keep_n,
+        )
+        ranked = [candidates[h.index] for h in hits if 0 <= h.index < len(candidates)]
+        # any candidate the reranker omitted gets appended in vector order
+        seen = {id(c) for c in ranked}
+        ranked += [c for c in candidates if id(c) not in seen]
+        return ranked[:keep_n]
+    except Exception:
+        logger.warning("rerank failed; falling back to vector order", exc_info=True)
+        return candidates[:keep_n]
 
 
 async def inject_rag_section(
@@ -86,7 +109,12 @@ async def inject_rag_section(
             embedding_model=embedding_model,
             embedding_dim=embedding_dim,
         )
-        chunks: list[Chunk] = await store.query(query, top_k=k)
+        from armance.config import rerank_active
+        if config is not None and rerank_active(config):
+            candidates = await store.query(query, top_k=config.rerank_candidate_k)
+            chunks = await _rerank_chunks(query, candidates, config)
+        else:
+            chunks = await store.query(query, top_k=k)
         logger.info("RAG retrieved %d chunk(s) for query=%r", len(chunks), query[:60])
     except Exception:
         logger.exception("RAG retrieval failed")
