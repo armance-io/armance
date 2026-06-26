@@ -79,6 +79,15 @@ class AppState:
     def put(self, web_session: WebSession) -> None:
         self._sessions[web_session.sid] = web_session
 
+    def alias(self, sid: str, web_session: WebSession) -> None:
+        """Register *web_session* under an extra key (a stale/aliased sid).
+
+        Used by the session self-heal: a request for a non-existent sid is
+        served by the latest/auto-created session, and that live session is
+        also bound to the requested sid so later lookups by the stale id hit.
+        """
+        self._sessions[sid] = web_session
+
     def get(self, sid: str) -> WebSession | None:
         return self._sessions.get(sid)
 

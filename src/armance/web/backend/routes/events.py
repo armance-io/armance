@@ -38,8 +38,14 @@ async def stream_events(
     app_state: AppState = Depends(get_app_state),
 ) -> EventSourceResponse:
     """SSE stream: subscribe to all events on the session bus."""
-    ws = app_state.get(sid)
-    if ws is None:
+    from armance.web.backend.routes.sessions import get_or_heal_session
+
+    try:
+        ws = get_or_heal_session(app_state, pid, sid, client_id=user)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("failed to resolve session pid=%s sid=%s", pid, sid)
         raise HTTPException(status_code=404, detail="session_not_found")
 
     bus = ws.bus

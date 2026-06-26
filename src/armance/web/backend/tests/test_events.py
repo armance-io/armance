@@ -63,6 +63,11 @@ async def test_events_endpoint_exists(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_events_unknown_session_404(client: AsyncClient) -> None:
+async def test_events_stale_session_heals(client: AsyncClient) -> None:
+    """A stale/browser-cached sid must self-heal, not 404-loop.
+
+    The event stream is opened on chat mount; if a stale sid dead-ended 404
+    the UI never received agent/library/workflow events on first launch.
+    """
     resp = await client.get("/projects/default/sessions/bad-sid/events")
-    assert resp.status_code == 404
+    assert resp.status_code == 200

@@ -93,9 +93,11 @@ async def test_library_status_returns_library_dict(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_library_status_unknown_session_404(client: AsyncClient) -> None:
+async def test_library_status_stale_session_heals(client: AsyncClient) -> None:
+    # Stale/browser-cached sid self-heals instead of 404-looping, so the
+    # bibliothèque panel loads on first launch.
     resp = await client.get("/projects/default/sessions/bad-sid/library")
-    assert resp.status_code == 404
+    assert resp.status_code == 200
 
 
 # ─── deps.py — get_web_session ────────────────────────────────────────────────

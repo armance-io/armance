@@ -23,6 +23,19 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/projects/{pid}/sessions/{sid}", tags=["agents"])
 
 
+def _resolve_session(app_state: AppState, pid: str, sid: str, user: str):
+    """Resolve the session, self-healing a stale/missing sid (404 otherwise)."""
+    from armance.web.backend.routes.sessions import get_or_heal_session
+
+    try:
+        return get_or_heal_session(app_state, pid, sid, client_id=user)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("failed to resolve session pid=%s sid=%s", pid, sid)
+        raise HTTPException(status_code=404, detail="session_not_found")
+
+
 class AugmentToggle(BaseModel):
     enabled: bool
 
@@ -36,9 +49,7 @@ async def get_agent_details(
     app_state: AppState = Depends(get_app_state),
 ) -> dict:
     """Return agent metadata + cumulative token usage for this session."""
-    ws = app_state.get(sid)
-    if ws is None:
-        raise HTTPException(status_code=404, detail="session_not_found")
+    ws = _resolve_session(app_state, pid, sid, user)
 
     agent = next((a for a in ws.ctx.agents if a.name == name), None)
     if agent is None:
@@ -96,9 +107,7 @@ async def set_agent_augment(
     mutates the ephemeral ``boosted_agents`` session state directly, no
     checkpoint. Enabling a non-boostable agent is a no-op (returns boosted=False).
     """
-    ws = app_state.get(sid)
-    if ws is None:
-        raise HTTPException(status_code=404, detail="session_not_found")
+    ws = _resolve_session(app_state, pid, sid, user)
     agent = next((a for a in ws.ctx.agents if a.name == name), None)
     if agent is None:
         raise HTTPException(status_code=404, detail="agent_not_found")

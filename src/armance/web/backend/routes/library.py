@@ -38,8 +38,14 @@ async def library_status(
     app_state: AppState = Depends(get_app_state),
 ) -> dict:
     """Return indexed + read state of the bibliothèque."""
-    ws = app_state.get(sid)
-    if ws is None:
+    from armance.web.backend.routes.sessions import get_or_heal_session
+
+    try:
+        ws = get_or_heal_session(app_state, pid, sid, client_id=user)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("failed to resolve session pid=%s sid=%s", pid, sid)
         raise HTTPException(status_code=404, detail="session_not_found")
 
     try:

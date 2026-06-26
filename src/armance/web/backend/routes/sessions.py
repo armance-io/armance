@@ -17,7 +17,14 @@ from armance.nls import set_language
 from armance.platform.events import LocalEventBus
 from armance.platform.user import get_current_user
 from armance.service.llm_service import TokenLedger, set_ledger, set_current_session_id
-from armance.service.session import start_or_resume, Session, load_state, latest_session_id, list_sessions
+from armance.service.session import (
+    start_or_resume,
+    Session,
+    load_state,
+    latest_session_id,
+    list_sessions,
+    state_path,
+)
 from armance.service.tui_bridge import make_loop_context, META_AGENTS
 
 from armance.web.backend.checkpoint import WebCheckpointHandler
@@ -32,6 +39,28 @@ router = APIRouter(prefix="/projects/{pid}", tags=["sessions"])
 def _root(app_state: AppState, pid: str) -> Path:
     """Resolve project *pid*'s data root, or 404 if the pid is unknown."""
     return resolve_root_or_404(app_state, pid)
+
+
+def get_or_heal_session(
+    app_state: AppState, pid: str, sid: str, client_id: str | None = None
+) -> WebSession:
+    """Resolve a session for a read route, self-healing a stale/missing sid.
+
+    The session sub-routes (/library, /workflows, /agents, /events, …) used to
+    do a bare ``app_state.get(sid)`` and 404 when the session was not already
+    in memory — which on first launch means a browser-cached sid from another
+    project 404-loops forever (no agents, no library). This loads (and heals)
+    the session through the same path as the sessions router, so any live or
+    healable session resolves instead of dead-ending.
+    """
+    cached = app_state.get(sid)
+    if cached is not None:
+        return cached
+    armance_root = _root(app_state, pid)
+    _check_initialised(armance_root, pid)
+    return _load_web_session(
+        app_state, armance_root, pid, sid, client_id=client_id, heal=True
+    )
 
 
 def _check_initialised(armance_root: Path, pid: str) -> None:
@@ -56,8 +85,16 @@ def _load_web_session(
     pid: str,
     sid: str,
     client_id: str | None = None,
+    *,
+    heal: bool = False,
 ) -> WebSession:
-    """Loads a session from memory or disk into AppState."""
+    """Loads a session from memory or disk into AppState.
+
+    When *heal* is True, a sid with no state.json on disk is not an error: it
+    falls back to the latest existing session (or mints a fresh one) so the
+    data routes recover from a stale browser-cached sid. When False (the
+    identity routes /sessions/{sid} and /messages), a missing sid stays a 404.
+    """
     ws = app_state.get(sid)
     if ws is not None:
         return ws
@@ -72,6 +109,22 @@ def _load_web_session(
 
     ensure_data_tree(armance_root)
     set_language(cfg.language)
+
+    # Self-heal a missing session. A stale sid (e.g. a session id cached by the
+    # browser from a *different* project) has no state.json under this root, so
+    # load_state would raise FileNotFoundError and every read route 404-loops
+    # forever — no agents, no library, no workflows on first launch. Instead,
+    # fall back to the latest existing session, or mint a fresh one, exactly
+    # like GET /sessions/latest does. The healed ws is registered under BOTH the
+    # requested (stale) sid and its real id, so subsequent app_state.get(sid)
+    # calls from the other routes resolve without re-hitting the disk.
+    requested_sid = sid
+    if heal and not state_path(armance_root, sid).exists():
+        healed = latest_session_id(armance_root)
+        if healed is None:
+            healed = start_or_resume(armance_root, resume=False).id
+        logger.info("healed stale session sid=%s -> %s (pid=%s)", sid, healed, pid)
+        sid = healed
 
     state = load_state(armance_root, sid)
     session = Session(state, armance_root)
@@ -104,6 +157,12 @@ def _load_web_session(
         driver_client_id=client_id,
     )
     app_state.put(web_session)
+    # Alias the healed session under the requested (stale) sid too, so the
+    # routes that resolve sessions via a bare app_state.get(sid) — /library,
+    # /workflows, /agents, /events — stop 404-looping on the stale id without
+    # each having to re-run the heal.
+    if requested_sid != sid:
+        app_state.alias(requested_sid, web_session)
     return web_session
 
 

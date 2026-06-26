@@ -12,6 +12,8 @@ export interface ConfigValues {
   language: string;
   embedding_provider?: string;
   embedding_model?: string;
+  rerank_provider?: string;
+  rerank_model?: string;
   electricity_mix_zone?: string;
   providers?: Array<{ name: string; base_url?: string | null }>;
 }
@@ -624,6 +626,16 @@ export const ConfigForm: FC<ConfigFormProps> = ({
         options={embeddingOptions}
         onChange={(provider, model) =>
           setDraft((d) => ({ ...d, embedding_provider: provider, embedding_model: model }))
+        }
+        rerankValue={draft.rerank_model ?? ""}
+        onRerankChange={(model) =>
+          setDraft((d) => ({
+            ...d,
+            rerank_model: model,
+            // Rerank shares the embedding provider — keep them in lockstep so a
+            // model id is never left orphaned from its provider on save.
+            rerank_provider: model ? (d.embedding_provider ?? "") : "",
+          }))
         }
         t={t}
       />

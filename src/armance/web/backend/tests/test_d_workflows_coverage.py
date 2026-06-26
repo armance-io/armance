@@ -27,10 +27,12 @@ def _seed_workflow(armance_root: Path, name: str = "wf") -> None:
 # --- list_workflows error / empty branches (lines 53, 57) ----------------
 
 @pytest.mark.asyncio
-async def test_list_workflows_unknown_session_404(client: AsyncClient) -> None:
+async def test_list_workflows_stale_session_heals(client: AsyncClient) -> None:
+    # A stale/browser-cached sid self-heals to a fresh empty session instead
+    # of 404-looping, so the workflows list is reachable on first launch.
     resp = await client.get("/projects/default/sessions/ghost/workflows")
-    assert resp.status_code == 404
-    assert resp.json()["detail"] == "session_not_found"
+    assert resp.status_code == 200
+    assert resp.json() == {"workflows": []}
 
 
 @pytest.mark.asyncio
@@ -46,10 +48,12 @@ async def test_list_workflows_no_dir_returns_empty(client: AsyncClient) -> None:
 # --- get_workflow error branches (lines 139, 146) ------------------------
 
 @pytest.mark.asyncio
-async def test_get_workflow_unknown_session_404(client: AsyncClient) -> None:
+async def test_get_workflow_stale_session_heals(client: AsyncClient) -> None:
+    # The session self-heals; the missing workflow is then a workflow_not_found,
+    # not a dead-end session_not_found.
     resp = await client.get("/projects/default/sessions/ghost/workflows/wf")
     assert resp.status_code == 404
-    assert resp.json()["detail"] == "session_not_found"
+    assert resp.json()["detail"] == "workflow_not_found"
 
 
 @pytest.mark.asyncio

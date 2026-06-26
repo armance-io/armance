@@ -21,6 +21,7 @@
     "shell": {
       "brand_domain": "armance.io",
       "sidebar_collapse_aria": "Collapse sidebar",
+      "home_aria": "Back to project picker",
       "footer_motto": "A house of agents to sharpen your thinking.",
       "footer_line": "2026 · made in France"
     },
@@ -439,6 +440,9 @@
       "embedding": "Embedding model",
       "embedding_placeholder": "Type or pick an embedding model id…",
       "embedding_hint": "Used to index your library. Pick from your providers or type any model id.",
+      "rerank": "Rerank model (optional)",
+      "rerank_placeholder": "Type a rerank model id…",
+      "rerank_hint": "Refines library results: retrieves wide, then keeps the most relevant — fewer tokens per query. Uses the same provider as the embedding model.",
       "carbon_zone": "Country / zone (CO₂ footprint)",
       "carbon_zone_hint": "Refines the CO₂ estimate using your electricity grid's carbon intensity."
     },

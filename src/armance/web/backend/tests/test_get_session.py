@@ -41,3 +41,22 @@ async def test_get_session_includes_agents(client: AsyncClient) -> None:
 async def test_get_session_unknown_sid_returns_404(client: AsyncClient) -> None:
     resp = await client.get("/projects/default/sessions/nonexistent-sid")
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_library_heals_stale_sid(client: AsyncClient) -> None:
+    """A browser-cached sid from another project must not 404-loop.
+
+    On first launch a stale sid (no state.json on disk) hit /library /workflows
+    /agents and dead-looped 404, leaving the UI with no agents and no library.
+    The data routes now self-heal: they auto-create/resolve a real session for
+    the project instead of dead-ending.
+    """
+    resp = await client.get("/projects/default/sessions/123-stale/library")
+    assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_workflows_heals_stale_sid(client: AsyncClient) -> None:
+    resp = await client.get("/projects/default/sessions/123-stale/workflows")
+    assert resp.status_code == 200

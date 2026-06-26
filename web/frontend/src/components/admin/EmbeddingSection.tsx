@@ -12,6 +12,10 @@ export interface EmbeddingSectionProps {
   /** Cross-provider embedding catalogue for the type-ahead list. */
   options: EmbeddingModel[];
   onChange: (provider: string, model: string) => void;
+  /** Optional rerank-model id (free-text). Shares the embedding provider. */
+  rerankValue?: string;
+  /** Emitted on rerank-model edits. Omit to hide the rerank row entirely. */
+  onRerankChange?: (model: string) => void;
   t: (key: string) => string;
 }
 
@@ -21,7 +25,7 @@ export interface EmbeddingSectionProps {
  * over the discovered cross-provider catalogue, but free-text is allowed
  * so any model id can be entered.
  */
-export const EmbeddingSection: FC<EmbeddingSectionProps> = ({ provider, value, options, onChange, t }) => {
+export const EmbeddingSection: FC<EmbeddingSectionProps> = ({ provider, value, options, onChange, rerankValue = "", onRerankChange, t }) => {
   const row: CSSProperties = { display: "grid", gap: 6, marginBottom: 20 };
   const label: CSSProperties = {
     fontSize: 12,
@@ -79,6 +83,25 @@ export const EmbeddingSection: FC<EmbeddingSectionProps> = ({ provider, value, o
       <span style={{ fontSize: 12, color: tokens.inkFaint, fontStyle: "italic" }}>
         {t("admin:config.embedding_hint")}
       </span>
+
+      {/* Optional rerank model — only meaningful once an embedding model is
+          set (rerank refines the vector recall stage). Shares the embedding
+          provider, mirroring the setup form. */}
+      {onRerankChange && value.trim() && (
+        <div style={{ display: "grid", gap: 6, marginTop: 14 }}>
+          <label style={label}>{t("admin:config.rerank")}</label>
+          <input
+            data-testid="admin-rerank-model"
+            value={rerankValue}
+            onChange={(e) => onRerankChange(e.target.value)}
+            placeholder={t("admin:config.rerank_placeholder")}
+            style={input}
+          />
+          <span style={{ fontSize: 12, color: tokens.inkFaint, fontStyle: "italic" }}>
+            {t("admin:config.rerank_hint")}
+          </span>
+        </div>
+      )}
     </div>
   );
 };

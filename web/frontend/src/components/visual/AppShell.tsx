@@ -53,6 +53,21 @@ const ChevronIcon: FC<{ collapsed: boolean }> = ({ collapsed }) => (
   </svg>
 );
 
+/* ─── HomeIcon ───────────────────────────────────────────────────────────── */
+
+// Archive-drawer / library glyph: returns to the project picker (launcher).
+const HomeIcon: FC = () => (
+  <svg
+    width="16" height="16" viewBox="0 0 16 16"
+    fill="none" stroke="currentColor"
+    strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M2 6.5L8 2l6 4.5" />
+    <path d="M3.5 7.5V14h9V7.5" />
+  </svg>
+);
+
 /* ─── AppShell ───────────────────────────────────────────────────────────── */
 
 /**
@@ -70,6 +85,7 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
   const [handleHover, setHandleHover] = useState(false);
   const [dragging,    setDragging]    = useState(false);
   const [toggleHover, setToggleHover] = useState(false);
+  const [homeHover,   setHomeHover]   = useState(false);
 
 
   const motion = useRef(
@@ -153,6 +169,23 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
     outline: "none",
   };
 
+  // Sits right of the sidebar toggle, before the brand. Ghost/parchment per
+  // DESIGN.md: transparent, sharp 2px corners, subtle ink shift on hover.
+  const homeStyle: CSSProperties = {
+    marginLeft: "12px",
+    width: "32px", height: "32px",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    color: homeHover ? "var(--accent,#6b4f8a)" : "var(--ink-soft,#5b5145)",
+    border: `1px solid ${homeHover ? "var(--accent-soft,#b7a4c9)" : "var(--rule,#d6c8ad)"}`,
+    borderRadius: "2px",
+    transition: motion ? "none" : "color 0.15s ease, border-color 0.15s ease",
+    padding: 0,
+    background: "transparent",
+    cursor: "pointer",
+    outline: "none",
+    textDecoration: "none",
+  };
+
   const sidebarStyle: CSSProperties = {
     width: `${actualW}px`, flexShrink: 0,
     background: "var(--bg-paper,#f4ede0)",
@@ -210,6 +243,17 @@ export const AppShell: FC<AppShellProps> = ({ sidebar, children, t }) => {
         >
           <ChevronIcon collapsed={collapsed} />
         </button>
+
+        <a
+          href="/launcher"
+          style={homeStyle}
+          onMouseEnter={() => setHomeHover(true)}
+          onMouseLeave={() => setHomeHover(false)}
+          aria-label={t("visual:shell.home_aria")}
+          data-testid="shell-home"
+        >
+          <HomeIcon />
+        </a>
 
         <div style={{ display: "flex", alignItems: "baseline", marginLeft: "20px" }}>
           <span style={{ ...inlineSerif, fontStyle: "italic", fontSize: "18px", color: "var(--ink,#2a2520)" }}>Armance</span>

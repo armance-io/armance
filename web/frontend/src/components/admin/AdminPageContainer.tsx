@@ -149,6 +149,8 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
         language: String(raw.language ?? "en"),
         embedding_provider: String(raw.embedding_provider ?? ""),
         embedding_model: String(raw.embedding_model ?? ""),
+        rerank_provider: String(raw.rerank_provider ?? ""),
+        rerank_model: String(raw.rerank_model ?? ""),
         electricity_mix_zone: String(footprint.electricity_mix_zone ?? "WOR"),
         providers: (raw.providers as ConfigValues["providers"]) ?? [],
       });
@@ -221,6 +223,8 @@ const ConfigTab: FC<{ pid: string; t: (k: string) => string }> = ({ pid, t }) =>
       language: String(updated.language ?? "en"),
       embedding_provider: String(updated.embedding_provider ?? ""),
       embedding_model: String(updated.embedding_model ?? ""),
+      rerank_provider: String(updated.rerank_provider ?? ""),
+      rerank_model: String(updated.rerank_model ?? ""),
       electricity_mix_zone: String(updFootprint.electricity_mix_zone ?? "WOR"),
       providers: (updated.providers as ConfigValues["providers"]) ?? [],
     });

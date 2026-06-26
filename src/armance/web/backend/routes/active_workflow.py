@@ -35,8 +35,14 @@ async def get_active_workflow(
     user: str = Depends(get_current_user),
     app_state: AppState = Depends(get_app_state),
 ) -> dict:
-    ws = app_state.get(sid)
-    if ws is None:
+    from armance.web.backend.routes.sessions import get_or_heal_session
+
+    try:
+        ws = get_or_heal_session(app_state, pid, sid, client_id=user)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("failed to resolve session pid=%s sid=%s", pid, sid)
         raise HTTPException(status_code=404, detail="session_not_found")
 
     name = getattr(ws.session.state, "current_workflow", None)

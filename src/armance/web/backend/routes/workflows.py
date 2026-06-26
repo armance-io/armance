@@ -31,6 +31,19 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/projects/{pid}/sessions/{sid}", tags=["workflows"])
 
 
+def _resolve_session(app_state: AppState, pid: str, sid: str, user: str):
+    """Resolve the session, self-healing a stale/missing sid (404 otherwise)."""
+    from armance.web.backend.routes.sessions import get_or_heal_session
+
+    try:
+        return get_or_heal_session(app_state, pid, sid, client_id=user)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("failed to resolve session pid=%s sid=%s", pid, sid)
+        raise HTTPException(status_code=404, detail="session_not_found")
+
+
 def _load_workflow_safe(path) -> Any | None:
     """Best-effort load — broken YAML returns None instead of raising."""
     try:
@@ -49,9 +62,7 @@ async def list_workflows(
     app_state: AppState = Depends(get_app_state),
 ) -> dict:
     """List every workflow YAML in .armance/workflows/."""
-    ws = app_state.get(sid)
-    if ws is None:
-        raise HTTPException(status_code=404, detail="session_not_found")
+    ws = _resolve_session(app_state, pid, sid, user)
 
     wf_dir = ws.ctx.armance_root / "workflows"
     if not wf_dir.exists():
@@ -135,9 +146,7 @@ async def get_workflow(
     app_state: AppState = Depends(get_app_state),
 ) -> dict:
     """Return the parsed workflow YAML plus a left-to-right graph layout."""
-    ws = app_state.get(sid)
-    if ws is None:
-        raise HTTPException(status_code=404, detail="session_not_found")
+    ws = _resolve_session(app_state, pid, sid, user)
 
     wf_path = ws.ctx.armance_root / "workflows" / f"{name}.yaml"
     if not wf_path.exists():
@@ -255,9 +264,7 @@ async def run_workflow(
     """
     if body.mode not in ("interactive", "autonomous"):
         raise HTTPException(status_code=400, detail="invalid_mode")
-    ws = app_state.get(sid)
-    if ws is None:
-        raise HTTPException(status_code=404, detail="session_not_found")
+    ws = _resolve_session(app_state, pid, sid, user)
     _require_workflow(ws, name)
 
     if ws.run_task is not None and not ws.run_task.done():
@@ -302,9 +309,7 @@ async def stop_workflow(
 ) -> dict:
     if not body.confirm:
         raise HTTPException(status_code=409, detail={"error": "confirm_required"})
-    ws = app_state.get(sid)
-    if ws is None:
-        raise HTTPException(status_code=404, detail="session_not_found")
+    ws = _resolve_session(app_state, pid, sid, user)
     _require_workflow(ws, name)
     return await _dispatch_stop(ws, name)
 
@@ -327,9 +332,7 @@ async def delete_run(
 ) -> dict:
     if not body.confirm:
         raise HTTPException(status_code=409, detail={"error": "confirm_required"})
-    ws = app_state.get(sid)
-    if ws is None:
-        raise HTTPException(status_code=404, detail="session_not_found")
+    ws = _resolve_session(app_state, pid, sid, user)
     if not re.fullmatch(r"[\w.-]+", run_id):
         raise HTTPException(status_code=400, detail="invalid_run_id")
 
