@@ -51,7 +51,7 @@ async def cmd_hr_chat(text: str, ctx: LoopContext) -> str:
         models_context = await _maybe_append_rag(ctx, text, models_context)
 
         task = Task(
-            prompt=text, domain="meta", mode="light", requested_agent=agent_name,
+            prompt=text, role="meta", mode="light", requested_agent=agent_name,
         )
         history = visible_turns(ctx.session.conversation.turns, agent_name)
         ctx.session.conversation.append("user", text, agent=agent_name)
@@ -503,7 +503,7 @@ async def _emit_agents_proposed(ctx: LoopContext, created: list) -> None:
             persona_label = getattr(a.persona, "label", "") or ""
         payload.append({
             "name": a.name,
-            "role": (a.role or a.domain or "specialist"),
+            "role": (a.role or "specialist"),
             "persona": persona_label,
             "description": getattr(a, "description", "") or "",
             "provider": a.provider,

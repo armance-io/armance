@@ -65,7 +65,7 @@ async def get_agent_details(
 
     return {
         "name": agent.name,
-        "role": agent.role or agent.domain or "",
+        "role": agent.role or "",
         "persona": persona_label,
         "description": getattr(agent, "description", "") or "",
         "provider": agent.provider,

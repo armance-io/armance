@@ -4,7 +4,7 @@ from __future__ import annotations
 class TestAgentBoost:
     def _agent(self, **kw):
         from armance.core.models.agent import Agent
-        base = dict(name="Sara", domain="strategy", provider="openrouter",
+        base = dict(name="Sara", role="strategy", provider="openrouter",
                     model="anthropic/claude-3.5-sonnet")
         base.update(kw)
         return Agent(**base)

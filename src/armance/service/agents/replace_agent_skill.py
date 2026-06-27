@@ -65,7 +65,7 @@ class ReplaceAgentSkill:
             old_name, new_agent = service.replace_agent(parsed.old_name, parsed.new_persona)
             return (
                 f"**{old_name}** archived. Malik recruited **{new_agent.name}** "
-                f"({parsed.new_persona} {new_agent.domain})."
+                f"({parsed.new_persona} {new_agent.role})."
             )
         except AgentNotFoundError as exc:
             return f"Error: {exc}"

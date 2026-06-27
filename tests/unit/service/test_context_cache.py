@@ -44,7 +44,7 @@ def test_layered_context_includes_cache(tmp_path: Path):
     runner = SpecialistRunner(root, config=None)
     agent = Agent(
         name="Samir",
-        domain="communication",
+        role="communication",
         provider="openrouter",
         model="x",
     )
@@ -71,7 +71,7 @@ def test_freeze_consumes_cache(tmp_path, monkeypatch):
 
     agent = Agent(
         name="system-context",
-        domain="meta",
+        role="meta",
         character="balanced",
         provider="openrouter",
         model="openai/gpt-4o-mini",

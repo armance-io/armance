@@ -52,7 +52,7 @@ def tmp_armance(tmp_path: Path) -> Path:
 def aisha(tmp_armance: Path) -> Agent:
     a = Agent(
         name="Aisha",
-        domain="historian",
+        role="historian",
         character="positivist",
         provider="openrouter",
         model="openai/gpt-4o-mini",

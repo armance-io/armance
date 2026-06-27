@@ -41,7 +41,7 @@ def sample_agent(temp_armance_root: Path) -> Agent:
     service = AgentLifecycleService(temp_armance_root)
     agent = Agent(
         name="historian-aisha",
-        domain="historian",
+        role="historian",
         persona="positivist",
         provider="openai",
         model="gpt-4o",

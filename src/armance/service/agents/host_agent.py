@@ -831,7 +831,7 @@ Preserve all factual content. Skip conversational filler. Output ONLY raw Markdo
 
         lines.append("**Other options:**")
         lines.append("  - `/workflow run brainstorm` — Three agents deliberate on your prompt")
-        lines.append("  - `/task <domain> <prompt>` — Run a single agent")
+        lines.append("  - `/task <role> <prompt>` — Run a single agent")
         lines.append("  - Ask `@Malik` to recruit more agents for a role")
         lines.append("  - `armance index` (in shell) — Index documents for RAG context")
 
@@ -1132,7 +1132,7 @@ Preserve all factual content. Skip conversational filler. Output ONLY raw Markdo
             roster_lines = ["## Team currently on board"]
             by_role: dict[str, list[str]] = {}
             for a in self._team_roster:
-                role = (getattr(a, "role", None) or getattr(a, "domain", None) or "general")
+                role = (a.role or "general")
                 by_role.setdefault(role, []).append(
                     f"{a.name} ({getattr(a, 'persona', 'balanced')})"
                 )

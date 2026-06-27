@@ -20,27 +20,27 @@ def test_truncate_prompt_caps_at_150_chars() -> None:
 
 
 def test_task_round_trip() -> None:
-    t = Task(prompt="hi", domain="backend", mode="full")
-    assert t.domain == "backend"
+    t = Task(prompt="hi", role="backend", mode="full")
+    assert t.role == "backend"
     assert t.mode == "full"
 
 
 def test_write_report_increments_version(tmp_path: Path) -> None:
     r1 = Report.from_completion(
-        agent_name="alpha", domain="backend", prompt="p", content="body1", finish_reason="stop"
+        agent_name="alpha", role="backend", prompt="p", content="body1", finish_reason="stop"
     )
     p1 = write_report(r1, tmp_path)
     assert p1.name == "alpha_v1.md"
 
     r2 = Report.from_completion(
-        agent_name="alpha", domain="backend", prompt="p", content="body2", finish_reason="stop"
+        agent_name="alpha", role="backend", prompt="p", content="body2", finish_reason="stop"
     )
     p2 = write_report(r2, tmp_path)
     assert p2.name == "alpha_v2.md"
 
     # different agent, fresh sequence
     r3 = Report.from_completion(
-        agent_name="beta", domain="backend", prompt="p", content="body3", finish_reason="stop"
+        agent_name="beta", role="backend", prompt="p", content="body3", finish_reason="stop"
     )
     p3 = write_report(r3, tmp_path)
     assert p3.name == "beta_v1.md"
@@ -51,7 +51,7 @@ def test_write_report_increments_version(tmp_path: Path) -> None:
 def test_partial_flag_prepends_marker(tmp_path: Path) -> None:
     r = Report.from_completion(
         agent_name="alpha",
-        domain="backend",
+        role="backend",
         prompt="p",
         content="cut off here",
         finish_reason="length",
@@ -69,7 +69,7 @@ def test_partial_flag_prepends_marker(tmp_path: Path) -> None:
 def test_round_trip_read_report(tmp_path: Path) -> None:
     r = Report.from_completion(
         agent_name="alpha",
-        domain="backend",
+        role="backend",
         prompt="abc",
         content="hello",
         finish_reason="stop",
@@ -77,6 +77,6 @@ def test_round_trip_read_report(tmp_path: Path) -> None:
     path = write_report(r, tmp_path)
     loaded = read_report(path)
     assert loaded.agent_name == "alpha"
-    assert loaded.domain == "backend"
+    assert loaded.role == "backend"
     assert loaded.partial is False
     assert "hello" in loaded.content

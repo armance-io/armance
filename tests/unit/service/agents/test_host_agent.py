@@ -17,7 +17,7 @@ def mock_agent():
     """Create a mock system-context agent."""
     return Agent(
         name="system-context",
-        domain="meta",
+        role="meta",
         persona="balanced",
         provider="openrouter",
         model="openai/gpt-4o-mini",
@@ -375,7 +375,7 @@ class TestBuildSystemPrompt:
         from armance.core.models.agent import Agent
         host_service._team_roster = [
             Agent(
-                name="Tom", domain="woodworker", role="woodworker",
+                name="Tom", role="woodworker",
                 persona="audacious", provider="openrouter", model="m",
             ),
         ]

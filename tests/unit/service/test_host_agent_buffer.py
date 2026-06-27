@@ -33,7 +33,7 @@ def cfg() -> Config:
 def armance(tmp_armance: Path, cfg: Config) -> HostAgentService:
     agent = Agent(
         name="system-context",
-        domain="meta",
+        role="meta",
         character="balanced",
         provider="openrouter",
         model="openai/gpt-4o-mini",

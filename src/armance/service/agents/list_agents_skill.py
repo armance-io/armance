@@ -60,7 +60,7 @@ class ListAgentsSkill:
         for agent in agents:
             lines.append(
                 f"| {agent.name} "
-                f"| {agent.domain or '-'} "
+                f"| {agent.role or '-'} "
                 f"| {agent.persona} "
                 f"| {agent.model} "
                 f"| {agent.provider_family or '-'} "

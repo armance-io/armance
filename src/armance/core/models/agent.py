@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import yaml  # type: ignore[import-untyped]
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 AgentStatus = Literal["active", "archived"]
 
@@ -37,8 +37,7 @@ class Agent(BaseModel):
     """
 
     name: str
-    domain: str = Field(alias="domain", validation_alias="domain", serialization_alias="domain")
-    role: str | None = None  # explicit role name (synched with domain)
+    role: str  # the role this agent fills (e.g. "historian", "expert")
     persona: Persona | None = None
     provider: str
     model: str
@@ -69,23 +68,24 @@ class Agent(BaseModel):
 
     model_config = {"populate_by_name": True}
 
-    def __init__(self, **data: Any) -> None:
-        # One-shot migration: character -> persona on input dictionary
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_legacy_fields(cls, data: Any) -> Any:
+        """Accept legacy input keys so old agent .md / payloads still load.
+
+        - `character` → `persona` (renamed field).
+        - `domain` → `role` (the role doublon was removed; `role` is canonical).
+        Runs on every construction path (``Agent(...)`` and ``model_validate``).
+        """
+        if not isinstance(data, dict):
+            return data
         if "character" in data and "persona" not in data:
             data["persona"] = data.pop("character")
-        # Sync role/domain on construction
-        domain = data.get("domain") or data.get("role")
-        if domain:
-            data.setdefault("domain", domain)
-            data.setdefault("role", domain)
-        super().__init__(**data)
-
-    def model_dump(self, **kwargs: Any) -> dict[str, Any]:
-        """Override to ensure 'role' is included alongside domain."""
-        data = super().model_dump(**kwargs)
-        # Keep 'role' in sync with domain if not explicitly set
-        if "role" not in data and data.get("domain"):
+        else:
+            data.pop("character", None)
+        if "role" not in data and "domain" in data:
             data["role"] = data["domain"]
+        data.pop("domain", None)
         return data
 
     def to_dict(self) -> dict[str, Any]:

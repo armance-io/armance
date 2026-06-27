@@ -6,7 +6,7 @@ from pathlib import Path
 class TestBoostedModelFor:
     def _agent(self, boost=False):
         from armance.core.models.agent import Agent
-        kw = dict(name="Sara", domain="strategy", provider="openrouter", model="base/model")
+        kw = dict(name="Sara", role="strategy", provider="openrouter", model="base/model")
         if boost:
             kw.update(boost_provider="anthropic", boost_model="claude-opus-4-5")
         return Agent(**kw)
@@ -30,7 +30,7 @@ class TestBoostedModelFor:
 class TestSetBoost:
     def _agent(self, boost=True):
         from armance.core.models.agent import Agent
-        kw = dict(name="Lea", domain="history", provider="claude-code", model="claude-haiku-4-5")
+        kw = dict(name="Lea", role="history", provider="claude-code", model="claude-haiku-4-5")
         if boost:
             kw.update(boost_provider="claude-code", boost_model="claude-sonnet-4-6")
         return Agent(**kw)

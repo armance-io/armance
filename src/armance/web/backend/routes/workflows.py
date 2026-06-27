@@ -110,7 +110,7 @@ def _compute_layered_lr(steps) -> dict[str, Any]:
                 "data": {
                     "step_id": sid,
                     "kind": getattr(step, "kind", "task"),
-                    "role": getattr(step, "role", None) or getattr(step, "domain", "") or "",
+                    "role": step.role or "",
                 },
             })
 
@@ -155,7 +155,7 @@ async def get_workflow(
             {
                 "id": s.id,
                 "kind": getattr(s, "kind", "task"),
-                "role": getattr(s, "role", None) or getattr(s, "domain", "") or "",
+                "role": s.role or "",
                 "depends_on": list(getattr(s, "depends_on", []) or []),
             }
             for s in steps

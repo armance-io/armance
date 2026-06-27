@@ -142,7 +142,8 @@
     "launch": {
       "started": "実行を開始: {id}",
       "error": "実行を開始できませんでした。",
-      "in_progress": "開始中…"
+      "in_progress": "開始中…",
+      "blocked_fallback": "実行がブロックされました：このワークフローに必要なエージェントに接続できません。"
     }
   },
   "chat": {
