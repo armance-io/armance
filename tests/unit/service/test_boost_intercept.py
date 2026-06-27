@@ -18,7 +18,7 @@ class _YesHandler:
 async def test_boost_request_yes_adds_agent() -> None:
     from armance.service.boost_ops import intercept_boost_tags
     from armance.core.models.agent import Agent
-    agent = Agent(name="Sara", domain="strategy", provider="openrouter", model="base/m",
+    agent = Agent(name="Sara", role="strategy", provider="openrouter", model="base/m",
                   boost_provider="anthropic", boost_model="claude-opus-4-5")
     boosted: set[str] = set()
     handler = _YesHandler("yes")
@@ -33,7 +33,7 @@ async def test_boost_request_yes_adds_agent() -> None:
 async def test_boost_request_no_keeps_base() -> None:
     from armance.service.boost_ops import intercept_boost_tags
     from armance.core.models.agent import Agent
-    agent = Agent(name="Sara", domain="strategy", provider="openrouter", model="base/m",
+    agent = Agent(name="Sara", role="strategy", provider="openrouter", model="base/m",
                   boost_provider="anthropic", boost_model="claude-opus-4-5")
     boosted: set[str] = set()
     handler = _YesHandler("no")
@@ -46,7 +46,7 @@ async def test_boost_request_no_keeps_base() -> None:
 async def test_boost_request_without_boost_model_is_noop() -> None:
     from armance.service.boost_ops import intercept_boost_tags
     from armance.core.models.agent import Agent
-    agent = Agent(name="Sara", domain="strategy", provider="openrouter", model="base/m")  # not boostable
+    agent = Agent(name="Sara", role="strategy", provider="openrouter", model="base/m")  # not boostable
     boosted: set[str] = set()
     handler = _YesHandler("yes")
     cleaned = await intercept_boost_tags("[EXECUTE:/boost-request]", agent, boosted, handler, t=lambda k, **kw: k)

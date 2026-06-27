@@ -50,10 +50,10 @@ def reports_dir(armance_root: Path) -> Path:
     return armance_root / "reports"
 
 
-def report_path(armance_root: Path, domain: str, agent: str, version: int) -> Path:
+def report_path(armance_root: Path, role: str, agent: str, version: int) -> Path:
     """Get path for a report file."""
-    domain_dir = reports_dir(armance_root) / domain
-    return domain_dir / f"{agent}_v{version:03d}.md"
+    role_dir = reports_dir(armance_root) / role
+    return role_dir / f"{agent}_v{version:03d}.md"
 
 
 def context_dir(armance_root: Path) -> Path:

@@ -16,8 +16,8 @@ You are the audacious backend agent.
 Always push the envelope.
 """
 
-def test_load_rejects_missing_domain(tmp_path: Path) -> None:
-    """Files without 'domain' now fail to load — no silent migration."""
+def test_load_rejects_missing_role(tmp_path: Path) -> None:
+    """Files without 'role' (nor a legacy 'domain') fail to load."""
     from pydantic import ValidationError
     p = tmp_path / "legacy.md"
     p.write_text(
@@ -29,12 +29,21 @@ def test_load_rejects_missing_domain(tmp_path: Path) -> None:
         Agent.load(p)
 
 
+def test_load_accepts_legacy_domain_as_role(tmp_path: Path) -> None:
+    """The retired `domain:` key still loads, mapped onto `role`."""
+    p = tmp_path / "alpha.md"
+    p.write_text(AGENT_FILE, encoding="utf-8")  # AGENT_FILE uses `domain: backend`
+    agent = Agent.load(p)
+    assert agent.role == "backend"
+    assert not hasattr(agent, "domain")
+
+
 def test_load_parses_frontmatter_and_body(tmp_path: Path) -> None:
     p = tmp_path / "alpha.md"
     p.write_text(AGENT_FILE, encoding="utf-8")
     agent = Agent.load(p)
     assert agent.name == "alpha"
-    assert agent.domain == "backend"
+    assert agent.role == "backend"
     assert agent.persona == "audacious"
     assert agent.provider == "openrouter"
     assert agent.reasoning == "high"
@@ -47,7 +56,7 @@ def test_save_then_load_round_trip(tmp_path: Path) -> None:
     out = tmp_path / "out.md"
     a.save(out)
     b = Agent.load(out)
-    assert b.domain == a.domain
+    assert b.role == a.role
     assert b.persona == a.persona
     assert b.system_prompt == a.system_prompt
 
@@ -56,7 +65,7 @@ def test_effective_prompt_injects_ultra_protocol(tmp_path: Path) -> None:
     proto.write_text("ULTRA RULES", encoding="utf-8")
 
     a = Agent(
-        name="a", domain="m", persona="balanced",
+        name="a", role="m", persona="balanced",
         provider="openrouter", model="x", system_prompt="BODY",
     )
     full = a.effective_system_prompt(protocol_path=proto)
@@ -68,7 +77,7 @@ def test_effective_prompt_injects_none_protocol(tmp_path: Path) -> None:
     proto.write_text("NONE", encoding="utf-8")
 
     a = Agent(
-        name="a", domain="m", persona="balanced",
+        name="a", role="m", persona="balanced",
         provider="openrouter", model="x", system_prompt="BODY",
     )
     out = a.effective_system_prompt(caveman_level="none", protocol_path=proto)
@@ -87,7 +96,7 @@ def test_effective_prompt_falls_back_to_agent_level(tmp_path: Path) -> None:
     proto.write_text("ULTRA", encoding="utf-8")
 
     a = Agent(
-        name="a", domain="m", persona="balanced",
+        name="a", role="m", persona="balanced",
         provider="openrouter", model="x", system_prompt="BODY",
         caveman_level="ultra",
     )

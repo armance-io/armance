@@ -107,7 +107,7 @@ class TestOptimisedRecruitGuard:
             budget_effort="optimised",
         )
         malik = Agent(
-            name="system-hr", domain="meta", character="balanced",
+            name="system-hr", role="meta", character="balanced",
             provider="openrouter", model="openai/gpt-5.2",
             system_prompt="You are Malik.",
         )

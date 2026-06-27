@@ -162,7 +162,7 @@ class RosterService:
                     continue
                 entry: dict[str, Any] = {
                     "canonical": agent.name,
-                    "role": agent.domain or agent.role or "",
+                    "role": agent.role or "",
                     "persona": agent.persona or "",
                     "provider": agent.provider or "",
                     "model": agent.model or "",

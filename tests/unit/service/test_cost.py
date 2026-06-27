@@ -35,7 +35,7 @@ def _make_workflow(steps_spec: list[dict]):
         WorkflowStep(
             id=s["id"],
             kind=s.get("kind", "meeting"),
-            domain=s.get("domain", "default"),
+            role=s.get("role", "default"),
             mode=s.get("mode", "full"),
             agents=s.get("agents", []),
             prompt_template=s.get("prompt_template", "{{user_prompt}}"),

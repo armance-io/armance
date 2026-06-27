@@ -17,7 +17,7 @@ class Task(BaseModel):
 
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     prompt: str
-    domain: str
+    role: str
     mode: Mode = "full"
     requested_agent: str | None = None
     state: TaskState = "submitted"

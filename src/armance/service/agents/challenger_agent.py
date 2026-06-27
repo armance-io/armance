@@ -284,7 +284,7 @@ class ChallengerAgent:
 
         return Agent(
             name="system-challenger",
-            domain="meta",
+            role="meta",
             persona="adversarial",
             provider="openrouter",
             model="openai/gpt-4o-mini",
