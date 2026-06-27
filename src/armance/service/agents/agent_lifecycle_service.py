@@ -83,7 +83,7 @@ class AgentLifecycleService:
         registry = paths.ensure_agents_registry(self.armance_root)
         registry["agents"].append({
             "name": agent.name,
-            "role": agent.role or agent.domain,
+            "role": agent.role,
             "status": agent.status,
             "created_at": agent.created_at,
             "updated_at": agent.updated_at,
@@ -175,7 +175,7 @@ class AgentLifecycleService:
             persona: New persona.
             model: New LLM model.
             system_prompt: New system prompt body.
-            role: New role/domain.
+            role: New role.
             force_version: Force version bump regardless of DM turns.
 
         Returns:
@@ -203,7 +203,6 @@ class AgentLifecycleService:
             if system_prompt is not None:
                 agent.system_prompt = system_prompt
             if role is not None:
-                agent.domain = role
                 agent.role = role
             agent.updated_at = agent.now_iso()
             agent_path = paths.agent_path(self.armance_root, agent.name)
@@ -294,7 +293,7 @@ class AgentLifecycleService:
     def replace_agent(self, agent_id: str, new_persona: str) -> tuple[str, Agent]:
         """Replace an agent with a new specialist in a single transaction.
 
-        Archives the old agent, then creates a new one with the same role/domain
+        Archives the old agent, then creates a new one with the same role
         but a fresh name and the requested persona. Atomicity matters because
         between the two operations the role's axis would be incomplete.
 
@@ -314,7 +313,7 @@ class AgentLifecycleService:
             raise AgentNotFoundError(f"Agent '{agent_id}' not found")
 
         # Generate a fresh name: keep role prefix, pick a new first name
-        role = old_agent.domain or old_agent.role or "specialist"
+        role = old_agent.role or "specialist"
         new_name = self._generate_replacement_name(role, new_persona)
 
         # Archive the old agent (soft archive preserves DM)
@@ -323,7 +322,7 @@ class AgentLifecycleService:
         # Create the new agent with same role but new persona
         new_agent = Agent(
             name=new_name,
-            domain=role,
+            role=role,
             persona=new_persona,
             provider=old_agent.provider,
             model=old_agent.model,
@@ -422,9 +421,9 @@ class AgentLifecycleService:
         """Validate required agent fields."""
         if not agent.name or not agent.name.strip():
             raise ValueError("Agent name is required")
-        if not agent.domain or not agent.domain.strip():
-            raise ValueError("Agent domain is required")
-        if agent.domain != "meta" and not agent.name.startswith("system-") and (not agent.persona or not agent.persona.strip()):
+        if not agent.role or not agent.role.strip():
+            raise ValueError("Agent role is required")
+        if agent.role != "meta" and not agent.name.startswith("system-") and (not agent.persona or not agent.persona.strip()):
             raise ValueError("Agent persona is required")
         if not agent.provider or not agent.provider.strip():
             raise ValueError("Agent provider is required")
@@ -503,7 +502,6 @@ class AgentLifecycleService:
         if system_prompt is not None:
             agent.system_prompt = system_prompt
         if role is not None:
-            agent.domain = role
             agent.role = role
 
         # Archive old version
@@ -533,7 +531,7 @@ class AgentLifecycleService:
         for entry in registry.get("agents", []):
             if entry.get("name") == agent.name:
                 entry.update({
-                    "role": agent.role or agent.domain,
+                    "role": agent.role,
                     "status": agent.status,
                     "version": agent.version,
                     "updated_at": agent.updated_at,
@@ -545,7 +543,7 @@ class AgentLifecycleService:
         if not found:
             registry.setdefault("agents", []).append({
                 "name": agent.name,
-                "role": agent.role or agent.domain,
+                "role": agent.role,
                 "status": agent.status,
                 "version": agent.version,
                 "created_at": agent.created_at,

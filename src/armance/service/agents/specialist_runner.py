@@ -210,7 +210,7 @@ class SpecialistRunner:
 
         report = Report.from_completion(
             agent_name=agent.name,
-            domain=task.domain,
+            role=task.role,
             prompt=task.prompt,
             content=response.text,
             finish_reason=response.finish_reason,
@@ -247,18 +247,25 @@ class SpecialistRunner:
             parts.append(f"## Shared notes (pending context)\n\n{cache_body}")
 
         # L1: per-role, only if agent has a role and L1 exists
-        role = getattr(agent, "role", None) or getattr(agent, "domain", None)
+        role = agent.role
         if role:
             l1_body = self.context_service.read_current_l1(role)
             if l1_body:
                 parts.append(f"## L1 — {role} Context\n\n{l1_body}")
 
-        # L2: per-theme (domain), if exists
-        theme = getattr(agent, "domain", None)
-        if theme:
-            l2_body = self.context_service.read_current_l2(theme)
+        # L2: per-theme (the agent's role), if exists
+        if role:
+            l2_body = self.context_service.read_current_l2(role)
             if l2_body:
-                parts.append(f"## L2 — {theme} Topic Knowledge\n\n{l2_body}")
+                parts.append(f"## L2 — {role} Topic Knowledge\n\n{l2_body}")
+
+        # Team roster: every agent must know the whole team — who else is on
+        # board, their role, and (for same-role peers) the distinct angle each
+        # holds, so they can build on / push against the right colleagues.
+        from armance.service.agents._team_roster import build_team_roster
+        roster = build_team_roster(self.armance_root, agent.name)
+        if roster:
+            parts.append(roster)
 
         return "\n\n".join(parts)
 

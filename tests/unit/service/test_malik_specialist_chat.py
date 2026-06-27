@@ -41,7 +41,7 @@ def cfg() -> Config:
 def _make_specialist(name: str, role: str, system_prompt: str) -> Agent:
     return Agent(
         name=name,
-        domain=role,
+        role=role,
         character="positivist",
         provider="openrouter",
         model="openai/gpt-4o-mini",

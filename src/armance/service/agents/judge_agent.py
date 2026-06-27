@@ -175,7 +175,7 @@ class JudgeAgent:
         # Minimal fallback
         return Agent(
             name="system-judge",
-            domain="meta",
+            role="meta",
             persona="balanced",
             provider="openrouter",
             model="openai/gpt-4o-mini",
