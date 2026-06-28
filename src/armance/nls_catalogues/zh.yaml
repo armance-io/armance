@@ -236,6 +236,9 @@ system_msg:
   auto_dismissed_before_recruit: "*(系统: 检测到团队彻底重组 — 在招募新团队之前，自动解散了先前的 {n} 个专家)*"
   forwarded: "— 已转发给 {target} —"
   health_warning: "注意 — 在测试时检测到不可达的模型: {agents}。请让 @Malik 为这些代理提议其他模型。"
+  agent_swapped: "*(系统：{name} 的模型已切换为 {model} — 健康状态：{health})*"
+  agent_swap_unknown: "*(系统：无法切换 {name} — 不存在该已招募的智能体)*"
+  agent_swap_bad_model: "*(系统：{name} 的切换失败 — 模型 ID 缺失或无效)*"
   workflow_health_block: "工作流未启动: 存在不可达的代理 — {agents}。请让 @Malik 更换他们的模型，或授权在缺少他们的情况下执行。"
 
 model:
