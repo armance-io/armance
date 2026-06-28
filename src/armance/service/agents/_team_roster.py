@@ -18,12 +18,18 @@ from armance.core.models.agent import Agent
 logger = logging.getLogger(__name__)
 
 
-def build_team_roster(armance_root: Path, current_name: str) -> str:
+def build_team_roster(
+    armance_root: Path, current_name: str, *, show_health: bool = False
+) -> str:
     """Render a compact team roster, excluding `current_name`.
 
     One line per role: ``**role**: Name, Name``. No per-agent prose — just a
     pointer to `.armance/agents/<name>.md` for the full persona. Returns '' when
     no other specialist is on board.
+
+    `show_health=True` appends a ``⚠ (status)`` marker to any agent whose
+    `last_health` is an error — used for Malik so it knows which agents to
+    repair with `/agent-swap`. Specialists get the lean, health-free view.
     """
     agents_dir = armance_root / "agents"
     if not agents_dir.exists():
@@ -42,7 +48,12 @@ def build_team_roster(armance_root: Path, current_name: str) -> str:
             logger.debug("roster: failed to load %s", path, exc_info=True)
             continue
         role = (peer.role or "specialist").strip()
-        by_role.setdefault(role, []).append(peer.name)
+        label = peer.name
+        if show_health:
+            health = (peer.last_health or "").strip()
+            if health.startswith("error"):
+                label += f" ⚠ ({health})"
+        by_role.setdefault(role, []).append(label)
 
     if not by_role:
         return ""

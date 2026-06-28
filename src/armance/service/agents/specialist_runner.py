@@ -263,7 +263,12 @@ class SpecialistRunner:
         # board, their role, and (for same-role peers) the distinct angle each
         # holds, so they can build on / push against the right colleagues.
         from armance.service.agents._team_roster import build_team_roster
-        roster = build_team_roster(self.armance_root, agent.name)
+        # Malik (the recruiter) needs the health markers so it knows which
+        # agents to repair with /agent-swap; specialists get the lean view.
+        show_health = agent.name == "system-hr"
+        roster = build_team_roster(
+            self.armance_root, agent.name, show_health=show_health
+        )
         if roster:
             parts.append(roster)
 
