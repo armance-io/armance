@@ -33,7 +33,7 @@ def sample_agents(temp_armance_root: Path) -> list[Agent]:
     service = AgentLifecycleService(temp_armance_root)
     agent_active = Agent(
         name="historian-aisha",
-        domain="historian",
+        role="historian",
         persona="positivist",
         provider="openai",
         model="gpt-4o",
@@ -41,7 +41,7 @@ def sample_agents(temp_armance_root: Path) -> list[Agent]:
     )
     agent_archived = Agent(
         name="historian-ben",
-        domain="historian",
+        role="historian",
         persona="revisionist",
         provider="openai",
         model="gpt-4o",

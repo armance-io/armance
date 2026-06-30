@@ -41,7 +41,7 @@ def sample_agent(temp_armance_root: Path) -> Agent:
     service = AgentLifecycleService(temp_armance_root)
     agent = Agent(
         name="historian-aisha",
-        domain="historian",
+        role="historian",
         persona="positivist",
         provider="openai",
         model="gpt-4o",
@@ -71,7 +71,7 @@ class TestReplaceAgentSkill:
         # Verify new agent exists and is active
         active = service.list_agents()
         assert len(active) == 1
-        assert active[0].domain == "historian"
+        assert active[0].role == "historian"
         assert active[0].persona == "revisionist"
 
     def test_replace_nonexistent_agent(self, skill: ReplaceAgentSkill) -> None:
@@ -102,7 +102,7 @@ class TestReplaceAgentService:
         old_name, new_agent = service.replace_agent("historian-aisha", "revisionist")
 
         assert old_name == "historian-aisha"
-        assert new_agent.domain == "historian"
+        assert new_agent.role == "historian"
         assert new_agent.persona == "revisionist"
         # New agent should have a different name
         assert new_agent.name != "historian-aisha"

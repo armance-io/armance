@@ -142,7 +142,8 @@
     "launch": {
       "started": "Ejecución lanzada: {id}",
       "error": "No se pudo lanzar la ejecución.",
-      "in_progress": "Lanzando…"
+      "in_progress": "Lanzando…",
+      "blocked_fallback": "Ejecución bloqueada: un agente requerido por este flujo no es accesible."
     }
   },
   "chat": {

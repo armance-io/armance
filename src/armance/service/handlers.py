@@ -213,19 +213,19 @@ _STAFF_CANONICAL_NAME = {
 }
 
 
-def _resolve_step_agent(domain: str, ctx: "LoopContext") -> Any:
-    """Resolve a step's domain to a concrete Agent.
+def _resolve_step_agent(role: str, ctx: "LoopContext") -> Any:
+    """Resolve a step's role to a concrete Agent.
 
     - `mona` / `serge` / `serge` / `criticalist` → prefer user-recruited
       agent (Mona.md / Serge.md in .armance/agents/); fall back to the
       builtin template if absent.
-    - Anything else → match against the user roster (ctx.agents) by domain.
+    - Anything else → match against the user roster (ctx.agents) by role.
     """
     from armance.core.models.agent import Agent
-    domain = (domain or "").lower().strip()
-    if domain in _STAFF_AGENT_MAP:
+    role = (role or "").lower().strip()
+    if role in _STAFF_AGENT_MAP:
         # Prefer user-recruited version (carries user-chosen model + persona).
-        canonical_name = _STAFF_CANONICAL_NAME[domain]
+        canonical_name = _STAFF_CANONICAL_NAME[role]
         user_path = ctx.armance_root / "agents" / f"{canonical_name}.md"
         if user_path.exists():
             try:
@@ -233,15 +233,15 @@ def _resolve_step_agent(domain: str, ctx: "LoopContext") -> Any:
             except Exception:
                 logger.warning("failed to load user %s agent", canonical_name)
         from armance import paths
-        path = paths.global_agents_dir() / f"{_STAFF_AGENT_MAP[domain]}.md"
+        path = paths.global_agents_dir() / f"{_STAFF_AGENT_MAP[role]}.md"
         if path.exists():
             try:
                 return Agent.load(path)
             except Exception:
-                logger.exception("failed to load staff agent for domain %s", domain)
+                logger.exception("failed to load staff agent for role %s", role)
                 return None
         return None
-    return next((a for a in ctx.agents if (a.domain or "").lower() == domain), None)
+    return next((a for a in ctx.agents if (a.role or "").lower() == role), None)
 
 
 async def _mona_proxy_checkpoint(
@@ -281,7 +281,7 @@ async def _mona_proxy_checkpoint(
         f"sentence, then give the reason and what would invalidate it. Keep it "
         f"to 1-3 sentences so the workflow can proceed."
     )
-    task = Task(prompt=prompt, domain="meta", mode="light")
+    task = Task(prompt=prompt, role="meta", mode="light")
     try:
         report = await run_specialist(
             mona, task, ctx.armance_root, ctx.cfg,
@@ -298,8 +298,7 @@ def _collect_unhealthy_agents(wf, ctx) -> list[str]:
     """Return a list of `name (status)` strings for agents required by the
     workflow whose `last_health` is an error."""
     required_roles = {
-        (getattr(s, "role", None) or getattr(s, "domain", None) or "").lower().strip()
-        for s in wf.steps
+        (s.role or "").lower().strip() for s in wf.steps
     } - {"", "mona", "serge"}
     if not required_roles:
         return []
@@ -307,9 +306,7 @@ def _collect_unhealthy_agents(wf, ctx) -> list[str]:
     for a in ctx.agents:
         if a.name.startswith("system-"):
             continue
-        role = (
-            getattr(a, "role", None) or getattr(a, "domain", None) or ""
-        ).lower().strip()
+        role = (a.role or "").lower().strip()
         if role not in required_roles:
             continue
         last_health = getattr(a, "last_health", None) or ""
@@ -355,7 +352,28 @@ async def _cmd_workflow_run(
     # retry.
     unhealthy = _collect_unhealthy_agents(wf, ctx)
     if unhealthy:
-        return t("system_msg.workflow_health_block", agents=", ".join(unhealthy))
+        msg = t("system_msg.workflow_health_block", agents=", ".join(unhealthy))
+        # Surface the block on the web path: the run is launched as a detached
+        # task whose return value is discarded, and the frontend tracks
+        # progress via /active-workflow (which stays null because no run dir is
+        # minted). Without an event the click is a silent no-op. Emit so the
+        # SSE stream can show *why* nothing ran.
+        bus = getattr(ctx, "event_bus", None)
+        if bus is not None:
+            try:
+                await bus.emit(
+                    "workflow.blocked",
+                    attributes={
+                        "workflow": name,
+                        "reason": "unhealthy_agents",
+                        "agents": ", ".join(unhealthy),
+                        "message": msg,
+                    },
+                    severity="warn",
+                )
+            except Exception:  # noqa: BLE001 — telemetry must never break the path
+                logger.debug("workflow.blocked emit failed", exc_info=True)
+        return msg
 
     # user_prompt_override is set when called from TUI context (Kim/orchestrator)
     # so the workflow runs without a blocking prompt. Otherwise we ask via the
@@ -444,17 +462,17 @@ async def _cmd_workflow_run(
         _set_status(ctx, step.id, "working")
         mark_step_started(artefact, step.id)
         try:
-            task = Task(prompt=prompt, domain=step.domain, mode=step.mode)
-            agent_obj = _resolve_step_agent(step.domain, ctx)
+            task = Task(prompt=prompt, role=step.role, mode=step.mode)
+            agent_obj = _resolve_step_agent(step.role, ctx)
             if agent_obj is None:
                 _set_status(ctx, step.id, "error")
                 _missing_streak["count"] += 1
                 if _missing_streak["count"] >= _missing_streak["max"]:
                     raise _WorkflowAbort(
                         t("workflow.aborted_no_agents",
-                          domain=step.domain, step_id=step.id)
+                          domain=step.role, step_id=step.id)
                     )
-                msg = t("workflow.no_agent_for_step", domain=step.domain, step_id=step.id)
+                msg = t("workflow.no_agent_for_step", domain=step.role, step_id=step.id)
                 write_step_output(artefact, step.id, msg)
                 mark_step_failed(artefact, step.id, msg)
                 return msg

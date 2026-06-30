@@ -45,8 +45,8 @@ async def cmd_chat(text: str, ctx: LoopContext) -> str:
         from armance.core.models.task import Task
 
         agent_obj = next((a for a in ctx.agents if a.name == agent_name), None)
-        domain = agent_obj.domain if agent_obj else agent_name.split("_")[0]
-        task = Task(prompt=text, domain=domain, mode="light", requested_agent=agent_name)
+        role = agent_obj.role if agent_obj else agent_name.split("_")[0]
+        task = Task(prompt=text, role=role, mode="light", requested_agent=agent_name)
         history = visible_turns(ctx.session.conversation.turns, agent_name)
         ctx.session.conversation.append("user", text, agent=agent_name)
 

@@ -363,7 +363,14 @@ Each layer imports only from layers below. Enforced by [`import-linter`](https:/
 | `gemini`       | `GEMINI_API_KEY` | Live discovery via `/v1beta/models`. Native Google Search grounding. |
 | `custom-openai`| `CUSTOM_OPENAI_API_KEY` + `CUSTOM_OPENAI_BASE_URL` | Any OpenAI-compatible endpoint. |
 
-Models are discovered live; pricing tiers, web-search capability, and reasoning support are read from each provider's API. No hardcoded catalogue.
+Models are discovered live; pricing tiers, web-search capability, reasoning
+support, and context window are read from each provider's API. The one
+exception is the `claude-code` **subscription** path: it authenticates through
+the `claude-agent-sdk` and has no `ANTHROPIC_API_KEY`, so the live
+`/v1/models` call can't run — those users get a small curated catalogue of the
+latest Claude models. Set `ANTHROPIC_API_KEY` to enable full live discovery
+(including per-model context windows) for `claude-code` too. The curated list
+is a fallback, never a hardcoded catalogue presented as live.
 
 ### Configuration
 

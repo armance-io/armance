@@ -10,10 +10,10 @@ from armance.service.shared_memory_service import RosterService
 from armance.storage.paths import agent_card_path
 
 
-def _make_agent(agents_dir: Path, name: str, domain: str, character: str = "balanced") -> None:
+def _make_agent(agents_dir: Path, name: str, role: str, character: str = "balanced") -> None:
     agent = Agent(
         name=name,
-        domain=domain,
+        role=role,
         character=character,
         provider="openrouter",
         model="openai/gpt-4o-mini",
@@ -85,7 +85,7 @@ def test_refresh_skips_archived_agents(tmp_path: Path) -> None:
 
     agent = Agent(
         name="retired",
-        domain="finance",
+        role="finance",
         character="balanced",
         provider="openrouter",
         model="openai/gpt-4o-mini",
@@ -107,7 +107,7 @@ def test_refresh_generates_system_agent_cards_too(tmp_path: Path) -> None:
     # system agent (system- prefix)
     sys_agent = Agent(
         name="system-host",
-        domain="meta",
+        role="meta",
         character="balanced",
         provider="openrouter",
         model="openai/gpt-4o-mini",
