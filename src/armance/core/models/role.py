@@ -1,4 +1,4 @@
-"""Role model — a domain/group of agents."""
+"""Role model — a group of agents sharing a role."""
 from __future__ import annotations
 
 from datetime import datetime
@@ -6,7 +6,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 class Role(BaseModel):
-    """A role (domain group) containing related agents."""
+    """A role (group) containing related agents."""
 
     name: str
     description: str = ""

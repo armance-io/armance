@@ -30,7 +30,7 @@ def cfg() -> Config:
 def aisha() -> Agent:
     return Agent(
         name="Aisha",
-        domain="historian",
+        role="historian",
         persona="positivist",
         provider="openrouter",
         model="openai/gpt-4o-mini",
@@ -43,7 +43,7 @@ def aisha() -> Agent:
 def task() -> Task:
     return Task(
         prompt="Quelles teintures au XIVe siècle ?",
-        domain="historian",
+        role="historian",
         mode="light",
     )
 

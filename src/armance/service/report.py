@@ -1,10 +1,10 @@
 """Report model: versioned markdown artifacts with partial-answer flag.
 
-Reports live at .armance/reports/<domain>/<agent>_v<N>.md. Each file is
-YAML frontmatter (uuid, timestamp, agent, domain, prompt_truncated,
+Reports live at .armance/reports/<role>/<agent>_v<N>.md. Each file is
+YAML frontmatter (uuid, timestamp, agent, role, prompt_truncated,
 partial) followed by the body. partial=True prepends a #PARTIAL_ANSWER
 marker line to the body. write_report() handles version increment by
-scanning the domain directory for existing <agent>_v<N>.md files.
+scanning the role directory for existing <agent>_v<N>.md files.
 """
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ class Report(BaseModel):
     uuid: str = Field(default_factory=lambda: str(_uuid.uuid4()))
     timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     agent_name: str
-    domain: str
+    role: str
     prompt_truncated: str
     content: str
     partial: bool = False
@@ -39,14 +39,14 @@ class Report(BaseModel):
         cls,
         *,
         agent_name: str,
-        domain: str,
+        role: str,
         prompt: str,
         content: str,
         finish_reason: str,
     ) -> "Report":
         return cls(
             agent_name=agent_name,
-            domain=domain,
+            role=role,
             prompt_truncated=truncate_prompt(prompt),
             content=content,
             partial=finish_reason == "length",
@@ -73,10 +73,10 @@ def _max_existing_version(paths: Iterable[Path]) -> int:
 
 
 def write_report(report: Report, reports_root: Path) -> Path:
-    domain_dir = reports_root / report.domain
-    domain_dir.mkdir(parents=True, exist_ok=True)
-    version = next_version(domain_dir, report.agent_name)
-    path = domain_dir / f"{report.agent_name}_v{version}.md"
+    role_dir = reports_root / report.role
+    role_dir.mkdir(parents=True, exist_ok=True)
+    version = next_version(role_dir, report.agent_name)
+    path = role_dir / f"{report.agent_name}_v{version}.md"
 
     body = report.content
     if report.partial and not body.lstrip().startswith(PARTIAL_MARKER):
@@ -86,7 +86,7 @@ def write_report(report: Report, reports_root: Path) -> Path:
         "uuid": report.uuid,
         "timestamp": report.timestamp,
         "agent": report.agent_name,
-        "domain": report.domain,
+        "role": report.role,
         "prompt_truncated": report.prompt_truncated,
         "partial": report.partial,
     }
@@ -106,13 +106,16 @@ def read_report(path: Path) -> Report:
     frontmatter = rest[:end]
     body = rest[end + 4 :].lstrip("\n")
     meta = yaml.safe_load(frontmatter) or {}
-    # migrate legacy "métier"/"metier"/"job" keys from old reports
-    domain = meta.get("domain") or meta.get("métier") or meta.get("metier") or meta.get("job", "")
+    # migrate legacy "domain"/"métier"/"metier"/"job" keys from old reports
+    role = (
+        meta.get("role") or meta.get("domain") or meta.get("métier")
+        or meta.get("metier") or meta.get("job", "")
+    )
     return Report(
         uuid=meta["uuid"],
         timestamp=meta["timestamp"],
         agent_name=meta["agent"],
-        domain=domain,
+        role=role,
         prompt_truncated=meta["prompt_truncated"],
         content=body,
         partial=bool(meta.get("partial", False)),

@@ -236,6 +236,9 @@ system_msg:
   auto_dismissed_before_recruit: "*(Sistema: se detectó reestructuración completa del equipo — se descartaron automáticamente {n} especialista(s) anterior(es) antes de reclutar el nuevo equipo)*"
   forwarded: "— reenviado a {target} —"
   health_warning: "Atención — Se detectaron modelos inaccesibles durante la prueba de conexión: {agents}. Pídale a @Malik que proponga otro modelo para estos agentes."
+  agent_swapped: "*(Sistema: modelo de {name} cambiado a {model} — salud: {health})*"
+  agent_swap_unknown: "*(Sistema: no se puede cambiar {name} — no existe ese agente reclutado)*"
+  agent_swap_bad_model: "*(Sistema: el cambio de {name} falló — id de modelo ausente o inválido)*"
   workflow_health_block: "Flujo de trabajo no iniciado: agente(s) inaccesible(s) — {agents}. Pídale a @Malik que cambie su modelo, o autorice la ejecución sin ellos."
 
 model:

@@ -11,7 +11,7 @@ from armance.service.handlers import _collect_unhealthy_agents
 class _FakeStep:
     def __init__(self, role: str) -> None:
         self.role = role
-        self.domain = role
+        self.role = role
 
 
 class _FakeWf:
@@ -26,7 +26,7 @@ class _FakeCtx:
 
 def _make_agent(name: str, role: str, *, health: str | None = None) -> Agent:
     return Agent(
-        name=name, domain=role, role=role, persona="x",
+        name=name, role=role, persona="x",
         provider="openrouter", model="x", system_prompt="x",
         last_health=health,
     )

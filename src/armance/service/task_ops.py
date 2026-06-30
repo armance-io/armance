@@ -29,28 +29,28 @@ def _set_status(ctx: LoopContext, name: str, state: str) -> None:
 
 
 # ---------------------------------------------------------------------------
-# /task <domain> <prompt>
+# /task <role> <prompt>
 # ---------------------------------------------------------------------------
 
 
 async def cmd_task(args: list[str], ctx: LoopContext) -> str:
     if len(args) < 2:
         return t("task.usage")
-    domain = args[0]
+    role = args[0]
     prompt = " ".join(args[1:])
     from armance.core.models.task import Task
     reports_root = ctx.armance_root / "reports"
-    task = Task(prompt=prompt, domain=domain, mode="light")
-    agent_name = ctx.state.current_agent or domain
+    task = Task(prompt=prompt, role=role, mode="light")
+    agent_name = ctx.state.current_agent or role
     _set_status(ctx, agent_name, "working")
     try:
         agent_obj = next(
-            (a for a in ctx.agents if a.domain == domain and a.name == agent_name),
-            next((a for a in ctx.agents if a.domain == domain), None),
+            (a for a in ctx.agents if a.role == role and a.name == agent_name),
+            next((a for a in ctx.agents if a.role == role), None),
         )
         if agent_obj is None:
             _set_status(ctx, agent_name, "error")
-            return t("task.no_agent_for_domain", domain=domain)
+            return t("task.no_agent_for_domain", domain=role)
         # A2H invariant: /task output is read by the human — compression
         # protocols are reserved for agent-to-agent (workflow) calls.
         task_caveman = "none"
@@ -84,11 +84,11 @@ async def cmd_report(args: list[str], ctx: LoopContext) -> str:
     from armance.service.report import Report, write_report
     agent_name = ctx.state.current_agent or "armance"
     agent_obj = next((a for a in ctx.agents if a.name == agent_name), None)
-    domain = agent_obj.domain if agent_obj else agent_name.split("_")[0]
+    role = agent_obj.role if agent_obj else agent_name.split("_")[0]
     reports_root = ctx.armance_root / "reports"
     report = Report(
         agent_name=agent_name,
-        domain=domain,
+        role=role,
         prompt_truncated="(manual report)",
         content=ctx._last_output,
     )

@@ -74,7 +74,7 @@ Tags are role-scoped via `service.agent_sandbox._ROLE_TAG_ALLOWLIST`:
 | Role | Allowed tags |
 |---|---|
 | armance | `/save`, `/library-{index,load,unload,unindex,status}` |
-| malik | `/recruit`, `/dismiss-all[:<name>]`, `/library-status` |
+| malik | `/recruit`, `/dismiss-all[:<name>]`, `/agent-swap:<name> <provider/model> [<provider/model>]`, `/library-status` |
 | kim | `/workflow-design`, `/workflow-run:<name>`, `/library-status` |
 | mona | `/save-deliverable:<basename>`, `/load-run:<wf>:<run_id>`, `/library-status` |
 | specialist | `/load-run:<wf>:<run_id>` (only) |

@@ -10,6 +10,8 @@ import { assignAgentColour } from "@/lib/agent_colours";
 import { displayAgentName } from "@/lib/agentNames";
 import { onAgentSwitch, setCurrentAgent as publishCurrentAgent, setBusyAgent } from "@/lib/agentBus";
 import { lockSession } from "@/lib/sessionBus";
+import { triggerPrefill } from "@/lib/prefillBus";
+import { emitViewChange } from "@/lib/navigationBus";
 import { BottomSpinner } from "./BottomSpinner";
 import { ChatInput } from "./ChatInput";
 import { MessageBubble } from "./MessageBubble";
@@ -385,7 +387,14 @@ export const ChatStreamContainer: FC<ChatStreamContainerProps> = ({ pid, sid, ac
           }}
         >
           {messages.length === 0 ? (
-            <EmptySession t={t} />
+            <EmptySession
+              t={t}
+              onSuggestDecision={(text) => triggerPrefill(text)}
+              onSuggestDocument={() => {
+                window.history.pushState(null, "", `/projects/${pid}/sessions/${sid}/library`);
+                emitViewChange("library");
+              }}
+            />
           ) : (
             messages.map((m) => (
               <MessageBubble

@@ -86,7 +86,7 @@ def _save_l1(args_str: str, ctx: LoopContext) -> str:
         from armance.service.tui_bridge import find_agent_by_name
         agent = find_agent_by_name(ctx.agents, ctx.state.current_agent)
         if agent:
-            skill.set_role(agent.role or agent.domain or ctx.state.current_agent)
+            skill.set_role(agent.role or ctx.state.current_agent)
 
     result = skill.run(args=args_str, ctx=None)
     if "error" not in result.lower():
@@ -111,7 +111,7 @@ def _save_l2(args_str: str, ctx: LoopContext) -> str:
         from armance.service.tui_bridge import find_agent_by_name
         agent = find_agent_by_name(ctx.agents, ctx.state.current_agent)
         if agent:
-            skill.set_theme(agent.domain or ctx.state.current_agent)
+            skill.set_theme(agent.role or ctx.state.current_agent)
 
     result = skill.run(args=args_str, ctx=None)
     if "error" not in result.lower():

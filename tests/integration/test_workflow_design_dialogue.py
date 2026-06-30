@@ -10,9 +10,9 @@ from armance.service.skills.design_workflow import DesignWorkflowSkill
 
 
 class _FakeAgent:
-    def __init__(self, name: str, domain: str) -> None:
+    def __init__(self, name: str, role: str) -> None:
         self.name = name
-        self.domain = domain
+        self.role = role
 
 
 _ROSTER = [_FakeAgent("Aisha", "historian"), _FakeAgent("Lars", "historian")]
@@ -50,8 +50,8 @@ def test_valid_yaml_block_writes_workflow(tmp_path) -> None:
     wf = load_workflow(yaml_files[0])
     assert wf.name == "dossier-historique"
     assert len(wf.steps) == 2
-    assert wf.steps[0].domain == "historian"
-    assert wf.steps[1].domain == "mona"
+    assert wf.steps[0].role == "historian"
+    assert wf.steps[1].role == "mona"
 
 
 def test_no_yaml_block_returns_error(tmp_path) -> None:

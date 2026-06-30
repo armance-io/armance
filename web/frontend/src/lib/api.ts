@@ -684,7 +684,6 @@ export interface AdminAgent {
   name: string;
   /** File slug — use this for PATCH (staff `name` is a friendly label). */
   slug?: string;
-  domain: string;
   role: string;
   provider: string;
   model: string;

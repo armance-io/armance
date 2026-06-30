@@ -14,13 +14,13 @@ from armance.service.agents.specialist_runner import SpecialistRunner
 async def test_specialist_runner_uses_boosted_model(tmp_path: Path) -> None:
     agent = Agent(
         name="Alice",
-        domain="analyst",
+        role="analyst",
         provider="openrouter",
         model="base-model",
         boost_provider="anthropic",
         boost_model="opus-model",
     )
-    task = Task(prompt="hello", domain="analyst")
+    task = Task(prompt="hello", role="analyst")
 
     config = MagicMock()
     runner = SpecialistRunner(tmp_path, config)

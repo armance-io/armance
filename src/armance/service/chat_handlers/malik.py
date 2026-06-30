@@ -14,6 +14,7 @@ from armance.nls import t
 from armance.providers.model_discovery import order_models_by_effort
 from armance.service.agent_sandbox import scrub_reply
 from armance.service.agent_visibility import visible_turns
+from armance.service.agents.agent_swap import handle_agent_swap
 from armance.service.agents.specialist_runner import run_specialist
 from armance.service.chat_handlers.common import resolve_agent_path, set_status
 from armance.service.footprint import estimate_footprint
@@ -51,7 +52,7 @@ async def cmd_hr_chat(text: str, ctx: LoopContext) -> str:
         models_context = await _maybe_append_rag(ctx, text, models_context)
 
         task = Task(
-            prompt=text, domain="meta", mode="light", requested_agent=agent_name,
+            prompt=text, role="meta", mode="light", requested_agent=agent_name,
         )
         history = visible_turns(ctx.session.conversation.turns, agent_name)
         ctx.session.conversation.append("user", text, agent=agent_name)
@@ -73,6 +74,7 @@ async def cmd_hr_chat(text: str, ctx: LoopContext) -> str:
         reply = _inject_recruit_tag_if_yaml_only(reply, text)
         reply = _handle_dismiss_all(reply, ctx)
         reply = await _handle_recruit(reply, ctx, hr)
+        reply = await handle_agent_swap(reply, ctx)
     except Exception as exc:
         set_status(ctx, agent_name, "error")
         logger.exception("Malik LLM failed")
@@ -377,6 +379,21 @@ async def _build_models_context(ctx: LoopContext) -> str:
     )
     lines.append("")
     lines.append(
+        "FIXING A BROKEN / UNREACHABLE MODEL — use /agent-swap, NEVER re-recruit:\n"
+        "  When an agent already on the team has an unreachable model (marked "
+        "⚠ in the team roster, e.g. after a health failure), change ITS model "
+        "in place — do NOT invent a new name for a role that is already "
+        "staffed (that just creates a duplicate). Emit:\n"
+        "    [EXECUTE:/agent-swap:<exact-existing-name> <provider>/<model> "
+        "[<provider>/<model>]]\n"
+        "  The 2nd token is the new base model; the optional 3rd is a boost "
+        "model. The persona is preserved — only the model changes. Use the "
+        "agent's EXACT current name. One tag per agent; emit several to fix "
+        "several. Reserve [EXECUTE:/recruit] for bringing genuinely NEW "
+        "profiles, not for repairing existing ones."
+    )
+    lines.append("")
+    lines.append(
         "GROUNDING POLICY — fact-heavy roles need web search:\n"
         "  Fact-heavy = roles whose answers depend on real-world facts "
         "(historien, journaliste, juriste, médecin, fact-checker, "
@@ -503,7 +520,7 @@ async def _emit_agents_proposed(ctx: LoopContext, created: list) -> None:
             persona_label = getattr(a.persona, "label", "") or ""
         payload.append({
             "name": a.name,
-            "role": (a.role or a.domain or "specialist"),
+            "role": (a.role or "specialist"),
             "persona": persona_label,
             "description": getattr(a, "description", "") or "",
             "provider": a.provider,

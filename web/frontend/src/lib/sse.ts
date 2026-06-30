@@ -23,6 +23,10 @@ export const SSE_EVENT_NAMES = [
   "workflow.step_started",
   "workflow.step_completed",
   "workflow.completed",
+  // Pre-run health gate tripped: the run never started (unhealthy agents).
+  // Without this listener the launch is a silent no-op — the POST returns 202
+  // and the block happens later in a detached task whose reply is discarded.
+  "workflow.blocked",
 ] as const;
 
 export function useEventStream(

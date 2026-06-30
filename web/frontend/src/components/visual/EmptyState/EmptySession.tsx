@@ -16,6 +16,15 @@ export interface EmptySessionProps {
   t: (key: string) => string;
   /** Optional action — typically "drop a document" or "show prompts". */
   onCta?: () => void;
+  /**
+   * Suggestion handlers. The two suggestions have distinct destinations:
+   *   - decision → start the conversation (prefill the chat input)
+   *   - document → open the Library
+   * When omitted, both fall back to prefilling the chat input (legacy behavior),
+   * which only works where a prefill listener is mounted (an active session).
+   */
+  onSuggestDecision?: (text: string) => void;
+  onSuggestDocument?: (text: string) => void;
 }
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
@@ -23,13 +32,24 @@ export interface EmptySessionProps {
 /**
  * `<EmptySession />` — chat-pane state shown before the first message.
  */
-export const EmptySession: FC<EmptySessionProps> = ({ t, onCta }) => {
+export const EmptySession: FC<EmptySessionProps> = ({
+  t,
+  onCta,
+  onSuggestDecision,
+  onSuggestDocument,
+}) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   const suggestions = [
-    t("visual:empty.session.suggestion_decision"),
-    t("visual:empty.session.suggestion_document"),
-  ].filter(Boolean);
+    {
+      text: t("visual:empty.session.suggestion_decision"),
+      onSelect: onSuggestDecision ?? triggerPrefill,
+    },
+    {
+      text: t("visual:empty.session.suggestion_document"),
+      onSelect: onSuggestDocument ?? triggerPrefill,
+    },
+  ].filter((s) => s.text);
 
   const containerStyle = {
     display: "flex",
@@ -59,7 +79,7 @@ export const EmptySession: FC<EmptySessionProps> = ({ t, onCta }) => {
       />
       {suggestions.length > 0 && (
         <div style={listStyle}>
-          {suggestions.map((text, idx) => {
+          {suggestions.map(({ text, onSelect }, idx) => {
             const isHovered = hoveredIdx === idx;
             const itemStyle = {
               padding: "10px 16px",
@@ -81,7 +101,7 @@ export const EmptySession: FC<EmptySessionProps> = ({ t, onCta }) => {
               <button
                 key={idx}
                 type="button"
-                onClick={() => triggerPrefill(text)}
+                onClick={() => onSelect(text)}
                 onMouseEnter={() => setHoveredIdx(idx)}
                 onMouseLeave={() => setHoveredIdx(null)}
                 style={itemStyle}
