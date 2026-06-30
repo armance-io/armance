@@ -142,7 +142,8 @@
     "launch": {
       "started": "Lauf gestartet: {id}",
       "error": "Lauf konnte nicht gestartet werden.",
-      "in_progress": "Wird gestartet…"
+      "in_progress": "Wird gestartet…",
+      "blocked_fallback": "Lauf blockiert: Ein für diesen Workflow benötigter Agent ist nicht erreichbar."
     }
   },
   "chat": {

@@ -236,6 +236,9 @@ system_msg:
   auto_dismissed_before_recruit: "*(システム: チームの完全な再編を検出しました — 新チームを招募する前に、以前の {n} 名の専門家を自動的に解散しました)*"
   forwarded: "— {target} に転送 —"
   health_warning: "注意 — 接続テスト中に到達不能なモデルが検出されました: {agents}。@Malik に他のモデルを提案するよう依頼してください。"
+  agent_swapped: "*(システム：{name} のモデルを {model} に切り替えました — ヘルス：{health})*"
+  agent_swap_unknown: "*(システム：{name} を切り替えできません — 該当する採用済みエージェントがありません)*"
+  agent_swap_bad_model: "*(システム：{name} の切り替えに失敗しました — モデルIDが欠落または無効です)*"
   workflow_health_block: "ワークルフローを開始できません。到達不能なエージェント: {agents}。@Malik にモデルの変更を求めるか、彼らなしでの実行を承認してください。"
 
 model:

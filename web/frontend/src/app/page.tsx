@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AppShell } from "@/components/visual/AppShell";
 import { EmptySession } from "@/components/visual/EmptyState/EmptySession";
-import { getSetupStatus } from "@/lib/api";
+import { createSession, getSetupStatus } from "@/lib/api";
 
 export default function HomePage() {
   const { t } = useTranslation();
@@ -23,12 +23,14 @@ export default function HomePage() {
             if (!res.ok) throw new Error("Failed to fetch latest session");
             return res.json();
           })
-          .then((data) => {
-            if (data && data.id) {
-              window.location.replace(`/projects/default/sessions/${data.id}`);
-            } else {
-              setLoading(false);
-            }
+          .then(async (data) => {
+            // Always land inside a session: that surface mounts the chat
+            // container (prefill listener), the agent roster, and the Library
+            // links. The bare home page has no session, so its empty-state
+            // buttons and "Armance" click had nothing to act on. Resume the
+            // latest session, or create one on first visit.
+            const id = data?.id ?? (await createSession("default")).id;
+            window.location.replace(`/projects/default/sessions/${id}`);
           });
       })
       .catch((err) => {

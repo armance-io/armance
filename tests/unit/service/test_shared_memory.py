@@ -154,7 +154,7 @@ def test_roster_refresh_loads_agents_dir(tmp_armance: Path) -> None:
     agents_dir.mkdir()
     aisha = Agent(
         name="historian-aisha",
-        domain="historian",
+        role="historian",
         character="positivist",
         provider="openrouter",
         model="openai/gpt-4o",
@@ -178,7 +178,7 @@ def test_roster_refresh_excludes_archived(tmp_armance: Path) -> None:
     agents_dir.mkdir()
     aisha = Agent(
         name="historian-aisha",
-        domain="historian",
+        role="historian",
         character="positivist",
         provider="openrouter",
         model="openai/gpt-4o",

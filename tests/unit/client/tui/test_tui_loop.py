@@ -105,7 +105,7 @@ def _fake_meeting_result() -> Any:
     """Return a Report-like stub (meeting.py removed)."""
     return Report(
         agent_name="test_agent",
-        domain="backend",
+        role="backend",
         prompt_truncated="test prompt",
         content="stub response",
     )

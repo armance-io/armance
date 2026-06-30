@@ -233,6 +233,9 @@ system_msg:
   auto_dismissed_before_recruit: "*(Système : remplacement complet de l'équipe détecté — {n} ancien(s) spécialiste(s) dismiss automatiquement avant le recrutement de la nouvelle équipe)*"
   forwarded: "— transféré à {target} —"
   health_warning: "Attention — Modèles injoignables détectés au test : {agents}. Demandez à @Malik de proposer un autre modèle pour ces agents."
+  agent_swapped: "*(Système : modèle de {name} remplacé par {model} — santé : {health})*"
+  agent_swap_unknown: "*(Système : impossible de remplacer {name} — aucun agent recruté de ce nom)*"
+  agent_swap_bad_model: "*(Système : remplacement de {name} échoué — identifiant de modèle manquant ou invalide)*"
   workflow_health_block: "Workflow non lancé : agent(s) injoignable(s) — {agents}. Demandez à @Malik de remplacer leur modèle, ou autorisez l'exécution sans eux."
 
 model:

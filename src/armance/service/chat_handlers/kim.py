@@ -85,7 +85,7 @@ async def cmd_orchestrator_chat(
 
     try:
         task = Task(
-            prompt=text, domain="meta", mode="light", requested_agent=KIM_AGENT_NAME,
+            prompt=text, role="meta", mode="light", requested_agent=KIM_AGENT_NAME,
         )
         report = await run_specialist(
             kim_agent,
@@ -133,7 +133,7 @@ def _build_system_context(ctx: LoopContext) -> str:
     for a in ctx.agents:
         if a.name.startswith("system-"):
             continue
-        role = (a.domain or "specialist").strip().lower()
+        role = (a.role or "specialist").strip().lower()
         roster_lines.append(
             f"  - name=`{a.name}` · role=`{role}` · model=`{a.model or '?'}`"
         )

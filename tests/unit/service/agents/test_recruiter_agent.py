@@ -18,7 +18,7 @@ def mock_agent():
     """Create a mock system-hr agent."""
     return Agent(
         name="system-hr",
-        domain="meta",
+        role="meta",
         persona="balanced",
         provider="openrouter",
         model="openai/gpt-4o-mini",
@@ -203,7 +203,7 @@ agents:
                 agents = await hr_service.create_agents("design")
 
         for agent in agents:
-            assert agent.domain == "design"
+            assert agent.role == "design"
 
     @pytest.mark.asyncio
     async def test_create_agents_invalid_yaml_raises_error(self, hr_service):
@@ -269,7 +269,7 @@ class TestArchive:
 
         agent = Agent(
             name="test_agent",
-            domain="test",
+            role="test",
             persona="balanced",
             provider="openrouter",
             model="openai/gpt-4o-mini",
@@ -289,7 +289,7 @@ class TestArchive:
         """Test archive raises error for non-existent agent."""
         agent = Agent(
             name="nonexistent_agent",
-            domain="test",
+            role="test",
             persona="balanced",
             provider="openrouter",
             model="openai/gpt-4o-mini",
@@ -400,8 +400,8 @@ class TestR13ValidationAndRetries:
         """Should raise PersonaCollisionError when there are duplicate personas."""
         from armance.service.agents.recruiter_agent import PersonaCollisionError
         agents = [
-            Agent(name="Aisha", domain="design", persona="minimalist", provider="openrouter", model="m"),
-            Agent(name="Yuki", domain="design", persona="minimalist", provider="openrouter", model="m"),
+            Agent(name="Aisha", role="design", persona="minimalist", provider="openrouter", model="m"),
+            Agent(name="Yuki", role="design", persona="minimalist", provider="openrouter", model="m"),
         ]
         with pytest.raises(PersonaCollisionError, match="Duplicate personas"):
             hr_service._validate_persona_uniqueness(agents)

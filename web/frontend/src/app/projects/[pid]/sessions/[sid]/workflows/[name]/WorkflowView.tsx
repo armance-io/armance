@@ -1,8 +1,9 @@
 "use client";
 
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
+import { useEventStream, type SseEvent } from "@/lib/sse";
 import { DepthPicker } from "@/components/workflow/DepthPicker";
 import { WorkflowsList } from "./WorkflowsList";
 import { WorkflowGraphContainer } from "@/components/workflow/WorkflowGraphContainer";
@@ -45,6 +46,24 @@ export default function WorkflowView() {
   const activeRunId = activeData?.active?.run_id;
   const [launching, setLaunching] = useState(false);
   const [launchResult, setLaunchResult] = useState<string | null>(null);
+  const [blockedReason, setBlockedReason] = useState<string | null>(null);
+
+  // The launch POST returns 202 before the pre-run health gate runs (in a
+  // detached task). When that gate blocks (unhealthy agents) the backend
+  // emits `workflow.blocked` — surface it so the click is never a silent no-op.
+  const handleSse = useCallback(
+    (evt: SseEvent) => {
+      if (evt.name !== "workflow.blocked") return;
+      const attrs = (evt.data.attributes ?? {}) as Record<string, unknown>;
+      const message =
+        (attrs.message as string) || t("workflow:launch.blocked_fallback");
+      setLaunching(false);
+      setBlockedReason(message);
+      toast(message, "error");
+    },
+    [t, toast],
+  );
+  useEventStream(pid, sid, handleSse);
 
   // The right panel is drag-resizable (left-edge handle) and remembers its width.
   const panel = useResizableWidth({
@@ -58,6 +77,7 @@ export default function WorkflowView() {
   const handleLaunch = async (mode: "interactive" | "autonomous", depth: "quick" | "deep") => {
     setLaunching(true);
     setLaunchResult(null);
+    setBlockedReason(null);
     try {
       const result = await launchWorkflow(pid, sid, workflowName, { mode, depth });
       const msg = result.run_id
@@ -149,9 +169,17 @@ export default function WorkflowView() {
                   {t("workflow:launch.in_progress")}
                 </div>
               )}
-              {!launching && launchResult && (
+              {!launching && launchResult && !blockedReason && (
                 <div style={{ marginTop: 20, textAlign: "center", fontFamily: tokens.ffMono, fontSize: 13, color: tokens.accent }} data-testid="launch-status">
                   {t("workflow:launch.started").replace("{id}", launchResult)}
+                </div>
+              )}
+              {!launching && blockedReason && (
+                <div
+                  style={{ marginTop: 20, textAlign: "center", fontFamily: tokens.ffMono, fontSize: 13, color: tokens.danger, lineHeight: 1.5, padding: "0 16px" }}
+                  data-testid="launch-blocked"
+                >
+                  {blockedReason}
                 </div>
               )}
             </div>

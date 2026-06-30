@@ -11,7 +11,6 @@ def test_malik_recruit_saves_boost_fields(tmp_path: Path) -> None:
     # Set up RecruiterAgentService
     malik_agent = Agent(
         name="system-hr",
-        domain="meta",
         role="recruiter",
         persona="recruiter",
         provider="openrouter",

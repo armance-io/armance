@@ -211,7 +211,7 @@ async def get_session(
         agents_info.append({
             "name": agent.name,
             "first_name": agent.name,
-            "title": getattr(agent, "role", "") or getattr(agent, "domain", ""),
+            "title": getattr(agent, "role", "") or "",
         })
 
     return {

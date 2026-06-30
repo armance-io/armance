@@ -61,7 +61,7 @@ cannot recruit, Kim cannot save L0, specialists have no tools.
 Current tags:
 - Armance: `/save`, `/library-index`, `/library-load:<file>`,
   `/library-unload:<file>`, `/library-unindex:<file>`, `/library-status`
-- Malik: `/recruit`, `/dismiss-all[:<name>]`, `/library-status`
+- Malik: `/recruit`, `/dismiss-all[:<name>]`, `/agent-swap:<name> <provider/model> [<provider/model>]`, `/library-status`
 - Kim: `/workflow-design`, `/workflow-run:<name>`, `/library-status`
 - Mona: `/save-deliverable:<basename>`, `/load-run:<wf>:<run_id>`, `/library-status`
 - Specialist: `/load-run:<wf>:<run_id>` (compare past positions only)

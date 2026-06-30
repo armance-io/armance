@@ -241,13 +241,10 @@ class DesignWorkflowSkill(Skill):
         if not isinstance(steps, list) or not steps:
             return False, "champ `steps` doit être une liste non vide"
 
-        # Build two indices over the roster: by role/domain (canonical match)
-        # and by lowercased name (fallback when Kim confuses name and role).
-        # Read both `role` and `domain` — they are kept in sync by Agent model.
+        # Build two indices over the roster: by role (canonical match) and by
+        # lowercased name (fallback when Kim confuses name and role).
         def _agent_role(a: Any) -> str:
-            return (
-                getattr(a, "role", None) or getattr(a, "domain", None) or ""
-            ).lower().strip()
+            return (a.role or "").lower().strip()
 
         roster_roles = {
             _agent_role(a)

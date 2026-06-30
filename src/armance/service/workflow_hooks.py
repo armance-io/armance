@@ -107,7 +107,6 @@ async def check_consensus_and_maybe_invoke_serge(
         id = "auto_serge_critique"
         kind = "critique"
         role = "meta"
-        domain = "meta"
 
     auto = _AutoStep()
     try:

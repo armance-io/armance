@@ -26,7 +26,7 @@ def tmp_armance(tmp_path: Path) -> Path:
 def aisha() -> Agent:
     return Agent(
         name="Aisha",
-        domain="historian",
+        role="historian",
         persona="positivist",
         provider="openrouter",
         model="openai/gpt-4o-mini",
@@ -37,7 +37,7 @@ def aisha() -> Agent:
 
 @pytest.fixture()
 def task() -> Task:
-    return Task(prompt="Question ?", domain="historian", mode="light")
+    return Task(prompt="Question ?", role="historian", mode="light")
 
 
 @pytest.mark.asyncio

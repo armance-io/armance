@@ -17,7 +17,7 @@ from armance.service.tui_bridge import (
 def _mk_agent(name: str, role: str = "woodworker", character: str = "balanced") -> Agent:
     return Agent.model_validate({
         "name": name,
-        "domain": role,
+        "role": role,
         "role": role,
         "character": character,
         "provider": "openrouter",

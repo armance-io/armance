@@ -75,7 +75,6 @@ def _build_created_agents() -> list[Agent]:
     return [
         Agent(
             name="Aisha",
-            domain="historian",
             role="historian",
             provider="openrouter",
             model="google/gemma-2-9b-it:free",
@@ -83,7 +82,6 @@ def _build_created_agents() -> list[Agent]:
         ),
         Agent(
             name="Lars",
-            domain="historian",
             role="historian",
             provider="openrouter",
             model="meta-llama/llama-3.1-8b-instruct:free",

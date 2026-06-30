@@ -203,3 +203,67 @@ async def test_checkpoint_handler_autonomous_delegation(armance_root: Path, cfg:
         assumptions_file = run_dirs[0] / "assumptions.md"
         assert assumptions_file.exists()
         assert "Detailed assumptions" in assumptions_file.read_text(encoding="utf-8")
+
+
+@pytest.mark.asyncio
+async def test_health_block_emits_workflow_blocked_event(
+    armance_root: Path, cfg: Config
+) -> None:
+    """When the pre-run health gate blocks (a required agent is unhealthy),
+    the run never starts — but the block must reach the web UI. On the web
+    path the run is a detached task whose reply is discarded and the frontend
+    polls /active-workflow (null, no run dir), so without an event the click is
+    a silent no-op. Assert a `workflow.blocked` event is emitted and no run dir
+    is minted."""
+    from armance.core.models.agent import Agent
+    from armance.service.loop_context import LoopContext
+    from armance.service.session import Session, SessionState
+    from armance.service.llm_service import TokenLedger
+
+    wf_path = armance_root / ".armance" / "workflows" / "blocked_wf.yaml"
+    wf_path.write_text(
+        "name: blocked_wf\n"
+        "strategy: rapide\n"
+        "steps:\n"
+        "  - id: research\n"
+        "    role: historian\n"
+        "    kind: task\n"
+    )
+
+    unhealthy = Agent(
+        name="Elise", role="historian", persona="x",
+        provider="openrouter", model="x", system_prompt="x",
+        last_health="error:400",
+    )
+
+    class _BusStub:
+        def __init__(self):
+            self.events: list[dict] = []
+
+        async def emit(self, name, attributes=None, severity="info", **_kw):
+            self.events.append({"name": name, "attributes": attributes or {}})
+
+    bus = _BusStub()
+    state = SessionState.new()
+    session = Session(state, armance_root)
+    ctx = LoopContext(
+        armance_root=armance_root, cfg=cfg, state=state, session=session,
+        ledger=TokenLedger(), statuses=[], agents=[unhealthy],
+        event_bus=bus,
+    )
+
+    reply = await _cmd_workflow_run(
+        "blocked_wf", enrich_sid=None, ctx=ctx,
+        skip_preflight=True, user_prompt_override="test",
+    )
+
+    # The blocked event was emitted, carrying the unhealthy agent + message.
+    blocked = [e for e in bus.events if e["name"] == "workflow.blocked"]
+    assert len(blocked) == 1
+    attrs = blocked[0]["attributes"]
+    assert attrs["workflow"] == "blocked_wf"
+    assert "Elise" in attrs["agents"]
+    assert attrs["message"] == reply
+
+    # No run dir was minted — the gate returned before create_run.
+    assert not (armance_root / "exports" / "blocked_wf").exists()

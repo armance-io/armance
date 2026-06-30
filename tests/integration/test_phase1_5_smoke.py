@@ -46,7 +46,7 @@ from armance.service.agents.agent_lifecycle_service import (
 
 def _make_agent(
     name: str,
-    domain: str,
+    role: str,
     *,
     persona: str = "test",
     provider: str = "openrouter",
@@ -56,11 +56,11 @@ def _make_agent(
     """Create a minimal test agent."""
     return Agent(
         name=name,
-        domain=domain,
+        role=role,
         persona=persona,
         provider=provider,
         model=model,
-        system_prompt=f"You are {name}, a {persona} {domain} agent.",
+        system_prompt=f"You are {name}, a {persona} {role} agent.",
         status=status,
     )
 
@@ -228,7 +228,7 @@ def test_phase1_5_end_to_end(tmp_path: Path) -> None:
     # 6a. Create agent
     test_agent = _make_agent(
         name="architect-bianca",
-        domain="architect",
+        role="architect",
         persona="methodical",
     )
     agent_service.create_agent(test_agent)
@@ -244,7 +244,7 @@ def test_phase1_5_end_to_end(tmp_path: Path) -> None:
     loaded = agent_service.get_agent("architect-bianca")
     assert loaded is not None
     assert loaded.name == "architect-bianca"
-    assert loaded.domain == "architect"
+    assert loaded.role == "architect"
     assert loaded.persona == "methodical"
 
     # 6c. List agents
@@ -279,7 +279,7 @@ def test_phase1_5_end_to_end(tmp_path: Path) -> None:
     # 6f. Verify DuplicateAgentError on re-create
     duplicate_agent = _make_agent(
         name="architect-bianca",
-        domain="architect",
+        role="architect",
         persona="methodical",
     )
     # The agent is archived, so the file was moved — re-create should succeed

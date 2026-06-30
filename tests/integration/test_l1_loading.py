@@ -33,7 +33,7 @@ def _make_agent(role: str = "woodworking") -> Agent:
     """Create a minimal test agent with the given role."""
     return Agent(
         name=f"{role}-agent",
-        domain=role,
+        role=role,
         character="balanced",
         provider="openai",
         model="gpt-4",

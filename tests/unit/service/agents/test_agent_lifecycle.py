@@ -39,7 +39,7 @@ def sample_agent() -> Agent:
     """Create a sample agent for testing."""
     return Agent(
         name="historian-aisha",
-        domain="historian",
+        role="historian",
         persona="positivist",
         provider="openai",
         model="gpt-4o",
@@ -79,7 +79,7 @@ class TestCreateAgent:
         """Test agent without name raises ValueError."""
         agent = Agent(
             name="",
-            domain="historian",
+            role="historian",
             persona="positivist",
             provider="openai",
             model="gpt-4o",
@@ -88,11 +88,11 @@ class TestCreateAgent:
         with pytest.raises(ValueError, match="name is required"):
             service.create_agent(agent)
 
-    def test_create_agent_missing_domain(self, temp_armance_root: Path, sample_agent: Agent) -> None:
-        """Test agent without domain raises ValueError."""
-        sample_agent.domain = ""
+    def test_create_agent_missing_role(self, temp_armance_root: Path, sample_agent: Agent) -> None:
+        """Test agent without role raises ValueError."""
+        sample_agent.role = ""
         service = AgentLifecycleService(temp_armance_root)
-        with pytest.raises(ValueError, match="domain is required"):
+        with pytest.raises(ValueError, match="role is required"):
             service.create_agent(sample_agent)
 
     def test_create_agent_sets_timestamps(self, temp_armance_root: Path, sample_agent: Agent) -> None:
@@ -140,14 +140,14 @@ class TestListAgents:
         service = AgentLifecycleService(temp_armance_root)
         service.create_agent(Agent(
             name="historian-aisha",
-            domain="historian",
+            role="historian",
             persona="positivist",
             provider="openai",
             model="gpt-4o",
         ))
         service.create_agent(Agent(
             name="designer-kojo",
-            domain="designer",
+            role="designer",
             persona="minimalist",
             provider="anthropic",
             model="claude-3.5-sonnet",
@@ -164,7 +164,7 @@ class TestListAgents:
         service = AgentLifecycleService(temp_armance_root)
         service.create_agent(Agent(
             name="historian-aisha",
-            domain="historian",
+            role="historian",
             persona="positivist",
             provider="openai",
             model="gpt-4o",
@@ -179,7 +179,7 @@ class TestListAgents:
         service = AgentLifecycleService(temp_armance_root)
         service.create_agent(Agent(
             name="historian-aisha",
-            domain="historian",
+            role="historian",
             persona="positivist",
             provider="openai",
             model="gpt-4o",
@@ -359,7 +359,7 @@ class TestAgentModel:
         """Test Agent.to_dict serialization."""
         d = sample_agent.to_dict()
         assert d["name"] == "historian-aisha"
-        assert d["domain"] == "historian"
+        assert d["role"] == "historian"
         assert d["status"] == "active"
         assert d["version"] == 1
 
@@ -367,7 +367,7 @@ class TestAgentModel:
         """Test Agent.from_dict deserialization."""
         data = {
             "name": "designer-kojo",
-            "domain": "designer",
+            "role": "designer",
             "persona": "minimalist",
             "provider": "anthropic",
             "model": "claude-3.5-sonnet",
@@ -375,20 +375,20 @@ class TestAgentModel:
         }
         agent = Agent.from_dict(data)
         assert agent.name == "designer-kojo"
-        assert agent.domain == "designer"
+        assert agent.role == "designer"
         assert agent.persona == "minimalist"
 
-    def test_agent_sync_role_domain(self) -> None:
-        """Test that role/domain are synced on construction."""
-        agent = Agent(
-            name="test",
-            domain="historian",
-            persona="test",
-            provider="openai",
-            model="gpt-4o",
-        )
-        assert agent.domain == "historian"
+    def test_agent_legacy_domain_maps_to_role(self) -> None:
+        """A legacy `domain:` key still loads, mapped onto `role`."""
+        agent = Agent.model_validate({
+            "name": "test",
+            "domain": "historian",
+            "persona": "test",
+            "provider": "openai",
+            "model": "gpt-4o",
+        })
         assert agent.role == "historian"
+        assert not hasattr(agent, "domain")
 
     def test_agent_now_iso(self, sample_agent: Agent) -> None:
         """Test Agent.now_iso returns ISO-8601 string."""

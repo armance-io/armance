@@ -69,8 +69,7 @@ def _agent_row(
     return {
         "name": display_name or agent.name,
         "slug": agent.name,
-        "domain": agent.domain,
-        "role": role_override or agent.role or agent.domain or "",
+        "role": role_override or agent.role or "",
         "provider": agent.provider or default_provider,
         "model": agent.model or default_model,
         "reasoning": agent.reasoning,

@@ -97,7 +97,7 @@ def agent_label(agent_name: str | None, agents: list[Agent]) -> tuple[str, str]:
     if agent is None:
         return (agent_name, "agent")
 
-    role_val = agent.role or agent.domain or ""
+    role_val = agent.role or ""
     if role_val:
         return (f"{agent.name} · {role_val}", "agent")
     return (agent.name, "agent")
@@ -126,9 +126,9 @@ def load_user_agents(armance_root: Path) -> list[Agent]:
 
 
 def find_agents_by_role(agents: list[Agent], role: str) -> list[Agent]:
-    """Return agents whose role or domain matches `role` (case-insensitive)."""
+    """Return agents whose role matches `role` (case-insensitive)."""
     r = role.lower()
-    return [a for a in agents if (a.role or a.domain or "").lower() == r]
+    return [a for a in agents if (a.role or "").lower() == r]
 
 
 
