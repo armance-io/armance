@@ -3,7 +3,7 @@
 Sources:
   - .armance/docs/**            user-dropped docs (symlinks followed)
   - .armance/reports/**         versioned reports — only the latest version
-                                per (domain, agent) pair is considered
+                                per (role, agent) pair is considered
 
 Pipeline:
   1. scan_sources()            list candidate files
@@ -395,14 +395,14 @@ def scan_sources(armance_root: Path) -> list[SourceFile]:
 
 def _latest_reports(reports_root: Path) -> list[Path]:
     latest: dict[tuple[str, str], tuple[int, Path]] = {}
-    for domain_dir in reports_root.iterdir():
-        if not domain_dir.is_dir():
+    for role_dir in reports_root.iterdir():
+        if not role_dir.is_dir():
             continue
-        for path in domain_dir.glob("*_v*.md"):
+        for path in role_dir.glob("*_v*.md"):
             m = _REPORT_VERSION_RE.match(path.name)
             if not m:
                 continue
-            key = (domain_dir.name, m.group("stem"))
+            key = (role_dir.name, m.group("stem"))
             n = int(m.group("n"))
             existing = latest.get(key)
             if existing is None or n > existing[0]:
@@ -596,7 +596,7 @@ def _bucket_by_theme(sources: list[SourceFile]) -> dict[str, list[SourceFile]]:
 
     .armance/docs/<theme>/<file>     -> theme = <theme>
     .armance/docs/<file>             -> theme = "general"
-    .armance/reports/<domain>/<file> -> theme = <domain>
+    .armance/reports/<role>/<file> -> theme = <role>
     """
     buckets: dict[str, list[SourceFile]] = {}
     for sf in sources:

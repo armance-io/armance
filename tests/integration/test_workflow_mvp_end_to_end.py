@@ -48,7 +48,7 @@ def test_malik_recruit_normalises_french_domain(armance_root: Path, cfg: Config)
     from armance.core.models.agent import Agent as AgentModel
 
     malik_agent = AgentModel(
-        name="system-hr", domain="meta", persona="recruiter",
+        name="system-hr", role="meta", persona="recruiter",
         provider="openrouter", model="x", system_prompt="malik",
     )
     hr = RecruiterAgentService(agent=malik_agent, armance_root=armance_root, config=cfg)
@@ -69,10 +69,10 @@ agents:
     assert len(created) == 1
     a = created[0]
     # `é` stripped, "des" stop-word dropped, kebab-case.
-    assert a.domain.startswith("historien")
-    assert "é" not in a.domain
-    assert "des" not in a.domain.split("-")
-    assert a.role == a.domain
+    assert a.role.startswith("historien")
+    assert "é" not in a.role
+    assert "des" not in a.role.split("-")
+    assert a.role == a.role
 
 
 def test_kim_yaml_with_role_alias_validates(armance_root: Path, cfg: Config) -> None:
@@ -80,7 +80,7 @@ def test_kim_yaml_with_role_alias_validates(armance_root: Path, cfg: Config) -> 
     from armance.service.skills.design_workflow import DesignWorkflowSkill
 
     theodore = Agent(
-        name="Theodore", domain="historian", persona="positivist",
+        name="Theodore", role="historian", persona="positivist",
         provider="openrouter", model="x", system_prompt="t",
     )
     skill = DesignWorkflowSkill(
@@ -120,7 +120,7 @@ def test_kim_yaml_with_agent_name_in_role_is_remapped(
     from armance.service.skills.design_workflow import DesignWorkflowSkill
 
     theodore = Agent(
-        name="Theodore", domain="historian", persona="positivist",
+        name="Theodore", role="historian", persona="positivist",
         provider="openrouter", model="x", system_prompt="t",
     )
     skill = DesignWorkflowSkill(
@@ -167,7 +167,7 @@ def test_legacy_yaml_with_domain_key_still_loads(
     )
     wf = load_workflow(wf_file)
     assert wf.steps[0].role == "historian"
-    assert wf.steps[0].domain == "historian"
+    assert wf.steps[0].role == "historian"
 
 
 @pytest.mark.asyncio
@@ -179,7 +179,7 @@ async def test_workflow_run_resolves_steps_to_agents(
     # Recruit Theodore (historian) on disk so ctx.agents picks him up.
     theodore_path = armance_root / "agents" / "Theodore.md"
     theodore = Agent(
-        name="Theodore", domain="historian", role="historian",
+        name="Theodore", role="historian",
         persona="positivist", provider="openrouter",
         model="google/gemma-2-9b-it:free", system_prompt="historian",
     )

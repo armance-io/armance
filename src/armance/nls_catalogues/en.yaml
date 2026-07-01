@@ -237,6 +237,9 @@ system_msg:
   auto_dismissed_before_recruit: "*(System: detected full-roster reshuffle — auto-dismissed {n} previous specialist(s) before recruiting the new team)*"
   forwarded: "— forwarded to {target} —"
   health_warning: "Attention — Unreachable models detected during probe: {agents}. Ask @Malik to propose another model for these agents."
+  agent_swapped: "*(System: model of {name} swapped to {model} — health: {health})*"
+  agent_swap_unknown: "*(System: cannot swap {name} — no such recruited agent)*"
+  agent_swap_bad_model: "*(System: swap of {name} failed — model id missing or invalid)*"
   workflow_health_block: "Workflow not launched: unreachable agent(s) — {agents}. Ask @Malik to swap their model, or authorise execution without them."
 
 model:

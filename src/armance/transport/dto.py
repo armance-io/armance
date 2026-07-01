@@ -49,7 +49,7 @@ class AgentInfo:
     """Information about an agent."""
 
     name: str
-    domain: str
+    role: str
     kind: AgentKind
     persona: str
     provider: str
@@ -61,7 +61,7 @@ class AgentInfo:
 
 @dataclass
 class RoleInfo:
-    """Information about a role (domain group)."""
+    """Information about a role."""
 
     name: str
     agents: list[str]
@@ -106,7 +106,7 @@ class TaskInfo:
 
     id: str
     brief: str
-    domain: str
+    role: str
     mode: Mode
     assignees: list[str]
     status: TaskStatus
@@ -127,7 +127,7 @@ class WorkflowStepInfo:
 
     id: str
     kind: Literal["task", "meeting", "deliverable", "human_checkpoint"]
-    domain: str
+    role: str
     mode: Mode
     depends_on: list[str]
     status: Literal["submitted", "working", "input-required", "completed", "failed", "canceled"] = "submitted"

@@ -142,7 +142,8 @@
     "launch": {
       "started": "已启动运行：{id}",
       "error": "无法启动运行。",
-      "in_progress": "启动中…"
+      "in_progress": "启动中…",
+      "blocked_fallback": "运行被阻止：此工作流所需的某个智能体无法访问。"
     }
   },
   "chat": {

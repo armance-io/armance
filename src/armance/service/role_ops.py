@@ -75,7 +75,7 @@ async def _role_show(name: str, ctx: LoopContext) -> str:
             try:
                 from armance.core.models.agent import Agent
                 agent = Agent.load(path)
-                if agent.domain == name:
+                if agent.role == name:
                     agents.append(agent)
             except Exception:
                 continue

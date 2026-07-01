@@ -14,7 +14,7 @@ Three layers:
 
 Role → allowed tags:
   - armance:      /save, /library-*, plus legacy aliases
-  - malik:       /recruit, /dismiss-all, /library-status
+  - malik:       /recruit, /dismiss-all, /agent-swap, /library-status
   - kim:       /workflow-design, /workflow-run, /library-status
   - mona:       /library-status
   - specialist:  no tags
@@ -34,7 +34,7 @@ _ROLE_TAG_ALLOWLIST: dict[str, set[str]] = {
         # legacy aliases tolerated for backwards compat
         "ingest-docs", "load", "forget", "rag-status",
     },
-    "malik": {"recruit", "dismiss-all", "library-status"},
+    "malik": {"recruit", "dismiss-all", "agent-swap", "library-status"},
     "kim": {"workflow-design", "workflow-run", "workflow-stop", "library-status"},
     "mona": {"library-status", "save-deliverable", "load-run"},
     "specialist": {"load-run", "boost-request", "boost-release"},

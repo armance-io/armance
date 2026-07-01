@@ -54,13 +54,13 @@ class JobProposal(BaseModel):
 _KNOWN_PROVIDERS = {"openrouter", "claude-code", "gemini", "custom-openai"}
 
 
-def _normalise_domain(raw: str) -> str:
-    """Slugify a domain string to a short ASCII identifier.
+def _normalise_role(raw: str) -> str:
+    """Slugify a role string to a short ASCII identifier.
 
-    Malik's LLM often writes domains as French prose like
+    Malik's LLM often writes roles as French prose like
     `historien des temps modernes`, `coordinateur événementiel`. These
     leak through to workflow YAML and break the executor (which matches
-    by exact domain). Normalise to a stable kebab-case ASCII slug, and
+    by exact role). Normalise to a stable kebab-case ASCII slug, and
     keep only the first 2 meaningful tokens to stay readable.
 
     Examples:
@@ -652,7 +652,7 @@ agents:
         for i, entry in enumerate(data["agents"]):
             # Canonicalise to `role`. Accept legacy `domain` from older YAML.
             raw_role = entry.get("role") or entry.get("domain") or role_name
-            entry["role"] = _normalise_domain(str(raw_role)) or role_name
+            entry["role"] = _normalise_role(str(raw_role)) or role_name
             entry.pop("domain", None)  # remove legacy field
             
             # Use 'persona' or legacy 'character' key
@@ -671,11 +671,11 @@ agents:
                 if existing_file:
                     try:
                         existing_agent = Agent.load(existing_file)
-                        current_role = _normalise_domain(
+                        current_role = _normalise_role(
                             entry.get("role") or entry.get("domain") or role_name
                         )
-                        existing_role = _normalise_domain(
-                            existing_agent.domain or existing_agent.role or ""
+                        existing_role = _normalise_role(
+                            existing_agent.role or ""
                         )
                         # Accept as update if same normalised role OR if this is
                         # a model/persona swap on an existing agent (same name).
@@ -781,7 +781,7 @@ agents:
 
     def format_agent_markdown(self, agent: Agent) -> str:
         """Format agent markdown with complete frontmatter and role-specific content."""
-        role = agent.role or agent.domain or "general"
+        role = agent.role or "general"
         persona = agent.persona or "balanced"
         name = agent.name or "Agent"
 
@@ -844,7 +844,7 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
                     continue
                 try:
                     ex = Agent.load(p)
-                    existing[ex.name] = (ex.role or ex.domain or "").strip().lower()
+                    existing[ex.name] = (ex.role or "").strip().lower()
                 except Exception:
                     continue
 
@@ -868,7 +868,7 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
         updated_names: list[str] = []
 
         for agent in new_agents:
-            new_role = (agent.role or agent.domain or "").strip().lower()
+            new_role = (agent.role or "").strip().lower()
 
             # Staff-role redirect: update the system-*.md model field, do not
             # create a new user agent (covers all five staff slots including
@@ -900,8 +900,8 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
 
             prior_role = existing.get(agent.name)
             if prior_role is not None:
-                norm_prior = _normalise_domain(prior_role)
-                norm_new = _normalise_domain(new_role)
+                norm_prior = _normalise_role(prior_role)
+                norm_new = _normalise_role(new_role)
                 is_same_role = (norm_prior == norm_new) or (norm_prior.split("-")[0] == norm_new.split("-")[0])
                 if not is_same_role:
                     logger.warning(
@@ -963,7 +963,7 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
         for entry in registry.get("agents", []):
             if entry.get("name") == agent.name:
                 entry.update({
-                    "role": agent.role or agent.domain,
+                    "role": agent.role,
                     "status": agent.status,
                     "version": agent.version,
                     "updated_at": now_iso,
@@ -975,7 +975,7 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
         if not found:
             registry.setdefault("agents", []).append({
                 "name": agent.name,
-                "role": agent.role or agent.domain,
+                "role": agent.role,
                 "status": agent.status,
                 "version": agent.version,
                 "created_at": now_iso,

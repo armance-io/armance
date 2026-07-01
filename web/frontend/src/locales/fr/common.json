@@ -346,7 +346,8 @@
       "started": "Exécution lancée : {id}",
       "error": "Impossible de lancer l'exécution.",
       "in_progress": "Lancement…",
-      "started_no_id": "Exécution du workflow lancée."
+      "started_no_id": "Exécution du workflow lancée.",
+      "blocked_fallback": "Exécution bloquée : un agent requis par ce workflow est injoignable."
     },
     "panel": {
       "resize": "Glisser pour redimensionner"

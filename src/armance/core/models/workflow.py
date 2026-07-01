@@ -6,12 +6,12 @@ Workflow YAML shape:
     steps:
       - id: explore
         kind: meeting              # task | meeting
-        domain: backend
+        role: backend
         mode: full                 # full | light
         prompt_template: "{{user_prompt}}"
       - id: focus
         kind: task
-        domain: backend
+        role: backend
         mode: light
         agents: [backend_balanced]
         depends_on: [explore]
@@ -31,7 +31,7 @@ import re
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Iterable, Literal, Union
+from typing import Any, Awaitable, Callable, Iterable, Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
@@ -44,76 +44,19 @@ StepMode = Literal["full", "light"]
 _TEMPLATE_RE = re.compile(r"\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}")
 
 
-class HumanCheckpointStep(BaseModel):
-    """Human-in-the-loop checkpoint step that pauses workflow for human review."""
-    id: str
-    kind: Literal["human_checkpoint"]
-    prompt: str
-    save_to_context: bool = True
-    context_layer: str = "L1"
-    domain: str = "checkpoint"
-    mode: StepMode = "full"
-    depends_on: list[str] = Field(default_factory=list)
-    agents: list[str] = Field(default_factory=list)
-    prompt_template: str = ""
-
-
-
-class DeliverableStep(BaseModel):
-    id: str
-    kind: Literal["deliverable"]
-    format: Literal["pptx", "docx", "pdf", "md"]
-    source: str  # step_id or "latest_judge"
-    output_name: str
-    domain: str = "deliverable"
-    mode: StepMode = "full"
-    depends_on: list[str] = Field(default_factory=list)
-    agents: list[str] = Field(default_factory=list)
-    prompt_template: str = ""
-
-
-
-class TaskStep(BaseModel):
-    id: str
-    kind: Literal["task"]
-    domain: str
-    mode: StepMode = "full"
-    agents: list[str] = Field(default_factory=list)
-    depends_on: list[str] = Field(default_factory=list)
-    prompt_template: str = ""
-
-
-
-class MeetingStep(BaseModel):
-    id: str
-    kind: Literal["meeting"]
-    domain: str
-    mode: StepMode = "full"
-    prompt_template: str = ""
-    depends_on: list[str] = Field(default_factory=list)
-    agents: list[str] = Field(default_factory=list)
-
-
-
-# Discriminated union for all step kinds
-StepUnion = Union[TaskStep, MeetingStep, DeliverableStep, HumanCheckpointStep]
-
-
 
 class WorkflowStep(BaseModel):
     """Polymorphic step model.
 
-    The agent-matching field is exposed as **`role`** in user-facing YAML
-    (Kim's contract). Internally the same value is also stored under
-    `domain` for back-compat with the executor and legacy YAMLs that wrote
-    `domain:`. A pre-validator copies `role` → `domain` when only one is
-    present so either form parses cleanly.
+    `role` is the agent-matching field — the role this step assigns (Kim's
+    user-facing YAML contract). Legacy YAMLs that wrote `domain:` still parse
+    via a before-validator.
     """
     model_config = ConfigDict(populate_by_name=True)
 
     id: str
     kind: StepKind
-    domain: str = "default"
+    role: str = "default"
     mode: StepMode = "full"
     agents: list[str] = Field(default_factory=list)
     depends_on: list[str] = Field(default_factory=list)
@@ -129,21 +72,14 @@ class WorkflowStep(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _accept_role_alias(cls, data):
+    def _accept_legacy_domain(cls, data):
+        """Legacy YAMLs used `domain:` for the role — accept it on read."""
         if not isinstance(data, dict):
             return data
-        has_domain = "domain" in data and data["domain"]
-        has_role = "role" in data and data["role"]
-        if has_role and not has_domain:
-            data["domain"] = data["role"]
-        elif has_domain and not has_role:
+        if "role" not in data and "domain" in data:
             data["role"] = data["domain"]
+        data.pop("domain", None)
         return data
-
-    @property
-    def role(self) -> str:
-        """User-facing alias for ``domain`` — the role this step assigns."""
-        return self.domain
 
 
 
@@ -370,7 +306,7 @@ def _compose_default_prompt(
       3. Upstream outputs as cited material to build on / critique / judge.
     """
     scope = (workflow.scope or "").strip()
-    role = (step.role if hasattr(step, "role") else step.domain) or "specialist"
+    role = step.role or "specialist"
     kind = step.kind
 
     lines: list[str] = []
@@ -485,7 +421,7 @@ async def execute_workflow(
                 from armance.core.models.context import append_to_layer
 
                 target_root = armance_root or Path.cwd()
-                theme = cs.domain or "checkpoint"
+                theme = cs.role or "checkpoint"
                 layer = cs.context_layer or "L1"
                 append_to_layer(
                     target_root,
@@ -580,7 +516,7 @@ name: my_workflow
 steps:
   - id: step1
     kind: meeting       # task | meeting
-    domain: backend
+    role: backend
     mode: full          # full | light
     prompt_template: |
       Replace this with your prompt. Use {{user_prompt}} for the user

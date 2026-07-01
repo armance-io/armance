@@ -279,7 +279,7 @@ class MainScreen(Screen[int]):
             if state == "input-required":
                 hitl_agent = a.name
                 
-            roles_data.setdefault(a.domain or "general", []).append(
+            roles_data.setdefault(a.role or "general", []).append(
                 {
                     "name": a.name,
                     "state": state,
