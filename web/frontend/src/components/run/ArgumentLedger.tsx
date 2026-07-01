@@ -195,7 +195,9 @@ const ArgumentCard: FC<{
       )}
 
       {arg.weight !== undefined && !isRejected && (
-        <span style={weightStyle}>weight: {arg.weight}</span>
+        <span style={weightStyle} title={t("run:ledger.weight_tooltip")}>
+          {t("run:ledger.weight")}: {arg.weight}
+        </span>
       )}
 
       {arg.sources.length > 0 && (
@@ -206,6 +208,7 @@ const ArgumentCard: FC<{
               <button
                 key={sid}
                 style={chipStyle}
+                title={t("run:ledger.source_tooltip")}
                 onClick={() => onClickSource(sid)}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor =
@@ -216,7 +219,7 @@ const ArgumentCard: FC<{
                     "var(--rule, #d6c8ad)";
                 }}
               >
-                {src?.label ?? sid}
+                📖 {src?.label ?? sid}
               </button>
             );
           })}

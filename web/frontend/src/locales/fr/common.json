@@ -94,7 +94,13 @@
       "download": "Télécharger",
       "download_label": "Télécharger",
       "download_aria": "Télécharger ce livrable",
-      "opened_from": "Ouvert depuis : {{path}}"
+      "opened_from": "Ouvert depuis :",
+      "format": {
+        "md": "Markdown",
+        "pdf": "PDF",
+        "docx": "Word",
+        "pptx": "PowerPoint"
+      }
     },
     "toast": {
       "imported": "Document importé",
@@ -232,7 +238,9 @@
       "rejected": "Rejetés",
       "proposed_by": "Proposé par",
       "rejected_by": "Rejeté par",
-      "weight": "poids"
+      "weight": "Poids",
+      "weight_tooltip": "Force de l'argument (1 à 5)",
+      "source_tooltip": "Aller à la source"
     },
     "tabs": {
       "flow": "Flux",
