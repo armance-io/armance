@@ -120,6 +120,58 @@ def test_launcher_stop_targets_global_home(monkeypatch, isolate_global_config: P
     assert seen["data_dir"] == paths.global_config_dir()
 
 
+def test_web_routes_to_launcher(monkeypatch) -> None:
+    """`armance web` is not folder-contextual: one server for all projects,
+    so it opens the global launcher (projects list). Flags pass through."""
+    captured = {}
+
+    def _stub(stop: bool = False, remaining: list[str] | None = None) -> int:
+        captured["stop"] = stop
+        captured["remaining"] = remaining
+        return 0
+
+    monkeypatch.setattr(cli, "cmd_launcher", _stub)
+    rc = cli.main(["web", "--no-browser", "--port", "9000"])
+    assert rc == 0
+    assert captured["stop"] is False
+    assert captured["remaining"] == ["--no-browser", "--port", "9000"]
+
+
+def test_web_stop_stops_global_server_from_any_cwd(
+    monkeypatch, isolate_global_config: Path, tmp_path: Path
+) -> None:
+    """`armance web --stop` typed in an unrelated folder stops THE server."""
+    from unittest.mock import patch
+
+    from armance.web import server_lock
+
+    monkeypatch.chdir(tmp_path)  # no local .armance here
+    server_lock.write_lock(paths.global_config_dir(), os.getpid(), 8000)
+    with patch.object(server_lock, "_signal"), \
+         patch.object(server_lock, "_pid_alive", side_effect=[True, True, False]):
+        rc = cli.main(["web", "--stop"])
+    assert rc == 0
+    assert server_lock.read_lock(paths.global_config_dir()) is None
+
+
+def test_stop_falls_back_to_legacy_folder_server(
+    monkeypatch, isolate_global_config: Path, tmp_path: Path
+) -> None:
+    """No global server but a legacy per-folder one in the cwd → stop that."""
+    from unittest.mock import patch
+
+    from armance.web import server_lock
+
+    monkeypatch.chdir(tmp_path)
+    local = paths.local_data_dir(tmp_path)
+    server_lock.write_lock(local, os.getpid(), 8000)
+    with patch.object(server_lock, "_signal"), \
+         patch.object(server_lock, "_pid_alive", side_effect=[True, True, False]):
+        rc = cli.main(["stop"])
+    assert rc == 0
+    assert server_lock.read_lock(local) is None
+
+
 def test_launcher_configured_opens_launcher(monkeypatch, isolate_global_config: Path) -> None:
     """Global config present → browser opens the launcher window (not setup)."""
     from armance.service import security

@@ -1054,7 +1054,7 @@ def cmd_web(
     )
     web_parser.add_argument(
         "--stop", action="store_true",
-        help="Stop the web server running in this folder, then exit.",
+        help="Stop the Armance web server, then exit (works from any folder).",
     )
     web_args, _ = web_parser.parse_known_args(remaining or [])
 
@@ -1078,8 +1078,9 @@ def cmd_web(
         from armance import paths
         is_launcher = (data_dir == paths.global_config_dir())
         stop_cmd = "armance stop" if is_launcher else "armance web --stop (or armance stop)"
+        where = "" if is_launcher else " in this folder"
         print(
-            f"Armance web is already running in this folder "
+            f"Armance web is already running{where} "
             f"(pid {existing.pid}, port {existing.port}).\n"
             f"  stop it: {stop_cmd}",
             file=sys.stderr,
@@ -1330,7 +1331,28 @@ def cmd_install_shortcut() -> int:
     return 0 if result.ok else 1
 
 
-def cmd_launcher(stop: bool = False) -> int:
+def _stop_web_server() -> int:
+    """Stop THE Armance web server, from any cwd.
+
+    One server serves every project, homed in the global config dir — so
+    ``armance stop`` must work wherever it is typed. A legacy per-folder
+    server (pre-global ``armance web`` runs, lock in ``./.armance``) is the
+    fallback so an upgrade does not strand a running instance.
+    """
+    from armance import paths
+    from armance.web.server_lock import read_lock, stop_server
+
+    home = paths.global_config_dir()
+    if read_lock(home) is None:
+        legacy = paths.local_data_dir(Path.cwd())
+        if read_lock(legacy) is not None:
+            home = legacy
+    stopped, message = stop_server(home)
+    print(message, file=sys.stdout if stopped else sys.stderr)
+    return 0 if stopped else 1
+
+
+def cmd_launcher(stop: bool = False, remaining: list[str] | None = None) -> int:
     """Bare `armance`: open the launcher (or first-run setup) in the browser.
 
     Grandma path. The launcher server is homed in the GLOBAL config dir (so a
@@ -1351,14 +1373,10 @@ def cmd_launcher(stop: bool = False) -> int:
 
     launcher_home = paths.global_config_dir()
 
-    # `armance --stop`: stop the launcher server, homed in the global dir (so it
-    # is reachable from any cwd — symmetric with bare `armance` = launch).
+    # `armance --stop`: stop THE server (global home, legacy-folder fallback) —
+    # reachable from any cwd, symmetric with bare `armance` = launch.
     if stop:
-        from armance.web.server_lock import stop_server
-
-        stopped, message = stop_server(launcher_home)
-        print(message, file=sys.stderr if not stopped else sys.stdout)
-        return 0 if stopped else 1
+        return _stop_web_server()
 
     configured = paths.global_config_path().exists()
     target = "/launcher" if configured else "/setup"
@@ -1379,7 +1397,7 @@ def cmd_launcher(stop: bool = False) -> int:
     query = f"?token={secret}" if auto else ""
     return cmd_web(
         launcher_home,
-        [],
+        remaining or [],
         data_dir=launcher_home,
         launch_url_suffix=f"{target}{query}",
         web_secret=secret,
@@ -1430,15 +1448,10 @@ def main(argv: list[str] | None = None) -> int:
     if not argv:
         return cmd_launcher()
 
-    # `armance --stop` or `armance stop` (bare): stop the local server if present, else launcher server.
+    # `armance --stop` or `armance stop` (bare): stop THE server. There is one
+    # server for all projects (global home), so this works from any cwd; a
+    # legacy per-folder server is the fallback.
     if argv[0] in ("--stop", "stop"):
-        from armance.web.server_lock import read_lock, stop_server
-        from armance import paths
-        local_data = paths.local_data_dir(Path.cwd())
-        if read_lock(local_data) is not None:
-            stopped, message = stop_server(local_data)
-            print(message, file=sys.stderr if not stopped else sys.stdout)
-            return 0 if stopped else 1
         return cmd_launcher(stop=True)
 
     if argv[0] in ("-h", "--help", "help"):
@@ -1446,7 +1459,7 @@ def main(argv: list[str] | None = None) -> int:
             "usage: armance {init,run,index,doctor,workflow,web,install-shortcut} "
             "[--version]\n"
             "  armance            open the launcher (no arguments)\n"
-            "  armance stop       stop the launcher server",
+            "  armance stop       stop the web server (works from any folder)",
             file=sys.stderr,
         )
         return 0
@@ -1528,7 +1541,12 @@ def main(argv: list[str] | None = None) -> int:
     if cmd == "doctor":
         return cmd_doctor(root)
     if cmd == "web":
-        return cmd_web(root, remaining)
+        # One server for all projects: `armance web` is not folder-contextual.
+        # It opens the global launcher (projects list); flags (--port, --bind,
+        # --foreground, --no-browser, --build) pass through. Stop from any cwd.
+        if any(tok in ("--stop", "stop") for tok in remaining):
+            return _stop_web_server()
+        return cmd_launcher(remaining=remaining)
     if cmd == "install-shortcut":
         return cmd_install_shortcut()
     if cmd == "workflow":

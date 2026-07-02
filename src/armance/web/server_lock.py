@@ -114,7 +114,7 @@ def stop_server(data_dir: Path, *, timeout: float = 10.0) -> tuple[bool, str]:
     """
     info = read_lock(data_dir)
     if info is None:
-        return False, "no running server found for this folder"
+        return False, "no running server found"
 
     pid = info.pid
     _signal(pid, signal.SIGTERM)
