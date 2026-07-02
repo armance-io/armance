@@ -482,12 +482,29 @@ check_layer_cleanliness() {
         ok "core only imports from core"
     fi
 
-    # Run lint-imports and check for BROKEN
-    if uv run lint-imports --verbose 2>&1 | grep -q "BROKEN"; then
-        fail "lint-imports reports BROKEN contracts"
-        uv run lint-imports --verbose 2>&1 | grep -B 1 "BROKEN" | sed 's/^/    /'
+    # storage / providers must not import service — grep catches lazy imports
+    # inside nested closures that grimp (import-linter) misses.
+    local leaf_violations
+    leaf_violations=$(git grep -nE "^[[:space:]]*(from|import) armance\.service" src/armance/storage/ 2>/dev/null || true)
+    # providers.openrouter -> service.llm_service is the one documented waiver
+    # (see .importlinter providers-limits ignore_imports).
+    leaf_violations="$leaf_violations$(git grep -nE "^[[:space:]]*(from|import) armance\.service" src/armance/providers/ 2>/dev/null | grep -v "providers/openrouter.py.*llm_service" || true)"
+    if [ -n "$leaf_violations" ]; then
+        fail "storage/providers import from service"
+        echo "$leaf_violations" | head -10 | sed 's/^/    /'
     else
+        ok "storage/providers have no service imports (beyond documented waiver)"
+    fi
+
+    # Run lint-imports: any nonzero exit is a failure (a config error such as
+    # a stale ignore_imports aborts BEFORE contracts are evaluated — grepping
+    # for BROKEN alone turned that abort into a silent false PASS).
+    local lint_output
+    if lint_output=$(uv run lint-imports 2>&1); then
         ok "lint-imports contracts all KEPT"
+    else
+        fail "lint-imports failed (broken contract or config error)"
+        echo "$lint_output" | grep -A 20 "Broken contracts\|Error\|No matches" | head -25 | sed 's/^/    /'
     fi
 }
 
