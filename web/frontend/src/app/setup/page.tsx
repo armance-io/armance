@@ -14,7 +14,7 @@ import {
   type FootprintZone,
   type SetupInitIn,
 } from "@/lib/api";
-import { EMBEDDING_PROVIDERS } from "@/lib/embeddingProviders";
+import { EMBEDDING_PROVIDERS, RERANK_PROVIDERS } from "@/lib/embeddingProviders";
 import { providerLabel } from "@/lib/providerLabels";
 
 const PROVIDERS = [
@@ -154,9 +154,10 @@ export default function SetupPage() {
   const [embeddingModel, setEmbeddingModel] = useState("");
   const [embeddingProvider, setEmbeddingProvider] = useState("");
   const [embeddingOptions, setEmbeddingOptions] = useState<EmbeddingModel[]>([]);
-  // Optional rerank model — uses the same provider as the embedding model.
+  // Optional rerank model — its provider is decoupled from the embedding one.
   // Two-stage retrieval: retrieve wide, then rerank to a small precise set.
   const [rerankModel, setRerankModel] = useState("");
+  const [rerankProvider, setRerankProvider] = useState("");
 
   // Embedding-capable providers among those selected at step 2. claude-code
   // has no embeddings endpoint, so it is excluded.
@@ -170,6 +171,22 @@ export default function SetupPage() {
       setEmbeddingProvider(embeddingProviderChoices[0] ?? "");
     }
   }, [embeddingProviderChoices, embeddingProvider]);
+
+  // Rerank-capable providers among those selected at step 2 (gemini and
+  // claude-code expose no /rerank endpoint). Default follows the embedding
+  // provider when it is eligible, else the first eligible one.
+  const rerankProviderChoices = selectedProviders.filter((p) =>
+    (RERANK_PROVIDERS as readonly string[]).includes(p),
+  );
+  useEffect(() => {
+    if (rerankProviderChoices.length === 0) return;
+    if (!rerankProviderChoices.includes(rerankProvider)) {
+      const fallback = rerankProviderChoices.includes(embeddingProvider)
+        ? embeddingProvider
+        : rerankProviderChoices[0] ?? "";
+      setRerankProvider(fallback);
+    }
+  }, [rerankProviderChoices, rerankProvider, embeddingProvider]);
 
   useEffect(() => {
     let cancelled = false;
@@ -335,9 +352,9 @@ export default function SetupPage() {
       if (embeddingModel.trim()) {
         payload.embedding_model = embeddingModel.trim();
         payload.embedding_provider = embeddingProvider || embeddingProviderChoices[0] || "";
-        if (rerankModel.trim()) {
+        if (rerankModel.trim() && rerankProviderChoices.length > 0) {
           payload.rerank_model = rerankModel.trim();
-          payload.rerank_provider = embeddingProvider || embeddingProviderChoices[0] || "";
+          payload.rerank_provider = rerankProvider || rerankProviderChoices[0] || "";
         }
       }
 
@@ -859,9 +876,9 @@ export default function SetupPage() {
                 </datalist>
 
                 {/* Optional rerank model — only meaningful once an embedding
-                    model is set (rerank refines the vector recall stage). Uses
-                    the same provider as the embedding model. */}
-                {embeddingModel.trim() && (
+                    model is set (rerank refines the vector recall stage). Its
+                    provider is decoupled from the embedding provider. */}
+                {embeddingModel.trim() && rerankProviderChoices.length > 0 && (
                   <div style={{ marginTop: "14px" }}>
                     <label style={{ ...formLabel, marginBottom: "6px" }}>
                       {t("setup:rerank_label")}
@@ -869,13 +886,25 @@ export default function SetupPage() {
                     <p style={{ fontSize: "11px", color: "var(--ink-soft)", marginBottom: "8px" }}>
                       {t("setup:rerank_hint")}
                     </p>
-                    <input
-                      data-testid="setup-rerank-model"
-                      value={rerankModel}
-                      onChange={(e) => setRerankModel(e.target.value)}
-                      placeholder={t("setup:rerank_placeholder")}
-                      style={{ ...inputStyle, width: "100%" }}
-                    />
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <select
+                        data-testid="setup-rerank-provider"
+                        value={rerankProvider || rerankProviderChoices[0]}
+                        onChange={(e) => setRerankProvider(e.target.value)}
+                        style={{ ...inputStyle, flex: "0 0 42%", cursor: "pointer" }}
+                      >
+                        {rerankProviderChoices.map((p) => (
+                          <option key={p} value={p}>{providerLabel(p)}</option>
+                        ))}
+                      </select>
+                      <input
+                        data-testid="setup-rerank-model"
+                        value={rerankModel}
+                        onChange={(e) => setRerankModel(e.target.value)}
+                        placeholder={t("setup:rerank_placeholder")}
+                        style={{ ...inputStyle, flex: 1 }}
+                      />
+                    </div>
                   </div>
                 )}
               </div>

@@ -627,14 +627,15 @@ export const ConfigForm: FC<ConfigFormProps> = ({
         onChange={(provider, model) =>
           setDraft((d) => ({ ...d, embedding_provider: provider, embedding_model: model }))
         }
+        rerankProvider={draft.rerank_provider ?? ""}
         rerankValue={draft.rerank_model ?? ""}
-        onRerankChange={(model) =>
+        onRerankChange={(provider, model) =>
           setDraft((d) => ({
             ...d,
             rerank_model: model,
-            // Rerank shares the embedding provider — keep them in lockstep so a
-            // model id is never left orphaned from its provider on save.
-            rerank_provider: model ? (d.embedding_provider ?? "") : "",
+            // Provider is its own choice (may differ from embedding), but a
+            // blank model clears it so no orphan provider survives a save.
+            rerank_provider: model ? provider : "",
           }))
         }
         t={t}
