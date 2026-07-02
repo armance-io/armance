@@ -397,6 +397,15 @@ init:
     disabled_edit_keys: "RAG は無効化されました。後で有効にするには .armance/config.yaml の embedding_provider / embedding_model を編集してください。"
     unrecognised: "モデル '{name}' は認識されません。RAG は無効化されました。"
     confirmed: "埋め込みモデル: [{provider}] {model}"
+  rerank:
+    title: "オプション：リランクモデル（ライブラリ検索の精度向上、トークン節約）。"
+    uses_provider: "空欄でスキップ。使用するプロバイダー：{provider}"
+    unsupported: "{provider} にはリランクのエンドポイントがありません — スキップします。"
+    openrouter_hint: "注意：openrouter.ai には /rerank ルートがありません。OPENROUTER_BASE_URL を Cohere 形式の /rerank を公開するプロキシ（TEI、Infinity、LiteLLM）に向けてください。そうしないと検索は静かにベクトル順にフォールバックします。"
+    prompt_provider: "リランクモデルのプロバイダー（embedding プロバイダーと異なっても可）"
+    prompt_model: "{provider} 用リランクモデル ID（空欄 = スキップ）"
+    disabled: "リランクは無効化されました。"
+    confirmed: "リランク: [{provider}] {model}"
   ssl_skip_prompt: "SSL 証明書の検証をスキップしますか？（自己署名証明書 / 企業内 MITM プロキシの検証で必要になります）"
 
 # ---------------------------------------------------------------------------
