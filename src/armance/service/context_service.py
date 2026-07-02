@@ -320,12 +320,27 @@ class ContextService:
         """Query RAG and inject top-K chunks into base_context.
 
         Per T-27: L1 enrichment with retrieved chunks at load time.
-        When ``config`` has a rerank model configured, retrieval is two-stage.
+        When ``config`` has a rerank model configured, retrieval is two-stage:
+        the precision step is built HERE and injected into the storage helper
+        as a callback, so storage never imports service.
         """
+        from armance.config import rerank_active
         from armance.storage.rag_index import context_with_rag
 
-        # We can pass the root to the helper which handles the async-in-thread logic
-        rag_context = context_with_rag(self.armance_root, query, k=k, config=config)
+        rerank_hook = None
+        candidate_k: int | None = None
+        if config is not None and rerank_active(config):
+            from armance.service.rerank import rerank_chunks
+
+            async def rerank_hook(q: str, cands: list) -> list:
+                return await rerank_chunks(q, cands, config)
+
+            candidate_k = config.rerank_candidate_k
+
+        # The helper owns the async-in-thread logic
+        rag_context = context_with_rag(
+            self.armance_root, query, k=k, rerank=rerank_hook, candidate_k=candidate_k
+        )
         
         if not rag_context:
             return base_context

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import logging
+from unittest.mock import patch
 
 import pytest
 
 from armance.config import Config
-from armance.core.protocols.llm import RerankHit
 from armance.service.agents import _rag_inject
+from armance.storage import rag_index
 
 
 class _Chunk:
@@ -14,43 +14,52 @@ class _Chunk:
         self.id, self.text, self.source = cid, text, "doc"
 
 
-class _FakeClient:
-    def __init__(self, order):
-        self._order = order
+class _Store:
+    calls: dict = {}
 
-    async def rerank(self, query, documents, model, *, top_n=None):
-        return [RerankHit(index=i, score=float(len(documents) - n))
-                for n, i in enumerate(self._order)]
+    def __init__(self, *a, **k):
+        pass
 
-
-@pytest.mark.asyncio
-async def test_rerank_chunks_reorders_and_truncates(monkeypatch):
-    cands = [_Chunk(i, f"t{i}") for i in range(5)]
-    cfg = Config(rerank_provider="openrouter", rerank_model="m", rerank_keep_n=2)
-    monkeypatch.setattr(_rag_inject, "get_client", lambda p, c: _FakeClient([3, 1, 0, 2, 4]))
-    out = await _rag_inject._rerank_chunks("q", cands, cfg)
-    assert [c.id for c in out] == [3, 1]   # reranker order, truncated to keep_n
+    async def query(self, q, top_k):
+        _Store.calls["top_k"] = top_k
+        return [_Chunk(i, f"t{i}") for i in range(5)]
 
 
-@pytest.mark.asyncio
-async def test_rerank_chunks_degrades_on_error(monkeypatch, caplog):
-    cands = [_Chunk(i, f"t{i}") for i in range(4)]
-    cfg = Config(rerank_provider="openrouter", rerank_model="m", rerank_keep_n=2)
-
-    class _Boom:
-        async def rerank(self, *a, **k):
-            raise RuntimeError("5xx")
-
-    monkeypatch.setattr(_rag_inject, "get_client", lambda p, c: _Boom())
-    with caplog.at_level(logging.WARNING):
-        out = await _rag_inject._rerank_chunks("q", cands, cfg)
-    assert [c.id for c in out] == [0, 1]   # vector order, keep_n, no raise
+def _cfg(**kw) -> Config:
+    return Config(
+        embedding_provider="custom-openai", embedding_model="emb", **kw
+    )
 
 
 @pytest.mark.asyncio
-async def test_rerank_chunks_tiny_corpus(monkeypatch):
-    cands = [_Chunk(0, "t0")]
-    cfg = Config(rerank_provider="openrouter", rerank_model="m", rerank_keep_n=5)
-    monkeypatch.setattr(_rag_inject, "get_client", lambda p, c: _FakeClient([0]))
-    out = await _rag_inject._rerank_chunks("q", cands, cfg)
-    assert [c.id for c in out] == [0]      # all, no crash
+async def test_inject_rag_section_two_stage(monkeypatch, tmp_path):
+    """When rerank is configured, recall widens then rerank_chunks cuts."""
+    _Store.calls = {}
+    calls = {}
+    monkeypatch.setattr(rag_index, "RagService", _Store)
+    monkeypatch.setattr(_rag_inject, "get_client", lambda p, c: object())
+
+    async def _fake_rerank(q, cands, cfg):
+        calls["candidates"] = len(cands)
+        return cands[:2]
+
+    monkeypatch.setattr(_rag_inject, "rerank_chunks", _fake_rerank)
+    cfg = _cfg(rerank_provider="custom-openai", rerank_model="m",
+               rerank_candidate_k=5, rerank_keep_n=2)
+    with patch("armance.storage.rag_status.has_indexed_chunks", return_value=True):
+        out = await _rag_inject.inject_rag_section(tmp_path, "q", k=3, config=cfg)
+    assert _Store.calls["top_k"] == 5     # candidate_k, not k
+    assert calls["candidates"] == 5
+    assert "t0" in out and "t1" in out
+    assert "t2" not in out                # cut by the rerank step
+
+
+@pytest.mark.asyncio
+async def test_inject_rag_section_without_rerank_is_single_stage(monkeypatch, tmp_path):
+    _Store.calls = {}
+    monkeypatch.setattr(rag_index, "RagService", _Store)
+    monkeypatch.setattr(_rag_inject, "get_client", lambda p, c: object())
+    with patch("armance.storage.rag_status.has_indexed_chunks", return_value=True):
+        out = await _rag_inject.inject_rag_section(tmp_path, "q", k=3, config=_cfg())
+    assert _Store.calls["top_k"] == 3     # plain k
+    assert "t0" in out
