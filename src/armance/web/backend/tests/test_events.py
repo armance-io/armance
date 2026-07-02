@@ -68,6 +68,12 @@ async def test_events_stale_session_heals(client: AsyncClient) -> None:
 
     The event stream is opened on chat mount; if a stale sid dead-ended 404
     the UI never received agent/library/workflow events on first launch.
+    httpx ASGITransport buffers whole responses, so a GET on the endless
+    SSE stream would hang the suite — assert the heal at the seam the
+    route uses (get_or_heal_session) instead.
     """
-    resp = await client.get("/projects/default/sessions/bad-sid/events")
-    assert resp.status_code == 200
+    from armance.web.backend.routes.sessions import get_or_heal_session
+
+    app_state = client._transport.app.state.app_state  # type: ignore[attr-defined]
+    ws = get_or_heal_session(app_state, "default", "bad-sid", client_id="tester")
+    assert ws is not None

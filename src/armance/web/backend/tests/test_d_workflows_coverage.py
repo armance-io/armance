@@ -125,15 +125,17 @@ async def test_run_dispatch_seam_no_index_blank_run_id(
 
 
 @pytest.mark.asyncio
-async def test_run_unknown_session_404(
+async def test_run_stale_session_heals(
     client: AsyncClient, armance_root: Path
 ) -> None:
+    # The session self-heals; the missing workflow is then a
+    # workflow_not_found, not a dead-end session_not_found.
     resp = await client.post(
         "/projects/default/sessions/ghost/workflows/wf/run",
         json={"mode": "interactive"},
     )
     assert resp.status_code == 404
-    assert resp.json()["detail"] == "session_not_found"
+    assert resp.json()["detail"] == "workflow_not_found"
 
 
 # --- _dispatch_stop real body (lines 231-235) ----------------------------
@@ -160,28 +162,32 @@ async def test_stop_dispatch_seam_real_body(
 
 
 @pytest.mark.asyncio
-async def test_stop_unknown_session_404(
+async def test_stop_stale_session_heals(
     client: AsyncClient, armance_root: Path
 ) -> None:
+    # The session self-heals; the missing workflow is then a
+    # workflow_not_found, not a dead-end session_not_found.
     resp = await client.post(
         "/projects/default/sessions/ghost/workflows/wf/stop",
         json={"confirm": True},
     )
     assert resp.status_code == 404
-    assert resp.json()["detail"] == "session_not_found"
+    assert resp.json()["detail"] == "workflow_not_found"
 
 
 # --- delete_run error branches (lines 276, 278, 285-286, 294-304) --------
 
 @pytest.mark.asyncio
-async def test_delete_run_unknown_session_404(client: AsyncClient) -> None:
+async def test_delete_run_stale_session_heals(client: AsyncClient) -> None:
+    # The session self-heals; the missing run is then a run_not_found,
+    # not a dead-end session_not_found.
     resp = await client.request(
         "DELETE",
         "/projects/default/sessions/ghost/workflows/wf/runs/run-1",
         json={"confirm": True},
     )
     assert resp.status_code == 404
-    assert resp.json()["detail"] == "session_not_found"
+    assert resp.json()["detail"] == "run_not_found"
 
 
 @pytest.mark.asyncio
