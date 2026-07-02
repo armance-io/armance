@@ -169,17 +169,20 @@ armance web                 # serves API + UI at http://127.0.0.1:8000, opens a 
 
 By default the server runs **in the background**: the command waits until the
 server answers, opens a browser, prints the URL + pid, and returns `0`. Logs go
-to `.armance/logs/web-server.log` (not the terminal). Stop it with `armance web
---stop`. Use `--foreground` to block instead (Ctrl+C stops it; logs stream
-to the terminal) — handy for dev.
+to the server's log file (not the terminal). Stop it with `armance stop` (or
+`armance web --stop`) — **from any folder**. Use `--foreground` to block
+instead (Ctrl+C stops it; logs stream to the terminal) — handy for dev.
 
-Only **one instance per project folder** may run at a time: a lock file at
-`.armance/web-server.pid` records the running server. A second `armance web` in
-the same folder is refused until you stop the first (stale locks from a crashed
-server are detected and cleared automatically).
+There is **one server for all projects**: `armance web` is not folder-contextual.
+Wherever you run it, it serves the global launcher (the projects list) and you
+pick a project from the UI. The server is homed in the global config dir
+(`~/.config/armance` on Linux) with a lock file recording the running instance;
+a second `armance web` is refused until you stop the first (stale locks from a
+crashed server are detected and cleared automatically). `armance stop` finds
+that global server from anywhere; if none is running it falls back to a legacy
+per-folder server in the current directory.
 
-Run it from a project directory (one that has — or will have — a `.armance/`
-folder, exactly like `armance run`). Options:
+Options:
 
 | Flag | Effect |
 |---|---|
@@ -187,7 +190,7 @@ folder, exactly like `armance run`). Options:
 | `--bind 0.0.0.0` | expose on the LAN (read-only for watchers; only the first client may write) |
 | `--no-browser` | don't auto-open a browser |
 | `--foreground` | block in the terminal (Ctrl+C stops; logs stream to stdout) instead of backgrounding |
-| `--stop` | stop the server running in this folder, then exit (alias: `armance web stop`) |
+| `--stop` | stop THE server, from any folder (aliases: `armance stop`, `armance web stop`) |
 | `--build` | (repo checkout only) rebuild the UI bundle before serving — needs Node + pnpm |
 
 **Where the UI comes from:**
@@ -229,6 +232,7 @@ armance run         # opens the TUI
 4. **Budget effort** — `free-first` / `low` / `medium` / `high` / `adaptive`.
 5. **Interface language** — EN / FR / ES / DE / ZH / JA. *Every agent — staff and specialists — replies in this language.* Auto-detected from `$LANG`.
 6. **Embedding model** — discovered from your configured provider's API; can be skipped and configured later.
+7. **Rerank model** (optional) — a cross-encoder re-orders RAG results after vector recall. Its provider may differ from the embedding provider (only `custom-openai` and `openrouter`-via-proxy can serve it); skip to keep plain vector order.
 
 Drop documents into `.armance/docs/` and run `armance run`. Armance greets you, frames the project, recruits a team, designs a workflow, runs it, and exports a deliverable.
 
@@ -387,6 +391,10 @@ All non-secret settings live in `.armance/config.yaml`. API keys live in `.arman
 | `language` | *(chosen at init)* | `en` / `fr` / `es` / `de` / `zh` / `ja`. All agents reply in this language. |
 | `embedding_provider` | *(chosen at init)* | Provider used for RAG. Leave blank to disable. |
 | `embedding_model` | *(chosen at init)* | Embedding model id. Must match `embedding_provider`. |
+| `rerank_provider` | `""` | Provider serving the rerank endpoint (`openrouter` via a Cohere-style proxy on `OPENROUTER_BASE_URL`, or `custom-openai`). May differ from `embedding_provider`. Blank = no reranking. |
+| `rerank_model` | `""` | Cross-encoder model id (e.g. `bge-reranker-v2-m3`). Blank = vector order only. |
+| `rerank_candidate_k` | `20` | Vector-recall candidates fed to the reranker (stage 1). |
+| `rerank_keep_n` | `5` | Chunks kept after reranking (stage 2). Rerank failures degrade silently to vector order. |
 | `log_level` | `INFO` | `DEBUG`, `INFO`, `WARNING`, `ERROR`. |
 | `prices` | `{}` | Override per-model USD prices. Example: `prices: {my-model: {input_per_mtok: 1.0, output_per_mtok: 5.0}}`. |
 

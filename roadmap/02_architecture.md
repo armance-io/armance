@@ -64,6 +64,11 @@ service/
   llm_service.py      LLMClient factory + TokenLedger + continuation
                       handler for finish_reason=length
   rag_service.py      Re-export shim (RagService lives in storage)
+  rerank.py           Two-stage retrieval hook: builds the async
+                      rerank(query, chunks) callable injected into
+                      context_with_rag (recall candidate_k=20 →
+                      cross-encoder keep_n=5; failures degrade
+                      silently to vector order)
   checkpoint.py       Human-in-the-loop checkpoint contract
 storage/
   rag_index.py        RagService (sqlite-vec) + context_with_rag helper
@@ -124,7 +129,9 @@ effective_system_prompt =
     caveman_protocol_overlay      (optional, "ultra" / "lite" / "full" / "none")
   + agent_body                    (the YAML-fronted markdown file)
   + voice_overlay(language)       (short directive — Phase D)
-  + RAG injection                 (top-k chunks from .armance/docs/)
+  + RAG injection                 (top-k chunks from .armance/docs/;
+                                   two-stage when rerank is configured:
+                                   vector recall → cross-encoder rerank)
   + project brief                 (L0 once frozen)
   + team roster                   (Malik-recruited specialists)
   + per-step layered context      (specialists only: L0 + L1[role] + L2[theme])

@@ -269,10 +269,19 @@ storage/ingestion.sync_docs(armance_root, config)
 At query time:
 service/agents/_rag_inject.inject_rag_section
     │  - top-k retrieval on the user's last turn
+    │  - two-stage when rerank is configured (rerank_provider +
+    │    rerank_model): vector recall (candidate_k=20) → cross-encoder
+    │    rerank via service/rerank.py → keep_n=5; any rerank failure
+    │    degrades silently to plain vector order
     │  - returns a "## Retrieved from .armance/docs/" section
     ▼
 Appended to the agent system prompt
 ```
+
+Sync callers (`storage.rag_index.context_with_rag`) never import service
+code: the rerank step arrives as an async hook injected by
+`ContextService.enrich_for_agent` (layering stays `service → storage`,
+never the reverse).
 
 **Boot does NOT auto-ingest.** Earlier versions did and silently fell back to
 zero-vector ingestion when no embedding client was configured, which polluted
@@ -381,6 +390,7 @@ bash scripts/check_invariants.sh         # layer + legacy hygiene
 | Slash command misbehaving | `service/handlers.py` (search `_cmd_<name>`) + `service/tui_bridge.py` |
 | Wrong agent answers | `service/agents/<role>_agent.py` + that agent's `.md` |
 | RAG returns nothing | `storage/ingestion.py` (indexing) + `storage/rag_index.py` (query) + `service/agents/_rag_inject.py` |
+| Rerank not applied / wrong order | `service/rerank.py` (degrades silently to vector order on any failure — check the log) + `config.py::rerank_active` |
 | Wrong vocabulary in UI | `nls_catalogues/{en,fr,es,de,zh,ja}.yaml` |
 | Provider auth failure | `providers/<name>.py` + `cli.py` doctor command |
 | Cost estimate off | `service/cost.py` + `providers/model_discovery.py` |
