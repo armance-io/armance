@@ -143,10 +143,14 @@ class OpenRouterClient(LLMClient):
         *,
         top_n: int | None = None,
     ) -> list[RerankHit]:
-        """Native cross-encoder rerank via POST /rerank (Cohere-style).
+        """Cross-encoder rerank via POST /rerank (Cohere-style wire format).
 
-        Serves both `openrouter` and `custom-openai` (same client class).
-        Logs to the exchange log + ledger like embed."""
+        Serves both `openrouter` and `custom-openai` (same client class),
+        BUT openrouter.ai itself exposes no /rerank route: without a
+        base_url override pointing at a proxy that does (TEI, Infinity,
+        LiteLLM), this 404s and the service layer degrades to vector
+        order. `custom-openai` against such an endpoint is the supported
+        path. Logs to the exchange log + ledger like embed."""
         from armance.service.llm_service import (
             get_ledger,
             log_failure,

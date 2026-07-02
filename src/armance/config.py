@@ -144,6 +144,22 @@ def load_config() -> Config:
             provider.api_key = env[api_key_var]
         if env.get(base_url_var):
             provider.base_url = env[base_url_var]
+
+    # openrouter.ai serves no public /rerank route (the client speaks the
+    # Cohere-style /rerank exposed by OpenAI-compatible proxies — TEI,
+    # Infinity, LiteLLM). Without a base_url override the call 404s and
+    # every retrieval silently degrades to vector order.
+    if rerank_active(cfg) and cfg.rerank_provider == "openrouter":
+        base = next(
+            (p.base_url for p in cfg.providers if p.name == "openrouter"), None
+        )
+        if not base:
+            logger.warning(
+                "rerank_provider=openrouter but openrouter.ai has no /rerank "
+                "endpoint — rerank will degrade to plain vector order. Point "
+                "OPENROUTER_BASE_URL at a proxy exposing Cohere-style /rerank, "
+                "or use the custom-openai provider.",
+            )
     return cfg
 
 

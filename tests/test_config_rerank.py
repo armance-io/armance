@@ -50,3 +50,39 @@ def test_loader_clamps_candidate_k_below_keep_n(tmp_path, monkeypatch, caplog):
         cfg = load_config()
     assert cfg.rerank_candidate_k == 5  # clamped up to keep_n
     assert any("rerank" in r.message.lower() for r in caplog.records)
+
+
+def test_loader_warns_openrouter_has_no_rerank_route(tmp_path, monkeypatch, caplog):
+    cfg_dir = tmp_path / "cfg"
+    cfg_dir.mkdir()
+    cfg_file = cfg_dir / "config.yaml"
+    cfg_file.write_text(yaml.safe_dump({
+        "default_provider": "openrouter",
+        "rerank_provider": "openrouter",
+        "rerank_model": "cohere/rerank-v3.5",
+    }), encoding="utf-8")
+    monkeypatch.setattr(paths, "global_config_path", lambda: cfg_file)
+    monkeypatch.setattr(paths, "global_env_path", lambda: cfg_dir / ".env")
+    monkeypatch.delenv("OPENROUTER_BASE_URL", raising=False)
+    with caplog.at_level(logging.WARNING):
+        load_config()
+    assert any("/rerank" in r.message for r in caplog.records)
+
+
+def test_loader_no_warning_with_proxy_base_url(tmp_path, monkeypatch, caplog):
+    cfg_dir = tmp_path / "cfg"
+    cfg_dir.mkdir()
+    cfg_file = cfg_dir / "config.yaml"
+    cfg_file.write_text(yaml.safe_dump({
+        "default_provider": "openrouter",
+        "rerank_provider": "openrouter",
+        "rerank_model": "cohere/rerank-v3.5",
+    }), encoding="utf-8")
+    (cfg_dir / ".env").write_text(
+        "OPENROUTER_BASE_URL=http://localhost:4000/v1\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(paths, "global_config_path", lambda: cfg_file)
+    monkeypatch.setattr(paths, "global_env_path", lambda: cfg_dir / ".env")
+    with caplog.at_level(logging.WARNING):
+        load_config()
+    assert not any("/rerank" in r.message for r in caplog.records)
