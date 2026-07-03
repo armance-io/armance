@@ -93,16 +93,26 @@ export const LivePanelContainer: FC<LivePanelContainerProps> = ({
   const hypotheses = hypothesesData?.hypotheses || [];
 
   // Compose dynamic export download links
-  const downloads = [
-    {
-      format: "MD",
-      url: `/api/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(workflowName)}/runs/${encodeURIComponent(runId)}/export/md`,
-    },
-    {
-      format: "PDF",
-      url: `/api/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(workflowName)}/runs/${encodeURIComponent(runId)}/export/pdf`,
-    },
-  ];
+  const downloads: { format: string; url: string }[] = [];
+  if (runFiles) {
+    if (runFiles["deliverable.pdf"]) {
+      downloads.push({
+        format: "PDF",
+        url: `/api/projects/${pid}/sessions/${sid}/exports/${encodeURIComponent(workflowName)}/${encodeURIComponent(runId)}/deliverable.pdf`,
+      });
+    }
+    if (runFiles["deliverable.md"]) {
+      downloads.push({
+        format: "MD",
+        url: `/api/projects/${pid}/sessions/${sid}/exports/${encodeURIComponent(workflowName)}/${encodeURIComponent(runId)}/deliverable.md`,
+      });
+    } else if (runFiles["synthesis.md"]) {
+      downloads.push({
+        format: "MD",
+        url: `/api/projects/${pid}/sessions/${sid}/exports/${encodeURIComponent(workflowName)}/${encodeURIComponent(runId)}/synthesis.md`,
+      });
+    }
+  }
 
   return (
     <LivePanel

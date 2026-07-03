@@ -76,7 +76,7 @@ const Section: FC<{
     gap: "10px",
     padding: "12px 0",
     cursor: "pointer",
-    borderBottom: "1px solid var(--rule, #d6c8ad)",
+    borderBottom: open ? "1px dashed var(--rule, #d6c8ad)" : "none",
     userSelect: "none",
   };
 
@@ -263,7 +263,7 @@ export const LivePanel: FC<LivePanelProps> = ({
 
       {/* 1. Mode chip */}
       <span style={modeChipStyle}>
-        {t(`run:panel.mode.${mode}`)}
+        {t(`run:panel.mode_${mode}`)}
       </span>
 
       {/* 2. Deliverable */}

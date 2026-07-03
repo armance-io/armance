@@ -478,10 +478,9 @@ async def _cmd_workflow_run(
                 return msg
             _missing_streak["count"] = 0
             # Caveman policy:
-            #   - specialist task / critique steps speak agent→agent → ultra
-            #   - Mona's judge step produces the user-facing synthesis → none
+            #   - specialist task / critique / judge steps speak agent→agent → ultra
             #   - deliverable step is read by the user → none
-            step_caveman = "none" if step.kind in ("judge", "deliverable") else "ultra"
+            step_caveman = "none" if step.kind == "deliverable" else "ultra"
             report = await run_specialist(
                 agent_obj,
                 task,

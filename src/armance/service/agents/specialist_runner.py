@@ -214,6 +214,9 @@ class SpecialistRunner:
             prompt=task.prompt,
             content=response.text,
             finish_reason=response.finish_reason,
+            tokens_in=response.tokens_in,
+            tokens_out=response.tokens_out,
+            cost_usd=response.cost_usd,
         )
 
         # T-15f: Parse claims and emit to ledger with correct view
