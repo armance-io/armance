@@ -233,7 +233,9 @@
       "rejected": "Rejected",
       "proposed_by": "Proposed by",
       "rejected_by": "Rejected by",
-      "weight": "weight"
+      "weight": "weight",
+      "weight_tooltip": "Strength of the argument (1 to 5)",
+      "source_tooltip": "Jump to source"
     },
     "tabs": {
       "flow": "Flow",
