@@ -3,7 +3,9 @@
 Three acceptance criteria:
 1. prompt() blocks until resolve() is called; future resolves with the answer.
 2. is_abort=True propagates through to CheckpointResponse.
-3. prompt() with no resolve within timeout raises asyncio.TimeoutError.
+3. prompt() with no resolve within timeout returns an abort response — an
+   unanswered checkpoint winds the run down as `canceled`, it must NOT
+   crash it as `failed` (W8, workflow-run-resilience).
 """
 from __future__ import annotations
 
@@ -71,13 +73,15 @@ async def test_prompt_propagates_is_abort(handler, bus_stub) -> None:
 
 
 @pytest.mark.asyncio
-async def test_prompt_raises_timeout(bus_stub) -> None:
-    """prompt() raises asyncio.TimeoutError if not resolved within timeout."""
+async def test_prompt_timeout_returns_abort(bus_stub) -> None:
+    """No resolve within the timeout → abort response (not an exception):
+    the workflow finalises `canceled` instead of `failed`."""
     from armance.web.backend.checkpoint import WebCheckpointHandler
     h = WebCheckpointHandler(bus_stub, timeout=0.05)
     cp = Checkpoint(id="cp3", prompt="Never answered", kind="text")
-    with pytest.raises(asyncio.TimeoutError):
-        await h.prompt(cp)
+    response = await h.prompt(cp)
+    assert response.is_abort is True
+    assert response.content == ""
 
 
 @pytest.mark.asyncio
