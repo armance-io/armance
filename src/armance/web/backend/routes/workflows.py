@@ -181,6 +181,52 @@ class RunIn(BaseModel):
     depth: str = "quick"
 
 
+@router.get("/workflows/{name}/estimate")
+async def estimate_workflow_cost(
+    pid: str,
+    sid: str,
+    name: str,
+    depth: str = "quick",
+    user: str = Depends(get_current_user),
+    app_state: AppState = Depends(get_app_state),
+) -> dict:
+    """Pre-run cost estimate for the DepthPicker.
+
+    The web run path skips the interactive cost-confirm checkpoint (it
+    would deadlock before the HITL surface mounts) — this route gives the
+    user the same number *before* they click Launch instead. `total_usd`
+    is None-safe: unpriced models contribute 0 and are counted in
+    `unpriced_steps` so the UI can render "≈" honestly.
+    """
+    ws = app_state.get(sid)
+    if ws is None:
+        raise HTTPException(status_code=404, detail="session_not_found")
+    wf_path = _require_workflow(ws, name)
+    wf = _load_workflow_safe(wf_path)
+    if wf is None:
+        raise HTTPException(status_code=422, detail="workflow_invalid_yaml")
+
+    from armance.service.cost import estimate_workflow
+    prices_override = getattr(ws.ctx.cfg, "prices", None) or {}
+    estimate = estimate_workflow(
+        wf,
+        ws.ctx.agents,
+        user_prompt=getattr(wf, "scope", "") or name,
+        prices_override=prices_override,
+        intense=(depth == "deep"),
+    )
+    unpriced = sum(
+        1 for s in estimate.get("steps", []) if s.get("cost_usd") is None
+    )
+    return {
+        "total_usd": estimate.get("total_usd", 0.0),
+        "by_provider": estimate.get("by_provider", {}),
+        "steps_total": len(estimate.get("steps", [])),
+        "unpriced_steps": unpriced,
+        "boosted_count": estimate.get("boosted_count", 0),
+    }
+
+
 async def _dispatch_run(ws, name: str, mode: str, depth: str = "quick") -> dict[str, Any]:
     """Run the workflow on the web path.
 
