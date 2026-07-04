@@ -156,3 +156,53 @@ async def test_stream_retries_without_stream_options_on_400() -> None:
     assert "stream_options" not in second
     assert resp.text == "hello"
     assert resp.tokens_out == 11
+
+
+# ---------------------------------------------------------------------------
+# custom-openai discovery (/models, best effort)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_custom_openai_discovery_lists_models() -> None:
+    from armance.providers.static_providers import CustomOpenAIProvider
+
+    async with respx.mock(assert_all_called=True) as router:
+        router.get("https://proxy.test/v1/models").mock(
+            return_value=httpx.Response(200, json={
+                "data": [
+                    {"id": "openai/gpt-4.1-mini"},
+                    {"id": "vertex_ai/gemini-2.5-pro"},
+                ],
+            })
+        )
+        provider = CustomOpenAIProvider(
+            api_key="k", base_url="https://proxy.test/v1",
+        )
+        models = await provider.list_models()
+
+    assert [m.id for m in models] == [
+        "openai/gpt-4.1-mini", "vertex_ai/gemini-2.5-pro",
+    ]
+    assert all(m.provider == "custom-openai" for m in models)
+
+
+@pytest.mark.asyncio
+async def test_custom_openai_discovery_absent_route_returns_empty() -> None:
+    from armance.providers.static_providers import CustomOpenAIProvider
+
+    async with respx.mock() as router:
+        router.get("https://proxy.test/v1/models").mock(
+            return_value=httpx.Response(404, text="no such route")
+        )
+        provider = CustomOpenAIProvider(api_key="k", base_url="https://proxy.test/v1")
+        assert await provider.list_models() == []
+
+
+@pytest.mark.asyncio
+async def test_custom_openai_discovery_without_base_url_returns_empty(monkeypatch) -> None:
+    from armance.providers.static_providers import CustomOpenAIProvider
+
+    monkeypatch.delenv("CUSTOM_OPENAI_BASE_URL", raising=False)
+    provider = CustomOpenAIProvider(api_key="k", base_url=None)
+    assert await provider.list_models() == []

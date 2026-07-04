@@ -292,7 +292,8 @@
       "hint_autonomous": "Mona operates autonomous checkpoints to deliver the synthesis.",
       "mode_interactive": "interactive",
       "mode_autonomous": "autonomous",
-      "launch": "Launch"
+      "launch": "Launch",
+      "estimate_label": "Estimated cost"
     },
     "history": {
       "title": "Past runs",

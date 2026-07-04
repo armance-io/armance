@@ -71,6 +71,9 @@ async def check_consensus_and_maybe_invoke_serge(
     """If 3+ judge steps all show empty Divergence, synthesise their outputs
     and call critique_runner once to get Serge's pushback.
 
+    Workflows that already schedule a `critique` step get nothing: Serge
+    already spoke there — auto-invoking him again duplicates the pushback.
+
     Returns (auto_step_id, critique_output) on invocation, else None.
 
     The caller is in charge of storing the auto-step result in its own
@@ -78,6 +81,8 @@ async def check_consensus_and_maybe_invoke_serge(
     """
     judge_steps = [s for s in workflow.steps if s.kind == "judge"]
     if len(judge_steps) < 3:
+        return None
+    if any(s.kind == "critique" for s in workflow.steps):
         return None
 
     empty_count = sum(
@@ -122,7 +127,12 @@ def _output_of(result_obj: Any) -> str:
     return getattr(result_obj, "output", "") or ""
 
 
-_TRIVIAL_DIVERGENCE = re.compile(r"^(none identified|none|no divergence|—|-\s*$)\.?$", re.IGNORECASE)
+# The docstring below has always promised 'Aucune' handling — the pattern
+# only covered the English markers until now.
+_TRIVIAL_DIVERGENCE = re.compile(
+    r"^(none identified|none|no divergence|aucune(\s+divergence)?(\s+identifiée)?|—|-\s*$)\.?$",
+    re.IGNORECASE,
+)
 
 
 def detect_empty_divergence(synthesis_text: str) -> bool:
