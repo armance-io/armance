@@ -236,6 +236,8 @@ system_msg:
   auto_dismissed_before_recruit: "*(System: Vollständige Neuzusammenstellung des Teams erkannt — {n} vorherige(r) Spezialist(en) vor Rekrutierung des neuen Teams automatisch entlassen)*"
   forwarded: "— an {target} weitergeleitet —"
   health_warning: "Achtung — Nicht erreichbare Modelle beim Verbindungstest erkannt: {agents}. Bitten Sie @Malik, ein anderes Modell für diese Agenten vorzuschlagen."
+  repaired: "*(System: {n} defekte(r) Agent(en) an Ort und Stelle repariert statt neu rekrutiert: {names} — Name und Persona erhalten, Modell getauscht)*"
+  boost_health_warning: "Achtung — Boost-Modelle beim Test nicht erreichbar: {agents}. Das Basismodell funktioniert; korrigieren Sie das Boost-Paar über @Malik (`/agent-swap`)."
   agent_swapped: "*(System: Modell von {name} auf {model} gewechselt — Zustand: {health})*"
   agent_swap_unknown: "*(System: {name} kann nicht gewechselt werden — kein solcher rekrutierter Agent)*"
   agent_swap_bad_model: "*(System: Wechsel von {name} fehlgeschlagen — Modell-ID fehlt oder ungültig)*"

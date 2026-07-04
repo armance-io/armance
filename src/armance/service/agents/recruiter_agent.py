@@ -834,10 +834,12 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
         new_agents = self._parse_agents_yaml(yaml_text, role_name)
         agents_dir.mkdir(parents=True, exist_ok=True)
 
-        # Build a snapshot of existing (name -> role) so we can detect:
+        # Build a snapshot of existing agents so we can detect:
         #   - same name + same role  → overwrite (model swap, persona tweak)
         #   - same name + diff role  → reject (collision, Malik must pick another name)
+        #   - NEW name + role staffed by a SICK agent → repair redirect (below)
         existing: dict[str, str] = {}
+        existing_agents: dict[str, Agent] = {}
         if agents_dir.exists():
             for p in agents_dir.glob("*.md"):
                 if p.stem.startswith("system-") or p.stem.startswith("_"):
@@ -845,6 +847,7 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
                 try:
                     ex = Agent.load(p)
                     existing[ex.name] = (ex.role or "").strip().lower()
+                    existing_agents[ex.name] = ex
                 except Exception:
                     continue
 
@@ -866,6 +869,11 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
         staff_updates: list[str] = []
         new_names: list[str] = []
         updated_names: list[str] = []
+        repaired: list[str] = []  # sick agents fixed in place (repair redirect)
+
+        def _same_role(a: str, b: str) -> bool:
+            na, nb = _normalise_role(a), _normalise_role(b)
+            return na == nb or na.split("-")[0] == nb.split("-")[0]
 
         for agent in new_agents:
             new_role = (agent.role or "").strip().lower()
@@ -899,6 +907,45 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
                 # practice since ensure_armance_tree installs all five).
 
             prior_role = existing.get(agent.name)
+
+            # Repair redirect: Malik proposed a NEW name for a role already
+            # staffed by a sick agent (last_health error). That's a model
+            # repair, not a new profile — re-recruiting would duplicate the
+            # role and leave a zombie (runtime2: Leo → "Anais"). Swap the
+            # sick agent's (provider, model, boost) in place; name and
+            # persona are preserved.
+            if prior_role is None:
+                sick_peer = next(
+                    (
+                        ex for ex in existing_agents.values()
+                        if ex.name not in repaired
+                        and _same_role(ex.role or "", new_role)
+                        and str(getattr(ex, "last_health", "") or "").startswith("error")
+                    ),
+                    None,
+                )
+                if sick_peer is not None:
+                    sick_peer.provider = agent.provider or sick_peer.provider
+                    sick_peer.model = agent.model or sick_peer.model
+                    if agent.boost_provider:
+                        sick_peer.boost_provider = agent.boost_provider
+                    if agent.boost_model:
+                        sick_peer.boost_model = agent.boost_model
+                    if agent.reasoning is not None:
+                        sick_peer.reasoning = agent.reasoning
+                    sick_peer.save(agents_dir / f"{sick_peer.name}.md")
+                    logger.info(
+                        "recruit: repair redirect — proposed name %r absorbed into "
+                        "sick agent %s (role=%s, model=%s)",
+                        agent.name, sick_peer.name, new_role, sick_peer.model,
+                    )
+                    repaired.append(sick_peer.name)
+                    created.append(sick_peer)   # re-probed by the health pass
+                    created_names.append(sick_peer.name)
+                    updated_names.append(sick_peer.name)
+                    self._create_agent_in_registry(sick_peer)
+                    continue
+
             if prior_role is not None:
                 norm_prior = _normalise_role(prior_role)
                 norm_new = _normalise_role(new_role)
@@ -939,6 +986,7 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
         self.last_updated_names = updated_names
         self.last_skipped_collisions = skipped_collisions
         self.last_staff_updates = staff_updates
+        self.last_repaired_names = repaired
 
         if skipped_collisions:
             logger.warning(

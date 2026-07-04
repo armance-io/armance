@@ -551,6 +551,18 @@ def _peek_proposed_names(yaml_text: str) -> list[str]:
     return names
 
 
+def _peek_proposed_roles(yaml_text: str) -> set[str]:
+    """Extract lowercased `role:`/`domain:` values from the recruit YAML."""
+    roles: set[str] = set()
+    for m in re.finditer(
+        r"^\s*-?\s*(?:role|domain)\s*:\s*([A-Za-z0-9_.\- ]+)\s*$", yaml_text, re.MULTILINE,
+    ):
+        r = m.group(1).strip().lower()
+        if r:
+            roles.add(r)
+    return roles
+
+
 def _auto_dismiss_specialists(ctx: LoopContext, agents_dir) -> None:
     """Delete every specialist .md (keep system-*/_-prefixed assets) and
     prune the registry. Mirrors the body of [EXECUTE:/dismiss-all] without
@@ -650,10 +662,21 @@ async def _handle_recruit(reply: str, ctx: LoopContext, hr) -> str:
             a.name for a in ctx.agents
             if not a.name.startswith("system-") and not a.name.startswith("_")
         ]
+        # A batch of new names whose roles match currently SICK agents is a
+        # repair (recruit_agents redirects them to in-place model swaps), not
+        # a roster reshuffle — never auto-dismiss the team for it.
+        sick_roles = {
+            (a.role or "").strip().lower()
+            for a in ctx.agents
+            if not a.name.startswith("system-")
+            and str(getattr(a, "last_health", "") or "").startswith("error")
+        }
+        looks_like_repair = bool(_peek_proposed_roles(yaml_part) & sick_roles)
         if (
             len(proposed) >= 3
             and current_specialists
             and not (set(proposed) & set(current_specialists))
+            and not looks_like_repair
         ):
             logger.info(
                 "Malik full-roster reshuffle detected; auto-dismissing %d "
@@ -688,12 +711,15 @@ async def _handle_recruit(reply: str, ctx: LoopContext, hr) -> str:
         # prompt for each newly-created agent and persist it into the .md.
         # Fans out in parallel; one call per agent. If it fails, the
         # minimal frontmatter-only .md stays — the agent still works,
-        # just sounds generic.
-        if created:
+        # just sounds generic. Repaired agents (model swapped in place)
+        # keep their persona — the model is the tool, not the identity.
+        repaired_names = set(getattr(hr, "last_repaired_names", []))
+        to_persona = [a for a in created if a.name not in repaired_names]
+        if to_persona:
             try:
                 from armance.service.agents.persona_writer import write_personas
                 await write_personas(
-                    created,
+                    to_persona,
                     ctx.state.project_brief or "",
                     ctx.armance_root,
                     ctx.cfg,
@@ -727,6 +753,12 @@ async def _handle_recruit(reply: str, ctx: LoopContext, hr) -> str:
         if updated_names:
             reply += "\n\n" + t("system_msg.updated", n=len(updated_names), names=", ".join(updated_names))
 
+        if repaired_names:
+            reply += "\n\n" + t(
+                "system_msg.repaired",
+                n=len(repaired_names), names=", ".join(sorted(repaired_names)),
+            )
+
         staff_updates = getattr(hr, "last_staff_updates", [])
         if staff_updates:
             reply += "\n\n" + t("system_msg.staff_updated", n=len(staff_updates), details=", ".join(staff_updates))
@@ -755,6 +787,15 @@ async def _handle_recruit(reply: str, ctx: LoopContext, hr) -> str:
                     reply += (
                         "\n\n"
                         + t("system_msg.health_warning", agents=", ".join(bad))
+                    )
+                bad_boost = [
+                    f"`{r.agent}` ({r.boost_status})"
+                    for r in results if r.ok and not r.boost_ok
+                ]
+                if bad_boost:
+                    reply += (
+                        "\n\n"
+                        + t("system_msg.boost_health_warning", agents=", ".join(bad_boost))
                     )
             except Exception:
                 logger.exception("post-recruit health-check failed")
