@@ -95,8 +95,18 @@ class RunArtefact:
 
 
 
-def create_run(armance_root: Path, workflow_name: str) -> RunArtefact:
-    """Mint a new versioned run directory."""
+def create_run(
+    armance_root: Path,
+    workflow_name: str,
+    step_ids: list[str] | None = None,
+) -> RunArtefact:
+    """Mint a new versioned run directory.
+
+    ``step_ids`` pre-registers every workflow step as `queued` so the
+    manifest shows the full DAG from the first snapshot — without it,
+    steps never reached (abort, checkpoint timeout) simply don't exist in
+    the manifest and the UI can't tell "never ran" from "unknown".
+    """
     ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
     run_id = f"run-{ts}"
     safe_wf = re.sub(r"[^\w-]", "_", workflow_name)[:64]
@@ -108,6 +118,10 @@ def create_run(armance_root: Path, workflow_name: str) -> RunArtefact:
         run_dir=run_dir,
         started_at=datetime.now(timezone.utc).isoformat(),
     )
+    for sid in step_ids or []:
+        artefact.record(sid)
+        if sid not in artefact.step_ids:
+            artefact.step_ids.append(sid)
     # Register the run as in-flight up-front: an initial manifest + a runs.json
     # entry so /active-workflow reports it immediately and the web UI can switch
     # to the live view before the first step completes.
@@ -216,13 +230,19 @@ def _build_manifest(artefact: RunArtefact, *, status: str, finalising: bool) -> 
     """Assemble the manifest dict for *artefact* at the current state.
 
     When *finalising*, a queued step with an output path is upgraded to
-    completed (defensive backfill for steps that bypassed mark_step_*).
+    completed (defensive backfill for steps that bypassed mark_step_*);
+    a queued step without output never ran — mark it skipped so the UI
+    doesn't show it as forever-pending.
     """
     step_records: list[dict[str, Any]] = []
     for sid in artefact.step_ids:
         rec = artefact.record(sid)
         if finalising and rec.status == "queued":
-            rec.status = "completed" if rec.output_path else "unknown"
+            if rec.output_path:
+                rec.status = "completed"
+            else:
+                rec.status = "skipped"
+                rec.error = rec.error or "run ended before this step"
         step_records.append(rec.to_dict())
 
     return {
