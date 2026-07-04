@@ -82,10 +82,11 @@ export const WorkflowGraphContainer: FC<WorkflowGraphContainerProps> = ({
   return (
     <div
       style={{
-        // Fill the column: 18-step DAGs squeezed into a fixed 400px strip
-        // were unreadable after fitView.
-        flex: 1,
-        minHeight: "420px",
+        // Viewport-scaled: 18-step DAGs squeezed into a fixed 400px strip
+        // were unreadable after fitView. Kept as a bounded height (not
+        // flex:1) — a growing flex child overlapped the content below in
+        // the RunDetail column.
+        height: "clamp(420px, 55vh, 720px)",
         width: "100%",
         border: "1px solid var(--rule, #d6c8ad)",
         borderRadius: "2px",
