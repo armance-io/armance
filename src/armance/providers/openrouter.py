@@ -202,60 +202,87 @@ class OpenRouterClient(LLMClient):
         if self._provider.api_key:
             headers["Authorization"] = f"Bearer {self._provider.api_key}"
 
-        payload: dict[str, Any] = {"model": model, "messages": messages, "stream": True, **params}
+        # OpenAI-compatible servers (litellm, vLLM, OpenAI itself) only send
+        # the final `usage` chunk when explicitly asked via stream_options.
+        # Without it every streamed call records tokens_in/out = 0 — zeroing
+        # the ledger, the cost AND the CO2/water footprint counters.
+        # (OpenRouter sends usage regardless; the option is harmless there.)
+        payload: dict[str, Any] = {
+            "model": model,
+            "messages": messages,
+            "stream": True,
+            "stream_options": {"include_usage": True},
+            **params,
+        }
 
-        text_parts: list[str] = []
-        tokens_in = 0
-        tokens_out = 0
-        finish_reason: FinishReason = "stop"
-        cost_usd: float | None = None
+        async def _stream_once(body_payload: dict[str, Any]) -> LLMResponse:
+            text_parts: list[str] = []
+            tokens_in = 0
+            tokens_out = 0
+            finish_reason: FinishReason = "stop"
+            cost_usd: float | None = None
 
-        # httpx streams via `client.stream("POST", ...)`, NOT a `stream=`
-        # kwarg on `.post()` — that signature is from `requests` and raises
-        # TypeError on AsyncClient. Use the proper context-manager API.
-        async with self._client.stream("POST", url, headers=headers, json=payload) as response:
-            if response.status_code >= 400:
-                body = (await response.aread()).decode("utf-8", errors="replace")
-                raise LLMHTTPError(
-                    f"openrouter call failed: {response.status_code} {body}",
-                    status_code=response.status_code,
-                    retry_after=_retry_after_seconds(response),
+            # httpx streams via `client.stream("POST", ...)`, NOT a `stream=`
+            # kwarg on `.post()` — that signature is from `requests` and raises
+            # TypeError on AsyncClient. Use the proper context-manager API.
+            async with self._client.stream(
+                "POST", url, headers=headers, json=body_payload,
+            ) as response:
+                if response.status_code >= 400:
+                    body = (await response.aread()).decode("utf-8", errors="replace")
+                    raise LLMHTTPError(
+                        f"openrouter call failed: {response.status_code} {body}",
+                        status_code=response.status_code,
+                        retry_after=_retry_after_seconds(response),
+                    )
+
+                async for line in response.aiter_lines():
+                    line = line.strip()
+                    if not line or not line.startswith("data: "):
+                        continue
+                    data_str = line[6:]  # strip "data: " prefix
+                    if data_str.strip() == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(data_str)
+                    except json.JSONDecodeError:
+                        continue
+                    choices = chunk.get("choices") or []
+                    for choice in choices:
+                        delta = choice.get("delta", {})
+                        content = _coerce_content(delta.get("content"))
+                        if content:
+                            text_parts.append(content)
+                            on_token(content)
+                        fr = choice.get("finish_reason")
+                        if fr:
+                            finish_reason = _normalize_finish_reason(fr)
+                    usage = chunk.get("usage")
+                    if usage:
+                        tokens_in = int(usage.get("prompt_tokens", 0))
+                        tokens_out = int(usage.get("completion_tokens", 0))
+                        cost_usd = float(usage.get("cost", 0) or 0)
+
+            return LLMResponse(
+                text=_strip_thinking("".join(text_parts)),
+                tokens_in=tokens_in,
+                tokens_out=tokens_out,
+                finish_reason=finish_reason,
+                cost_usd=cost_usd,
+            )
+
+        try:
+            return await _stream_once(payload)
+        except LLMHTTPError as exc:
+            # Some OpenAI-compatible endpoints reject unknown params. The 400
+            # fires before any token streams, so a one-shot retry is safe.
+            if exc.status_code == 400 and "stream_options" in str(exc):
+                logger.info(
+                    "endpoint rejected stream_options — retrying without usage reporting",
                 )
-
-            async for line in response.aiter_lines():
-                line = line.strip()
-                if not line or not line.startswith("data: "):
-                    continue
-                data_str = line[6:]  # strip "data: " prefix
-                if data_str.strip() == "[DONE]":
-                    break
-                try:
-                    chunk = json.loads(data_str)
-                except json.JSONDecodeError:
-                    continue
-                choices = chunk.get("choices") or []
-                for choice in choices:
-                    delta = choice.get("delta", {})
-                    content = _coerce_content(delta.get("content"))
-                    if content:
-                        text_parts.append(content)
-                        on_token(content)
-                    fr = choice.get("finish_reason")
-                    if fr:
-                        finish_reason = _normalize_finish_reason(fr)
-                usage = chunk.get("usage")
-                if usage:
-                    tokens_in = int(usage.get("prompt_tokens", 0))
-                    tokens_out = int(usage.get("completion_tokens", 0))
-                    cost_usd = float(usage.get("cost", 0) or 0)
-
-        return LLMResponse(
-            text=_strip_thinking("".join(text_parts)),
-            tokens_in=tokens_in,
-            tokens_out=tokens_out,
-            finish_reason=finish_reason,
-            cost_usd=cost_usd,
-        )
+                payload.pop("stream_options", None)
+                return await _stream_once(payload)
+            raise
 
     async def aclose(self) -> None:
         if self._owned_client:

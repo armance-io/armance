@@ -21,7 +21,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from armance.platform.user import get_current_user
-from armance.service.tui_bridge import dispatch_input
 
 from armance.web.backend.deps import get_app_state
 from armance.web.backend.state import AppState
@@ -282,13 +281,21 @@ class StopIn(BaseModel):
     confirm: bool = False
 
 
-async def _dispatch_stop(ws, name: str) -> dict[str, Any]:
-    """Thin seam — forwards a stop request through Kim's /workflow-stop tag."""
-    reply, _agent = await dispatch_input(
-        f"/workflow stop {name}",
-        ws.ctx,
-    )
-    return {"cancelled": True, "reply_preview": reply[:200]}
+def _cancel_active_run(ws) -> bool:
+    """Cancel the session's in-flight run task. Returns False when idle.
+
+    The CancelledError propagates into `_cmd_workflow_run`, which
+    finalises the run manifest as `canceled` before re-raising — so the
+    web UI's manifest polling sees an honest terminal state. (The old
+    seam dispatched `/workflow stop <name>` through the chat pipeline,
+    which had no such sub-command: the button was a silent no-op that
+    still answered `{"cancelled": true}`.)
+    """
+    task = ws.run_task
+    if task is None or task.done():
+        return False
+    task.cancel()
+    return True
 
 
 @router.post("/workflows/{name}/stop")
@@ -306,7 +313,9 @@ async def stop_workflow(
     if ws is None:
         raise HTTPException(status_code=404, detail="session_not_found")
     _require_workflow(ws, name)
-    return await _dispatch_stop(ws, name)
+    if not _cancel_active_run(ws):
+        raise HTTPException(status_code=409, detail={"error": "no_active_run"})
+    return {"cancelled": True}
 
 
 # --- D.6 -----------------------------------------------------------------

@@ -15,49 +15,6 @@ export interface RawEdge {
   target: string;
 }
 
-export function packLanes(nodes: RawNode[]): Record<string, number> {
-  const lanes: Record<string, number> = {};
-  const laneEndTimes: number[] = [];
-
-  // Sort nodes by started_at if available
-  const sorted = [...nodes].sort((a, b) => {
-    const startAStr = a.data.started_at as string | undefined;
-    const startBStr = b.data.started_at as string | undefined;
-    const startA = startAStr ? new Date(startAStr).getTime() : 0;
-    const startB = startBStr ? new Date(startBStr).getTime() : 0;
-    return startA - startB;
-  });
-
-  for (const n of sorted) {
-    const startedStr = n.data.started_at as string | undefined;
-    const endedStr = n.data.ended_at as string | undefined;
-    const started = startedStr ? new Date(startedStr).getTime() : null;
-    const ended = endedStr ? new Date(endedStr).getTime() : null;
-
-    if (started === null || ended === null) {
-      // For queued, working or unstarted nodes, place in lane 0 by default
-      lanes[n.id] = 0;
-      continue;
-    }
-
-    // Find the first lane where this node doesn't overlap
-    let assignedLane = 0;
-    while (assignedLane < laneEndTimes.length) {
-      const lastEnded = laneEndTimes[assignedLane] ?? 0;
-      // If the last node in this lane ended before or at the time this one started, we can use it!
-      if (lastEnded <= started) {
-        break;
-      }
-      assignedLane++;
-    }
-
-    lanes[n.id] = assignedLane;
-    laneEndTimes[assignedLane] = ended;
-  }
-
-  return lanes;
-}
-
 export function computeLayout(
   rawNodes: RawNode[],
   rawEdges: RawEdge[],
@@ -84,21 +41,18 @@ export function computeLayout(
 
   dagre.layout(g);
 
-  // Compute parallel lanes if there are overlapping times (D.11)
-  const nodeLanes = packLanes(rawNodes);
-
+  // Dagre alone owns the positions. A previous "parallel lanes" pass added
+  // a time-based y-offset ON TOP of dagre's layout, which made same-rank
+  // nodes overlap as soon as a live run supplied started_at/ended_at.
   const nodes = rawNodes.map((n) => {
     const pos = g.node(n.id);
-    const lane = nodeLanes[n.id] || 0;
-    const yOffset = lane * 120; // 120px spacing between concurrent lanes
-
     return {
       id: n.id,
       type: "stepNode",
       data: n.data,
       position: {
         x: pos.x - NODE_W / 2,
-        y: (pos.y - NODE_H / 2) + yOffset,
+        y: pos.y - NODE_H / 2,
       },
     };
   });

@@ -1,12 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { packLanes, computeLayout, type RawNode, type RawEdge } from "./graphLayout";
+import { computeLayout, type RawNode, type RawEdge } from "./graphLayout";
 
 function node(id: string, started?: string, ended?: string): RawNode {
   return {
     id,
-    // packLanes/computeLayout read started_at/ended_at off the data bag
-    // (StepNodeData extends Record<string, unknown>); the named fields are
-    // required by the type but unused by the layout.
     data: {
       step_id: id,
       role: "specialist",
@@ -16,41 +13,6 @@ function node(id: string, started?: string, ended?: string): RawNode {
     },
   };
 }
-
-describe("packLanes", () => {
-  it("keeps sequential (non-overlapping) nodes in a single lane", () => {
-    const lanes = packLanes([
-      node("a", "2026-01-01T00:00:00Z", "2026-01-01T00:01:00Z"),
-      node("b", "2026-01-01T00:01:00Z", "2026-01-01T00:02:00Z"),
-    ]);
-    expect(lanes).toEqual({ a: 0, b: 0 });
-  });
-
-  it("splits overlapping nodes onto separate lanes", () => {
-    const lanes = packLanes([
-      node("a", "2026-01-01T00:00:00Z", "2026-01-01T00:02:00Z"),
-      node("b", "2026-01-01T00:01:00Z", "2026-01-01T00:03:00Z"),
-    ]);
-    expect(lanes.a).toBe(0);
-    expect(lanes.b).toBe(1);
-  });
-
-  it("places nodes without timing in lane 0", () => {
-    expect(packLanes([node("queued")])).toEqual({ queued: 0 });
-  });
-
-  it("reuses a freed lane once an earlier node has ended", () => {
-    const lanes = packLanes([
-      node("a", "2026-01-01T00:00:00Z", "2026-01-01T00:01:00Z"),
-      node("b", "2026-01-01T00:00:30Z", "2026-01-01T00:02:00Z"),
-      node("c", "2026-01-01T00:01:00Z", "2026-01-01T00:03:00Z"),
-    ]);
-    // c starts when a ends → it can reuse lane 0; b stays on lane 1.
-    expect(lanes.a).toBe(0);
-    expect(lanes.b).toBe(1);
-    expect(lanes.c).toBe(0);
-  });
-});
 
 describe("computeLayout", () => {
   it("returns a positioned node per input and preserves edges", () => {
@@ -64,14 +26,34 @@ describe("computeLayout", () => {
     expect(out.edges).toEqual([{ id: "e1", source: "a", target: "b" }]);
   });
 
-  it("offsets concurrent lanes vertically", () => {
-    const nodes = [
-      node("a", "2026-01-01T00:00:00Z", "2026-01-01T00:02:00Z"),
-      node("b", "2026-01-01T00:01:00Z", "2026-01-01T00:03:00Z"),
+  it("separates same-rank (parallel) nodes vertically without overlap", () => {
+    // Diamond: a → b, a → c — b and c share a rank and must not overlap.
+    const nodes = [node("a"), node("b"), node("c")];
+    const edges: RawEdge[] = [
+      { id: "e1", source: "a", target: "b" },
+      { id: "e2", source: "a", target: "c" },
     ];
-    const out = computeLayout(nodes, []);
-    const ya = out.nodes.find((n) => n.id === "a")!.position.y;
+    const out = computeLayout(nodes, edges);
     const yb = out.nodes.find((n) => n.id === "b")!.position.y;
-    expect(yb - ya).toBeGreaterThanOrEqual(120);
+    const yc = out.nodes.find((n) => n.id === "c")!.position.y;
+    expect(Math.abs(yb - yc)).toBeGreaterThanOrEqual(72);
+  });
+
+  it("does not shift positions when run timing data is present", () => {
+    // Regression: a time-based lane offset used to stack +120px per
+    // overlapping step ON TOP of dagre's y, corrupting live-run layouts.
+    const plain = computeLayout([node("a"), node("b")], [
+      { id: "e1", source: "a", target: "b" },
+    ]);
+    const timed = computeLayout(
+      [
+        node("a", "2026-01-01T00:00:00Z", "2026-01-01T00:02:00Z"),
+        node("b", "2026-01-01T00:01:00Z", "2026-01-01T00:03:00Z"),
+      ],
+      [{ id: "e1", source: "a", target: "b" }],
+    );
+    expect(timed.nodes.map((n) => n.position)).toEqual(
+      plain.nodes.map((n) => n.position),
+    );
   });
 });

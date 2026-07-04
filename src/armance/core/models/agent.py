@@ -65,6 +65,10 @@ class Agent(BaseModel):
     # Format: "ok" or "error:<code>" (e.g. "error:429", "error:auth").
     last_health: str | None = None
     last_health_at: str | None = None  # ISO-8601
+    # Same probe for the boost pair (boost_provider/boost_model), when set.
+    # A broken boost does NOT make the agent sick — the base model still
+    # works — but Malik surfaces it so the user can fix the pair.
+    last_boost_health: str | None = None
 
     model_config = {"populate_by_name": True}
 

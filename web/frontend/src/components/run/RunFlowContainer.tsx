@@ -20,6 +20,8 @@ interface ManifestStep {
   id: string;
   status: string;
   role?: string;
+  /** Who actually spoke (failover-aware, from the run manifest). */
+  agent?: string;
 }
 
 interface PendingCheckpoint {
@@ -115,22 +117,26 @@ export const RunFlowContainer: FC<RunFlowContainerProps> = ({ pid, sid, workflow
   const manifest = runFiles && runFiles["manifest.json"] ? JSON.parse(runFiles["manifest.json"]) : null;
   const steps: ManifestStep[] = manifest?.steps ?? [];
 
+  // DESIGN.md: sharp square corners (2px) for cards/forms; primary action =
+  // solid violet, secondary = ghost/parchment. The previous 999px pills with
+  // a rule-coloured outline read as foreign to the archive-card aesthetic.
   const wrap: CSSProperties = { padding: "16px 18px", display: "flex", flexDirection: "column", gap: 10 };
   const row: CSSProperties = {
     display: "flex", alignItems: "center", gap: 10,
-    padding: "10px 12px", border: `1px solid ${tokens.rule}`, borderRadius: 4,
+    padding: "10px 12px", border: `1px solid ${tokens.rule}`, borderRadius: 2,
     background: tokens.bgPaperCard,
   };
   const input: CSSProperties = {
-    flex: 1, padding: "8px 10px", border: `1px solid ${tokens.rule}`, borderRadius: 4,
+    flex: 1, padding: "8px 10px", border: `1px solid ${tokens.rule}`, borderRadius: 2,
     background: tokens.bgPaper, color: tokens.ink, fontFamily: tokens.ffSans, fontSize: 13, outline: "none",
   };
   const btn = (primary?: boolean): CSSProperties => ({
-    padding: "8px 14px", borderRadius: 999,
-    border: `1px solid ${primary ? tokens.accent : tokens.rule}`,
+    padding: "8px 14px", borderRadius: 2,
+    border: primary ? "none" : `1px solid ${tokens.rule}`,
     background: primary ? tokens.accent : "transparent",
     color: primary ? tokens.bgPaperCard : tokens.inkSoft,
-    fontFamily: tokens.ffSans, fontSize: 13, cursor: "pointer", flexShrink: 0,
+    fontFamily: tokens.ffSans, fontSize: 13, fontWeight: primary ? 500 : 400,
+    cursor: "pointer", flexShrink: 0,
   });
 
   return (
@@ -139,7 +145,7 @@ export const RunFlowContainer: FC<RunFlowContainerProps> = ({ pid, sid, workflow
         <div
           data-testid="run-flow-hitl"
           style={{
-            border: `1px solid ${tokens.accent}`, borderRadius: 4, padding: "12px 14px",
+            border: `1px solid ${tokens.accent}`, borderRadius: 2, padding: "12px 14px",
             background: "color-mix(in srgb, var(--accent) 7%, transparent)",
             display: "flex", flexDirection: "column", gap: 10,
           }}
@@ -186,7 +192,7 @@ export const RunFlowContainer: FC<RunFlowContainerProps> = ({ pid, sid, workflow
         <div
           key={`${entry.stepId}-${i}`}
           data-testid="run-flow-qa"
-          style={{ border: `1px solid ${tokens.rule}`, borderRadius: 4, padding: "10px 12px", background: tokens.bgPaper, display: "flex", flexDirection: "column", gap: 6 }}
+          style={{ border: `1px solid ${tokens.rule}`, borderRadius: 2, padding: "10px 12px", background: tokens.bgPaper, display: "flex", flexDirection: "column", gap: 6 }}
         >
           <div style={{ fontFamily: tokens.ffMono, fontSize: 10, color: tokens.inkFaint, textTransform: "uppercase", letterSpacing: "0.06em" }}>
             {entry.stepId}
@@ -238,9 +244,11 @@ export const RunFlowContainer: FC<RunFlowContainerProps> = ({ pid, sid, workflow
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontFamily: tokens.ffSans, fontSize: 13, color: tokens.ink, fontWeight: 500 }}>{s.id}</div>
-                {s.role && (
+                {(s.agent || s.role) && (
                   <div style={{ fontFamily: tokens.ffSerif, fontStyle: "italic", fontSize: 12, color: tokens.accent }}>
-                    {displayAgentName(s.role)}
+                    {s.agent
+                      ? `${displayAgentName(s.agent)} · ${s.role ?? ""}`.replace(/ · $/, "")
+                      : displayAgentName(s.role ?? "")}
                   </div>
                 )}
               </div>

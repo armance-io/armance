@@ -29,10 +29,15 @@ class HealthResult:
     agent: str
     status: str  # "ok" or "error:<code>"
     detail: str = ""
+    boost_status: str | None = None  # probe of the boost pair, when set
 
     @property
     def ok(self) -> bool:
         return self.status == "ok"
+
+    @property
+    def boost_ok(self) -> bool:
+        return self.boost_status in (None, "ok")
 
 
 _PROBE_MESSAGES = [{"role": "user", "content": "hi"}]
@@ -43,44 +48,52 @@ _PROBE_TIMEOUT_SECONDS = 15.0
 _PROBE_TIMEOUT_HIGH_SECONDS = 60.0
 
 
-async def check_agent_health(agent: Agent, cfg) -> HealthResult:
-    """Send a 1-token probe to the agent's (provider, model)."""
+async def _probe(provider: str, model: str, cfg, timeout: float) -> tuple[str, str]:
+    """1-token probe of a (provider, model) pair → (status, detail)."""
     from armance.core.protocols.llm import register_client  # noqa: F401  (side-effect)
     from armance.service.llm_service import get_client
 
     try:
-        client = get_client(agent.provider, cfg)
+        client = get_client(provider, cfg)
     except Exception as exc:
-        return HealthResult(
-            agent=agent.name, status="error:client", detail=str(exc),
-        )
-
-    timeout = _timeout_for(agent)
+        return "error:client", str(exc)
     try:
         import asyncio
-        resp = await asyncio.wait_for(
+        await asyncio.wait_for(
             client.complete(
                 messages=_PROBE_MESSAGES,
-                model=agent.model,
+                model=model,
                 max_tokens=1,
             ),
             timeout=timeout,
         )
-        _ = resp
-        return HealthResult(agent=agent.name, status="ok")
+        return "ok", ""
     except asyncio.TimeoutError:
-        return HealthResult(
-            agent=agent.name, status="error:timeout",
-            detail=f"no reply within {timeout}s",
-        )
+        return "error:timeout", f"no reply within {timeout}s"
     except Exception as exc:
         msg = str(exc)
         code = _extract_http_code(msg)
-        return HealthResult(
-            agent=agent.name,
-            status=f"error:{code or 'unknown'}",
-            detail=msg[:200],
-        )
+        return f"error:{code or 'unknown'}", msg[:200]
+
+
+async def check_agent_health(agent: Agent, cfg) -> HealthResult:
+    """Probe the agent's base (provider, model), and its boost pair if any.
+
+    A broken boost never fails the agent (base still works); it is
+    reported separately via ``boost_status`` so Malik can surface it.
+    """
+    timeout = _timeout_for(agent)
+    status, detail = await _probe(agent.provider, agent.model, cfg, timeout)
+
+    boost_status: str | None = None
+    boost_pair = agent.effective_boost() if hasattr(agent, "effective_boost") else None
+    if boost_pair is not None:
+        b_provider, b_model = boost_pair
+        boost_status, _b_detail = await _probe(b_provider, b_model, cfg, timeout)
+
+    return HealthResult(
+        agent=agent.name, status=status, detail=detail, boost_status=boost_status,
+    )
 
 
 def _extract_http_code(msg: str) -> str:
@@ -133,4 +146,5 @@ def persist_health(result: HealthResult, agents_dir: Path) -> None:
         return
     a.last_health = result.status
     a.last_health_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    a.last_boost_health = result.boost_status
     a.save(path)

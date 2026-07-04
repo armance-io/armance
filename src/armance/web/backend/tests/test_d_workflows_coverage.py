@@ -132,27 +132,24 @@ async def test_run_unknown_session_404(
     assert resp.json()["detail"] == "session_not_found"
 
 
-# --- _dispatch_stop real body (lines 231-235) ----------------------------
+# --- stop: honest 409 when nothing is running -----------------------------
+# (The old `_dispatch_stop` chat seam is gone — stop now cancels the
+#  session's run task directly; the happy path lives in
+#  test_d4_d6_workflow_actions.test_stop_cancels_the_active_run_task.)
 
 @pytest.mark.asyncio
-async def test_stop_dispatch_seam_real_body(
+async def test_stop_idle_session_is_409(
     client: AsyncClient, armance_root: Path
 ) -> None:
     cr = await client.post("/projects/default/sessions")
     sid = cr.json()["id"]
     _seed_workflow(armance_root)
-    with patch(
-        "armance.web.backend.routes.workflows.dispatch_input",
-        new=AsyncMock(return_value=("Interrompu.", "kim")),
-    ):
-        resp = await client.post(
-            f"/projects/default/sessions/{sid}/workflows/wf/stop",
-            json={"confirm": True},
-        )
-    assert resp.status_code == 200
-    body = resp.json()
-    assert body["cancelled"] is True
-    assert body["reply_preview"] == "Interrompu."
+    resp = await client.post(
+        f"/projects/default/sessions/{sid}/workflows/wf/stop",
+        json={"confirm": True},
+    )
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == {"error": "no_active_run"}
 
 
 @pytest.mark.asyncio

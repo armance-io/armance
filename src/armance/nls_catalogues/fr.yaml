@@ -233,6 +233,8 @@ system_msg:
   auto_dismissed_before_recruit: "*(Système : remplacement complet de l'équipe détecté — {n} ancien(s) spécialiste(s) dismiss automatiquement avant le recrutement de la nouvelle équipe)*"
   forwarded: "— transféré à {target} —"
   health_warning: "Attention — Modèles injoignables détectés au test : {agents}. Demandez à @Malik de proposer un autre modèle pour ces agents."
+  repaired: "*(Système : {n} agent(s) en panne réparé(s) sur place au lieu de re-recruter : {names} — nom et persona conservés, modèle remplacé)*"
+  boost_health_warning: "Attention — Modèles boost injoignables au test : {agents}. Le modèle de base fonctionne ; corrigez la paire boost via @Malik (`/agent-swap`)."
   agent_swapped: "*(Système : modèle de {name} remplacé par {model} — santé : {health})*"
   agent_swap_unknown: "*(Système : impossible de remplacer {name} — aucun agent recruté de ce nom)*"
   agent_swap_bad_model: "*(Système : remplacement de {name} échoué — identifiant de modèle manquant ou invalide)*"

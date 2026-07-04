@@ -33,6 +33,7 @@ class StepRecord:
 
     id: str
     status: str = "queued"   # queued | working | completed | failed | skipped
+    agent: str | None = None  # who actually spoke (set on completion; failover-aware)
     started_at: str | None = None
     ended_at: str | None = None
     duration_ms: int | None = None
@@ -46,6 +47,7 @@ class StepRecord:
         return {
             "id": self.id,
             "status": self.status,
+            "agent": self.agent,
             "started_at": self.started_at,
             "ended_at": self.ended_at,
             "duration_ms": self.duration_ms,
@@ -141,9 +143,11 @@ def mark_step_completed(
     tokens_in: int | None = None,
     tokens_out: int | None = None,
     cost_usd: float | None = None,
+    agent: str | None = None,
 ) -> None:
     rec = artefact.record(step_id)
     rec.status = "completed"
+    rec.agent = agent or rec.agent
     rec.ended_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     rec.duration_ms = _ms_between(rec.started_at, rec.ended_at)
     rec.tokens_in = tokens_in

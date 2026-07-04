@@ -12,6 +12,7 @@ save_ops, role_ops, task_ops, mona_ops.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
@@ -359,15 +360,26 @@ async def _cmd_workflow_run(
     from armance.core.models.workflow import load_workflow, execute_workflow
     wf = load_workflow(wf_path)
 
-    # Auto-boost all boostable agents at run start if the depth mode is deep (meaning intense)
+    # Auto-boost all boostable agents at run start if the depth mode is deep
+    # (meaning intense). Kim's YAML assigns steps by `role`, not by explicit
+    # `agents:` lists — so boost every boostable agent whose role appears in
+    # the workflow (plus any explicitly named one).
     is_intense = (depth == "deep")
     if is_intense:
-        step_agent_names = set()
+        step_agent_names: set[str] = set()
+        step_roles: set[str] = set()
         for step in wf.steps:
             if getattr(step, "agents", None):
                 step_agent_names.update(step.agents)
+            role = (getattr(step, "role", "") or "").lower().strip()
+            if role:
+                step_roles.add(role)
         for agent in ctx.agents:
-            if agent.name in step_agent_names and agent.is_boostable:
+            in_workflow = (
+                agent.name in step_agent_names
+                or (agent.role or "").lower().strip() in step_roles
+            )
+            if in_workflow and agent.is_boostable:
                 ctx.state.boosted_agents.add(agent.name)
 
     # ── Pre-run health check (degraded, not all-or-nothing) ────────────────
@@ -566,7 +578,10 @@ async def _cmd_workflow_run(
                     reports_root=ctx.armance_root / "reports",
                     caveman_level=step_caveman,
                     event_bus=ctx.event_bus,
+                    boosted_agents=ctx.state.boosted_agents,
                 )
+            except asyncio.CancelledError:
+                raise
             except Exception as exc:
                 logger.exception(
                     "workflow step %s failed with agent %s", step.id, agent_obj.name,
@@ -594,6 +609,7 @@ async def _cmd_workflow_run(
                 tokens_in=_safe_int(getattr(report, "tokens_in", None)),
                 tokens_out=_safe_int(getattr(report, "tokens_out", None)),
                 cost_usd=_safe_float(getattr(report, "cost_usd", None)),
+                agent=agent_obj.name,
             )
             if step.kind == "judge":
                 write_synthesis(artefact, report.content)
@@ -774,6 +790,11 @@ async def _cmd_workflow_run(
         # Circuit breaker: consecutive absent steps — provider likely down.
         _finalise_run(artefact, status="failed")
         return str(exc)
+    except asyncio.CancelledError:
+        # Web Stop button (run_task.cancel()) or process shutdown: leave an
+        # honest terminal manifest, then let the cancellation propagate.
+        _finalise_run(artefact, status="canceled")
+        raise
     except RuntimeError as exc:
         _finalise_run(artefact, status="canceled")
         return str(exc)

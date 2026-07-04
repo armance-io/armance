@@ -42,7 +42,9 @@ function layoutNodes(
 
   const edges: Edge[] = result.edges.map((e) => ({
     ...e,
-    type: "straight",
+    // smoothstep routes around nodes; "straight" cut THROUGH other nodes
+    // on fan-ins (a step with 4 upstream deps looked like spaghetti).
+    type: "smoothstep",
     markerEnd: { type: MarkerType.ArrowClosed, width: 10, height: 10 },
     style: {
       stroke: "var(--rule, #d6c8ad)",
