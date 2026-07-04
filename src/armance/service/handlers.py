@@ -491,7 +491,7 @@ async def _cmd_workflow_run(
     )
 
     # Mint a versioned run dir up-front; every step output lands there.
-    artefact = create_run(ctx.armance_root, name)
+    artefact = create_run(ctx.armance_root, name, step_ids=[s.id for s in wf.steps])
     ctx.append(t("workflow.run_started", path=str(artefact.run_dir.relative_to(ctx.armance_root))))
 
     # Circuit breaker: after N consecutive absent steps (missing agent OR
@@ -679,6 +679,7 @@ async def _cmd_workflow_run(
                     ctx.append(f"[abort] workflow aborted at checkpoint '{step.id}'")
                     return t("workflow.aborted")
                 await _emit_qa(step, question, response.content, "user")
+                mark_step_completed(artefact, step.id, agent="user")
                 return response.content
             await _emit_qa(step, question, proxy_res, "Mona")
             # Persist Mona's autonomous decision as a step file so the
@@ -691,6 +692,7 @@ async def _cmd_workflow_run(
                 )
             except Exception:
                 logger.debug("could not persist mona checkpoint step file", exc_info=True)
+            mark_step_completed(artefact, getattr(step, "id", "checkpoint"), agent="Mona")
             return proxy_res
 
         if ctx.checkpoint_handler is None:
@@ -707,6 +709,7 @@ async def _cmd_workflow_run(
             ctx.append(f"[abort] workflow aborted at checkpoint '{step.id}'")
             return t("workflow.aborted")
         await _emit_qa(step, question, response.content, "user")
+        mark_step_completed(artefact, step.id, agent="user")
         return response.content
 
     # Safety-net hooks: cross-family advisory + Serge consensus auto-invoke.

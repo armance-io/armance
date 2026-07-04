@@ -232,3 +232,37 @@ async def test_delete_run_unknown_404(client: AsyncClient, armance_root: Path) -
         json={"confirm": True},
     )
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_estimate_route_returns_costs(
+    client: AsyncClient, armance_root: Path
+) -> None:
+    """W27 — the web run path skips the interactive cost preflight; the
+    DepthPicker shows this estimate instead."""
+    cr = await client.post("/projects/default/sessions")
+    sid = cr.json()["id"]
+    _seed_workflow(armance_root)
+    resp = await client.get(
+        f"/projects/default/sessions/{sid}/workflows/wf/estimate?depth=quick",
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    # Contract only — the amount depends on the roster (empty here: the
+    # estimator skips steps whose role has no recruited agent).
+    assert set(body) >= {
+        "total_usd", "by_provider", "steps_total", "unpriced_steps", "boosted_count",
+    }
+    assert isinstance(body["total_usd"], (int, float))
+
+
+@pytest.mark.asyncio
+async def test_estimate_unknown_workflow_404(
+    client: AsyncClient, armance_root: Path
+) -> None:
+    cr = await client.post("/projects/default/sessions")
+    sid = cr.json()["id"]
+    resp = await client.get(
+        f"/projects/default/sessions/{sid}/workflows/nope/estimate",
+    )
+    assert resp.status_code == 404

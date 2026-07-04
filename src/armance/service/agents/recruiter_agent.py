@@ -834,6 +834,40 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
         new_agents = self._parse_agents_yaml(yaml_text, role_name)
         agents_dir.mkdir(parents=True, exist_ok=True)
 
+        # Model-id validation against the session discovery cache. Malik's
+        # prompt has always CLAIMED "any model id not in the catalogue will
+        # be rejected by the validator" — this is that validator. When a
+        # provider has no catalogue (empty set), validation is impossible
+        # and the id passes: better a runtime health warning than blocking
+        # endpoints that expose no /models route.
+        from armance.providers.discovery import known_model_ids
+        rejected_models: list[str] = []
+        dropped_boosts: list[str] = []
+        validated: list[Agent] = []
+        for agent in new_agents:
+            ids = known_model_ids(agent.provider)
+            if ids and agent.model and agent.model not in ids:
+                logger.warning(
+                    "recruit: rejected %r — model %s/%s not in the discovered catalogue",
+                    agent.name, agent.provider, agent.model,
+                )
+                rejected_models.append(f"`{agent.name}` ({agent.provider}/{agent.model})")
+                continue
+            if agent.boost_model:
+                boost_ids = known_model_ids(agent.boost_provider or agent.provider)
+                if boost_ids and agent.boost_model not in boost_ids:
+                    logger.warning(
+                        "recruit: dropped boost of %r — %s/%s not in catalogue",
+                        agent.name, agent.boost_provider or agent.provider, agent.boost_model,
+                    )
+                    dropped_boosts.append(f"`{agent.name}` ({agent.boost_model})")
+                    agent.boost_model = None
+                    agent.boost_provider = None
+            validated.append(agent)
+        new_agents = validated
+        self.last_rejected_models = rejected_models
+        self.last_dropped_boosts = dropped_boosts
+
         # Build a snapshot of existing agents so we can detect:
         #   - same name + same role  → overwrite (model swap, persona tweak)
         #   - same name + diff role  → reject (collision, Malik must pick another name)
