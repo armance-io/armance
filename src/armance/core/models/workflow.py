@@ -102,68 +102,6 @@ StepRunner = Callable[[WorkflowStep, str], Awaitable[str]]
 
 
 
-async def run_deliverable_step(step: WorkflowStep, prompt: str) -> str:
-    """
-    Runner for deliverable steps.
-    
-    Resolves source output (from step_id or latest_judge), dispatches to
-    deliverables.py renderers based on format, writes to .armance/exports/<output_name>.<ext>,
-    and returns the output path as the step result.
-    """
-    from armance.core.models.deliverables import parse_report, render_docx, render_pdf, render_pptx
-    
-    # step is a WorkflowStep with kind='deliverable'
-    # We need to extract deliverable-specific fields from the step
-    # Since WorkflowStep is the base, we'll use a discriminated union pattern
-    
-    # Get deliverable fields from step
-    step_dict = step.model_dump()
-    step_format = step_dict.get("format")
-    source = step_dict.get("source")
-    output_name = step_dict.get("output_name")
-    
-    if not step_format or not source or not output_name:
-        raise ValueError("deliverable step missing required fields: format, source, or output_name")
-    
-    # Resolve source output content
-    # The prompt contains the resolved source content
-    source_content = prompt
-    
-    # Parse the markdown content
-    tree = parse_report(source_content)
-    
-    # Determine output path
-    armance_root = Path.cwd()
-    exports_dir = armance_root / ".armance" / "exports"
-    exports_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Map format to file extension and renderer
-    format_ext = {
-        "pptx": (".pptx", render_pptx),
-        "docx": (".docx", render_docx),
-        "pdf": (".pdf", render_pdf),
-        "md": (".md", None),  # markdown is just the source content
-    }
-    
-    if step_format not in format_ext:
-        raise ValueError(f"unsupported deliverable format: {step_format}")
-    
-    ext, renderer = format_ext[step_format]
-    output_path = exports_dir / f"{output_name}{ext}"
-    
-    # Render or copy output
-    if step_format == "md":
-        # For markdown, just write the source content
-        output_path.write_text(source_content, encoding="utf-8")
-    else:
-        if renderer is None:
-            raise RuntimeError(f"no renderer available for format: {step_format}")
-        renderer(tree, output_path)
-    
-    # Return the output path as the step result
-    return str(output_path)
-
-
 def parse_workflow(text: str) -> Workflow:
     raw = yaml.safe_load(text) or {}
     try:
@@ -401,34 +339,12 @@ async def execute_workflow(
     levels = topo_levels(workflow)
     results: dict[str, StepResult] = {}
     for level in levels:
-        # Separate checkpoint steps from regular steps in this level
+        # Separate checkpoint steps from regular steps in this level.
+        # Regular steps run FIRST: steps in the same level never depend on
+        # each other, so a checkpoint must not block its parallel siblings —
+        # and the human then answers with those fresh outputs in hand.
         checkpoint_steps = [s for s in level if s.kind == "human_checkpoint"]
         regular_steps = [s for s in level if s.kind != "human_checkpoint"]
-
-        # Process checkpoint steps sequentially (not concurrent)
-        for cs in checkpoint_steps:
-            if checkpoint_handler is None:
-                raise ValueError(
-                    f"checkpoint_handler required but not provided; "
-                    f"step '{cs.id}' is a human_checkpoint"
-                )
-            prior_outputs = {rid: r.output for rid, r in results.items()}
-            response = await checkpoint_handler(cs, prior_outputs)
-            results[cs.id] = StepResult(id=cs.id, output=response)
-
-            # Context enrichment: write checkpoint response to versioned layer file
-            if cs.save_to_context and response.strip():
-                from armance.core.models.context import append_to_layer
-
-                target_root = armance_root or Path.cwd()
-                theme = cs.role or "checkpoint"
-                layer = cs.context_layer or "L1"
-                append_to_layer(
-                    target_root,
-                    layer=layer,
-                    theme=theme,
-                    text=response,
-                )
 
         # Process regular steps with template rendering and asyncio.gather
         if regular_steps:
@@ -498,11 +414,47 @@ async def execute_workflow(
                         )
                     prompts.append(prompt_text)
 
-            outputs = await asyncio.gather(
-                *(runner(step, prompt) for step, prompt in zip(regular_steps, prompts))
-            )
+            # Real tasks (not bare coroutines) so an abort can cancel the
+            # in-flight siblings — plain gather leaves them running orphaned,
+            # burning tokens on a run that is already over.
+            tasks = [
+                asyncio.create_task(runner(step, prompt))
+                for step, prompt in zip(regular_steps, prompts)
+            ]
+            try:
+                outputs = await asyncio.gather(*tasks)
+            except BaseException:
+                for task in tasks:
+                    task.cancel()
+                await asyncio.gather(*tasks, return_exceptions=True)
+                raise
             for step, output in zip(regular_steps, outputs):
                 results[step.id] = StepResult(id=step.id, output=output)
+
+        # Checkpoints AFTER the level's regular steps (see above).
+        for cs in checkpoint_steps:
+            if checkpoint_handler is None:
+                raise ValueError(
+                    f"checkpoint_handler required but not provided; "
+                    f"step '{cs.id}' is a human_checkpoint"
+                )
+            prior_outputs = {rid: r.output for rid, r in results.items()}
+            response = await checkpoint_handler(cs, prior_outputs)
+            results[cs.id] = StepResult(id=cs.id, output=response)
+
+            # Context enrichment: write checkpoint response to versioned layer file
+            if cs.save_to_context and response.strip():
+                from armance.core.models.context import append_to_layer
+
+                target_root = armance_root or Path.cwd()
+                theme = cs.role or "checkpoint"
+                layer = cs.context_layer or "L1"
+                append_to_layer(
+                    target_root,
+                    layer=layer,
+                    theme=theme,
+                    text=response,
+                )
 
     if post_run_hook is not None:
         await post_run_hook(workflow, results, runner)

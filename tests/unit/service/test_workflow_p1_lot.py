@@ -26,6 +26,16 @@ from armance.service.loop_context import LoopContext
 from armance.service.session import Session, SessionState
 
 
+@pytest.fixture(autouse=True)
+def _clean_discovery_cache():
+    """The recruit validator reads the discovery session cache — isolate it
+    from catalogues seeded by other test modules."""
+    from armance.providers.discovery import reset_cache
+    reset_cache()
+    yield
+    reset_cache()
+
+
 @pytest.fixture
 def cfg() -> Config:
     return Config(

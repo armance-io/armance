@@ -292,7 +292,8 @@
       "hint_autonomous": "Mona gère des points de contrôle autonomes pour livrer la synthèse.",
       "mode_interactive": "interactif",
       "mode_autonomous": "autonome",
-      "launch": "Lancer"
+      "launch": "Lancer",
+      "estimate_label": "Coût estimé"
     },
     "history": {
       "title": "Exécutions passées",

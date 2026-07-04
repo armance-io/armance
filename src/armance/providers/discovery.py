@@ -29,12 +29,18 @@ _PROVIDER_CLASSES: dict[str, type[BaseProvider]] = {
 _CACHE: dict[str, list[ModelSpec]] = {}
 
 
-def _api_key_for(provider_name: str, cfg) -> str | None:
-    """Pull the api_key from cfg.providers[<name>] if it exists."""
+def _provider_cfg(provider_name: str, cfg):
+    """Return the ProviderConfig entry for `provider_name`, if any."""
     for p in getattr(cfg, "providers", []) or []:
         if getattr(p, "name", "") == provider_name:
-            return getattr(p, "api_key", None)
+            return p
     return None
+
+
+def _api_key_for(provider_name: str, cfg) -> str | None:
+    """Pull the api_key from cfg.providers[<name>] if it exists."""
+    p = _provider_cfg(provider_name, cfg)
+    return getattr(p, "api_key", None) if p is not None else None
 
 
 def _provider_for(name: str, cfg) -> BaseProvider | None:
@@ -45,6 +51,13 @@ def _provider_for(name: str, cfg) -> BaseProvider | None:
     # auth header, Gemini for /v1beta/models, Anthropic for /v1/models).
     if cls in (OpenRouterProvider, GeminiProvider, ClaudeCodeProvider):
         return cls(api_key=_api_key_for(name, cfg))
+    if cls is CustomOpenAIProvider:
+        # Needs the user's endpoint too — /models lives on their base_url.
+        p = _provider_cfg(name, cfg)
+        return cls(
+            api_key=getattr(p, "api_key", None) if p is not None else None,
+            base_url=getattr(p, "base_url", None) if p is not None else None,
+        )
     return cls()
 
 
@@ -73,6 +86,16 @@ async def discover_all(cfg) -> dict[str, list[ModelSpec]]:
 def reset_cache() -> None:
     """Clear the session cache — useful between tests and on user request."""
     _CACHE.clear()
+
+
+def known_model_ids(provider_name: str) -> set[str]:
+    """Ids already discovered for `provider_name` (session cache, sync).
+
+    Empty set means "no catalogue" — either the provider was never queried
+    this session or it exposes no model list. Callers must treat empty as
+    "validation impossible", NOT as "everything invalid".
+    """
+    return {m.id for m in _CACHE.get(provider_name, [])}
 
 
 def filter_for_budget(models: list[ModelSpec], budget: str) -> list[ModelSpec]:

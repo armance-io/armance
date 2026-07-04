@@ -7,6 +7,11 @@ import {
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
+export interface DepthEstimate {
+  total_usd: number;
+  unpriced_steps: number;
+}
+
 export interface DepthPickerProps {
   workflowName: string;
   onLaunch: (
@@ -14,6 +19,8 @@ export interface DepthPickerProps {
     depth: "quick" | "deep",
   ) => void;
   t: (key: string) => string;
+  /** Pre-run cost estimates per depth (absent while loading / on error). */
+  estimates?: Partial<Record<"quick" | "deep", DepthEstimate>>;
 }
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
@@ -22,6 +29,7 @@ export const DepthPicker: FC<DepthPickerProps> = ({
   workflowName,
   onLaunch,
   t,
+  estimates,
 }) => {
   const [depth, setDepth] = useState<"quick" | "deep">("quick");
   const [mode, setMode] = useState<"interactive" | "autonomous">(
@@ -252,6 +260,23 @@ export const DepthPicker: FC<DepthPickerProps> = ({
             : t("workflow:picker.hint_autonomous")}
         </div>
       </div>
+
+      {/* Pre-run cost estimate for the selected depth (the web run skips
+          the interactive cost-confirm checkpoint — this is its stand-in). */}
+      {estimates?.[depth] && (
+        <div
+          data-testid="depth-estimate"
+          style={{
+            fontFamily: "var(--ff-mono, 'JetBrains Mono', monospace)",
+            fontSize: "12px",
+            color: "var(--ink-soft, #5b5145)",
+          }}
+        >
+          {t("workflow:picker.estimate_label")}{" "}
+          ≈ ${estimates[depth]!.total_usd.toFixed(4)}
+          {estimates[depth]!.unpriced_steps > 0 && " + ?"}
+        </div>
+      )}
 
       {/* Launch */}
       <button

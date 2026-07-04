@@ -463,6 +463,25 @@ export async function getWorkflow(
   );
 }
 
+export interface WorkflowEstimate {
+  total_usd: number;
+  by_provider: Record<string, number>;
+  steps_total: number;
+  unpriced_steps: number;
+  boosted_count: number;
+}
+
+export async function getWorkflowEstimate(
+  pid: string,
+  sid: string,
+  name: string,
+  depth: "quick" | "deep",
+): Promise<WorkflowEstimate> {
+  return api.get<WorkflowEstimate>(
+    `/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(name)}/estimate?depth=${depth}`,
+  );
+}
+
 export interface ActiveWorkflow {
   active: null | {
     workflow: string;

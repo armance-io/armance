@@ -11,7 +11,7 @@ import { InterruptButtonContainer } from "@/components/workflow/InterruptButtonC
 import { RunHistoryContainer } from "@/components/workflow/RunHistoryContainer";
 import { WorkflowRunPanel } from "@/components/workflow/WorkflowRunPanel";
 import { useResizableWidth } from "@/lib/useResizableWidth";
-import { launchWorkflow, getActiveWorkflow, listWorkflows } from "@/lib/api";
+import { launchWorkflow, getActiveWorkflow, getWorkflowEstimate, listWorkflows } from "@/lib/api";
 import { useRouteParams } from "@/lib/routeParams";
 import { useToast } from "@/components/_shared/Toast";
 import { tokens } from "@/components/_shared/armance-tokens";
@@ -42,6 +42,18 @@ export default function WorkflowView() {
   const workflowExists =
     !workflowsFetched ||
     (workflowsData?.workflows ?? []).some((w) => w.name === workflowName);
+
+  // Pre-run cost estimates (both depths — the picker switches locally).
+  const { data: estimateQuick } = useQuery({
+    queryKey: ["wf-estimate", pid, sid, workflowName, "quick"],
+    queryFn: () => getWorkflowEstimate(pid, sid, workflowName, "quick").catch(() => null),
+    enabled: Boolean(pid && sid && !noSelection),
+  });
+  const { data: estimateDeep } = useQuery({
+    queryKey: ["wf-estimate", pid, sid, workflowName, "deep"],
+    queryFn: () => getWorkflowEstimate(pid, sid, workflowName, "deep").catch(() => null),
+    enabled: Boolean(pid && sid && !noSelection),
+  });
 
   const activeRunId = activeData?.active?.run_id;
   const [launching, setLaunching] = useState(false);
@@ -163,7 +175,15 @@ export default function WorkflowView() {
             <WorkflowRunPanel pid={pid} sid={sid} workflowName={workflowName} runId={activeRunId} />
           ) : (
             <div style={{ flex: 1, overflow: "auto" }}>
-              <DepthPicker workflowName={workflowName} onLaunch={handleLaunch} t={t} />
+              <DepthPicker
+                workflowName={workflowName}
+                onLaunch={handleLaunch}
+                t={t}
+                estimates={{
+                  ...(estimateQuick ? { quick: estimateQuick } : {}),
+                  ...(estimateDeep ? { deep: estimateDeep } : {}),
+                }}
+              />
               {launching && (
                 <div style={{ marginTop: 20, textAlign: "center", fontFamily: tokens.ffMono, fontSize: 13, color: tokens.accent }} data-testid="launch-status">
                   {t("workflow:launch.in_progress")}

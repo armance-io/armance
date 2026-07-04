@@ -759,6 +759,19 @@ async def _handle_recruit(reply: str, ctx: LoopContext, hr) -> str:
                 n=len(repaired_names), names=", ".join(sorted(repaired_names)),
             )
 
+        rejected_models = getattr(hr, "last_rejected_models", [])
+        if rejected_models:
+            reply += "\n\n" + t(
+                "system_msg.model_rejected",
+                n=len(rejected_models), details=", ".join(rejected_models),
+            )
+        dropped_boosts = getattr(hr, "last_dropped_boosts", [])
+        if dropped_boosts:
+            reply += "\n\n" + t(
+                "system_msg.boost_dropped",
+                n=len(dropped_boosts), details=", ".join(dropped_boosts),
+            )
+
         staff_updates = getattr(hr, "last_staff_updates", [])
         if staff_updates:
             reply += "\n\n" + t("system_msg.staff_updated", n=len(staff_updates), details=", ".join(staff_updates))
