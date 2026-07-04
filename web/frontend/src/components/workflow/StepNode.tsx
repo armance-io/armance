@@ -1,4 +1,5 @@
 import { type CSSProperties, type FC } from "react";
+import { Handle, Position } from "@xyflow/react";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -14,8 +15,9 @@ export interface StepNodeData extends Record<string, unknown> {
   step_id: string;
   role: string;
   status: StepStatus;
+  /** Who actually spoke (manifest `agent`, failover-aware). */
+  agent?: string;
   duration_ms?: number;
-  streaming?: boolean;
 }
 
 export interface StepNodeProps {
@@ -54,7 +56,7 @@ const STATUS_BG: Record<StepStatus, string> = {
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
 export const StepNode: FC<StepNodeProps> = ({ data, selected = false }) => {
-  const { step_id, role, status, duration_ms, streaming } = data;
+  const { step_id, role, status, agent, duration_ms } = data;
 
   const isCancelled = status === "cancelled";
   const isSkipped = status === "skipped";
@@ -123,11 +125,7 @@ export const StepNode: FC<StepNodeProps> = ({ data, selected = false }) => {
     borderRadius: "999px",
     background: STATUS_DOT_COLOR[status],
     flexShrink: 0,
-    animation: isWorking
-      ? streaming
-        ? "stepnode-pulse 400ms ease-in-out infinite alternate"
-        : "stepnode-pulse 1.2s ease-in-out infinite"
-      : "none",
+    animation: isWorking ? "stepnode-pulse 1.2s ease-in-out infinite" : "none",
   };
 
   const durationStyle: CSSProperties = {
@@ -136,11 +134,13 @@ export const StepNode: FC<StepNodeProps> = ({ data, selected = false }) => {
     color: "var(--ink-faint, #9c8e7e)",
   };
 
-  /* Hidden handles for React Flow */
+  /* Real (but invisible) React Flow handles — edges cannot anchor to a
+     custom node without <Handle> components; plain divs draw no edges. */
   const handleStyle: CSSProperties = {
-    position: "absolute",
-    width: "1px",
-    height: "1px",
+    width: 1,
+    height: 1,
+    minWidth: 1,
+    minHeight: 1,
     background: "transparent",
     border: "none",
     opacity: 0,
@@ -160,7 +160,7 @@ export const StepNode: FC<StepNodeProps> = ({ data, selected = false }) => {
       `}</style>
 
       <div style={idStyle}>{step_id}</div>
-      <div style={roleStyle}>{role}</div>
+      <div style={roleStyle}>{agent ? `${agent} · ${role}` : role}</div>
       <div style={bottomRowStyle}>
         {isWorking ? (
           <span
@@ -187,17 +187,17 @@ export const StepNode: FC<StepNodeProps> = ({ data, selected = false }) => {
         )}
       </div>
 
-      {/* Left handle (target) */}
-      <div
-        style={{ ...handleStyle, left: 0, top: "50%" }}
-        data-handleid="left"
-        data-handlepos="left"
+      <Handle
+        type="target"
+        position={Position.Left}
+        isConnectable={false}
+        style={handleStyle}
       />
-      {/* Right handle (source) */}
-      <div
-        style={{ ...handleStyle, right: 0, top: "50%" }}
-        data-handleid="right"
-        data-handlepos="right"
+      <Handle
+        type="source"
+        position={Position.Right}
+        isConnectable={false}
+        style={handleStyle}
       />
     </div>
   );
