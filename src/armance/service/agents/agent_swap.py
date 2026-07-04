@@ -33,7 +33,7 @@ _AGENT_SWAP_RE = re.compile(r"\[EXECUTE:/agent-swap:([^\]]+)\]")
 
 @dataclass(slots=True, frozen=True)
 class SwapResult:
-    status: str  # "ok" | "unknown" | "staff" | "load_error"
+    status: str  # "ok" | "unknown" | "staff" | "load_error" | "bad_model"
     name: str
     provider: str = ""
     model: str = ""
@@ -78,6 +78,19 @@ async def swap_agent_model(
         return SwapResult(status="load_error", name=name)
 
     provider, model = _split_provider_model(base)
+
+    # Validate against the session discovery cache (same contract as the
+    # recruit validator): a provider WITH a catalogue rejects unknown ids;
+    # a provider without one passes (validation impossible).
+    from armance.providers.discovery import known_model_ids
+    ids = known_model_ids(provider or agent.provider)
+    if model and ids and model not in ids:
+        logger.warning(
+            "agent-swap: rejected %s — model %s/%s not in the discovered catalogue",
+            name, provider or agent.provider, model,
+        )
+        return SwapResult(status="bad_model", name=name, model=model)
+
     if provider:
         agent.provider = provider
     if model:
@@ -85,8 +98,15 @@ async def swap_agent_model(
 
     if boost:
         b_provider, b_model = _split_provider_model(boost)
-        agent.boost_provider = b_provider or agent.provider
-        agent.boost_model = b_model
+        boost_ids = known_model_ids(b_provider or agent.provider)
+        if b_model and boost_ids and b_model not in boost_ids:
+            logger.warning(
+                "agent-swap: dropped boost of %s — %s/%s not in catalogue",
+                name, b_provider or agent.provider, b_model,
+            )
+        else:
+            agent.boost_provider = b_provider or agent.provider
+            agent.boost_model = b_model
 
     agent.updated_at = agent.now_iso()
     agent.save(path)
@@ -145,6 +165,11 @@ async def handle_agent_swap(reply: str, ctx: Any) -> str:
         except Exception:
             logger.exception("agent-swap failed for %s", name)
             notes.append(t("system_msg.agent_swap_bad_model", name=name))
+            continue
+        if res.status == "bad_model":
+            notes.append(t(
+                "system_msg.agent_swap_model_unknown", name=name, model=res.model,
+            ))
             continue
         if res.status != "ok":
             notes.append(t("system_msg.agent_swap_unknown", name=name))
