@@ -213,13 +213,21 @@ _STAFF_CANONICAL_NAME = {
 }
 
 
-def _resolve_step_agent(role: str, ctx: "LoopContext") -> Any:
-    """Resolve a step's role to a concrete Agent.
+def _agent_is_healthy(agent: Any) -> bool:
+    """Healthy = last probe didn't record an error. Never-probed agents
+    count as healthy (innocent until proven bad)."""
+    last_health = getattr(agent, "last_health", None) or ""
+    return not last_health.startswith("error")
 
-    - `mona` / `serge` / `serge` / `criticalist` → prefer user-recruited
-      agent (Mona.md / Serge.md in .armance/agents/); fall back to the
-      builtin template if absent.
-    - Anything else → match against the user roster (ctx.agents) by role.
+
+def _step_agent_candidates(role: str, ctx: "LoopContext") -> list[Any]:
+    """Agents eligible to take a step of `role`, healthy first.
+
+    - `mona` / `serge` / `criticalist` → the single staff agent (prefer the
+      user-recruited Mona.md / Serge.md; fall back to the builtin template).
+    - Anything else → roster agents of that role whose `last_health` is not
+      an error. When none is healthy, fall back to the sick ones: the probe
+      may be stale, and a real failure lands on the absence path anyway.
     """
     from armance.core.models.agent import Agent
     role = (role or "").lower().strip()
@@ -229,23 +237,26 @@ def _resolve_step_agent(role: str, ctx: "LoopContext") -> Any:
         user_path = ctx.armance_root / "agents" / f"{canonical_name}.md"
         if user_path.exists():
             try:
-                return Agent.load(user_path)
+                return [Agent.load(user_path)]
             except Exception:
                 logger.warning("failed to load user %s agent", canonical_name)
         from armance import paths
         path = paths.global_agents_dir() / f"{_STAFF_AGENT_MAP[role]}.md"
         if path.exists():
             try:
-                return Agent.load(path)
+                return [Agent.load(path)]
             except Exception:
                 logger.exception("failed to load staff agent for role %s", role)
-                return None
-        return None
-    return next((a for a in ctx.agents if (a.role or "").lower() == role), None)
+                return []
+        return []
+    matches = [a for a in ctx.agents if (a.role or "").lower() == role]
+    healthy = [a for a in matches if _agent_is_healthy(a)]
+    return healthy or matches
 
 
 async def _mona_proxy_checkpoint(
     step: Any, prior_outputs: dict[str, str], ctx: "LoopContext",
+    question: str | None = None,
 ) -> str:
     """In autonomous mode, Mona (VP) answers checkpoint questions on behalf
     of the CEO (user). The user isn't there to respond; Mona decides based
@@ -271,7 +282,7 @@ async def _mona_proxy_checkpoint(
         f"CRITICAL: If the decision/question concerns an extremely important, critical, or high-risk element that you do not know or cannot decide without guessing/inventing, do NOT attempt to guess. Instead, you MUST delegate it to the user by starting your response exactly with `[ASK_USER] <Reason why you cannot decide and the question for the user>`.\n\n"
         f"## Project brief\n{ctx.state.project_brief or '(none)'}\n\n"
         f"## Checkpoint question (step id: {getattr(step, 'id', '?')})\n"
-        f"{getattr(step, 'prompt', '(none)')}\n\n"
+        f"{question or getattr(step, 'prompt', '') or '(none)'}\n\n"
         f"## Upstream outputs so far\n{upstream or '(none)'}\n\n"
         f"You are deciding WITHOUT the CEO present, so this decision is a "
         f"working hypothesis they must be able to review and contest. Unless "
@@ -294,25 +305,39 @@ async def _mona_proxy_checkpoint(
         return f"[autonomous: mona error: {exc}]"
 
 
-def _collect_unhealthy_agents(wf, ctx) -> list[str]:
-    """Return a list of `name (status)` strings for agents required by the
-    workflow whose `last_health` is an error."""
+def _role_staffing(wf, ctx) -> tuple[list[str], list[str], list[str]]:
+    """Per-role health view of the workflow's required specialist roles.
+
+    Returns ``(staffable_roles, sick_roles, sick_agent_labels)`` where a
+    *sick* role has at least one roster agent but none healthy, and a
+    *staffable* role has at least one healthy agent. Roles with no roster
+    agent at all belong to neither list — the runner's absence path
+    handles them step by step. `mona`/`serge` are staff, resolved at run
+    time, and excluded.
+    """
     required_roles = {
         (s.role or "").lower().strip() for s in wf.steps
     } - {"", "mona", "serge"}
-    if not required_roles:
-        return []
-    bad: list[str] = []
-    for a in ctx.agents:
-        if a.name.startswith("system-"):
+    staffable: list[str] = []
+    sick: list[str] = []
+    labels: list[str] = []
+    for role in sorted(required_roles):
+        matches = [
+            a for a in ctx.agents
+            if not a.name.startswith("system-")
+            and (a.role or "").lower().strip() == role
+        ]
+        if not matches:
             continue
-        role = (a.role or "").lower().strip()
-        if role not in required_roles:
-            continue
-        last_health = getattr(a, "last_health", None) or ""
-        if last_health and last_health.startswith("error"):
-            bad.append(f"`{a.name}` ({last_health})")
-    return bad
+        if any(_agent_is_healthy(a) for a in matches):
+            staffable.append(role)
+        else:
+            sick.append(role)
+            labels.extend(
+                f"`{a.name}` ({getattr(a, 'last_health', '') or '?'})"
+                for a in matches
+            )
+    return staffable, sick, labels
 
 
 async def _cmd_workflow_run(
@@ -345,14 +370,15 @@ async def _cmd_workflow_run(
             if agent.name in step_agent_names and agent.is_boostable:
                 ctx.state.boosted_agents.add(agent.name)
 
-    # ── Pre-run health check ────────────────────────────────────────────────
-    # Block the run if any required agent is known-unhealthy on disk
-    # (`last_health: error:*` from Malik's recruit-time probe). Cheap:
-    # reads frontmatter, no extra API call. Kim can swap models then
-    # retry.
-    unhealthy = _collect_unhealthy_agents(wf, ctx)
-    if unhealthy:
-        msg = t("system_msg.workflow_health_block", agents=", ".join(unhealthy))
+    # ── Pre-run health check (degraded, not all-or-nothing) ────────────────
+    # Team metaphor: a sick agent is *absent* — the run continues without
+    # it and warns. Cheap: reads frontmatter (`last_health` from Malik's
+    # recruit-time probe), no extra API call. We only refuse to launch
+    # when NOT A SINGLE required role has a healthy agent: such a run
+    # could not produce anything.
+    staffable_roles, sick_roles, sick_labels = _role_staffing(wf, ctx)
+    if sick_roles and not staffable_roles:
+        msg = t("system_msg.workflow_health_block", agents=", ".join(sick_labels))
         # Surface the block on the web path: the run is launched as a detached
         # task whose return value is discarded, and the frontend tracks
         # progress via /active-workflow (which stays null because no run dir is
@@ -366,7 +392,7 @@ async def _cmd_workflow_run(
                     attributes={
                         "workflow": name,
                         "reason": "unhealthy_agents",
-                        "agents": ", ".join(unhealthy),
+                        "agents": ", ".join(sick_labels),
                         "message": msg,
                     },
                     severity="warn",
@@ -374,6 +400,24 @@ async def _cmd_workflow_run(
             except Exception:  # noqa: BLE001 — telemetry must never break the path
                 logger.debug("workflow.blocked emit failed", exc_info=True)
         return msg
+    if sick_roles:
+        degraded_msg = t("workflow.degraded_roles", roles=", ".join(sick_roles))
+        ctx.append(degraded_msg)
+        bus = getattr(ctx, "event_bus", None)
+        if bus is not None:
+            try:
+                await bus.emit(
+                    "workflow.degraded",
+                    attributes={
+                        "workflow": name,
+                        "roles": ", ".join(sick_roles),
+                        "agents": ", ".join(sick_labels),
+                        "message": degraded_msg,
+                    },
+                    severity="warn",
+                )
+            except Exception:  # noqa: BLE001 — telemetry must never break the path
+                logger.debug("workflow.degraded emit failed", exc_info=True)
 
     # user_prompt_override is set when called from TUI context (Kim/orchestrator)
     # so the workflow runs without a blocking prompt. Otherwise we ask via the
@@ -438,20 +482,57 @@ async def _cmd_workflow_run(
     artefact = create_run(ctx.armance_root, name)
     ctx.append(t("workflow.run_started", path=str(artefact.run_dir.relative_to(ctx.armance_root))))
 
-    # Circuit breaker: after N consecutive missing-agent steps, abort the
-    # whole run instead of looping forever producing "no agent" stubs.
-    _missing_streak = {"count": 0, "max": 3}
+    # Circuit breaker: after N consecutive absent steps (missing agent OR
+    # every candidate failing), abort the whole run — the provider is
+    # probably down; no point burning through an 18-step DAG.
+    _fail_streak = {"count": 0, "max": 3}
+    _absent_steps: list[str] = []
 
     class _WorkflowAbort(RuntimeError):
         pass
 
-    # When any required-step fails, we stop launching subsequent ones — no
-    # point burning tokens once the workflow is doomed. Steps still wired
-    # into the DAG land as "skipped" with the upstream-error reason.
+    # Set ONLY by a user abort at a checkpoint. A failed step no longer
+    # aborts the run: its contribution is *absent* (team metaphor) and the
+    # rest of the workflow keeps going with an absence note in its place.
     _run_aborted = {"flag": False, "reason": ""}
 
+    async def _mark_absent(step, reason: str) -> str:
+        """A step nobody could take: record it, warn, keep the run going.
+
+        The returned note becomes the step's output, so downstream prompts
+        see explicitly what is missing instead of silently losing it.
+        """
+        _set_status(ctx, step.id, "error")
+        note = t(
+            "workflow.step_absent_note",
+            step_id=step.id, role=step.role or "?", reason=reason,
+        )
+        try:
+            write_step_output(artefact, step.id, note)
+        except Exception:  # noqa: BLE001
+            logger.debug("could not persist absence note for %s", step.id, exc_info=True)
+        mark_step_failed(artefact, step.id, reason)
+        _absent_steps.append(step.id)
+        ctx.append(t("workflow.step_absent_warn", step_id=step.id, role=step.role or "?"))
+        bus = getattr(ctx, "event_bus", None)
+        if bus is not None:
+            try:
+                await bus.emit(
+                    "workflow.step_absent",
+                    attributes={"step_id": step.id, "role": step.role or "", "reason": reason},
+                    severity="warn",
+                )
+            except Exception:  # noqa: BLE001 — telemetry must never break the run
+                logger.debug("workflow.step_absent emit failed", exc_info=True)
+        _fail_streak["count"] += 1
+        if _fail_streak["count"] >= _fail_streak["max"]:
+            raise _WorkflowAbort(
+                t("workflow.aborted_consecutive_absences", n=_fail_streak["max"])
+            )
+        return note
+
     async def runner(step, prompt: str) -> str:
-        # Short-circuit: a prior step failed, abort the rest cleanly.
+        # Short-circuit after a USER abort: skip the rest cleanly.
         if _run_aborted["flag"]:
             mark_step_skipped(artefact, step.id, _run_aborted["reason"])
             _set_status(ctx, step.id, "skipped")
@@ -461,36 +542,45 @@ async def _cmd_workflow_run(
 
         _set_status(ctx, step.id, "working")
         mark_step_started(artefact, step.id)
-        try:
-            task = Task(prompt=prompt, role=step.role, mode=step.mode)
-            agent_obj = _resolve_step_agent(step.role, ctx)
-            if agent_obj is None:
-                _set_status(ctx, step.id, "error")
-                _missing_streak["count"] += 1
-                if _missing_streak["count"] >= _missing_streak["max"]:
-                    raise _WorkflowAbort(
-                        t("workflow.aborted_no_agents",
-                          domain=step.role, step_id=step.id)
-                    )
-                msg = t("workflow.no_agent_for_step", domain=step.role, step_id=step.id)
-                write_step_output(artefact, step.id, msg)
-                mark_step_failed(artefact, step.id, msg)
-                return msg
-            _missing_streak["count"] = 0
-            # Caveman policy:
-            #   - specialist task / critique steps speak agent→agent → ultra
-            #   - Mona's judge step produces the user-facing synthesis → none
-            #   - deliverable step is read by the user → none
-            step_caveman = "none" if step.kind in ("judge", "deliverable") else "ultra"
-            report = await run_specialist(
-                agent_obj,
-                task,
-                ctx.armance_root,
-                ctx.cfg,
-                reports_root=ctx.armance_root / "reports",
-                caveman_level=step_caveman,
-                event_bus=ctx.event_bus,
+        task = Task(prompt=prompt, role=step.role, mode=step.mode)
+        candidates = _step_agent_candidates(step.role, ctx)
+        if not candidates:
+            return await _mark_absent(
+                step, t("workflow.no_agent_for_step", domain=step.role, step_id=step.id),
             )
+        # Caveman policy:
+        #   - specialist task / critique steps speak agent→agent → ultra
+        #   - Mona's judge step produces the user-facing synthesis → none
+        #   - deliverable step is read by the user → none
+        step_caveman = "none" if step.kind in ("judge", "deliverable") else "ultra"
+        # Failover: try the healthy candidates in order (max 2 attempts) —
+        # like a team, when the first pick is out, a same-role peer steps in.
+        last_error = ""
+        for attempt, agent_obj in enumerate(candidates[:2]):
+            try:
+                report = await run_specialist(
+                    agent_obj,
+                    task,
+                    ctx.armance_root,
+                    ctx.cfg,
+                    reports_root=ctx.armance_root / "reports",
+                    caveman_level=step_caveman,
+                    event_bus=ctx.event_bus,
+                )
+            except Exception as exc:
+                logger.exception(
+                    "workflow step %s failed with agent %s", step.id, agent_obj.name,
+                )
+                last_error = str(exc)
+                continue
+            if attempt > 0:
+                ctx.append(t(
+                    "workflow.step_failover",
+                    step_id=step.id,
+                    from_agent=candidates[0].name,
+                    to_agent=agent_obj.name,
+                ))
+            _fail_streak["count"] = 0
             _set_status(ctx, step.id, "completed")
             write_step_output(artefact, step.id, report.content)
             def _safe_int(v):
@@ -508,23 +598,9 @@ async def _cmd_workflow_run(
             if step.kind == "judge":
                 write_synthesis(artefact, report.content)
             return report.content
-        except _WorkflowAbort:
-            raise
-        except Exception as exc:
-            _set_status(ctx, step.id, "error")
-            logger.exception("workflow step %s failed", step.id)
-            err = t("workflow.step_error", step_id=step.id, error=str(exc))
-            try:
-                write_step_output(artefact, step.id, err)
-            except Exception:
-                pass
-            mark_step_failed(artefact, step.id, str(exc))
-            # Trip the abort flag: don't burn tokens on downstream steps
-            # that depend on this output. Final judge / synthesis steps
-            # will be marked "skipped" in the manifest.
-            _run_aborted["flag"] = True
-            _run_aborted["reason"] = f"upstream step `{step.id}` failed"
-            return err
+        return await _mark_absent(
+            step, t("workflow.step_error", step_id=step.id, error=last_error),
+        )
 
     # Build checkpoint handler for human_checkpoint steps
     from armance.service.checkpoint import Checkpoint, CheckpointResponse
@@ -553,19 +629,32 @@ async def _cmd_workflow_run(
                 logger.debug("checkpoint.answered emit failed", exc_info=True)
 
     async def checkpoint_handler(step, prior_outputs: dict[str, str]) -> str:
-        question = getattr(step, "prompt", "") or ""
+        # After a user abort, later checkpoints must not prompt anyone —
+        # the run is already being wound down.
+        if _run_aborted["flag"]:
+            return t("workflow.aborted")
+        question = (getattr(step, "prompt", "") or "").strip()
+        if not question:
+            # Kim's YAML frequently omits `prompt:` on checkpoints; an empty
+            # question shown to the user (or to Mona) is unanswerable.
+            question = t(
+                "workflow.checkpoint_default_prompt",
+                step_id=getattr(step, "id", "?"),
+            )
         # In autonomous mode, Mona speaks on behalf of the CEO. We ask the
         # mona meta-agent to answer the checkpoint based on the project
         # brief + upstream outputs, no TTY prompt to the user.
         if run_mode == "autonomous":
-            proxy_res = await _mona_proxy_checkpoint(step, prior_outputs, ctx)
+            proxy_res = await _mona_proxy_checkpoint(
+                step, prior_outputs, ctx, question=question,
+            )
             if proxy_res.startswith("[ASK_USER]"):
                 reason_and_q = proxy_res[len("[ASK_USER]"):].strip()
                 if ctx.checkpoint_handler is None:
                     raise RuntimeError("No checkpoint handler configured to prompt user.")
                 checkpoint = Checkpoint(
                     id=getattr(step, "id", "?"),
-                    prompt=f"{reason_and_q}\n\n(Original question: {getattr(step, 'prompt', '')})",
+                    prompt=f"{reason_and_q}\n\n(Original question: {question})",
                 )
                 response: CheckpointResponse = await ctx.checkpoint_handler.prompt(checkpoint)
                 if response.is_abort:
@@ -593,7 +682,7 @@ async def _cmd_workflow_run(
 
         checkpoint = Checkpoint(
             id=getattr(step, "id", "?"),
-            prompt=getattr(step, "prompt", ""),
+            prompt=question,
         )
         response: CheckpointResponse = await ctx.checkpoint_handler.prompt(checkpoint)
         if response.is_abort:
@@ -673,10 +762,18 @@ async def _cmd_workflow_run(
         preview = last_output[:150].replace("\n", " ")
         mona_offer = t("workflow.run_mona_offer")
         final_msg = t("workflow.run_preview", path=run_path, preview=preview, mona_offer=mona_offer)
+        if _absent_steps:
+            final_msg += "\n" + t(
+                "workflow.run_absences", steps=", ".join(f"`{s}`" for s in _absent_steps),
+            )
         exec_summary = split_exec_summary(assumptions_content)
         if exec_summary:
             final_msg += t("workflow.assumptions_header") + exec_summary
         return final_msg
+    except _WorkflowAbort as exc:
+        # Circuit breaker: consecutive absent steps — provider likely down.
+        _finalise_run(artefact, status="failed")
+        return str(exc)
     except RuntimeError as exc:
         _finalise_run(artefact, status="canceled")
         return str(exc)

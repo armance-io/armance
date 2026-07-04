@@ -49,6 +49,13 @@ class WebCheckpointHandler:
         })
         try:
             return await asyncio.wait_for(fut, timeout=self._timeout)
+        except asyncio.TimeoutError:
+            # Nobody answered in time. Raising here would bubble through the
+            # workflow engine and finalise the run as `failed` — wrong: an
+            # unanswered question is an abort, not a crash. The abort path
+            # finalises the run as `canceled` with the checkpoint's step id.
+            logger.warning("checkpoint %s timed out after %ss — aborting run", cp_id, self._timeout)
+            return CheckpointResponse(content="", is_abort=True)
         finally:
             self._pending.pop(cp_id, None)
 
