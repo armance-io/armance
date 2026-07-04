@@ -12,7 +12,7 @@ import json
 import pytest
 from httpx import AsyncClient
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 
 def _seed_workflow(armance_root: Path) -> None:
@@ -126,16 +126,52 @@ async def test_stop_requires_confirm(client: AsyncClient, armance_root: Path) ->
 
 
 @pytest.mark.asyncio
-async def test_stop_with_confirm_dispatches(
+async def test_stop_without_active_run_is_409(
     client: AsyncClient, armance_root: Path
 ) -> None:
+    """Stop must be honest: no in-flight run → 409, not a fake success."""
     cr = await client.post("/projects/default/sessions")
     sid = cr.json()["id"]
     _seed_workflow(armance_root)
+    resp = await client.post(
+        f"/projects/default/sessions/{sid}/workflows/wf/stop",
+        json={"confirm": True},
+    )
+    assert resp.status_code == 409
+    assert resp.json()["detail"] == {"error": "no_active_run"}
+
+
+@pytest.mark.asyncio
+async def test_stop_cancels_the_active_run_task(
+    client: AsyncClient, armance_root: Path
+) -> None:
+    """W17 — the Stop button used to dispatch `/workflow stop` (a
+    sub-command that does not exist) and still answer `cancelled: true`.
+    Now it cancels the session's run task for real."""
+    import asyncio
+
+    cr = await client.post("/projects/default/sessions")
+    sid = cr.json()["id"]
+    _seed_workflow(armance_root)
+
+    started = asyncio.Event()
+
+    async def _slow_dispatch(ws, name, mode, depth="quick"):  # noqa: ANN001
+        started.set()
+        await asyncio.sleep(30)
+        return {"ack": True, "run_id": "run-X"}
+
     with patch(
-        "armance.web.backend.routes.workflows._dispatch_stop",
-        new=AsyncMock(return_value={"cancelled": True}),
+        "armance.web.backend.routes.workflows._dispatch_run",
+        new=_slow_dispatch,
     ):
+        run_resp = await client.post(
+            f"/projects/default/sessions/{sid}/workflows/wf/run",
+            json={"mode": "interactive"},
+        )
+        assert run_resp.status_code == 202
+        await asyncio.wait_for(started.wait(), 5)
+
         resp = await client.post(
             f"/projects/default/sessions/{sid}/workflows/wf/stop",
             json={"confirm": True},
