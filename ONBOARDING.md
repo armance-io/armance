@@ -8,12 +8,17 @@
 
 ## 1. What this is, in one paragraph
 
-Armance is a single-binary Python CLI that runs a **small staff of LLM agents**
-who argue, stress-test, and synthesise over the user's own documents.
+Armance is a single-binary Python CLI that runs a **panel of LLM agents**
+who argue, stress-test, and synthesise over the user's own documents. Its
+thesis is *sovereign, contradictory, honest* — not "multi-agent" (that pattern
+is commoditised). The differentiators are the anti-lie mechanisms: a mandatory
+contradictor (Serge) on a different model family, dated RAG + a claims ledger,
+and a non-fabricated CO₂e/water footprint (EcoLogits, ISO 14044).
 The product is a Textual TUI; everything else (config, agents, conversations,
 RAG library, reports) lives under `.armance/` as plain Markdown / YAML / SQLite.
 There is **no service to deploy and no central database** — Armance runs from a
-single repo on the user's machine.
+single repo on the user's machine. Single-user and local-first are a
+**doctrine**, not a limitation: no SaaS, no multi-tenant backend.
 
 The four permanent agents are:
 
