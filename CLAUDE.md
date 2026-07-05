@@ -1,6 +1,10 @@
 # Armance — Project Instructions for AI Agents
 
-Armance = multi-agent strategic brain. **Brain, not maker** — read
+Armance = sovereign, contradictory, honest thinking partner. **Brain, not
+maker** — the edge is a panel *built to disagree* (Serge on a different model
+family), dated RAG + claims ledger, and a non-fabricated CO₂e/water footprint;
+not the multi-agent pattern itself (commoditised). Sovereign by doctrine:
+single-user, local-first, no SaaS. Read
 [`roadmap/01_vision.md`](roadmap/01_vision.md) first.
 
 Standalone Python CLI. Markdown is the source of truth. No DB for primary
