@@ -2,9 +2,9 @@
 
 # Armance 👒
 
-**A brain you consult when the choice matters.**
+**A sovereign, contradictory, honest thinking partner — for when the choice matters.**
 
-Not a copilot. Not an autonomous agent. A small firm of LLM experts that **debates, stress-tests, and synthesises** — over your own documents — so you can make a decision you can defend.
+Not a copilot. Not an autonomous agent. A panel of LLM experts that **debates, stress-tests, and synthesises** — over your own documents, on your own machine — so you can make a decision you can defend.
 
 [![CI](https://github.com/armance-io/armance/actions/workflows/ci.yml/badge.svg)](https://github.com/armance-io/armance/actions/workflows/ci.yml)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
@@ -14,6 +14,14 @@ Not a copilot. Not an autonomous agent. A small firm of LLM experts that **debat
 [Install](#install) · [Quickstart](#quickstart) · [How it works](#how-it-works) · [Contributing](CONTRIBUTING.md) · [Vision](roadmap/01_vision.md) · [Architecture](roadmap/02_architecture.md)
 
 </div>
+
+Armance is built to *not lie to you*. Three mechanisms carry that promise:
+
+- **A contradictor by design.** Serge is a mandatory adversarial criticalist who red-teams every synthesis — and runs on a **deliberately different model family** from the rest of the panel, so the room can't quietly agree with itself. Anti-sycophancy is structural, not a prompt.
+- **Sources that don't lie.** Dated RAG over *your* documents plus a claims ledger: retrieved facts carry their provenance and date, and conflicts are flagged rather than smoothed over.
+- **A planetary cost it won't fabricate.** Every response reports its CO₂e and water footprint via [EcoLogits](https://github.com/genai-impact/ecologits) (Life Cycle Assessment, ISO 14044), computed offline — never an invented number, marked `~` when estimated.
+
+And **sovereign by doctrine**: single-user, local-first, no SaaS, no cloud dashboard. Your documents never leave your machine — that is the point, not a limitation.
 
 ---
 
@@ -50,7 +58,7 @@ Armance is that partner. It runs locally, reads your documents, recruits a panel
 
 ## Meet the staff
 
-Five permanent meta-agents live in every Armance project. They never recruit themselves; they coordinate the specialists Armance brings in for your specific brief.
+Five permanent agents coordinate every Armance project. They never recruit themselves; they orchestrate the specialists brought in for your specific brief. The point is not "many agents" — that's commoditised — but a room engineered to *disagree*, with Serge as its structural contradictor.
 
 | | Role | Voice |
 |---|---|---|
@@ -58,7 +66,7 @@ Five permanent meta-agents live in every Armance project. They never recruit the
 | **Malik**   | Recruiter — picks specialists whose personas disagree usefully | Quiet force, slow tempo, Gainsbourgian nonchalance. |
 | **Kim**     | Operator — designs and runs the workflow | Direct, technical, square. Numbered lists, no padding. |
 | **Mona**    | VP — synthesises, challenges, recommends | Cash and direct. Changes a room's centre of gravity in two sentences. |
-| **Serge**   | Adversarial criticalist — stress-tests every synthesis | The cynical senior French engineer. *« \*soupir\* »* before every critique. |
+| **Serge**   | Mandatory adversarial criticalist — red-teams every synthesis, on a **different model family** from the rest of the panel | The cynical senior French engineer. *« \*soupir\* »* before every critique. |
 
 Plus the **specialists** Malik recruits per project (UX researchers, historians, ops engineers — whatever the brief calls for), each with a generated 200-word persona prompt.
 
@@ -362,6 +370,13 @@ Each layer imports only from layers below. Enforced by [`import-linter`](https:/
 | `claude-code`  | uses `claude-agent-sdk` auth | Bundled by default (no extra). Subscription = effectively free for the user. Native web search via WebSearch tool. |
 | `gemini`       | `GEMINI_API_KEY` | Live discovery via `/v1beta/models`. Native Google Search grounding. |
 | `custom-openai`| `CUSTOM_OPENAI_API_KEY` + `CUSTOM_OPENAI_BASE_URL` | Any OpenAI-compatible endpoint. |
+
+> **Direction — local inference.** Today your *data* is local but *inference*
+> still travels to a cloud API. Making on-device inference (Ollama /
+> llama.cpp) a first-class provider — so a full run needs no token to leave
+> your machine — is the next sovereignty frontier. It is a stated direction,
+> **not yet shipped**; `custom-openai` can already point at a local
+> OpenAI-compatible endpoint (e.g. Ollama) in the meantime.
 
 Models are discovered live; pricing tiers, web-search capability, reasoning
 support, and context window are read from each provider's API. The one
