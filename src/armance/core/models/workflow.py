@@ -312,6 +312,7 @@ async def execute_workflow(
     pre_run_hook: Callable[[Workflow], Awaitable[None]] | None = None,
     post_run_hook: Callable[[Workflow, "dict[str, StepResult]", StepRunner], Awaitable[None]] | None = None,
     armance_root: Path | None = None,
+    on_step_prompt: Callable[[str, str, bool], None] | None = None,
 ) -> dict[str, StepResult]:
     """Run every step of the workflow.
 
@@ -330,6 +331,12 @@ async def execute_workflow(
     post_run_hook (optional): async callable(workflow, results, runner)
     invoked after the last level finishes. The hook may mutate `results`
     to inject extra step outputs (Serge consensus auto-invoke does this).
+
+    on_step_prompt (optional): sync callable(step_id, effective_prompt,
+    template_used) invoked right before each regular step's runner is
+    dispatched. `core` performs no I/O — this is the seam the service
+    layer uses to persist the effective prompt for auditability (Lot C)
+    without core touching the filesystem itself.
     """
     import asyncio
 
@@ -349,7 +356,9 @@ async def execute_workflow(
         # Process regular steps with template rendering and asyncio.gather
         if regular_steps:
             prompts = []
+            template_used_flags: list[bool] = []
             for s in regular_steps:
+                template_used = bool(s.prompt_template)
                 if s.kind == "deliverable":
                     # For deliverable steps, resolve the content to compile.
                     # Priority: explicit `source` field → "latest_judge" keyword →
@@ -413,6 +422,14 @@ async def execute_workflow(
                             workflow, s, user_prompt, results,
                         )
                     prompts.append(prompt_text)
+                template_used_flags.append(template_used)
+
+            if on_step_prompt is not None:
+                for s, prompt_text, template_used in zip(regular_steps, prompts, template_used_flags):
+                    try:
+                        on_step_prompt(s.id, prompt_text, template_used)
+                    except Exception:  # noqa: BLE001 — a persistence hook must never break the run
+                        logger.exception("on_step_prompt hook failed for step %s", s.id)
 
             # Real tasks (not bare coroutines) so an abort can cancel the
             # in-flight siblings — plain gather leaves them running orphaned,

@@ -242,3 +242,79 @@ async def test_workflow_run_resolves_steps_to_agents(
     # T5: reply is now a preview + Mona offer, not full content dump
     assert "run" in low  # run_finished / run_preview key
     assert "mona" in low  # mona offer present
+
+
+@pytest.mark.asyncio
+async def test_workflow_run_persists_effective_prompts(
+    armance_root: Path, cfg: Config,
+) -> None:
+    """Lot C — the prompt effectively rendered for each step must be
+    persisted next to its output (step-<id>.prompt.md) and referenced in
+    the run manifest (prompt_file, template_used), so a run is fully
+    auditable/rejouable."""
+    theodore_path = armance_root / "agents" / "Theodore.md"
+    theodore = Agent(
+        name="Theodore", role="historian",
+        persona="positivist", provider="openrouter",
+        model="google/gemma-2-9b-it:free", system_prompt="historian",
+    )
+    theodore.save(theodore_path)
+
+    wf_path = armance_root / ".armance" / "workflows" / "mvp2.yaml"
+    wf_path.write_text(
+        "name: mvp2\n"
+        "strategy: rapide\n"
+        "steps:\n"
+        "  - id: research\n"
+        "    kind: task\n"
+        "    role: historian\n"
+        "    depends_on: []\n"
+        "    prompt_template: \"{{user_prompt}}\"\n"
+        "  - id: judge\n"
+        "    kind: judge\n"
+        "    role: mona\n"
+        "    depends_on: [research]\n"
+    )
+
+    fake_report = MagicMock()
+    fake_report.content = "stub output"
+    with patch(
+        "armance.service.handlers.run_specialist",
+        new=AsyncMock(return_value=fake_report),
+    ):
+        from armance.service.handlers import _cmd_workflow_run
+        from armance.service.loop_context import LoopContext
+        from armance.service.session import Session, SessionState
+        from armance.service.llm_service import TokenLedger
+
+        state = SessionState.new()
+        session = Session(state, armance_root)
+        ctx = LoopContext(
+            armance_root=armance_root,
+            cfg=cfg,
+            state=state,
+            session=session,
+            ledger=TokenLedger(),
+            statuses=[],
+            agents=[theodore],
+        )
+
+        await _cmd_workflow_run(
+            "mvp2", enrich_sid=None, ctx=ctx,
+            skip_preflight=True, user_prompt_override="test prompt content",
+        )
+
+    run_dirs = sorted((armance_root / "exports" / "mvp2").glob("run-*"))
+    assert run_dirs
+    run_dir = run_dirs[-1]
+
+    research_prompt_path = run_dir / "step-research.prompt.md"
+    assert research_prompt_path.exists()
+    assert "test prompt content" in research_prompt_path.read_text(encoding="utf-8")
+
+    import json
+
+    manifest = json.loads((run_dir / "manifest.json").read_text(encoding="utf-8"))
+    by_id = {s["id"]: s for s in manifest["steps"]}
+    assert by_id["research"]["prompt_file"] == "step-research.prompt.md"
+    assert by_id["research"]["template_used"] is True
