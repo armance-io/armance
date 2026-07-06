@@ -310,6 +310,7 @@ workflow:
   design_missing_yaml: "Atención — No se encontró ningún bloque YAML en la propuesta. Kim debe adjuntar un bloque ```yaml ... ``` con `name`, `steps`."
   design_invalid_yaml: "Atención — YAML inválido: {error}"
   design_invalid_workflow: "Atención — Flujo de trabajo inválido: {error}"
+  design_prompt_warnings: "Nota — algunos pasos no tienen un `prompt` diferenciado:"
   design_created: "Flujo de trabajo **{name}** creado ✓  ({gem} {label})\nArchivo: `.armance/workflows/{filename}`\n"
   usage_run: "uso: /workflow run <nombre> [--enrich <session_id>] [--yes]"
   usage_design: "uso: /workflow design <nombre>"

@@ -310,6 +310,7 @@ workflow:
   design_missing_yaml: "注意 — 提案中未找到 YAML 块。Kim 必须附带一个包含 `name`、`steps` 的 ```yaml ... ``` 块。"
   design_invalid_yaml: "注意 — YAML 格式无效: {error}"
   design_invalid_workflow: "注意 — 工作流无效: {error}"
+  design_prompt_warnings: "提示 — 部分步骤没有差异化的 `prompt`:"
   design_created: "工作流 **{name}** 已创建 ✓ ({gem} {label})\n文件: `.armance/workflows/{filename}`\n"
   usage_run: "用法: /workflow run <名称> [--enrich <session_id>] [--yes]"
   usage_design: "用法: /workflow design <名称>"

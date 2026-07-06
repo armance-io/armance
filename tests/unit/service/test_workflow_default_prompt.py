@@ -64,3 +64,56 @@ def test_empty_scope_still_produces_useful_prompt() -> None:
     )
     assert "préparer la conférence" in prompt
     assert "Do NOT just acknowledge" in prompt
+
+
+def test_upstream_section_instructs_extend_not_rewrite() -> None:
+    """A3 — the upstream section header must tell the agent to extend the
+    prior deliverable, not restate/rewrite it (root cause of the 5
+    specialists each re-writing a full memo in the 353-miroirs run)."""
+    wf = _wf("dossier historique")
+    results = {"research": StepResult(id="research", output="Long research text.")}
+    prompt = _compose_default_prompt(
+        wf, wf.steps[1], user_prompt="préparer", results=results,
+    )
+    assert "Deliverable from step `research`" in prompt
+    assert "extend it" in prompt
+    assert "do NOT rewrite or restate it" in prompt
+
+
+def test_task_step_warns_against_standalone_document_and_stay_on_axis() -> None:
+    """A3 — anti-redundancy guardrail: stay on the role's axis, don't
+    produce a standalone full document that duplicates peers' work."""
+    wf = _wf("dossier historique")
+    prompt = _compose_default_prompt(
+        wf, wf.steps[0], user_prompt="préparer", results={},
+    )
+    assert "stay strictly on your `historian` axis" in prompt.lower() or \
+        "stay strictly on your" in prompt.lower()
+    assert "standalone full document" in prompt.lower()
+
+
+def test_task_step_has_output_contract() -> None:
+    """A3 — minimal output contract per kind so downstream steps get a
+    predictable shape to reference, instead of free-text prose."""
+    wf = _wf("dossier historique")
+    prompt = _compose_default_prompt(
+        wf, wf.steps[0], user_prompt="préparer", results={},
+    )
+    assert "## Findings" in prompt or "Produce exactly these sections" in prompt
+
+
+def test_judge_step_has_output_contract() -> None:
+    wf = _wf("dossier historique")
+    prompt = _compose_default_prompt(
+        wf, wf.steps[1], user_prompt="préparer", results={},
+    )
+    assert "Produce exactly these sections" in prompt or "## Synthesis" in prompt
+
+
+def test_critique_step_has_output_contract() -> None:
+    wf = Workflow(
+        name="t", scope="dossier historique uniquement",
+        steps=[WorkflowStep(id="c", kind="critique", role="serge")],
+    )
+    prompt = _compose_default_prompt(wf, wf.steps[0], user_prompt="x", results={})
+    assert "Produce exactly these sections" in prompt or "## Deltas" in prompt
