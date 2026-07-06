@@ -42,6 +42,8 @@ class StepRecord:
     cost_usd: float | None = None
     output_path: str | None = None
     error: str | None = None
+    prompt_file: str | None = None
+    template_used: bool | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -56,6 +58,8 @@ class StepRecord:
             "cost_usd": self.cost_usd,
             "output_path": self.output_path,
             "error": self.error,
+            "prompt_file": self.prompt_file,
+            "template_used": self.template_used,
         }
 
 
@@ -83,6 +87,10 @@ class RunArtefact:
     def step_path(self, step_id: str) -> Path:
         safe = re.sub(r"[^\w-]", "_", step_id)[:64]
         return self.run_dir / f"step-{safe}.md"
+
+    def step_prompt_path(self, step_id: str) -> Path:
+        safe = re.sub(r"[^\w-]", "_", step_id)[:64]
+        return self.run_dir / f"step-{safe}.prompt.md"
 
     def trace_path(self) -> Path:
         return self.run_dir / "trace.md"
@@ -138,6 +146,25 @@ def write_step_output(artefact: RunArtefact, step_id: str, content: str) -> Path
         artefact.step_ids.append(step_id)
     rec = artefact.record(step_id)
     rec.output_path = str(path.relative_to(artefact.run_dir))
+    return path
+
+
+def write_step_prompt(
+    artefact: RunArtefact, step_id: str, prompt: str, *, template_used: bool,
+) -> Path:
+    """Persist the effective prompt rendered for a step (Lot C — auditability).
+
+    Written alongside `step-<id>.md`; referenced in the manifest via
+    `prompt_file` + `template_used` so a run is fully rejouable/auditable
+    and the future UI (Lot D) has a data source to read from.
+    """
+    path = artefact.step_prompt_path(step_id)
+    path.write_text(prompt, encoding="utf-8")
+    rec = artefact.record(step_id)
+    rec.prompt_file = str(path.relative_to(artefact.run_dir))
+    rec.template_used = template_used
+    if step_id not in artefact.step_ids:
+        artefact.step_ids.append(step_id)
     return path
 
 

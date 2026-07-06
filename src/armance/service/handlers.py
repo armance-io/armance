@@ -487,6 +487,7 @@ async def _cmd_workflow_run(
         mark_step_skipped,
         mark_step_started,
         write_step_output,
+        write_step_prompt,
         write_synthesis,
     )
 
@@ -724,6 +725,15 @@ async def _cmd_workflow_run(
         msg = payload.get("message") or str(payload)
         ctx.append(f"[{kind}] {msg}")
 
+    def _on_step_prompt(step_id: str, prompt: str, template_used: bool) -> None:
+        # Lot C: persist the effective prompt next to the step output so
+        # a run is fully auditable/rejouable. core does no I/O — this hook
+        # is the service-layer seam.
+        try:
+            write_step_prompt(artefact, step_id, prompt, template_used=template_used)
+        except Exception:  # noqa: BLE001 — persistence must never break the run
+            logger.debug("could not persist prompt for step %s", step_id, exc_info=True)
+
     async def _pre_run(workflow) -> None:
         await validate_cross_family(workflow, ctx.cfg, notify=_notify)
 
@@ -748,6 +758,7 @@ async def _cmd_workflow_run(
             pre_run_hook=_pre_run,
             post_run_hook=_post_run,
             armance_root=ctx.armance_root,
+            on_step_prompt=_on_step_prompt,
         )
         # Auto-serge critique was injected post-run: persist it too.
         for sid, r in results.items():
