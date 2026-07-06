@@ -409,6 +409,15 @@ init:
     disabled_edit_keys: "RAG deaktiviert. Bearbeiten Sie embedding_provider / embedding_model in .armance/config.yaml, um es später zu aktivieren."
     unrecognised: "Modell '{name}' nicht erkannt. RAG deaktiviert."
     confirmed: "Embedding: [{provider}]  {model}"
+  rerank:
+    title: "Optional: Rerank-Modell (höhere Bibliotheks-Präzision, weniger Tokens)."
+    uses_provider: "Leer lassen zum Überspringen. Verwendeter Provider: {provider}"
+    unsupported: "{provider} bietet keinen Rerank-Endpunkt — Schritt übersprungen."
+    openrouter_hint: "Hinweis: openrouter.ai hat keine /rerank-Route. Setzen Sie OPENROUTER_BASE_URL auf einen Proxy mit Cohere-artigem /rerank (TEI, Infinity, LiteLLM), sonst fällt die Suche stillschweigend auf die Vektor-Reihenfolge zurück."
+    prompt_provider: "Provider für das Rerank-Modell (kann vom Embedding-Provider abweichen)"
+    prompt_model: "Rerank-Modell-ID für {provider} (leer = überspringen)"
+    disabled: "Rerank deaktiviert."
+    confirmed: "Rerank: [{provider}]  {model}"
   ssl_skip_prompt: "SSL-Zertifikatsprüfung überspringen? (erforderlich bei selbstsignierten / Firmen-MITM-Zertifikaten)"
 
 # ---------------------------------------------------------------------------

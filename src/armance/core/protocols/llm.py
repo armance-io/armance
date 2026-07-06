@@ -38,6 +38,12 @@ class LLMResponse:
     cost_usd: float | None = None
 
 
+@dataclass(slots=True)
+class RerankHit:
+    index: int    # original position in the documents list
+    score: float  # relevance_score; higher = more relevant
+
+
 class LLMClient(ABC):
     @abstractmethod
     async def complete(
@@ -55,6 +61,17 @@ class LLMClient(ABC):
         model: str,
     ) -> list[float]:
         ...
+
+    async def rerank(
+        self,
+        query: str,
+        documents: list[str],
+        model: str,
+        *,
+        top_n: int | None = None,
+    ) -> list[RerankHit]:
+        """Reorder documents by relevance. Default: provider has no rerank endpoint."""
+        raise NotImplementedError(f"{type(self).__name__} has no rerank endpoint")
 
     async def stream_complete(
         self,

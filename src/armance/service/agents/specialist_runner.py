@@ -70,7 +70,7 @@ class SpecialistRunner:
 
         # T-27: RAG enrichment (retrieve evidence based on the current task prompt)
         context = await self.context_service.enrich_for_agent(
-            agent.name, context, task.prompt
+            agent.name, context, task.prompt, config=self.config
         )
 
         # Persistent "read" docs: any specialist sees the full text of docs

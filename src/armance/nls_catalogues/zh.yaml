@@ -409,6 +409,15 @@ init:
     disabled_edit_keys: "RAG 已禁用。后续可通过编辑 .armance/config.yaml 中的 embedding_provider / embedding_model 来启用。"
     unrecognised: "未识别的模型 '{name}'。RAG 已禁用。"
     confirmed: "嵌入模型: [{provider}] {model}"
+  rerank:
+    title: "可选：重排序模型（提升文库检索精度，节省 token）。"
+    uses_provider: "留空跳过。使用的 provider：{provider}"
+    unsupported: "{provider} 不提供重排序端点 — 已跳过。"
+    openrouter_hint: "注意：openrouter.ai 没有 /rerank 路由。请将 OPENROUTER_BASE_URL 指向暴露 Cohere 风格 /rerank 的代理（TEI、Infinity、LiteLLM），否则检索将静默回退到向量顺序。"
+    prompt_provider: "重排序模型的 provider（可以与 embedding provider 不同）"
+    prompt_model: "{provider} 的重排序模型 ID（留空 = 跳过）"
+    disabled: "重排序已禁用。"
+    confirmed: "重排序: [{provider}] {model}"
   ssl_skip_prompt: "是否跳过 SSL 证书验证？（若存在自签名证书或公司 MITM 代理则需要）"
 
 # ---------------------------------------------------------------------------
