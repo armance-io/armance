@@ -212,6 +212,59 @@ def _ask_embedding(
     return (prov, model)
 
 
+def _ask_rerank(
+    embedding_provider: str,
+    embedding_model: str,
+    selected_providers: list[str],
+    providers: list["ProviderConfig"],
+    language: str = "en",
+) -> tuple[str, str]:
+    """Optional rerank model, asked right below the embedding model.
+
+    Returns (rerank_provider, rerank_model). ("", "") when skipped, when
+    no embedding is configured (rerank needs a recall stage to refine), or
+    when no selected provider has a rerank endpoint at all. The rerank
+    provider is decoupled from the embedding provider: any eligible selected
+    provider can serve it (default = the embedding provider when eligible)."""
+    from armance.nls import t
+
+    def _tr(key: str, **kw: Any) -> str:
+        return t(f"init.rerank.{key}", lang=language, **kw)
+
+    if not embedding_provider or not embedding_model:
+        return ("", "")
+    # claude-code and gemini clients have no rerank endpoint: asking for a
+    # model id would configure a step that degrades on every single query.
+    eligible = [p for p in selected_providers if p not in ("claude-code", "gemini")]
+    if not eligible:
+        print("\n  " + _tr("unsupported", provider=", ".join(selected_providers)) + "\n")
+        return ("", "")
+    print()
+    print("  🔎  " + _tr("title"))
+    if len(eligible) == 1:
+        rerank_provider = eligible[0]
+        print("      " + _tr("uses_provider", provider=rerank_provider))
+    else:
+        default = embedding_provider if embedding_provider in eligible else eligible[0]
+        rerank_provider = questionary.select(
+            _tr("prompt_provider"),
+            choices=eligible,
+            default=default,
+            use_arrow_keys=True,
+            style=_SELECT_STYLE,
+        ).ask() or default
+    if rerank_provider == "openrouter":
+        print("      " + _tr("openrouter_hint"))
+    model_id = (questionary.text(
+        _tr("prompt_model", provider=rerank_provider)
+    ).ask() or "").strip()
+    if not model_id:
+        print("  " + _tr("disabled") + "\n")
+        return ("", "")
+    print("\n  ✅  " + _tr("confirmed", provider=rerank_provider, model=model_id) + "\n")
+    return (rerank_provider, model_id)
+
+
 def _fetch_chat_models(
     provider_name: str,
     providers: list["ProviderConfig"],
@@ -466,6 +519,9 @@ def cmd_init(
     ).ask() or "optimised"
 
     embedding_provider, embedding_model = _ask_embedding(selected, providers, language=language)
+    rerank_provider, rerank_model = _ask_rerank(
+        embedding_provider, embedding_model, selected, providers, language=language
+    )
 
     # Carbon-intensity zone — refines the CO2 footprint estimate to the user's
     # electricity grid. Defaults to the world average (WOR).
@@ -501,6 +557,9 @@ def cmd_init(
         # Explicit "none" sentinel — disable RAG embeddings
         cfg_kwargs["embedding_provider"] = ""
         cfg_kwargs["embedding_model"] = ""
+    if rerank_provider:
+        cfg_kwargs["rerank_provider"] = rerank_provider
+        cfg_kwargs["rerank_model"] = rerank_model
 
     cfg = Config(**cfg_kwargs)
 

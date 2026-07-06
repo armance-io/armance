@@ -35,6 +35,7 @@ def test_cmd_init_writes_config_env_and_tree(
             "free-first",                                               # budget effort
             # embedding autocomplete: compact label format
             "openai/text-embedding-test  [openrouter]  🆓",
+            "",                                                         # rerank model (blank = skip)
             "FRA · 44.2 gCO2e/kWh",                                     # carbon zone picker
         ]
     )

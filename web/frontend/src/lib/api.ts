@@ -759,6 +759,8 @@ export interface SetupInitIn {
   electricity_zone?: string;
   embedding_provider?: string;
   embedding_model?: string;
+  rerank_provider?: string;
+  rerank_model?: string;
 }
 
 export async function getSetupStatus(): Promise<SetupStatusResponse> {

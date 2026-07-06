@@ -441,6 +441,9 @@
       "embedding": "Modèle d'embedding",
       "embedding_placeholder": "Saisissez ou choisissez un identifiant de modèle d'embedding…",
       "embedding_hint": "Sert à indexer votre bibliothèque. Choisissez parmi vos fournisseurs ou saisissez un identifiant de modèle.",
+      "rerank": "Modèle de reranking (optionnel)",
+      "rerank_placeholder": "Saisissez un identifiant de modèle de reranking…",
+      "rerank_hint": "Affine les résultats de la bibliothèque : récupère large, puis garde les plus pertinents — moins de tokens par requête. Utilise le même fournisseur que le modèle d'embedding.",
       "carbon_zone": "Pays / zone (empreinte CO₂)",
       "carbon_zone_hint": "Affine l'estimation CO₂ selon l'intensité carbone de votre réseau électrique."
     },
@@ -600,6 +603,9 @@
     "embedding_label": "Modèle d'embedding (optionnel)",
     "embedding_hint": "Pour indexer votre bibliothèque. Vous pouvez l'ignorer et le définir plus tard.",
     "embedding_placeholder": "Saisissez ou choisissez un identifiant de modèle d'embedding…",
+    "rerank_label": "Modèle de reranking (optionnel)",
+    "rerank_hint": "Affine les résultats de la bibliothèque : récupère large, puis garde les plus pertinents — moins de tokens par requête. Utilise le même fournisseur que le modèle d'embedding.",
+    "rerank_placeholder": "Saisissez un identifiant de modèle de reranking…",
     "tier": {
       "free": "Gratuit",
       "low": "Faible",
