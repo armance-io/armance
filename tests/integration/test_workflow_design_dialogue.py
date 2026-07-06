@@ -176,6 +176,118 @@ def test_bare_yaml_with_orphan_closing_fence_parses(tmp_path) -> None:
     assert yaml_files, f"workflow not saved; reply={reply!r}"
 
 
+def test_prompt_alias_maps_to_prompt_template(tmp_path) -> None:
+    """A1 bis: Kim's YAML may use `prompt:` (natural for the LLM) instead of
+    `prompt_template:` — the skill maps it before writing/validating."""
+    skill = DesignWorkflowSkill(armance_root=tmp_path, config=None, agents=_ROSTER)
+    kim_reply = (
+        "```yaml\n"
+        "name: dossier-historique\n"
+        "steps:\n"
+        "  - id: propose\n"
+        "    kind: task\n"
+        "    role: historian\n"
+        "    depends_on: []\n"
+        "    prompt: |\n"
+        "      Research the topic. Produce a dense summary.\n"
+        "  - id: judge\n"
+        "    kind: judge\n"
+        "    role: mona\n"
+        "    depends_on: [propose]\n"
+        "    prompt: \"Synthesise {{propose.output}}.\"\n"
+        "```\n"
+    )
+    reply = skill.run(args=kim_reply)
+    assert "created" in reply.lower() or "créé" in reply.lower()
+    workflows_dir = tmp_path / ".armance" / "workflows"
+    wf = load_workflow(list(workflows_dir.glob("*.yaml"))[0])
+    assert "Research the topic" in wf.steps[0].prompt_template
+    assert "{{propose.output}}" in wf.steps[1].prompt_template
+
+
+def test_depends_on_unknown_step_rejected_end_to_end(tmp_path) -> None:
+    """Real bug repro (tmp/runtime3/workflows/reponse-technique-short.yaml):
+    a step depends on an id that is never defined anywhere in the workflow."""
+    skill = DesignWorkflowSkill(armance_root=tmp_path, config=None, agents=_ROSTER)
+    reply = skill.run(args=(
+        "```yaml\n"
+        "name: bad-dep\n"
+        "steps:\n"
+        "  - id: qualifier_ia\n"
+        "    kind: task\n"
+        "    role: historian\n"
+        "    depends_on: [extraire_exigences]\n"
+        "```\n"
+    ))
+    low = reply.lower()
+    assert "extraire_exigences" in low
+    assert not list((tmp_path / ".armance" / "workflows").glob("*.yaml"))
+
+
+def test_role_equal_to_step_id_rejected_end_to_end(tmp_path) -> None:
+    """Real bug repro: role == another step's id (role/id inversion)."""
+    skill = DesignWorkflowSkill(armance_root=tmp_path, config=None, agents=_ROSTER)
+    reply = skill.run(args=(
+        "```yaml\n"
+        "name: bad-role\n"
+        "steps:\n"
+        "  - id: synthese_mona\n"
+        "    kind: judge\n"
+        "    role: mona\n"
+        "    depends_on: []\n"
+        "  - id: revision_finale\n"
+        "    kind: task\n"
+        "    role: synthese_mona\n"
+        "    depends_on: [synthese_mona]\n"
+        "```\n"
+    ))
+    low = reply.lower()
+    assert "synthese_mona" in low
+    assert not list((tmp_path / ".armance" / "workflows").glob("*.yaml"))
+
+
+def test_template_ref_to_undeclared_dep_rejected_end_to_end(tmp_path) -> None:
+    skill = DesignWorkflowSkill(armance_root=tmp_path, config=None, agents=_ROSTER)
+    reply = skill.run(args=(
+        "```yaml\n"
+        "name: bad-ref\n"
+        "steps:\n"
+        "  - id: propose\n"
+        "    kind: task\n"
+        "    role: historian\n"
+        "    depends_on: []\n"
+        "    prompt: \"Do the work.\"\n"
+        "  - id: judge\n"
+        "    kind: judge\n"
+        "    role: mona\n"
+        "    depends_on: []\n"
+        "    prompt: \"Synthesise {{propose.output}}.\"\n"
+        "```\n"
+    ))
+    low = reply.lower()
+    assert "propose.output" in low
+    assert not list((tmp_path / ".armance" / "workflows").glob("*.yaml"))
+
+
+def test_empty_prompt_on_task_is_non_blocking_warning(tmp_path) -> None:
+    """A workflow with no `prompt` on a task step still gets written
+    (rétrocompat legacy YAML) but the summary carries a warning line."""
+    skill = DesignWorkflowSkill(armance_root=tmp_path, config=None, agents=_ROSTER)
+    reply = skill.run(args=(
+        "```yaml\n"
+        "name: no-prompt\n"
+        "steps:\n"
+        "  - id: propose\n"
+        "    kind: task\n"
+        "    role: historian\n"
+        "    depends_on: []\n"
+        "```\n"
+    ))
+    assert "created" in reply.lower() or "créé" in reply.lower()
+    assert list((tmp_path / ".armance" / "workflows").glob("*.yaml"))
+    assert "propose" in reply
+
+
 def test_tag_wrapped_in_fence_then_yaml_in_second_fence(tmp_path) -> None:
     r"""Weak LLMs sometimes emit two fenced blocks: the first wraps just the
     [EXECUTE:/workflow-design] tag, the second wraps the real YAML body.

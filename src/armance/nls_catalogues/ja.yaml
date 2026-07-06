@@ -310,6 +310,7 @@ workflow:
   design_missing_yaml: "注意 — 提案の中に YAML ブロックが見つかりません。Kim は `name`, `steps` を含む ```yaml ... ``` ブロックを添付する必要があります。"
   design_invalid_yaml: "注意 — 无效的 YAML: {error}"
   design_invalid_workflow: "注意 — 无效的工作流: {error}"
+  design_prompt_warnings: "注意 — 一部のステップに差別化された `prompt` がありません:"
   design_created: "ワークフロー **{name}** が作成されました ✓ ({gem} {label})\nファイル: `.armance/workflows/{filename}`\n"
   usage_run: "使用法: /workflow run <名前> [--enrich <session_id>] [--yes]"
   usage_design: "使用法: /workflow design <名前>"

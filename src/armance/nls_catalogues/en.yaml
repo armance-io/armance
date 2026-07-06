@@ -311,6 +311,7 @@ workflow:
   design_missing_yaml: "Attention — No YAML block found in the proposal. Kim must attach a ```yaml ... ``` block with `name`, `steps`."
   design_invalid_yaml: "Attention — Invalid YAML: {error}"
   design_invalid_workflow: "Attention — Invalid workflow: {error}"
+  design_prompt_warnings: "Note — some steps have no differentiated `prompt`:"
   design_created: "Workflow **{name}** created ✓  ({gem} {label})\nFile: `.armance/workflows/{filename}`\n"
   usage_run: "usage: /workflow run <name> [--enrich <session_id>] [--yes]"
   usage_design: "usage: /workflow design <name>"
