@@ -238,10 +238,17 @@ def _compose_default_prompt(
     persona seed only — outputs end up being 1 line of "Prêt à défendre les
     archives".
 
-    The composed prompt has three parts:
+    A3 hardening (roadmap/03_workflow_quality_refonte.md §3): this is the
+    filet de sécurité, never the nominal path (Kim should write a
+    differentiated `prompt` per step — see A1/A2). It still has to defend
+    against the disaster observed in the dossier-reponse-ao run, where 5 parallel
+    specialists each rewrote a full standalone memo instead of contributing
+    their distinct axis:
       1. Workflow scope (the narrow goal) + user's original request.
-      2. Step instructions tailored to its kind + role.
-      3. Upstream outputs as cited material to build on / critique / judge.
+      2. Step instructions tailored to its kind + role, with an explicit
+         anti-redundancy guardrail (stay on the role axis, no standalone
+         document) and a minimal output contract (exact sections expected).
+      3. Upstream outputs framed as deliverables to *extend*, not restate.
     """
     scope = (workflow.scope or "").strip()
     role = step.role or "specialist"
@@ -261,7 +268,11 @@ def _compose_default_prompt(
             "specialists are expected to deliver detailed, sourced, structured "
             "output (target 500-2000 words depending on the workflow scope). "
             "Use Markdown: headings, bullets, citations where applicable. "
-            "Do NOT just acknowledge the task — actually do the work."
+            "Do NOT just acknowledge the task — actually do the work. "
+            f"Stay strictly on your `{role}` axis; other steps cover the "
+            "rest. Do not produce a standalone full document. "
+            "Produce exactly these sections: "
+            "## Findings / ## Risks / ## Open questions."
         )
     elif kind == "judge":
         lines[-1] += (
@@ -269,7 +280,11 @@ def _compose_default_prompt(
             "document. Quote, contrast, structure. Stay strictly inside the "
             "workflow scope above — do NOT comment on the broader project "
             "(budget, logistics, timeline) unless the scope explicitly "
-            "includes them. Target 800-2000 words."
+            "includes them. Target 800-2000 words. "
+            f"Stay strictly on your `{role}` axis; other steps cover the "
+            "rest. Do not produce a standalone full document. "
+            "Produce exactly these sections: "
+            "## Synthesis / ## Points of tension / ## Recommendation."
         )
     elif kind == "critique":
         lines[-1] += (
@@ -277,24 +292,37 @@ def _compose_default_prompt(
             "evidence, logical gaps, blind spots. Be specific and adversarial. "
             "Stay strictly inside the workflow scope — do NOT critique angles "
             "outside it (e.g. business, finance, code) unless the scope says so. "
-            "Target 300-800 words."
+            "Target 300-800 words. "
+            f"Stay strictly on your `{role}` axis; other steps cover the "
+            "rest. Do not produce a standalone full document. Produce "
+            "numbered deltas, not a rewrite of the synthesis. "
+            "Produce exactly these sections: "
+            "## Deltas (numbered) / ## Unresolved risks."
         )
     elif kind == "meeting":
         lines[-1] += (
             "Contribute your distinct angle to the group's exchange. Build on "
             "or push back against peers' contributions when relevant. "
-            "Target 200-600 words."
+            "Target 200-600 words. "
+            f"Stay strictly on your `{role}` axis; other steps cover the "
+            "rest. Do not produce a standalone full document."
         )
     else:
         lines[-1] += (
-            "Produce the output expected for this kind of step. Be substantive."
+            "Produce the output expected for this kind of step. Be substantive. "
+            f"Stay strictly on your `{role}` axis; other steps cover the "
+            "rest. Do not produce a standalone full document."
         )
 
     if step.depends_on:
-        lines.append("\n## Upstream contributions (material to work from)")
+        lines.append("\n## Upstream material (extend it, do NOT rewrite or restate it)")
         for dep_id in step.depends_on:
             if dep_id in results:
-                lines.append(f"\n### {dep_id}\n{results[dep_id].output}")
+                lines.append(
+                    f"\n### Deliverable from step `{dep_id}` "
+                    "(extend it, do NOT rewrite or restate it)\n"
+                    f"{results[dep_id].output}"
+                )
     return "\n".join(lines)
 
 
