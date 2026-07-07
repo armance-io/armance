@@ -61,6 +61,12 @@ class WorkflowStep(BaseModel):
     agents: list[str] = Field(default_factory=list)
     depends_on: list[str] = Field(default_factory=list)
     prompt_template: str = ""
+    # Library document names (basename, under `.armance/docs/`) to inject as
+    # seed material for this step — e.g. an existing tender to challenge. The
+    # actual file read happens in the `service` layer (layering: `core` does
+    # no disk I/O); the loaded text is passed to `execute_workflow` via the
+    # `inputs` dict under `seed.<basename>` and surfaced in the default prompt.
+    seed_docs: list[str] = Field(default_factory=list)
 
     # Step-specific fields (populated based on kind)
     prompt: str = ""
@@ -230,6 +236,7 @@ def _compose_default_prompt(
     step: "WorkflowStep",
     user_prompt: str,
     results: "dict[str, StepResult]",
+    inputs: "dict[str, Any] | None" = None,
 ) -> str:
     """Build a structured prompt when no `prompt_template` is provided.
 
@@ -314,6 +321,21 @@ def _compose_default_prompt(
             "rest. Do not produce a standalone full document."
         )
 
+    # Seed documents (Lot B): text loaded by the service layer and passed in
+    # via `inputs` under `seed.<basename>` keys. Injected as-is so a step can
+    # critique/extend an existing document (e.g. a drafted tender) instead of
+    # writing from scratch. `core` never reads the disk — the text is already
+    # in `inputs`.
+    inputs = inputs or {}
+    seed_keys = [k for k in step.seed_docs if f"seed.{k}" in inputs]
+    if seed_keys:
+        lines.append(
+            "\n## Seed documents (existing material — critique/extend it, "
+            "do NOT ignore it and do NOT re-derive it from scratch)"
+        )
+        for basename in seed_keys:
+            lines.append(f"\n### `{basename}`\n{inputs[f'seed.{basename}']}")
+
     if step.depends_on:
         lines.append("\n## Upstream material (extend it, do NOT rewrite or restate it)")
         for dep_id in step.depends_on:
@@ -341,6 +363,7 @@ async def execute_workflow(
     post_run_hook: Callable[[Workflow, "dict[str, StepResult]", StepRunner], Awaitable[None]] | None = None,
     armance_root: Path | None = None,
     on_step_prompt: Callable[[str, str, bool], None] | None = None,
+    inputs: dict[str, Any] | None = None,
 ) -> dict[str, StepResult]:
     """Run every step of the workflow.
 
@@ -365,8 +388,15 @@ async def execute_workflow(
     dispatched. `core` performs no I/O — this is the seam the service
     layer uses to persist the effective prompt for auditability (Lot C)
     without core touching the filesystem itself.
+
+    inputs (optional): free-form workflow inputs made available to templates
+    via `{{<input_key>}}` and to the default prompt. Lot B loads seed
+    documents into this dict (keys `seed.<basename>`) from the service layer
+    — `core` never touches the filesystem to obtain them.
     """
     import asyncio
+
+    inputs = inputs or {}
 
     if pre_run_hook is not None:
         await pre_run_hook(workflow)
@@ -416,6 +446,7 @@ async def execute_workflow(
                                 user_prompt=user_prompt,
                                 results=results,
                                 prior_session_notes=prior_session_notes,
+                                inputs=inputs,
                             )
                         else:
                             parts = []
@@ -439,6 +470,7 @@ async def execute_workflow(
                             user_prompt=user_prompt,
                             results=results,
                             prior_session_notes=prior_session_notes,
+                            inputs=inputs,
                         )
                     else:
                         # No explicit template — compose a structured prompt
@@ -447,7 +479,7 @@ async def execute_workflow(
                         # this fallback, agents receive an empty prompt and
                         # respond with their persona seed only.
                         prompt_text = _compose_default_prompt(
-                            workflow, s, user_prompt, results,
+                            workflow, s, user_prompt, results, inputs=inputs,
                         )
                     prompts.append(prompt_text)
                 template_used_flags.append(template_used)
