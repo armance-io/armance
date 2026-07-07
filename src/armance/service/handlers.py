@@ -514,6 +514,7 @@ async def _cmd_workflow_run(
 
     from armance.core.models.task import Task
     from armance.service.workflow_runs import (
+        add_step_warning,
         create_run,
         finalise as _finalise_run,
         mark_step_completed,
@@ -622,6 +623,36 @@ async def _cmd_workflow_run(
                     "workflow step %s failed with agent %s", step.id, agent_obj.name,
                 )
                 last_error = str(exc)
+                # Lot E.1: a candidate that fails (or an unhealthy second
+                # regard that gets tried and errors) must NOT vanish silently
+                # — the contradictory binôme is the whole point. Surface it in
+                # the conversation and on the event bus so the user sees which
+                # second look was lost and why.
+                warn_msg = t(
+                    "workflow.step_candidate_failed",
+                    step_id=step.id, agent=agent_obj.name, error=str(exc),
+                )
+                ctx.append(warn_msg)
+                try:
+                    add_step_warning(artefact, step.id, warn_msg)
+                except Exception:  # noqa: BLE001 — persistence must never break the run
+                    logger.debug("could not persist step warning for %s", step.id, exc_info=True)
+                bus = getattr(ctx, "event_bus", None)
+                if bus is not None:
+                    try:
+                        await bus.emit(
+                            "workflow.step_candidate_failed",
+                            attributes={
+                                "step_id": step.id,
+                                "agent": agent_obj.name,
+                                "error": str(exc),
+                            },
+                            severity="warn",
+                        )
+                    except Exception:  # noqa: BLE001 — telemetry must never break the run
+                        logger.debug(
+                            "workflow.step_candidate_failed emit failed", exc_info=True,
+                        )
                 continue
             if attempt > 0:
                 ctx.append(t(
