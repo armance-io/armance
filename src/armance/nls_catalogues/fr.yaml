@@ -291,6 +291,7 @@ workflow:
   step_absent_note: "[contribution absente — étape `{step_id}` (rôle {role}) : {reason}. L'équipe continue sans cette contribution ; signalez le manque dans la synthèse.]"
   step_absent_warn: "⚠ Étape `{step_id}` ({role}) : aucun agent n'a pu la prendre — le run continue sans cette contribution."
   step_failover: "Étape `{step_id}` : `{from_agent}` indisponible — `{to_agent}` (même rôle) a pris le relais."
+  step_candidate_failed: "⚠ Étape `{step_id}` : `{agent}` non exécuté ({error}). Ce second regard est perdu ; demandez à `@Malik` de réparer son modèle."
   run_absences: "⚠ Contributions manquantes dans ce run : {steps}. La synthèse signale ce qui est absent ; demandez à `@Malik` de réparer les modèles, puis relancez si besoin."
   checkpoint_default_prompt: "Point de contrôle `{step_id}` : examinez le travail produit jusqu'ici, puis répondez pour continuer (votre réponse alimente les étapes suivantes)."
   degraded_roles: "⚠ Aucun agent sain pour le(s) rôle(s) : {roles}. Le run continue ; leurs étapes seront tentées mais pourraient rester absentes. Demandez à `@Malik` de changer les modèles en panne."

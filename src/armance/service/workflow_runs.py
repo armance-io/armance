@@ -44,6 +44,11 @@ class StepRecord:
     error: str | None = None
     prompt_file: str | None = None
     template_used: bool | None = None
+    # Lot E.1: non-fatal warnings recorded even when the step ultimately
+    # succeeds — e.g. a contradictory second-regard candidate that errored
+    # before a same-role peer took over. Keeps the run auditable instead of
+    # silently swallowing the lost binôme.
+    warnings: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -60,6 +65,7 @@ class StepRecord:
             "error": self.error,
             "prompt_file": self.prompt_file,
             "template_used": self.template_used,
+            "warnings": list(self.warnings),
         }
 
 
@@ -210,6 +216,20 @@ def mark_step_skipped(artefact: RunArtefact, step_id: str, reason: str) -> None:
     rec = artefact.record(step_id)
     rec.status = "skipped"
     rec.error = reason[:200]
+    if step_id not in artefact.step_ids:
+        artefact.step_ids.append(step_id)
+    write_running_manifest(artefact)
+
+
+def add_step_warning(artefact: RunArtefact, step_id: str, warning: str) -> None:
+    """Append a non-fatal warning to a step's manifest record (Lot E.1).
+
+    Used to keep a record of a contradictory candidate that failed even when
+    a same-role peer later took over — so the lost second regard is auditable
+    instead of vanishing silently.
+    """
+    rec = artefact.record(step_id)
+    rec.warnings.append(warning[:300])
     if step_id not in artefact.step_ids:
         artefact.step_ids.append(step_id)
     write_running_manifest(artefact)
