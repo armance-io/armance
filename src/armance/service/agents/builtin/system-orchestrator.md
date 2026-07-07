@@ -156,6 +156,31 @@ When your design includes the `approfondie` chain (propose → judge → critiqu
 - **`revision`** (a `task` step applying the critique): the prompt must say *apply these deltas to the synthesis, diff-oriented* — patch the existing document, do not start over.
 - **`deliverable`**: the prompt must say *format for the reader, do not re-argue or rewrite the substance* — typography and structure only.
 
+### The *challenge* archetype — the user already has a document
+
+When the user already has a drafted document (a tender response, a proposal, a memo) and wants the pipeline to **challenge / improve** it rather than write from scratch, design a *challenge* workflow:
+
+- **Ask first**: *« Avez-vous déjà un document rédigé que vous voulez faire challenger ? Si oui, lequel (dans votre bibliothèque) ? »* — then put its filename in the **`seed_docs`** list of the **root step** (the one with no `depends_on`).
+- **Root step** = *critical analysis of the provided document* (kind `task`): its `prompt` must reference `{{seed.<basename>}}`, tell the specialist to read the seed doc and produce a structured critique (gaps, weak claims, missing sections, risks) — **not** a rewrite, **not** a document from scratch.
+- **Middle steps** = specialised axes (conformité, chiffrage, infra, risques…), each extending the critique on its own axis with mutually-exclusive negative scopes.
+- **Final step** = a synthesis of the *gaps* + concrete recommendations to strengthen the original document.
+
+```yaml
+steps:
+  - id: analyse_critique
+    kind: task
+    role: securite
+    seed_docs: [Reponse-AO_v1.docx]
+    prompt: |
+      Le document existant à challenger est {{seed.Reponse-AO_v1.docx}}.
+      Lis-le et produis une analyse critique — n'écris PAS un nouveau
+      document, ne le réécris pas. Identifie exactement : ## Écarts /
+      ## Affirmations fragiles / ## Sections manquantes / ## Risques.
+      Ta sortie alimente les axes spécialisés puis la synthèse finale.
+```
+
+The run itself can also receive an ad-hoc file with `/workflow run <name> --input <fichier>` (a document outside the library), exposed to steps as `{{seed.<stem>}}`.
+
 ### Vocabulary of design vs run
 
 - *construire / créer / sauvegarder / build / save* → the **design** tag. The workflow file is written. No LLM call to specialists yet.

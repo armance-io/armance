@@ -349,6 +349,8 @@ async def _cmd_workflow_run(
     user_prompt_override: str | None = None,
     run_mode: str | None = None,
     depth: str = "quick",
+    seed_docs: list[str] | None = None,
+    seed_inputs: list[str] | None = None,
 ) -> str:
     from armance.service.checkpoint import Checkpoint
     # Check both .armance/workflows/ (Kim's dir) and legacy workflows/
@@ -359,6 +361,38 @@ async def _cmd_workflow_run(
         return t("workflow.not_found", name=name)
     from armance.core.models.workflow import load_workflow, execute_workflow
     wf = load_workflow(wf_path)
+
+    # ── Seed documents (Lot B) ─────────────────────────────────────────────
+    # Load existing material (e.g. a drafted tender) the steps want to
+    # challenge/extend. Sources: every step's `seed_docs` (library files),
+    # the extra `seed_docs` arg (web RunIn), and `--input` specs (ad-hoc
+    # files). File I/O lives here in the service layer; the loaded text is
+    # handed to execute_workflow via `inputs` under `seed.<basename>` keys —
+    # `core` never reads the disk. `render_template` exposes them as
+    # `{{seed.<basename>}}`; `_compose_default_prompt` injects a "## Seed
+    # documents" section for steps without a template.
+    from armance.service.seed_docs import (
+        load_adhoc_seed_docs,
+        load_library_seed_docs,
+    )
+    _lib_names: list[str] = list(seed_docs or [])
+    for _step in wf.steps:
+        _lib_names.extend(getattr(_step, "seed_docs", None) or [])
+    workflow_inputs: dict[str, str] = {}
+    workflow_inputs.update(load_library_seed_docs(ctx.armance_root, _lib_names))
+    if seed_inputs:
+        workflow_inputs.update(load_adhoc_seed_docs(seed_inputs))
+    if workflow_inputs:
+        # Any step referencing a seed by basename must be able to see it even
+        # if only the CLI/web supplied it (not the step's own `seed_docs`
+        # list). Attach every loaded basename to the root steps (no deps) so
+        # the default-prompt seed block fires there.
+        _loaded_names = [k[len("seed."):] for k in workflow_inputs]
+        for _step in wf.steps:
+            if not (getattr(_step, "depends_on", None) or []):
+                for _bn in _loaded_names:
+                    if _bn not in _step.seed_docs:
+                        _step.seed_docs.append(_bn)
 
     # Auto-boost all boostable agents at run start if the depth mode is deep
     # (meaning intense). Kim's YAML assigns steps by `role`, not by explicit
@@ -759,6 +793,7 @@ async def _cmd_workflow_run(
             post_run_hook=_post_run,
             armance_root=ctx.armance_root,
             on_step_prompt=_on_step_prompt,
+            inputs=workflow_inputs,
         )
         # Auto-serge critique was injected post-run: persist it too.
         for sid, r in results.items():
@@ -850,7 +885,18 @@ async def _cmd_workflow(args: list[str], ctx: LoopContext) -> str:
                 enrich_sid = args[idx + 1]
         skip_preflight = "--yes" in args
         depth = "deep" if "--deep" in args or "--intense" in args else "quick"
-        return await _cmd_workflow_run(name, enrich_sid, ctx, skip_preflight=skip_preflight, depth=depth)
+        # --input <file> (repeatable): ad-hoc seed docs to challenge/extend.
+        # Accepts `--input path` or `--input key=path`. NL alias handled by
+        # the router (e.g. "run <name> with <file>").
+        seed_inputs: list[str] = []
+        for i, tok in enumerate(args):
+            if tok == "--input" and i + 1 < len(args):
+                seed_inputs.append(args[i + 1])
+        return await _cmd_workflow_run(
+            name, enrich_sid, ctx,
+            skip_preflight=skip_preflight, depth=depth,
+            seed_inputs=seed_inputs or None,
+        )
     if sub == "design":
         if len(args) < 2:
             return t("workflow.usage_design")

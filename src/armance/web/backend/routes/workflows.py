@@ -156,6 +156,7 @@ async def get_workflow(
                 "kind": getattr(s, "kind", "task"),
                 "role": s.role or "",
                 "depends_on": list(getattr(s, "depends_on", []) or []),
+                "seed_docs": list(getattr(s, "seed_docs", []) or []),
             }
             for s in steps
         ],
@@ -179,6 +180,9 @@ def _require_workflow(ws, name: str):
 class RunIn(BaseModel):
     mode: str = "interactive"
     depth: str = "quick"
+    # Library document basenames (under `.armance/docs/`) to inject as seed
+    # material for the run — e.g. an existing tender to challenge (Lot B).
+    seed_docs: list[str] = []
 
 
 @router.get("/workflows/{name}/estimate")
@@ -227,7 +231,10 @@ async def estimate_workflow_cost(
     }
 
 
-async def _dispatch_run(ws, name: str, mode: str, depth: str = "quick") -> dict[str, Any]:
+async def _dispatch_run(
+    ws, name: str, mode: str, depth: str = "quick",
+    seed_docs: list[str] | None = None,
+) -> dict[str, Any]:
     """Run the workflow on the web path.
 
     Unlike the TUI/Kim flow, the web run must NOT block on the interactive
@@ -263,6 +270,7 @@ async def _dispatch_run(ws, name: str, mode: str, depth: str = "quick") -> dict[
         user_prompt_override=scope or name,
         run_mode=mode,
         depth=depth,
+        seed_docs=seed_docs or None,
     )
 
     # Derive the run_id from the index (create_run wrote it up-front).
@@ -310,7 +318,7 @@ async def run_workflow(
 
     async def _runner() -> object:
         try:
-            return await _dispatch_run(ws, name, body.mode, body.depth)
+            return await _dispatch_run(ws, name, body.mode, body.depth, body.seed_docs)
         except Exception:  # noqa: BLE001 — log, never crash the event loop
             logger.exception("workflow run failed sid=%s name=%s", sid, name)
             return {"ack": False}
