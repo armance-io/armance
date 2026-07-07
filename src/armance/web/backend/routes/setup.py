@@ -34,6 +34,8 @@ class SetupInitIn(BaseModel):
     electricity_zone: Optional[str] = None
     embedding_provider: Optional[str] = None
     embedding_model: Optional[str] = None
+    rerank_provider: Optional[str] = None
+    rerank_model: Optional[str] = None
 
 
 @router.get("/status")
@@ -117,6 +119,8 @@ async def setup_init(
         language=body.language,
         embedding_provider=body.embedding_provider or "",
         embedding_model=body.embedding_model or "",
+        rerank_provider=body.rerank_provider or "",
+        rerank_model=body.rerank_model or "",
     )
     if body.electricity_zone:
         from armance.service.footprint_zones import is_valid_zone
