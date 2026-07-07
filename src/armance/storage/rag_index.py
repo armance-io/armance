@@ -286,11 +286,23 @@ class RagService:
 
 # ── Convenience helper ────────────────────────────────────────────────────────
 
-def context_with_rag(armance_root: Path, query: str, k: int = 8) -> str:
+def context_with_rag(
+    armance_root: Path,
+    query: str,
+    k: int = 8,
+    rerank=None,
+    candidate_k: int | None = None,
+) -> str:
     """Return top-k RAG chunks formatted for prompt injection.
 
     Format per chunk: ``[source: filename p.N] text``
     Returns empty string if vector store is empty or unavailable.
+
+    ``rerank`` is an optional async callback ``(query, chunks) -> chunks``
+    injected by the service layer (ContextService) for two-stage retrieval:
+    when present, the vector query widens to ``candidate_k`` and the callback
+    owns the precision cut. Storage never imports service — the callback IS
+    the boundary.
     """
     # Skip when nothing is indexed — avoids embedding the query for nothing.
     try:
@@ -305,7 +317,11 @@ def context_with_rag(armance_root: Path, query: str, k: int = 8) -> str:
         chunks: list[Chunk] = []
 
         def _run() -> None:
-            chunks.extend(asyncio.run(store.query(query, top_k=k)))
+            if rerank is not None:
+                cands = asyncio.run(store.query(query, top_k=candidate_k or k))
+                chunks.extend(asyncio.run(rerank(query, cands)))
+            else:
+                chunks.extend(asyncio.run(store.query(query, top_k=k)))
 
         t = threading.Thread(target=_run)
         t.start()

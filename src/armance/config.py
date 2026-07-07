@@ -68,6 +68,10 @@ class Config(BaseModel):
     budget_effort: str = "free-first"  # free-first (default), low, medium, high, adaptive, optimised
     embedding_provider: str = ""
     embedding_model: str = ""
+    rerank_provider: str = ""
+    rerank_model: str = ""
+    rerank_candidate_k: int = 20
+    rerank_keep_n: int = 5
     log_level: str = "INFO"  # INFO, DEBUG, etc
     language: LanguageCode = "en"  # UI + agent voice language
     prices: dict[str, dict[str, float]] = Field(default_factory=dict)
@@ -79,6 +83,11 @@ class Config(BaseModel):
             if p.name == name:
                 return p
         raise KeyError(f"provider not configured: {name}")
+
+
+def rerank_active(cfg: Config) -> bool:
+    """True iff a rerank provider AND model are both configured."""
+    return bool(cfg.rerank_provider) and bool(cfg.rerank_model)
 
 
 def _env_key_for(provider: str) -> str:
@@ -112,6 +121,13 @@ def load_config() -> Config:
 
     cfg = Config(**raw)
 
+    if rerank_active(cfg) and cfg.rerank_keep_n > cfg.rerank_candidate_k:
+        logger.warning(
+            "rerank_keep_n (%d) > rerank_candidate_k (%d); clamping candidate_k up",
+            cfg.rerank_keep_n, cfg.rerank_candidate_k,
+        )
+        cfg.rerank_candidate_k = cfg.rerank_keep_n
+
     # Guarantee the default provider is present so agent calls never crash with
     # `provider not configured` when a config lists it only as default_provider
     # (e.g. claude-code). It still receives its env overlay below.
@@ -128,6 +144,22 @@ def load_config() -> Config:
             provider.api_key = env[api_key_var]
         if env.get(base_url_var):
             provider.base_url = env[base_url_var]
+
+    # openrouter.ai serves no public /rerank route (the client speaks the
+    # Cohere-style /rerank exposed by OpenAI-compatible proxies — TEI,
+    # Infinity, LiteLLM). Without a base_url override the call 404s and
+    # every retrieval silently degrades to vector order.
+    if rerank_active(cfg) and cfg.rerank_provider == "openrouter":
+        base = next(
+            (p.base_url for p in cfg.providers if p.name == "openrouter"), None
+        )
+        if not base:
+            logger.warning(
+                "rerank_provider=openrouter but openrouter.ai has no /rerank "
+                "endpoint — rerank will degrade to plain vector order. Point "
+                "OPENROUTER_BASE_URL at a proxy exposing Cohere-style /rerank, "
+                "or use the custom-openai provider.",
+            )
     return cfg
 
 
