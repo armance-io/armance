@@ -15,6 +15,9 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from armance.service.llm_service import get_client
+from armance.service.rerank import rerank_chunks
+
 logger = logging.getLogger(__name__)
 
 
@@ -48,7 +51,7 @@ async def inject_rag_section(
         logger.debug("RAG index probe failed; proceeding", exc_info=True)
 
     try:
-        from armance.storage.rag_index import RagService, Chunk
+        from armance.storage.rag_index import RagService
     except Exception:
         logger.warning("RAG module unavailable", exc_info=True)
         return ""
@@ -61,8 +64,7 @@ async def inject_rag_section(
         model = getattr(config, "embedding_model", "")
         if prov and model:
             try:
-                from armance.service.llm_service import get_client as _get
-                embedding_client = _get(prov, config)
+                embedding_client = get_client(prov, config)
                 embedding_model = model
                 if "3-large" in model or "exp" in model:
                     embedding_dim = 3072
@@ -86,7 +88,12 @@ async def inject_rag_section(
             embedding_model=embedding_model,
             embedding_dim=embedding_dim,
         )
-        chunks: list[Chunk] = await store.query(query, top_k=k)
+        from armance.config import rerank_active
+        if config is not None and rerank_active(config):
+            candidates = await store.query(query, top_k=config.rerank_candidate_k)
+            chunks = await rerank_chunks(query, candidates, config)
+        else:
+            chunks = await store.query(query, top_k=k)
         logger.info("RAG retrieved %d chunk(s) for query=%r", len(chunks), query[:60])
     except Exception:
         logger.exception("RAG retrieval failed")
