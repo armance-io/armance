@@ -24,6 +24,10 @@ from __future__ import annotations
 import logging
 import re
 
+# Creuset gate parsing (Lot F4) lives in a sibling module to keep this file
+# under the 300-LOC limit; re-exported here (the tag-scrubber home) for callers.
+from armance.service.gate_parsing import parse_gate_scores, parse_gate_verdict  # noqa: F401
+
 logger = logging.getLogger(__name__)
 
 

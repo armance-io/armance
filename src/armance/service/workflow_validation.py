@@ -53,6 +53,15 @@ KIND_ALIASES: dict[str, str] = {
 # Staff domains the runner resolves to meta-agents (no roster entry needed).
 STAFF_DOMAINS = {"mona", "serge"}
 
+# Creuset (Lot F/G) shape + family validation lives in a sibling module to
+# keep this file under the 300-LOC limit; re-exported for callers/tests.
+from armance.service.workflow_crucible import (  # noqa: E402
+    CRUCIBLE_STAGES,
+    available_model_families,
+    model_family,
+    validate_crucible_shape,
+)
+
 
 def validate_step_structure(steps: list[dict[str, Any]]) -> str:
     """Catch `depends_on` → unknown step id, and `role` == some step id.
@@ -239,5 +248,10 @@ def validate_workflow_data(
     )
     if template_err:
         return False, template_err, []
+
+    # Creuset (Lot F/G) — soft shape + family-diversity warnings, appended to
+    # the same non-blocking warning list. `agents` is the recruited roster, used
+    # as the family catalog (§G4: used vs available families).
+    prompt_warnings = prompt_warnings + validate_crucible_shape(steps, catalog=agents)
 
     return True, "", prompt_warnings
