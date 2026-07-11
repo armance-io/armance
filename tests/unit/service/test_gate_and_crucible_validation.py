@@ -69,6 +69,8 @@ def test_model_family_from_openrouter_prefix() -> None:
 class _Agent:
     provider: str
     model: str
+    role: str = ""
+    provider_family: str | None = None
 
 
 def test_available_families() -> None:
@@ -173,3 +175,52 @@ def test_same_family_with_alternatives_is_strong_fault() -> None:
     catalog = [_Agent("claude-code", "claude-opus"), _Agent("gemini", "gemini-2.0")]
     warns = validate_crucible_shape(steps, catalog=catalog)
     assert any("dégénéré" in w for w in warns)
+
+
+# --- live step→agent family resolution (Wave 2a) --------------------------
+
+def _crucible_by_role(draft_a_role: str, draft_b_role: str) -> list[dict]:
+    return [
+        {"id": "da", "kind": "task", "stage": "draft", "role": draft_a_role},
+        {"id": "db", "kind": "task", "stage": "draft", "role": draft_b_role},
+        {"id": "crit", "kind": "critique", "stage": "critique", "depends_on": ["da", "db"]},
+        {"id": "syn", "kind": "task", "stage": "synthesis", "depends_on": ["da", "db", "crit"]},
+        {"id": "g", "kind": "judge", "stage": "gate", "depends_on": ["syn"]},
+    ]
+
+
+def test_drafts_resolved_by_role_distinct_families_no_warning() -> None:
+    # Steps bind to agents by ROLE (Kim's real YAML); families derived from
+    # the recruited agents, not from explicit per-step provider/model.
+    steps = _crucible_by_role("drafter_a", "drafter_b")
+    catalog = [
+        _Agent("claude-code", "claude-opus", role="drafter_a"),   # anthropic
+        _Agent("gemini", "gemini-2.0", role="drafter_b"),          # google
+    ]
+    warns = validate_crucible_shape(steps, catalog=catalog)
+    assert not any("dégénéré" in w or "dégradé" in w for w in warns)
+
+
+def test_drafts_resolved_by_role_same_family_with_alternatives_faults() -> None:
+    steps = _crucible_by_role("drafter_a", "drafter_b")
+    # Both draft roles resolve to anthropic, but google was on the bench.
+    catalog = [
+        _Agent("claude-code", "claude-opus", role="drafter_a"),
+        _Agent("claude-code", "claude-sonnet", role="drafter_b"),
+        _Agent("gemini", "gemini-2.0", role="reviewer"),
+    ]
+    warns = validate_crucible_shape(steps, catalog=catalog)
+    assert any("dégénéré" in w for w in warns)
+
+
+def test_step_family_prefers_precomputed_provider_family() -> None:
+    # provider_family, when set on the agent, wins over deriving from model.
+    steps = _crucible_by_role("drafter_a", "drafter_b")
+    catalog = [
+        _Agent("openrouter", "some-obscure/model", role="drafter_a",
+               provider_family="anthropic"),
+        _Agent("openrouter", "another/model", role="drafter_b",
+               provider_family="google"),
+    ]
+    warns = validate_crucible_shape(steps, catalog=catalog)
+    assert not any("dégénéré" in w for w in warns)

@@ -75,7 +75,8 @@ def test_roster_shows_health_for_malik_only(tmp_path: Path) -> None:
     _save(root, "Marc", last_health="ok")
 
     malik_view = build_team_roster(root, "system-hr", show_health=True)
-    assert "Elena ⚠ (error:400)" in malik_view
+    # Malik's view carries the family tag (§G2) then the health marker.
+    assert "Elena" in malik_view and "⚠ (error:400)" in malik_view
     assert "Marc ⚠" not in malik_view  # healthy → no marker
 
     specialist_view = build_team_roster(root, "Luc", show_health=False)

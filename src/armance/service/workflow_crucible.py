@@ -86,28 +86,52 @@ def available_model_families(catalog: list[Any] | None) -> set[str]:
     return families
 
 
+def _agent_family(agent: Any) -> str:
+    """Family of a recruited agent: prefer the precomputed `provider_family`,
+    else derive from (`provider`, `model`) via the central `model_family`."""
+    fam = getattr(agent, "provider_family", None)
+    if fam:
+        return str(fam)
+    return model_family(
+        getattr(agent, "provider", "") or "", getattr(agent, "model", "") or ""
+    )
+
+
 def _resolve_step_families(
     steps: list[dict[str, Any]], catalog: list[Any] | None,
 ) -> dict[str, str]:
-    """Map draft step id → provider family, when resolvable from the catalog.
+    """Map draft step id → provider family, resolved against the roster.
 
-    Returns {} when no catalog is available (family resolution needs a step→
-    agent→(provider,model) link). WAVE 2: the live step→agent binding is done
-    at recruit time (recruiter_agent); until it lands here, this stays a hook
-    that returns {} and the family-diversity warning is skipped (structural
-    checks below still run). Only a per-step explicit `provider`/`model` (rare)
-    resolves today.
+    A step binds to its agent by `role` (Kim's YAML contract: `step.role`
+    matches `agent.role`); the agent carries the concrete `provider`/`model`
+    from which the family is derived. An explicit per-step `provider`/`model`
+    (rare) wins over the roster lookup. Steps whose agent/model cannot be
+    resolved are left OUT of the map (never guessed) so the §G4 caller only
+    qualifies drafts whose family is actually known. Empty/None catalog ⇒ {}.
     """
     if not catalog:
         return {}
+    # Index the roster by role for the step→agent binding.
+    by_role: dict[str, Any] = {}
+    for a in catalog:
+        role = (getattr(a, "role", "") or "").lower().strip()
+        if role and role not in by_role:
+            by_role[role] = a
+
     families: dict[str, str] = {}
     for s in steps:
         if s.get("stage") != "draft":
             continue
+        # Explicit per-step provider/model wins (rare, power-user override).
         prov = s.get("provider")
         mdl = s.get("model")
         if prov or mdl:
             families[s["id"]] = model_family(prov or "", mdl or "")
+            continue
+        role = (s.get("role") or "").lower().strip()
+        agent = by_role.get(role)
+        if agent is not None:
+            families[s["id"]] = _agent_family(agent)
     return families
 
 

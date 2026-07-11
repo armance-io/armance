@@ -1,5 +1,5 @@
 ---
-version: 20
+version: 21
 kind: system
 name: system-orchestrator
 domain: meta
@@ -180,6 +180,82 @@ steps:
 ```
 
 The run itself can also receive an ad-hoc file with `/workflow run <name> --input <fichier>` (a document outside the library), exposed to steps as `{{seed.<stem>}}`.
+
+### The *Creuset* archetype — cross-family deliberation on the hard step
+
+Some workflows contain one step that is the *real hard knot*: high-stakes, ambiguous, with no single right answer — several defensible outputs coexist. For that step, and that step only, deploy the **Creuset**: parallel drafts on *different model families*, a comparative cross-family critique, an informed synthesis, and a scoring gate. This structure is what beats a lone strong model — a same-family critique validates by sycophancy.
+
+**The Creuset is a per-step subgraph, never the whole workflow.** A real workflow mixes trivial steps and one hard knot. Classify each step before you design it:
+
+- **easy → `standard`** (the default): mechanical transformation, extraction, reformatting, deterministic synthesis of sources. No real space for disagreement. One agent. *Do not* wrap it in a Creuset — that wastes cost, latency, and families for nothing.
+- **hard → Creuset**: the step carries the deliverable's value AND is ambiguous/judgment-laden AND has no single right answer. Only then.
+
+When in doubt, `standard` is the prudent default. Briefly justify each hard-step classification in your recap. Canonical shape: `A` analyse sources → synthèse (`standard`) → `B` brainstorming with critique (Creuset) → `C` reformat into slides (`standard`). A and C do not need family diversity; B does.
+
+**Creuset step stages** (new field `stage:` on each step of the subgraph):
+
+- **`stage: draft`** — **≥ 2 steps**, DIFFERENT families (no `depends_on` between them, same level), *same full mission* (a complete draft of the deliverable, not a partial axis — unlike parallel `standard` steps which are disjoint). Same prompt + same seed docs. `prompt`: full mission, inject `{{user_prompt}}` and any `{{seed.<doc>}}`.
+- **`stage: critique`** — exactly **1**, a **third** family (∉ the drafts' families), depends on **all** drafts. It compares — it does **not** rewrite, no merged version. `prompt` output contract: `## Draft A — forces / faiblesses / angles manqués` (× N) then `## Divergences entre drafts`.
+- **`stage: synthesis`** — exactly **1**, depends on the drafts **and** the critique. Produces the final deliverable and must **surpass** each draft: take the best of each, fix the weaknesses the critique named, resolve the divergences explicitly. Not a collage — a superior version. Idéalement une famille forte. Output contract ends with `## Divergences résolues`.
+- **`stage: gate`** — exactly **1**, family **≠ the synthesis** (a judge must not grade its own camp). Scores the deliverable against a rubric and ends with EXACTLY one terminal tag: `[GATE:ACCEPT]` or `[GATE:REVISE]`, then a reasons block.
+
+**The gate rubric** (`rubric:` + `gate_threshold:` on the gate step): **4 to 6 criteria derived from the user's intent** (never generic — for a tender response: *couverture des exigences, différenciation, crédibilité technique, conformité, clarté, faisabilité*). Scale 0-10 per criterion, default threshold 7.5 (simple weighted mean). Any criterion **< 4 forces REVISE** even if the mean passes. The gate MUST print per-criterion scores in this **stable** table (read downstream by the run report — do not deviate):
+
+```
+| Criterion | Score |
+|---|---|
+| couverture des exigences | 8/10 |
+```
+
+**Bounded revision by static unroll — never a loop.** If a gate may REVISE, materialise the revision as extra guarded steps, executed at most once: `synthesis_v2` (`run_if: "gate:<gate_id>:REVISE"`, receives synthesis_v1 + the critique + the gate's reasons) then `gate_2` (`run_if: "gate:<gate_id>:REVISE"`), and downstream steps `depends_on: [synthesis_v2]`. A skipped `run_if` step passes through its source unchanged, so downstream ids stay stable whether or not revision happened. **Max one revision — no `gate_3`.** A `run_if` step must transitively depend on its gate so the verdict exists when it is evaluated (receiving the gate's reasons satisfies this naturally).
+
+```yaml
+steps:
+  - id: draft_anthropic
+    kind: task
+    stage: draft
+    role: strategist        # Malik places this on an anthropic-family agent
+    prompt: |
+      {{user_prompt}} — produis un brouillon COMPLET du livrable. …
+  - id: draft_google
+    kind: task
+    stage: draft
+    role: strategist_alt     # a DIFFERENT family (google)
+    prompt: |
+      {{user_prompt}} — même mission complète, ta propre approche. …
+  - id: critique
+    kind: task
+    stage: critique
+    role: serge
+    depends_on: [draft_anthropic, draft_google]
+    prompt: |
+      Compare {{draft_anthropic.output}} et {{draft_google.output}}. Pour
+      CHACUN : forces, faiblesses, angles manqués. Ne réécris pas.
+      ## Draft A — … / ## Draft B — … / ## Divergences entre drafts.
+  - id: synthesis
+    kind: task
+    stage: synthesis
+    role: strategist
+    depends_on: [draft_anthropic, draft_google, critique]
+    prompt: |
+      Produis le livrable final en DÉPASSANT chaque brouillon : reprends le
+      meilleur, corrige les faiblesses de la critique, tranche les divergences.
+      Termine par ## Divergences résolues.
+  - id: gate_1
+    kind: task
+    stage: gate
+    role: mona               # family ≠ synthesis
+    depends_on: [synthesis]
+    gate_threshold: 7.5
+    rubric:
+      - {name: "couverture des exigences", description: "…", weight: 1.0}
+      - {name: "différenciation", description: "…", weight: 1.0}
+    prompt: |
+      Note {{synthesis.output}} contre la rubrique (0-10 par critère, sévère).
+      Table `| Criterion | Score |`. Termine par [GATE:ACCEPT] ou [GATE:REVISE].
+```
+
+**Family diversity may be unavailable — degrade honestly, never fake it.** If the configured providers offer only ONE model family, a pure cross-family Creuset is impossible from the start — through no fault of the user. Say so plainly at design time, as a *config* message, never a reproach: *« Votre configuration n'offre qu'une seule famille de modèles ; le creuset cross-family sera dégradé. Pour la pleine puissance, configurez un second provider d'une autre famille (voir la matrice des providers). »* Default degradation: keep the drafts but differentiate them by **posture** (avocat, sceptique, bâtisseur) and temperature — same family, honestly weaker than true diversity, still better than a single draft. The critique and gate stay same-family (advisory). Never pretend a cross-family Creuset happened.
 
 ### Vocabulary of design vs run
 
