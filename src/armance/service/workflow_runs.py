@@ -44,6 +44,12 @@ class StepRecord:
     error: str | None = None
     prompt_file: str | None = None
     template_used: bool | None = None
+    # Creuset (Lot H): a step's crucible function (`draft`/`critique`/
+    # `synthesis`/`gate`/`standard`) and the provider *family* that actually
+    # spoke — carried into the manifest so the quality report can reconstruct
+    # families-per-stage and gate scores at report time (no re-resolution).
+    stage: str | None = None
+    family: str | None = None
     # Lot E.1: non-fatal warnings recorded even when the step ultimately
     # succeeds — e.g. a contradictory second-regard candidate that errored
     # before a same-role peer took over. Keeps the run auditable instead of
@@ -65,6 +71,8 @@ class StepRecord:
             "error": self.error,
             "prompt_file": self.prompt_file,
             "template_used": self.template_used,
+            "stage": self.stage,
+            "family": self.family,
             "warnings": list(self.warnings),
         }
 
@@ -80,6 +88,11 @@ class RunArtefact:
     ended_at: str = ""
     step_ids: list[str] = field(default_factory=list)
     steps: dict[str, StepRecord] = field(default_factory=dict)
+    # Lot I: partial re-run provenance. Each entry references the parent run
+    # and the per-step human overrides fed into this run, e.g.
+    # {"run_id": <parent>, "overrides": [{"step": "B", "source": "b.md"}]}.
+    # A run NEVER overwrites its parent — this makes the derivation auditable.
+    derived_from: list[dict[str, Any]] = field(default_factory=list)
 
     def manifest_path(self) -> Path:
         return self.run_dir / "manifest.json"
@@ -191,10 +204,16 @@ def mark_step_completed(
     tokens_out: int | None = None,
     cost_usd: float | None = None,
     agent: str | None = None,
+    stage: str | None = None,
+    family: str | None = None,
 ) -> None:
     rec = artefact.record(step_id)
     rec.status = "completed"
     rec.agent = agent or rec.agent
+    if stage is not None:
+        rec.stage = stage
+    if family is not None:
+        rec.family = family
     rec.ended_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     rec.duration_ms = _ms_between(rec.started_at, rec.ended_at)
     rec.tokens_in = tokens_in
@@ -216,6 +235,27 @@ def mark_step_skipped(artefact: RunArtefact, step_id: str, reason: str) -> None:
     rec = artefact.record(step_id)
     rec.status = "skipped"
     rec.error = reason[:200]
+    if step_id not in artefact.step_ids:
+        artefact.step_ids.append(step_id)
+    write_running_manifest(artefact)
+
+
+def mark_step_provided(
+    artefact: RunArtefact, step_id: str, source: str, *, stage: str | None = None,
+) -> None:
+    """Mark a step whose output was supplied by a human override (Lot I).
+
+    A `provided` step is NOT re-executed: its output came from a human-edited
+    file (partial re-run with override) or was carried verbatim from the parent
+    run. Distinct from `skipped` (F5 pass-through) so the report can tell
+    "human replaced this" from "run_if said don't run". `source` records the
+    override file (or `<parent>` when carried) for auditability.
+    """
+    rec = artefact.record(step_id)
+    rec.status = "provided"
+    rec.error = f"override: {source}"[:200]
+    if stage is not None:
+        rec.stage = stage
     if step_id not in artefact.step_ids:
         artefact.step_ids.append(step_id)
     write_running_manifest(artefact)
@@ -304,6 +344,8 @@ def _build_manifest(artefact: RunArtefact, *, status: str, finalising: bool) -> 
         "assumptions_present": artefact.assumptions_path().exists(),
         "synthesis_present": artefact.synthesis_path().exists(),
         "trace_present": artefact.trace_path().exists(),
+        "quality_present": (artefact.run_dir / "quality.md").exists(),
+        "derived_from": list(artefact.derived_from),
     }
 
 
@@ -358,6 +400,9 @@ def _aggregate(artefact: RunArtefact) -> dict[str, Any]:
         ),
         "steps_skipped": sum(
             1 for r in artefact.steps.values() if r.status == "skipped"
+        ),
+        "steps_provided": sum(
+            1 for r in artefact.steps.values() if r.status == "provided"
         ),
         "tokens_in": t_in or None,
         "tokens_out": t_out or None,

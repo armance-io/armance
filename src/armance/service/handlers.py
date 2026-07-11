@@ -351,7 +351,19 @@ async def _cmd_workflow_run(
     depth: str = "quick",
     seed_docs: list[str] | None = None,
     seed_inputs: list[str] | None = None,
+    provided_outputs: dict[str, str] | None = None,
+    provided_sources: dict[str, str] | None = None,
+    derived_from: list[dict[str, Any]] | None = None,
 ) -> str:
+    # Lot I (partial re-run with human override): `provided_outputs` maps a
+    # step id → the output to inject WITHOUT re-executing it (a human-edited
+    # override, or an upstream output carried verbatim from the parent run).
+    # `provided_sources` records where each came from (file basename or
+    # `<parent-run>`), and `derived_from` is the parent+overrides provenance
+    # written into the new run's manifest. Files are read SERVICE-side by the
+    # caller (rerun_with_override skill) — `core` never touches disk.
+    _provided = dict(provided_outputs or {})
+    _provided_src = dict(provided_sources or {})
     from armance.service.checkpoint import Checkpoint
     # Check both .armance/workflows/ (Kim's dir) and legacy workflows/
     wf_path = ctx.armance_root / ".armance" / "workflows" / f"{name}.yaml"
@@ -519,8 +531,10 @@ async def _cmd_workflow_run(
         finalise as _finalise_run,
         mark_step_completed,
         mark_step_failed,
+        mark_step_provided,
         mark_step_skipped,
         mark_step_started,
+        write_running_manifest,
         write_step_output,
         write_step_prompt,
         write_synthesis,
@@ -528,6 +542,11 @@ async def _cmd_workflow_run(
 
     # Mint a versioned run dir up-front; every step output lands there.
     artefact = create_run(ctx.armance_root, name, step_ids=[s.id for s in wf.steps])
+    # Lot I: record parent+overrides provenance so the new run references the
+    # parent instead of ever mutating it ("a run never overwrites a run").
+    if derived_from:
+        artefact.derived_from = list(derived_from)
+        write_running_manifest(artefact)
     ctx.append(t("workflow.run_started", path=str(artefact.run_dir.relative_to(ctx.armance_root))))
 
     # Circuit breaker: after N consecutive absent steps (missing agent OR
@@ -580,6 +599,21 @@ async def _cmd_workflow_run(
         return note
 
     async def runner(step, prompt: str) -> str:
+        # Lot I: a provided/overridden step is NOT re-executed. Its output was
+        # supplied service-side (human-edited override, or carried from parent);
+        # return it verbatim so downstream templates resolve {{step.output}} to
+        # it, mark the manifest `provided`, and burn 0 tokens. Core stays pure —
+        # this is a service-layer runner decision.
+        if step.id in _provided:
+            text = _provided[step.id]
+            write_step_output(artefact, step.id, text)
+            mark_step_provided(
+                artefact, step.id,
+                _provided_src.get(step.id, "override"),
+                stage=getattr(step, "stage", None) or None,
+            )
+            _set_status(ctx, step.id, "completed")
+            return text
         # Short-circuit after a USER abort: skip the rest cleanly.
         if _run_aborted["flag"]:
             mark_step_skipped(artefact, step.id, _run_aborted["reason"])
@@ -670,12 +704,25 @@ async def _cmd_workflow_run(
             def _safe_float(v):
                 return v if isinstance(v, (int, float)) and not isinstance(v, bool) else None
 
+            # Lot H: record the step's crucible stage + the family that ACTUALLY
+            # spoke (failover-aware — agent_obj is the winner, not the candidate)
+            # so the quality report reconstructs families-per-stage at report time.
+            _stage = getattr(step, "stage", None) or None
+            _family = None
+            if _stage and _stage != "standard":
+                from armance.service.workflow_crucible import model_family
+                _family = model_family(
+                    getattr(agent_obj, "provider", "") or "",
+                    getattr(agent_obj, "model", "") or "",
+                )
             mark_step_completed(
                 artefact, step.id,
                 tokens_in=_safe_int(getattr(report, "tokens_in", None)),
                 tokens_out=_safe_int(getattr(report, "tokens_out", None)),
                 cost_usd=_safe_float(getattr(report, "cost_usd", None)),
                 agent=agent_obj.name,
+                stage=_stage,
+                family=_family,
             )
             if step.kind == "judge":
                 write_synthesis(artefact, report.content)
@@ -840,6 +887,24 @@ async def _cmd_workflow_run(
 
         assumptions_content = await compile_and_persist(artefact, results, ctx)
 
+        # Lot H: write the Creuset quality receipt (quality.md) BEFORE finalise
+        # so the manifest's `quality_present` flag is accurate. No-op (returns
+        # None) for a plain `standard` run — nothing is written.
+        try:
+            import json as _json
+            from armance.service.workflow_quality_report import (
+                build_crucible_report,
+                render_crucible_report_md,
+            )
+            _running = _json.loads(artefact.manifest_path().read_text(encoding="utf-8"))
+            _qr = build_crucible_report(_running, artefact.run_dir)
+            if _qr is not None:
+                (artefact.run_dir / "quality.md").write_text(
+                    render_crucible_report_md(_qr), encoding="utf-8"
+                )
+        except Exception:  # noqa: BLE001 — the receipt must never break the run
+            logger.debug("crucible quality report failed", exc_info=True)
+
         final_status = "canceled" if _abort_state["was_canceled"] else "completed"
         _finalise_run(artefact, status=final_status)
         if _abort_state["was_canceled"]:
@@ -937,7 +1002,56 @@ async def _cmd_workflow(args: list[str], ctx: LoopContext) -> str:
         return await _cmd_workflow_list(ctx, args[1:])
     if sub == "compare":
         return await _cmd_workflow_compare(ctx, args[1:])
+    if sub in ("rerun", "re-run"):
+        return await _cmd_workflow_rerun(ctx, args[1:])
     return t("workflow.unknown_sub", sub=sub)
+
+
+async def _cmd_workflow_rerun(ctx: LoopContext, args: list[str]) -> str:
+    """Lot I: partial re-run with human output override.
+
+    Reads the override file(s) SERVICE-side, carries the parent run's other
+    step outputs, and re-runs only downstream steps via `_cmd_workflow_run`
+    (provided steps are not re-executed). A brand-new run is minted — the
+    parent is never overwritten (`derived_from` records the provenance).
+    """
+    from armance.core.models.workflow import load_workflow
+    from armance.service.skills.rerun_with_override import (
+        RerunWithOverrideSkill,
+        parse_rerun_args,
+    )
+    try:
+        plan = parse_rerun_args(" ".join(args))
+    except ValueError as exc:
+        return str(exc)
+
+    skill = RerunWithOverrideSkill(ctx.armance_root)
+    wf_path = ctx.armance_root / ".armance" / "workflows" / f"{plan['workflow']}.yaml"
+    if not wf_path.exists():
+        wf_path = ctx.armance_root / "workflows" / f"{plan['workflow']}.yaml"
+    if not wf_path.exists():
+        return t("workflow.not_found", name=plan["workflow"])
+    try:
+        wf = load_workflow(wf_path)
+        override_texts = skill.read_overrides(plan["overrides"])
+    except ValueError as exc:
+        return str(exc)
+    parent_outputs = skill.load_parent_outputs(plan["workflow"], plan["parent_run_id"])
+    if not parent_outputs:
+        return f"Run parent `{plan['parent_run_id']}` introuvable ou vide."
+    deps = {s.id: list(s.depends_on) for s in wf.steps}
+    built = skill.build_plan(
+        plan["parent_run_id"], override_texts, parent_outputs,
+        plan["from_step"], deps,
+    )
+    return await _cmd_workflow_run(
+        plan["workflow"], None, ctx,
+        skip_preflight=True,
+        user_prompt_override="(re-run partiel avec override humain)",
+        provided_outputs=built["provided"],
+        provided_sources=built["sources"],
+        derived_from=built["derived_from"],
+    )
 
 
 async def _cmd_workflow_list(ctx: LoopContext, args: list[str]) -> str:
