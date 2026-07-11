@@ -42,21 +42,32 @@ async def validate_cross_family(
         return None
 
     from armance.nls import t as _t
+    from armance.service.workflow_crucible import model_family
 
     step_kinds = {s.kind for s in workflow.steps}
-    provider_names = [p.name for p in getattr(config, "providers", []) or []]
-    single_family = len(provider_names) <= 1
+    # Family diversity is what matters, not the raw count of provider entries:
+    # two providers can share a family (`custom-openai` + `openrouter` both
+    # serving GPT), and a single provider name can BE its family (claude-code →
+    # anthropic). Resolve each provider to its family via the central helper.
+    # Providers carry no per-entry model (config.default_model is the only
+    # model), so pass it through — `model_family` reads the provider name when
+    # the model is empty (claude-code/gemini are their own family).
+    default_model = getattr(config, "default_model", "") or ""
+    families = {
+        model_family(p.name, default_model)
+        for p in getattr(config, "providers", []) or []
+    }
+    single_family = len(families) <= 1
+    family_name = next(iter(families)) if families else "unknown"
 
     if "critique" in step_kinds and single_family:
-        family = provider_names[0] if provider_names else "unknown"
         await notify("cross_family_warning", {
-            "message": _t("workflow.warn_critique_single_family", family=family),
+            "message": _t("workflow.warn_critique_single_family", family=family_name),
         })
 
     if "judge" in step_kinds and single_family:
-        family = provider_names[0] if provider_names else "unknown"
         await notify("cross_family_warning", {
-            "message": _t("workflow.warn_judge_single_family", family=family),
+            "message": _t("workflow.warn_judge_single_family", family=family_name),
         })
     return None
 
