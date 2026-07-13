@@ -118,7 +118,7 @@ def _make_minimal_pdf(path: Path, text: str = "Hello PDF world.") -> None:
     from pypdf.generic import NameObject, ArrayObject, NumberObject
 
     writer = PdfWriter()
-    page = writer.add_blank_page(width=612, height=792)
+    writer.add_blank_page(width=612, height=792)
     # add a simple text annotation so extract_text() returns something
     writer.add_annotation(
         page_number=0,

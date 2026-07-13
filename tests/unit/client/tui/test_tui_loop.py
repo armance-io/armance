@@ -140,7 +140,7 @@ async def test_cmd_quit_returns_quit_sentinel(tmp_path: Path) -> None:
 
 @pytest.mark.asyncio
 async def test_cmd_switch_loads_agent(tmp_path: Path) -> None:
-    agent_path = _make_agent_file(tmp_path, "alpha")
+    _make_agent_file(tmp_path, "alpha")
     ctx = _make_ctx(tmp_path)
     result = await _cmd_switch(["alpha"], ctx)
     assert "alpha" in result
@@ -416,12 +416,6 @@ async def test_quit_persists_state(tmp_path: Path) -> None:
     assert state_path.exists()
 
 
-@pytest.mark.skip(reason="tui_loop.run_tui removed; Textual TUI tested via app.py pilot tests")
-@pytest.mark.asyncio
-async def test_ctrl_c_cancels_running_task(tmp_path: Path) -> None:
-    pass
-
-
 # ---------------------------------------------------------------------------
 # handler dispatch table is complete
 # ---------------------------------------------------------------------------
@@ -510,14 +504,9 @@ async def test_cmd_deliverable_with_source(tmp_path: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# streaming: run_meeting_stream exists + render test
+# streaming: run_specialist exists
 # ---------------------------------------------------------------------------
 
-
-@pytest.mark.skip(reason="render_layout removed with tui.py; Textual Sidebar widget replaces it")
-def test_streaming_render() -> None:
-    """render_layout removed — Textual Sidebar.add_agent() replaces this."""
-    pass
 
 def test_run_specialist_function_exists() -> None:
     from armance.service.agents.specialist_runner import run_specialist

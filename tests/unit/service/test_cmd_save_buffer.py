@@ -72,14 +72,14 @@ async def test_cmd_save_injects_buffer_into_l0(tmp_armance: Path, cfg: Config) -
     user_facts = ["On prépare une expo médiévale pour juin 2026. L'objectif est d'attirer 5000 visiteurs."]
     ctx = _make_ctx(tmp_armance, cfg, buffer=user_facts)
 
-    with patch("armance.service.agents.host_agent.get_client") as mock_gc, \
+    with patch("armance.service.agents.host_agent.get_client"), \
          patch("armance.service.agents.host_agent.call_with_ledger", new_callable=AsyncMock) as mock_call:
         
         mock_response = MagicMock()
         mock_response.text = "## Goal\nOn prépare une expo médiévale pour juin 2026."
         mock_call.return_value = mock_response
 
-        result = await _cmd_save([], ctx)
+        await _cmd_save([], ctx)
 
     l0_dir = tmp_armance / "context" / "L0"
     l0_files = list(l0_dir.glob("v*.md"))
@@ -98,7 +98,7 @@ async def test_cmd_save_clears_buffer_from_state(tmp_armance: Path, cfg: Config)
 
     ctx = _make_ctx(tmp_armance, cfg, buffer=["We are building a highly advanced, ultra-secure financial auditing platform for international corporations."])
     
-    with patch("armance.service.agents.host_agent.get_client") as mock_gc, \
+    with patch("armance.service.agents.host_agent.get_client"), \
          patch("armance.service.agents.host_agent.call_with_ledger", new_callable=AsyncMock) as mock_call:
         
         mock_response = MagicMock()
@@ -123,7 +123,7 @@ async def test_cmd_save_l0_uses_cache_when_buffer_empty(tmp_armance: Path, cfg: 
     )
     ctx = _make_ctx(tmp_armance, cfg, buffer=[])
 
-    with patch("armance.service.agents.host_agent.get_client") as mock_gc, \
+    with patch("armance.service.agents.host_agent.get_client"), \
          patch("armance.service.agents.host_agent.call_with_ledger", new_callable=AsyncMock) as mock_call:
 
         mock_response = MagicMock()

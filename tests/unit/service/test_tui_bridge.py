@@ -18,7 +18,6 @@ def _mk_agent(name: str, role: str = "woodworker", character: str = "balanced") 
     return Agent.model_validate({
         "name": name,
         "role": role,
-        "role": role,
         "character": character,
         "provider": "openrouter",
         "model": "m",

@@ -79,7 +79,7 @@ async def test_save_l1_without_layer_flag_writes_l0(tmp_armance: Path, cfg: Conf
 
     ctx = _make_ctx(tmp_armance, cfg, buffer=["We want to study the conjoint history of France and Scotland during medieval times, specifically focusing on the Auld Alliance."])
     
-    with patch("armance.service.agents.host_agent.get_client") as mock_gc, \
+    with patch("armance.service.agents.host_agent.get_client"), \
          patch("armance.service.agents.host_agent.call_with_ledger", new_callable=AsyncMock) as mock_call:
         
         mock_response = MagicMock()

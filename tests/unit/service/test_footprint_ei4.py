@@ -27,7 +27,7 @@ def _fake_response(tokens_out: int = 600) -> object:
 
 
 def _last_jsonl_entry(log_file: Path) -> dict:
-    lines = [l for l in log_file.read_text().splitlines() if l.strip()]
+    lines = [ln for ln in log_file.read_text().splitlines() if ln.strip()]
     return json.loads(lines[-1])
 
 

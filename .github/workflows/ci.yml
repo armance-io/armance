@@ -36,7 +36,7 @@ jobs:
         run: bash scripts/check_invariants.sh
 
       - name: Lint (ruff)
-        run: uv run ruff check src/
+        run: uv run ruff check src/ tests/
 
   test-web-backend:
     name: Web backend tests
