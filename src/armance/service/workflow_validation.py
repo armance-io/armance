@@ -54,13 +54,8 @@ KIND_ALIASES: dict[str, str] = {
 STAFF_DOMAINS = {"mona", "serge"}
 
 # Creuset (Lot F/G) shape + family validation lives in a sibling module to
-# keep this file under the 300-LOC limit; re-exported for callers/tests.
-from armance.service.workflow_crucible import (  # noqa: E402
-    CRUCIBLE_STAGES,
-    available_model_families,
-    model_family,
-    validate_crucible_shape,
-)
+# keep this file under the 300-LOC limit.
+from armance.service.workflow_crucible import validate_crucible_shape  # noqa: E402
 
 
 def validate_step_structure(steps: list[dict[str, Any]]) -> str:
