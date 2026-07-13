@@ -55,7 +55,7 @@ def test_confirm_writes_new_l0(tmp_path) -> None:
     _setup_armance(tmp_path)
     skill = FeedbackLoopSkill(armance_root=tmp_path, config=None)
     skill.propose(synthesis=SYNTHESIS, run_id="r_test2")
-    reply = skill.confirm()
+    skill.confirm()
 
     ctx = ContextService(tmp_path)
     l0_body = ctx.read_l0_body()

@@ -199,7 +199,7 @@ class TestClaimLedgerService:
         claim = _make_claim(id="c_line0001")
         service.append_claim(claim)
         with open(service._ledger_path, "r", encoding="utf-8") as fh:
-            lines = [l.strip() for l in fh.readlines() if l.strip()]
+            lines = [ln.strip() for ln in fh.readlines() if ln.strip()]
         assert len(lines) == 1
         parsed = json.loads(lines[0])
         assert parsed["id"] == "c_line0001"
@@ -212,7 +212,7 @@ class TestClaimLedgerService:
         service.append_claim(c2)
         assert len(service._index) == 2
         with open(service._ledger_path, "r", encoding="utf-8") as fh:
-            lines = [l.strip() for l in fh.readlines() if l.strip()]
+            lines = [ln.strip() for ln in fh.readlines() if ln.strip()]
         assert len(lines) == 2
 
     def test_append_claim_id_collision(self, service: ClaimLedgerService) -> None:
@@ -426,7 +426,7 @@ class TestClaimLedgerService:
             service.append_claim(c)
         # Verify all claims are in the file
         with open(service._ledger_path, "r", encoding="utf-8") as fh:
-            lines = [l.strip() for l in fh.readlines() if l.strip()]
+            lines = [ln.strip() for ln in fh.readlines() if ln.strip()]
         assert len(lines) == 10
         for c in claims:
             assert c.id in service._index

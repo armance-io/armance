@@ -99,7 +99,7 @@ async def test_double_ctrl_c_window_is_one_second(tmp_path: Path) -> None:
     """Second Ctrl+C within 1s triggers quit; after 1s it does not."""
     import time
 
-    ctx = _make_ctx(tmp_path)
+    _make_ctx(tmp_path)
 
     # Simulate the timing logic from tui_loop.run_tui
     WINDOW = 1.0
