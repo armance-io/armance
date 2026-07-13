@@ -121,6 +121,24 @@ async def test_run_dispatch_seam_no_index_blank_run_id(
 
 
 @pytest.mark.asyncio
+async def test_run_dispatch_forwards_seed_docs(
+    client: AsyncClient, armance_root: Path, app_state
+) -> None:
+    """Lot B: RunIn.seed_docs must reach _cmd_workflow_run (library files to
+    challenge)."""
+    from armance.web.backend.routes.workflows import _dispatch_run
+
+    cr = await client.post("/projects/default/sessions")
+    sid = cr.json()["id"]
+    _seed_workflow(armance_root)
+    ws = app_state.get(sid)
+    mock = AsyncMock(return_value="ok")
+    with patch("armance.service.handlers._cmd_workflow_run", new=mock):
+        await _dispatch_run(ws, "wf", "interactive", "quick", ["ao.md"])
+    assert mock.await_args.kwargs["seed_docs"] == ["ao.md"]
+
+
+@pytest.mark.asyncio
 async def test_run_unknown_session_404(
     client: AsyncClient, armance_root: Path
 ) -> None:

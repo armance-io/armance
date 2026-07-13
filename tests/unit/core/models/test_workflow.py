@@ -124,6 +124,58 @@ async def test_execute_workflow_runs_in_topo_order() -> None:
 
 
 @pytest.mark.asyncio
+async def test_execute_workflow_calls_on_step_prompt_hook() -> None:
+    """Lot C: the effective rendered prompt must be exposed to the caller
+    via an optional on_step_prompt(step_id, prompt, template_used) callback
+    so the service layer can persist it for auditability — core itself
+    performs no I/O (layering)."""
+    wf = parse_workflow(SIMPLE)
+    captured: list[tuple[str, str, bool]] = []
+
+    def on_step_prompt(step_id: str, prompt: str, template_used: bool) -> None:
+        captured.append((step_id, prompt, template_used))
+
+    async def runner(step, prompt):
+        return f"out_{step.id}"
+
+    await execute_workflow(
+        wf, user_prompt="HELLO", runner=runner, on_step_prompt=on_step_prompt,
+    )
+
+    assert captured[0] == ("a", "HELLO", True)
+    assert captured[1] == ("b", "use out_a", True)
+
+
+@pytest.mark.asyncio
+async def test_execute_workflow_on_step_prompt_reports_default_template() -> None:
+    """When a step has no prompt_template, the hook must report
+    template_used=False (the default-prompt filet de sécurité kicked in)."""
+    yaml_text = """\
+name: w
+steps:
+  - id: a
+    kind: task
+    role: backend
+"""
+    wf = parse_workflow(yaml_text)
+
+    captured: list[tuple[str, str, bool]] = []
+
+    def on_step_prompt(step_id: str, prompt: str, template_used: bool) -> None:
+        captured.append((step_id, prompt, template_used))
+
+    async def runner(step, prompt):
+        return "out"
+
+    await execute_workflow(
+        wf, user_prompt="HELLO", runner=runner, on_step_prompt=on_step_prompt,
+    )
+
+    assert captured[0][0] == "a"
+    assert captured[0][2] is False
+
+
+@pytest.mark.asyncio
 async def test_execute_workflow_runs_level_concurrently() -> None:
     yaml_text = """\
 name: para

@@ -41,8 +41,22 @@ logger = logging.getLogger(__name__)
 StepKind = Literal["task", "meeting", "deliverable", "human_checkpoint", "render", "judge", "critique", "checkpoint", "loop"]
 KNOWN_STEP_KINDS = frozenset(("task", "meeting", "deliverable", "human_checkpoint", "render", "judge", "critique", "checkpoint", "loop"))
 StepMode = Literal["full", "light"]
+CrucibleStage = Literal["standard", "draft", "critique", "synthesis", "gate"]
 _TEMPLATE_RE = re.compile(r"\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}")
+# Gate verdict tag, scanned as a literal substring in a gate step's output.
+# `core` must NOT import the service parser (agent_sandbox); the pass-through
+# skip detects ACCEPT/REVISE here by regex. Last occurrence wins; absent ⇒
+# REVISE (see `_run_if_satisfied`).
+_GATE_TAG_RE = re.compile(r"\[GATE:(ACCEPT|REVISE)\]")
+# `run_if` grammar: "gate:<gate_step_id>:<VERDICT>", VERDICT ∈ {ACCEPT, REVISE}.
+_RUN_IF_RE = re.compile(r"^gate:([a-zA-Z0-9_.-]+):(ACCEPT|REVISE)$")
 
+
+class RubricCriterion(BaseModel):
+    """One scored criterion of a `gate` step's rubric (Creuset, Lot F3)."""
+    name: str
+    description: str = ""
+    weight: float = 1.0
 
 
 class WorkflowStep(BaseModel):
@@ -61,6 +75,12 @@ class WorkflowStep(BaseModel):
     agents: list[str] = Field(default_factory=list)
     depends_on: list[str] = Field(default_factory=list)
     prompt_template: str = ""
+    # Library document names (basename, under `.armance/docs/`) to inject as
+    # seed material for this step — e.g. an existing tender to challenge. The
+    # actual file read happens in the `service` layer (layering: `core` does
+    # no disk I/O); the loaded text is passed to `execute_workflow` via the
+    # `inputs` dict under `seed.<basename>` and surfaced in the default prompt.
+    seed_docs: list[str] = Field(default_factory=list)
 
     # Step-specific fields (populated based on kind)
     prompt: str = ""
@@ -69,6 +89,22 @@ class WorkflowStep(BaseModel):
     format: str = ""
     source: str = ""
     output_name: str = ""
+
+    # Creuset (Lot F) — cross-family draft→critique→synthesis→gate sub-graph.
+    # `stage` names a step's function in a crucible (distinct from `kind`/`role`).
+    # Default "standard" ⇒ 100% backward-compatible (legacy = standard-only).
+    stage: CrucibleStage = "standard"
+    # F5 static-unrolled bounded revision: a step with a non-empty `run_if` runs
+    # only when the referenced gate emitted the matching verdict; else it is
+    # skipped with PASS-THROUGH semantics. Grammar: "gate:<gate_id>:REVISE|ACCEPT".
+    # The step MUST depend (transitively) on that gate so it is evaluated only
+    # after the gate's verdict exists; otherwise the verdict is unseen ⇒ REVISE.
+    run_if: str = ""
+    # Pass-through source id for a skipped step; falls back to depends_on[0].
+    passthrough_from: str = ""
+    # gate-only: rubric (4-6 criteria) + acceptance threshold (weighted mean).
+    rubric: list[RubricCriterion] = Field(default_factory=list)
+    gate_threshold: float = 7.5
 
     @model_validator(mode="before")
     @classmethod
@@ -82,7 +118,6 @@ class WorkflowStep(BaseModel):
         return data
 
 
-
 class Workflow(BaseModel):
     name: str
     steps: list[WorkflowStep]
@@ -90,16 +125,16 @@ class Workflow(BaseModel):
     description: str = ""     # Free-text rationale (rendered by `/workflow list`).
 
 
-
 @dataclass(slots=True)
 class StepResult:
     id: str
     output: str
-
+    # True when skipped via `run_if`: output is a pass-through copy of its
+    # input (Creuset F5), no runner ran, 0 tokens. Read by wave-2 report code.
+    skipped: bool = False
 
 
 StepRunner = Callable[[WorkflowStep, str], Awaitable[str]]
-
 
 
 def parse_workflow(text: str) -> Workflow:
@@ -109,6 +144,7 @@ def parse_workflow(text: str) -> Workflow:
     except ValidationError as exc:
         raise ValueError(f"invalid workflow yaml: {exc}") from exc
     _validate_dag(wf.steps)
+    _validate_crucible(wf.steps)
     return wf
 
 
@@ -144,6 +180,70 @@ def _validate_dag(steps: Iterable[WorkflowStep]) -> None:
 
     for s in by_id:
         visit(s, [])
+
+
+def _validate_crucible(steps: Iterable[WorkflowStep]) -> None:
+    """Structural (raise-on-error) validation of Creuset `run_if` wiring (F5).
+
+    Soft family-diversity / shape warnings live in the service layer
+    (`service/workflow_validation.py`); only hard errors raise here: a
+    non-empty `run_if` must match `gate:<id>:ACCEPT|REVISE` where `<id>` is an
+    existing `stage == "gate"` step, and the conditional step must have a
+    resolvable pass-through source (`passthrough_from` or a non-empty depends_on).
+    """
+    by_id = {s.id: s for s in steps}
+    for s in by_id.values():
+        if not s.run_if:
+            continue
+        m = _RUN_IF_RE.match(s.run_if)
+        if m is None:
+            raise ValueError(
+                f"step '{s.id}' has malformed run_if '{s.run_if}' "
+                f"(expected 'gate:<step_id>:ACCEPT|REVISE')"
+            )
+        target = by_id.get(m.group(1))
+        if target is None:
+            raise ValueError(f"step '{s.id}' run_if references unknown gate step '{m.group(1)}'")
+        if target.stage != "gate":
+            raise ValueError(
+                f"step '{s.id}' run_if references step '{m.group(1)}' "
+                f"which is not a gate (stage={target.stage!r})"
+            )
+        if s.passthrough_from and s.passthrough_from not in by_id:
+            raise ValueError(
+                f"step '{s.id}' passthrough_from references unknown step '{s.passthrough_from}'"
+            )
+        if not s.passthrough_from and not s.depends_on:
+            raise ValueError(
+                f"step '{s.id}' has run_if but no resolvable pass-through source "
+                f"(set passthrough_from or a non-empty depends_on)"
+            )
+
+
+def _run_if_satisfied(step: WorkflowStep, results: dict[str, StepResult]) -> bool:
+    """True if `step.run_if` is satisfied by results in hand (pure, no I/O).
+
+    Empty run_if ⇒ True. Else the gate's output is scanned for the literal
+    `[GATE:ACCEPT|REVISE]` tag (last wins; absent ⇒ REVISE — a gate that did
+    not decide is broken), and True is returned when it matches the required verdict.
+    """
+    if not step.run_if:
+        return True
+    m = _RUN_IF_RE.match(step.run_if)
+    if m is None:  # defensive — parse_workflow already rejects malformed run_if
+        return True
+    gate_res = results.get(m.group(1))
+    tags = _GATE_TAG_RE.findall(gate_res.output if gate_res is not None else "")
+    verdict = tags[-1] if tags else "REVISE"
+    return verdict == m.group(2)
+
+
+def _passthrough_output(step: WorkflowStep, results: dict[str, StepResult]) -> str:
+    """Skipped-step pass-through output: `passthrough_from` else depends_on[0]
+    (missing from results ⇒ "" — validation already ensures a source exists)."""
+    src_id = step.passthrough_from or (step.depends_on[0] if step.depends_on else "")
+    src = results.get(src_id)
+    return src.output if src is not None else ""
 
 
 def topo_levels(workflow: Workflow) -> list[list[WorkflowStep]]:
@@ -224,78 +324,13 @@ def render_template(
     return _TEMPLATE_RE.sub(replace, template)
 
 
-
-def _compose_default_prompt(
-    workflow: "Workflow",
-    step: "WorkflowStep",
-    user_prompt: str,
-    results: "dict[str, StepResult]",
-) -> str:
-    """Build a structured prompt when no `prompt_template` is provided.
-
-    Without this, Kim's free-text workflows (which never define templates)
-    pass an empty string to the runner and specialists answer with their
-    persona seed only — outputs end up being 1 line of "Prêt à défendre les
-    archives".
-
-    The composed prompt has three parts:
-      1. Workflow scope (the narrow goal) + user's original request.
-      2. Step instructions tailored to its kind + role.
-      3. Upstream outputs as cited material to build on / critique / judge.
-    """
-    scope = (workflow.scope or "").strip()
-    role = step.role or "specialist"
-    kind = step.kind
-
-    lines: list[str] = []
-    lines.append(f"# Workflow: {workflow.name}")
-    if scope:
-        lines.append(f"\n## Scope (narrow goal — stay strictly inside)\n{scope}")
-    if user_prompt and user_prompt.strip():
-        lines.append(f"\n## User's original request\n{user_prompt.strip()}")
-
-    lines.append(f"\n## Your role in this step\nYou are a `{role}`. ")
-    if kind == "task":
-        lines[-1] += (
-            "Produce substantive content for this step. Write at length — "
-            "specialists are expected to deliver detailed, sourced, structured "
-            "output (target 500-2000 words depending on the workflow scope). "
-            "Use Markdown: headings, bullets, citations where applicable. "
-            "Do NOT just acknowledge the task — actually do the work."
-        )
-    elif kind == "judge":
-        lines[-1] += (
-            "Synthesise the upstream contributions into a single coherent "
-            "document. Quote, contrast, structure. Stay strictly inside the "
-            "workflow scope above — do NOT comment on the broader project "
-            "(budget, logistics, timeline) unless the scope explicitly "
-            "includes them. Target 800-2000 words."
-        )
-    elif kind == "critique":
-        lines[-1] += (
-            "Stress-test the upstream synthesis. Find weak claims, missing "
-            "evidence, logical gaps, blind spots. Be specific and adversarial. "
-            "Stay strictly inside the workflow scope — do NOT critique angles "
-            "outside it (e.g. business, finance, code) unless the scope says so. "
-            "Target 300-800 words."
-        )
-    elif kind == "meeting":
-        lines[-1] += (
-            "Contribute your distinct angle to the group's exchange. Build on "
-            "or push back against peers' contributions when relevant. "
-            "Target 200-600 words."
-        )
-    else:
-        lines[-1] += (
-            "Produce the output expected for this kind of step. Be substantive."
-        )
-
-    if step.depends_on:
-        lines.append("\n## Upstream contributions (material to work from)")
-        for dep_id in step.depends_on:
-            if dep_id in results:
-                lines.append(f"\n### {dep_id}\n{results[dep_id].output}")
-    return "\n".join(lines)
+# Prompt-composition helpers live in a sibling module to keep this file small.
+# Re-exported under their private names for backward compat (tests import
+# `_compose_default_prompt` from here).
+from armance.core.models._workflow_prompts import (  # noqa: E402
+    compose_default_prompt as _compose_default_prompt,
+    resolve_deliverable_prompt as _resolve_deliverable_prompt,
+)
 
 
 class WorkflowAbortError(RuntimeError):
@@ -312,26 +347,32 @@ async def execute_workflow(
     pre_run_hook: Callable[[Workflow], Awaitable[None]] | None = None,
     post_run_hook: Callable[[Workflow, "dict[str, StepResult]", StepRunner], Awaitable[None]] | None = None,
     armance_root: Path | None = None,
+    on_step_prompt: Callable[[str, str, bool], None] | None = None,
+    inputs: dict[str, Any] | None = None,
 ) -> dict[str, StepResult]:
     """Run every step of the workflow.
 
-    runner(step, rendered_prompt) -> output text. The executor handles
-    topological ordering, concurrency within a level via asyncio.gather,
-    and template substitution.
+    runner(step, rendered_prompt) -> output text. Handles topological ordering,
+    per-level concurrency (asyncio.gather), and template substitution.
 
-    checkpoint_handler(step, prior_outputs) -> user response text.
-    Called when a step has kind=="human_checkpoint" instead of the
-    regular runner.  prior_outputs maps completed step ids to their
-    output strings.
+    checkpoint_handler(step, prior_outputs) -> user response, called for
+    kind=="human_checkpoint" steps (prior_outputs maps completed ids → output).
 
-    pre_run_hook (optional): async callable(workflow). Raise to abort
-    (cross-family validation lives here in the service layer).
+    pre_run_hook (optional): async(workflow). Raise to abort (cross-family
+    validation lives here, service layer). post_run_hook (optional):
+    async(workflow, results, runner) after the last level; may mutate `results`
+    to inject step outputs (Serge consensus auto-invoke). on_step_prompt
+    (optional): sync(step_id, effective_prompt, template_used) before each
+    runner dispatch — the seam the service layer uses to persist the effective
+    prompt (Lot C) without `core` doing I/O.
 
-    post_run_hook (optional): async callable(workflow, results, runner)
-    invoked after the last level finishes. The hook may mutate `results`
-    to inject extra step outputs (Serge consensus auto-invoke does this).
+    inputs (optional): free-form workflow inputs for templates (`{{<key>}}`) and
+    the default prompt; Lot B loads seed docs here (keys `seed.<basename>`) from
+    the service layer — `core` never touches the filesystem.
     """
     import asyncio
+
+    inputs = inputs or {}
 
     if pre_run_hook is not None:
         await pre_run_hook(workflow)
@@ -346,54 +387,27 @@ async def execute_workflow(
         checkpoint_steps = [s for s in level if s.kind == "human_checkpoint"]
         regular_steps = [s for s in level if s.kind != "human_checkpoint"]
 
-        # Process regular steps with template rendering and asyncio.gather
-        if regular_steps:
+        # Process regular steps with template rendering and asyncio.gather.
+        # Creuset F5: partition on `run_if`. Skipped steps get a pass-through
+        # StepResult (0 tokens, no runner call) and are filled into `results`
+        # FIRST so any same-level/downstream depends_on still resolve; only
+        # `to_run` steps reach the runner dispatch batch.
+        to_skip = [s for s in regular_steps if not _run_if_satisfied(s, results)]
+        to_run = [s for s in regular_steps if _run_if_satisfied(s, results)]
+        for s in to_skip:
+            results[s.id] = StepResult(
+                id=s.id, output=_passthrough_output(s, results), skipped=True,
+            )
+        if to_run:
             prompts = []
-            for s in regular_steps:
+            template_used_flags: list[bool] = []
+            for s in to_run:
+                template_used = bool(s.prompt_template)
                 if s.kind == "deliverable":
-                    # For deliverable steps, resolve the content to compile.
-                    # Priority: explicit `source` field → "latest_judge" keyword →
-                    # last depends_on result → fallback to template rendering.
-                    source = s.model_dump().get("source", "")
-                    if source == "latest_judge":
-                        judge_result = None
-                        for res in results.values():
-                            if res.id == "judge":
-                                judge_result = res.output
-                                break
-                        if judge_result:
-                            prompt_text = judge_result
-                        else:
-                            raise ValueError("latest_judge requested but no judge result found in workflow results")
-                    elif source and source in results:
-                        prompt_text = results[source].output
-                    elif source and source not in results:
-                        raise ValueError(f"deliverable step source '{source}' not found in workflow results")
-                    else:
-                        # No explicit source — compile depends_on outputs into a
-                        # synthesis prompt. This handles Kim's common pattern of
-                        # kind:deliverable without source (the step IS the synthesis).
-                        if s.prompt_template:
-                            prompt_text = render_template(
-                                s.prompt_template,
-                                user_prompt=user_prompt,
-                                results=results,
-                                prior_session_notes=prior_session_notes,
-                            )
-                        else:
-                            parts = []
-                            for dep_id in s.depends_on:
-                                if dep_id in results:
-                                    parts.append(f"## {dep_id}\n\n{results[dep_id].output}")
-                            if parts:
-                                prompt_text = (
-                                    f"Original request: {user_prompt}\n\n"
-                                    + "\n\n---\n\n".join(parts)
-                                    + "\n\nBased on the above contributions, produce the final deliverable."
-                                )
-                            else:
-                                prompt_text = user_prompt
-                    prompts.append(prompt_text)
+                    prompt_text = _resolve_deliverable_prompt(
+                        s, workflow, user_prompt, results,
+                        prior_session_notes, inputs,
+                    )
                 else:
                     # Regular task/meeting/judge/critique step.
                     if s.prompt_template:
@@ -402,24 +416,31 @@ async def execute_workflow(
                             user_prompt=user_prompt,
                             results=results,
                             prior_session_notes=prior_session_notes,
+                            inputs=inputs,
                         )
                     else:
                         # No explicit template — compose a structured prompt
-                        # from the workflow scope, step kind, and upstream
-                        # outputs. Kim rarely writes templates; without
-                        # this fallback, agents receive an empty prompt and
-                        # respond with their persona seed only.
+                        # (scope + kind + upstream). Without it agents get an
+                        # empty prompt and reply with their persona seed only.
                         prompt_text = _compose_default_prompt(
-                            workflow, s, user_prompt, results,
+                            workflow, s, user_prompt, results, inputs=inputs,
                         )
-                    prompts.append(prompt_text)
+                prompts.append(prompt_text)
+                template_used_flags.append(template_used)
+
+            if on_step_prompt is not None:
+                for s, prompt_text, template_used in zip(to_run, prompts, template_used_flags):
+                    try:
+                        on_step_prompt(s.id, prompt_text, template_used)
+                    except Exception:  # noqa: BLE001 — a persistence hook must never break the run
+                        logger.exception("on_step_prompt hook failed for step %s", s.id)
 
             # Real tasks (not bare coroutines) so an abort can cancel the
             # in-flight siblings — plain gather leaves them running orphaned,
             # burning tokens on a run that is already over.
             tasks = [
                 asyncio.create_task(runner(step, prompt))
-                for step, prompt in zip(regular_steps, prompts)
+                for step, prompt in zip(to_run, prompts)
             ]
             try:
                 outputs = await asyncio.gather(*tasks)
@@ -428,7 +449,7 @@ async def execute_workflow(
                     task.cancel()
                 await asyncio.gather(*tasks, return_exceptions=True)
                 raise
-            for step, output in zip(regular_steps, outputs):
+            for step, output in zip(to_run, outputs):
                 results[step.id] = StepResult(id=step.id, output=output)
 
         # Checkpoints AFTER the level's regular steps (see above).
@@ -461,8 +482,6 @@ async def execute_workflow(
     return results
 
 
-
-
 WORKFLOW_TEMPLATE = """\
 name: my_workflow
 steps:
@@ -474,7 +493,6 @@ steps:
       Replace this with your prompt. Use {{user_prompt}} for the user
       input and {{step_id.output}} to chain step outputs.
 """
-
 
 
 def parse_workflow_yaml_from_llm(text: str) -> Workflow:
