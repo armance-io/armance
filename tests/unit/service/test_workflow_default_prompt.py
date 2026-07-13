@@ -69,7 +69,7 @@ def test_empty_scope_still_produces_useful_prompt() -> None:
 def test_upstream_section_instructs_extend_not_rewrite() -> None:
     """A3 — the upstream section header must tell the agent to extend the
     prior deliverable, not restate/rewrite it (root cause of the 5
-    specialists each re-writing a full memo in the dossier-reponse-ao run)."""
+    specialists each re-writing a full memo in a real production run)."""
     wf = _wf("dossier historique")
     results = {"research": StepResult(id="research", output="Long research text.")}
     prompt = _compose_default_prompt(

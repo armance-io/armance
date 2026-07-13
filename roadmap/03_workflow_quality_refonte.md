@@ -1,11 +1,11 @@
 # Refonte qualité workflow — Kim prompt-engineer, dossier seed, UI par étape
 
 > **Statut** : design validé (session Fable 5, 2026-07-06), implémentation à
-> exécuter par lots. Diagnostic fondé sur le run réel `dossier-reponse-ao`
-> (`tmp/runtime3`, workflow `dossier-reponse-ao`, 10 steps).
+> exécuter par lots. Diagnostic fondé sur un run réel de réponse à appel
+> d'offres (10 steps), anonymisé ici en `dossier-reponse-ao`.
 > Branche : `feat/workflow-quality`.
 
-## 1. Diagnostic (preuves dans tmp/runtime3)
+## 1. Diagnostic (preuves du run `dossier-reponse-ao`)
 
 Le résultat du workflow est médiocre pour des raisons de **process**, pas de
 modèles :
@@ -219,8 +219,8 @@ WorkflowGraph.tsx`, `@xyflow/react`). À construire :
 | 4 | E (warnings fiabilité) | candidat en échec → warning visible |
 | 5 | D (UI) | éditer un prompt dans le panel → YAML réécrit → run utilise le nouveau prompt |
 
-Validation finale : rejouer le scénario AO (même user prompt que
-`dossier-reponse-ao`) et vérifier que les 5 steps parallèles produisent des
+Validation finale : rejouer le scénario réponse-AO (même user prompt que
+le run `dossier-reponse-ao`) et vérifier que les 5 steps parallèles produisent des
 contributions **disjointes** (titres/sections différents, pas de
 re-cadrage général).
 
