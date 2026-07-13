@@ -27,8 +27,10 @@ def test_bump_assigns_stable_pid(isolate_global_config: Path, tmp_path: Path) ->
 
 
 def test_distinct_folders_get_distinct_pids(isolate_global_config: Path, tmp_path: Path) -> None:
-    a = tmp_path / "proj"; a.mkdir()
-    b = tmp_path / "sub" / "proj"; b.mkdir(parents=True)  # same basename
+    a = tmp_path / "proj"
+    a.mkdir()
+    b = tmp_path / "sub" / "proj"
+    b.mkdir(parents=True)  # same basename
     reg.bump_project(a)
     reg.bump_project(b)
     pids = {p["id"] for p in reg.list_projects()}
@@ -36,7 +38,8 @@ def test_distinct_folders_get_distinct_pids(isolate_global_config: Path, tmp_pat
 
 
 def test_path_for_pid_resolves(isolate_global_config: Path, tmp_path: Path) -> None:
-    proj = tmp_path / "alpha"; proj.mkdir()
+    proj = tmp_path / "alpha"
+    proj.mkdir()
     reg.bump_project(proj)
     pid = reg.list_projects()[0]["id"]
     assert reg.path_for_pid(pid) == proj.resolve()
