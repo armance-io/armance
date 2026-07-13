@@ -18,6 +18,7 @@ import yaml
 
 from armance.nls import t
 from armance.service.skills.base import Skill
+from armance.service.workflow_validation import validate_workflow_data
 from armance.service.workflow_yaml_writer import write_workflow_yaml
 
 logger = logging.getLogger(__name__)
@@ -41,21 +42,6 @@ _STRATEGY_ALIASES = {
     "approfondie": "approfondie",
     "custom": "custom",
 }
-
-# Step kinds the executor knows about.
-_VALID_KINDS = {"task", "judge", "critique", "human_checkpoint", "deliverable"}
-
-# Aliases that map to a canonical kind (silently normalised before validation).
-_KIND_ALIASES: dict[str, str] = {
-    "revise": "task",
-    "revision": "task",
-    "meeting": "task",
-    "checkpoint": "human_checkpoint",
-    "render": "deliverable",
-}
-
-# Staff domains the runner resolves to meta-agents (no roster entry needed).
-_STAFF_DOMAINS = {"mona", "serge"}
 
 _YAML_FENCE_RE = re.compile(r"```(?:yaml)?\s*\n(.*?)\n```", flags=re.DOTALL)
 
@@ -134,7 +120,7 @@ class DesignWorkflowSkill(Skill):
             self.state = "finished"
             return t("workflow.design_invalid_yaml", error=str(exc))
 
-        ok, err = self._validate(data)
+        ok, err, prompt_warnings = validate_workflow_data(data, self._agents)
         if not ok:
             logger.warning(
                 "design: validation failed (%s). yaml_text=%r data_type=%s data=%r",
@@ -188,6 +174,10 @@ class DesignWorkflowSkill(Skill):
             + "`. Le workflow est **construit, pas encore lancé** — "
             "demandez explicitement à l'exécuter pour démarrer un run."
         )
+        if prompt_warnings:
+            summary += "\n\n" + t("workflow.design_prompt_warnings") + "\n" + "\n".join(
+                f"- {w}" for w in prompt_warnings
+            )
         return summary
 
     # ------------------------------------------------------------------
@@ -227,78 +217,3 @@ class DesignWorkflowSkill(Skill):
             return "\n".join(cleaned_lines).strip()
         return ""
 
-    def _validate(self, data: Any) -> tuple[bool, str]:
-        if not isinstance(data, dict):
-            return False, "racine non-objet"
-        if "name" not in data or not isinstance(data["name"], str):
-            return False, "champ `name` manquant"
-        name_clean = re.sub(r"[^\w-]", "-", data["name"].lower())[:60].strip("-")
-        if not name_clean:
-            return False, "`name` vide après nettoyage"
-        data["name"] = name_clean
-
-        steps = data.get("steps")
-        if not isinstance(steps, list) or not steps:
-            return False, "champ `steps` doit être une liste non vide"
-
-        # Build two indices over the roster: by role (canonical match) and by
-        # lowercased name (fallback when Kim confuses name and role).
-        def _agent_role(a: Any) -> str:
-            return (a.role or "").lower().strip()
-
-        roster_roles = {
-            _agent_role(a)
-            for a in self._agents
-            if not getattr(a, "name", "").startswith("system-")
-            and _agent_role(a)
-        }
-        name_to_role: dict[str, str] = {
-            getattr(a, "name", "").lower().strip(): _agent_role(a)
-            for a in self._agents
-            if not getattr(a, "name", "").startswith("system-")
-        }
-        allowed_roles = roster_roles | _STAFF_DOMAINS
-
-        ids: set[str] = set()
-        for i, step in enumerate(steps):
-            if not isinstance(step, dict):
-                return False, f"step #{i+1} non-objet"
-            sid = step.get("id")
-            if not isinstance(sid, str) or not sid:
-                return False, f"step #{i+1} sans `id`"
-            if sid in ids:
-                return False, f"id `{sid}` dupliqué"
-            ids.add(sid)
-            kind = step.get("kind")
-            kind = _KIND_ALIASES.get(kind, kind)  # normalise aliases silently
-            step["kind"] = kind
-            if kind not in _VALID_KINDS:
-                return False, f"step `{sid}` kind=`{kind}` inconnu (attendu: {sorted(_VALID_KINDS)})"
-            # `role` required for every kind except human_checkpoint.
-            if kind != "human_checkpoint":
-                value = (step.get("role") or "").lower().strip()
-                if not value:
-                    return False, f"step `{sid}` sans `role`"
-                # If Kim wrote an agent name as `role`, map it back to that
-                # agent's role automatically.
-                if value in name_to_role and value not in allowed_roles:
-                    mapped = name_to_role[value]
-                    logger.info(
-                        "skill: step `%s` role=`%s` is an agent name; "
-                        "remapped to its role `%s`", sid, value, mapped,
-                    )
-                    value = mapped
-                if value not in allowed_roles:
-                    return False, (
-                        f"step `{sid}` role `{value}` ne correspond à aucun "
-                        f"rôle du roster ni à `mona`/`serge`. "
-                        f"Disponibles : {sorted(allowed_roles)}"
-                    )
-                step["role"] = value
-            depends = step.get("depends_on", [])
-            if not isinstance(depends, list):
-                return False, f"step `{sid}` depends_on non-liste"
-            for d in depends:
-                if d not in ids:
-                    return False, f"step `{sid}` dépend de `{d}` non défini avant"
-        return True, ""

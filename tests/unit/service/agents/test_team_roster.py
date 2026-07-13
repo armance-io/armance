@@ -66,6 +66,27 @@ def test_roster_empty_when_alone(root: Path) -> None:
     assert build_team_roster(root, current_name="Solo") == ""
 
 
+def test_roster_annotates_family_for_malik_health_view(root: Path) -> None:
+    # Malik's view (show_health=True) tags each agent with its provider family
+    # so it can spread Creuset drafts across DISTINCT families (§G2).
+    for name, prov, mdl in (
+        ("Marc", "claude-code", "claude-opus-4"),   # anthropic
+        ("Gina", "gemini", "gemini-2.5-pro"),        # google
+    ):
+        a = Agent(name=name, role="drafter", provider=prov, model=mdl,
+                  system_prompt="x")
+        a.save(root / "agents" / f"{a.name}.md")
+
+    lean = build_team_roster(root, current_name="Elena")
+    assert "[anthropic]" not in lean  # specialists get the family-free view
+
+    malik = build_team_roster(root, current_name="Elena", show_health=True)
+    assert "[anthropic]" in malik
+    assert "[google]" in malik
+    # Guidance to diversify draft families is present in Malik's view only.
+    assert "DISTINCT families" in malik
+
+
 def test_layered_context_includes_roster(root: Path) -> None:
     _save(root, name="Elena", role="expert", description="security")
     peer = _save(root, name="Marc", role="expert", description="flow")
