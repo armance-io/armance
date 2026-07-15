@@ -149,6 +149,7 @@ jobs:
   publish:
     name: Publish to PyPI
     needs: build
+    if: always() && needs.build.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       id-token: write  # required for OIDC trusted publishing
