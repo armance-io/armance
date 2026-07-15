@@ -111,7 +111,7 @@ async def test_specialist_dm_injects_l1_in_system_prompt(
     with patch("armance.service.agents.specialist_runner.get_client", return_value=MagicMock()), \
          patch("armance.service.agents.specialist_runner.call_with_ledger",
                new_callable=AsyncMock, side_effect=fake_call):
-        reply = await _cmd_chat("Quelles teintures au XIVe ?", ctx)
+        await _cmd_chat("Quelles teintures au XIVe ?", ctx)
 
     sys_msgs = [m for m in captured if m.get("role") == "system"]
     assert sys_msgs, "No system message captured"

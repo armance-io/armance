@@ -45,7 +45,7 @@ class TestSaveSkill:
 
     def test_save_creates_l0_file(self, save_skill: SetBriefSkill, tmp_armance: Path) -> None:
         save_skill.add_to_buffer("User wants to build a medieval expo.")
-        result = save_skill.run()
+        save_skill.run()
         l0_dir = tmp_armance / "context" / "L0"
         l0_files = list(l0_dir.glob("v*.md"))
         assert len(l0_files) == 1
@@ -79,7 +79,7 @@ class TestSaveSkill:
     def test_save_migrates_legacy_brief(self, save_skill: SetBriefSkill, tmp_armance: Path) -> None:
         legacy = tmp_armance / "shared_memory" / "project_brief.md"
         legacy.write_text("# Old Brief\n\nLegacy content.", encoding="utf-8")
-        result = save_skill.run()
+        save_skill.run()
         # Should have migrated
         l0_dir = tmp_armance / "context" / "L0"
         l0_files = list(l0_dir.glob("v*.md"))

@@ -56,7 +56,7 @@ def test_local_event_bus_emits_canonical_event():
     from armance.core.models.event import Event
     from armance.service.events import LocalEventBus
 
-    bus = LocalEventBus.__init__
+    assert callable(LocalEventBus.__init__)
     # Sanity: queue type is asyncio.Queue parameterised on Event
     # (we can only check the symbol, not the runtime parameterisation)
     import armance.service.events as evmod

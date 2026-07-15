@@ -6,7 +6,7 @@
 > below or your patch will be rejected.**
 
 > [!IMPORTANT]
-> **Canonical Issues & Handoff Logs**: The canonical index of all active bugs, epic features, roadmaps, and the chronological handoff log ([convergence.md](convergence.md)) is maintained in the sibling private repository [armance-strategie](file://~/dev/armance-strategie) at `../armance-strategie/`. Before starting work on any bug or feature, check [ISSUES.md](ISSUES.md) and the latest entries in [convergence.md](convergence.md) in that repository.
+> **Canonical Issues & Handoff Logs**: The canonical index of active bugs, epic features, roadmaps, and the chronological handoff log lives in a private maintainer repository. Before starting work on any bug or feature, ask the maintainer for access or for the relevant excerpts.
 
 This file is the contract. Read it before touching code. If you don't
 understand a rule, do not "fix it your way" — flag it back to the user.

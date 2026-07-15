@@ -35,8 +35,10 @@ def test_bump_adds_and_updates(isolate_global_config: Path, tmp_path: Path) -> N
 
 
 def test_sorted_by_recency(isolate_global_config: Path, tmp_path: Path) -> None:
-    a = tmp_path / "a"; a.mkdir()
-    b = tmp_path / "b"; b.mkdir()
+    a = tmp_path / "a"
+    a.mkdir()
+    b = tmp_path / "b"
+    b.mkdir()
     reg.bump_project(a)
     reg.bump_project(b)  # most recent
     names = [p["name"] for p in reg.list_projects()]
@@ -55,6 +57,7 @@ def test_stale_path_flagged_not_removed(isolate_global_config: Path, tmp_path: P
 
 
 def test_registry_written_to_global(isolate_global_config: Path, tmp_path: Path) -> None:
-    proj = tmp_path / "x"; proj.mkdir()
+    proj = tmp_path / "x"
+    proj.mkdir()
     reg.bump_project(proj)
     assert paths.projects_registry_path().exists()

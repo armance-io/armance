@@ -308,12 +308,26 @@ roster + per-role I/O + aggregation. 3. On confirm, emit
 `[EXECUTE:/workflow-design]` → `DesignWorkflowSkill` (S0→S6 dialogue).
 4. Run → Mona handoff for synthesis.
 
+**The Creuset (per-step quality subgraph).** For a high-stakes step Kim can
+unroll a crucible: ≥2 parallel `stage: draft` steps on *distinct model
+families* → 1 `stage: critique` (third family, comparative) → 1
+`stage: synthesis` → 1 `stage: gate` (family ≠ synthesis) scoring a rubric
+/10 and emitting `[GATE:ACCEPT]`/`[GATE:REVISE]`. One bounded revision is
+statically unrolled via `run_if: "gate:<id>:REVISE"` (skipped steps have
+pass-through semantics — the engine stays a pure DAG). A Creuset run writes a
+`quality.md` report; a mono-family setup degrades **explicitly** (config
+notice, never a fault). Validation: `service/workflow_crucible.py`
+(`model_family` is the single family-resolution primitive, shared with Serge
+and Malik's roster).
+
 Every `/workflow run` mints a versioned dir in
 `.armance/exports/<workflow>/run-<YYYYMMDD-HHMMSS>/` with `step-*.md`,
 `synthesis.md`, `manifest.json`. **Never overwritten.** Index in
 `<workflow>/runs.json`. Tools: `/workflow list <name>` to list,
 `/workflow compare <name> <r1> <r2>` to queue both into Mona's context
-and switch to him for the diff.
+and switch to him for the diff. `/workflow rerun <name> --override-step
+<id>=<file>` injects a hand-reworked step output and re-runs only the
+downstream steps, in a **new** run marked `derived_from`.
 
 ---
 
@@ -348,9 +362,9 @@ Specialists also produce content (workflow steps) but have only
    No real network.** The CI matrix runs Python 3.11 and 3.12.
 
 ```bash
-uv run pytest tests/ -q                  # offline suite (~900 tests, <15 s)
+uv run pytest tests/ -q                  # offline suite (~1400 tests)
 uv run python scripts/qa_live.py         # live OpenRouter free-model journey
-uv run ruff check src/                   # lint
+uv run ruff check src/ tests/            # lint
 bash scripts/check_invariants.sh         # layer + legacy hygiene
 ```
 

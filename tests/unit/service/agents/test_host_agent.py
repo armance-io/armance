@@ -134,7 +134,7 @@ class TestHandoffFlow:
         With the pure-LLM architecture, there's no Python short-circuit.
         Armance's response comes from the LLM, which may mention Malik.
         """
-        with patch("armance.service.agents.host_agent.get_client") as mock_gc, \
+        with patch("armance.service.agents.host_agent.get_client"), \
              patch("armance.service.agents.host_agent.call_with_ledger", new_callable=AsyncMock) as mock_call:
             mock_response = MagicMock()
             mock_response.text = "Je vais demander à Malik de s'en occuper."
@@ -342,7 +342,7 @@ class TestWorkflowSuggestion:
                 mock_call.return_value = MagicMock(text="Let me understand your project better.")
                 mock_get_client.return_value = AsyncMock()
 
-                response = await host_service.dialogue("What can I do?")
+                await host_service.dialogue("What can I do?")
 
         mock_call.assert_called_once()
 

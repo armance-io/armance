@@ -344,7 +344,7 @@ class TestArchiveAgent:
         service.delete_agent("historian-aisha")
 
         # Should be archived
-        archived = service.get_agent("historian-aisha")
+        service.get_agent("historian-aisha")
         # get_agent returns None for archived agents (file moved)
         # but the registry should show archived status
         registry_file = temp_armance_root / "agents" / "registry.json"
