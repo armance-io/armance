@@ -100,27 +100,69 @@ async def test_three_empty_divergence_triggers_serge(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_fewer_than_three_empty_divergence_no_auto_invoke() -> None:
-    """Only 2 empty divergence judge steps → no auto-invoke."""
+async def test_single_empty_divergence_triggers_serge() -> None:
+    """One empty-divergence judge step is enough to auto-invoke Serge.
+
+    The bar was lowered from 3 to 1: a single flattened synthesis is already
+    a consensus smell worth Serge's pushback.
+    """
     workflow = Workflow(
-        name="two_empty",
+        name="one_empty",
         steps=[
             WorkflowStep(id="s_j1", kind="judge"),
             WorkflowStep(id="s_j2", kind="judge", depends_on=["s_j1"]),
         ],
     )
     results = {
-        "s_j1": StepResult(id="s_j1", output=SYNTHESIS_NO_DIVERGENCE),
+        "s_j1": StepResult(id="s_j1", output=SYNTHESIS_WITH_DIVERGENCE),
         "s_j2": StepResult(id="s_j2", output=SYNTHESIS_NO_DIVERGENCE),
     }
 
+    calls: list[str] = []
+
     async def critique_runner(step, payload: str) -> str:
-        raise AssertionError("should not be called")
+        calls.append(step.id)
+        return "## Assumptions\nCritique output."
+
+    outcome = await check_consensus_and_maybe_invoke_serge(
+        workflow, results, critique_runner=critique_runner,
+    )
+    assert outcome is not None
+    assert len(calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_no_empty_divergence_no_auto_invoke() -> None:
+    """Every judge step shows a real divergence → Serge is NOT auto-invoked.
+
+    `critique_runner` must never run; we track it with a flag rather than
+    raising, because the hook swallows exceptions from the runner (an
+    AssertionError here would be masked and give a false pass).
+    """
+    workflow = Workflow(
+        name="no_empty",
+        steps=[
+            WorkflowStep(id="s_j1", kind="judge"),
+            WorkflowStep(id="s_j2", kind="judge", depends_on=["s_j1"]),
+        ],
+    )
+    results = {
+        "s_j1": StepResult(id="s_j1", output=SYNTHESIS_WITH_DIVERGENCE),
+        "s_j2": StepResult(id="s_j2", output=SYNTHESIS_WITH_DIVERGENCE),
+    }
+
+    called = False
+
+    async def critique_runner(step, payload: str) -> str:
+        nonlocal called
+        called = True
+        return "unexpected"
 
     outcome = await check_consensus_and_maybe_invoke_serge(
         workflow, results, critique_runner=critique_runner,
     )
     assert outcome is None
+    assert called is False
 
 
 @pytest.mark.asyncio
