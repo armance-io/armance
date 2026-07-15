@@ -10,12 +10,12 @@
 The public `armance` repository is kept clean of internal product strategy and roadmap discussions. 
 
 > [!IMPORTANT]
-> **Private Strategic Brain**: The canonical definitions of all epic features, user stories, macro-roadmaps, and chronological hand-off logs ([convergence.md](file:///home/guillaume/dev/armance-strategie/convergence.md)) live in the private sibling repository [armance-strategie](file:///home/guillaume/dev/armance-strategie) at `../armance-strategie/`.
+> **Private Strategic Brain**: The canonical definitions of all epic features, user stories, macro-roadmaps, and chronological hand-off logs live in a private maintainer repository; ask the maintainer for access.
 > 
 > When implementing features:
-> 1. Check [ISSUES.md](file:///home/guillaume/dev/armance-strategie/ISSUES.md) and the latest entries in [convergence.md](file:///home/guillaume/dev/armance-strategie/convergence.md) in that repository.
-> 2. Read the corresponding feature epic file under `../armance-strategie/issues/features/` (e.g., [web-security-gate.md](file:///home/guillaume/dev/armance-strategie/issues/features/web-security-gate.md)).
-> 3. **Document everything** (progress, design decisions, outcomes, or residual bugs) in the private `armance-strategie` repository. Never write strategic notes or private client details into the public `armance` repository.
+> 1. Check the issue tracker and the latest hand-off log entries in that private repository.
+> 2. Read the corresponding feature epic file there.
+> 3. **Document everything** (progress, design decisions, outcomes, or residual bugs) in that private repository. Never write strategic notes or private client details into the public `armance` repository.
 
 ---
 
@@ -60,5 +60,5 @@ The public `armance` repository is kept clean of internal product strategy and r
 ## 2. Process & Commit Hygiene
 
 - **Logical commits**: One commit should represent exactly one logical change.
-- **Conventional Commits**: Format commit messages according to the rules in [BUG_FIXING_GUIDE.md](file:///home/guillaume/dev/armance/BUG_FIXING_GUIDE.md#L129-L140).
+- **Conventional Commits**: Format commit messages according to the rules in [BUG_FIXING_GUIDE.md](BUG_FIXING_GUIDE.md#commit-message).
 - **Cryptographic Signatures**: All commits must be cryptographically signed (`git commit -sS`).

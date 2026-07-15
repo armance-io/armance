@@ -33,7 +33,8 @@ state (sqlite-vec only for RAG retrieval). Four providers: `openrouter`,
 - `logging` module. No `print` debug.
 - **File size limits**: Python files must be ≤ 300 LOC. React component files must be ≤ 250 LOC.
 - Open exceptions (split queued — P1.6+):
-  `service/agents/host_agent.py` (~1080), `service/agents/recruiter_agent.py` (~930), `cli.py` (~880), `core/models/context.py` (~760), `service/handlers.py` (~750), `client/tui/screens/main.py` (~660), `core/models/workflow.py` (~620). New code stays small; refactor before adding to any of these.
+  `cli.py` (~1560), `service/agents/host_agent.py` (~1160), `service/handlers.py` (~1150), `service/agents/recruiter_agent.py` (~1070), `service/chat_handlers/malik.py` (~820), `core/models/context.py` (~760), `client/tui/screens/main.py` (~670), `service/agents/agent_lifecycle_service.py` (~550), `client/tui/widgets/sidebar.py` (~550), `core/models/workflow.py` (~520), `service/llm_service.py` (~510), `service/workflow_runs.py` (~470). ~14 more legacy files sit at 300-450 LOC and are tolerated as-is. The limit applies strictly to NEW files; refactor before adding to any file listed here.
+  React: ~20 legacy components exceed 250 LOC (worst: `admin/ConfigForm.tsx` ~714) — same rule: new components stay small, split before growing a listed one.
 - `uv` for Python deps, `pnpm` for frontend deps. Conventional commits (signed off with `git commit -s`).
 - Tests: `pytest` + `pytest-asyncio` + `respx` (httpx) + `monkeypatch` (claude-agent-sdk). No real network. React components unit tested via `vitest` + `@testing-library/react`. E2E tested via Playwright.
 
@@ -91,7 +92,7 @@ to every system prompt so all agents reply in the chosen language. Set at
 
 ### CLI / Core Tests
 ```bash
-uv run pytest tests/                 # offline suite (~1050 tests)
+uv run pytest tests/                 # offline suite (~1400 tests)
 uv run python scripts/qa_live.py     # live OpenRouter free-model journey
 bash scripts/check_invariants.sh     # layer + lifecycle invariants (43 checks)
 ```
@@ -100,7 +101,7 @@ bash scripts/check_invariants.sh     # layer + lifecycle invariants (43 checks)
 The backend ships inside the package at `src/armance/web/backend/`. Run its
 suite from the `web/` directory (web deps ship in core — no extra needed):
 ```bash
-cd web && uv run pytest ../src/armance/web/backend/tests/   # offline routes suite (163)
+cd web && uv run pytest ../src/armance/web/backend/tests/   # offline routes suite (~230)
 ```
 
 ### Web Frontend Tests
@@ -117,7 +118,7 @@ pnpm playwright test                 # E2E tests (playwright)
 ## TUI commands
 
 `/help` `/quit` `/switch <agent>` `/model` `/effort` `/save`
-`/workflow design|run|list|compare <name> [<run1> <run2>]`
+`/workflow design|run|list|compare|rerun <name> [<run1> <run2>] [--override-step <id>=<file>] [--from-step <id>]`
 `/task <domain> <prompt>` `/report` `/judge @file …`
 `/deliverable pdf|docx|pptx|md` `/export claude|opencode|cline|roo|all`
 `/agent` `/role`

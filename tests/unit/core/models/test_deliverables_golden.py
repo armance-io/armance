@@ -119,7 +119,7 @@ def test_render_pdf_golden(name: str, report_md: str, tmp_path: Path) -> None:
 
     out = tmp_path / f"{name}.pdf"
     try:
-        render_pdf(tree := parse_report(report_md), out)
+        render_pdf(parse_report(report_md), out)
     except Exception as exc:
         if "WeasyPrint" in str(exc) or "weasyprint" in str(exc).lower():
             pytest.skip(f"WeasyPrint not available: {exc}")

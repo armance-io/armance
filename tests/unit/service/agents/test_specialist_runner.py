@@ -136,7 +136,7 @@ async def test_specialist_runner_emits_claims(
          patch("armance.service.agents.specialist_runner.call_with_ledger",
                new_callable=AsyncMock,
                return_value=MagicMock(text=response_with_claim, finish_reason="stop")):
-        report = await runner.run(aisha, task)
+        await runner.run(aisha, task)
 
     claims_file = tmp_armance / "shared_memory" / "claims.jsonl"
     assert claims_file.exists(), "claims.jsonl must be created"

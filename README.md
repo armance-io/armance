@@ -325,6 +325,29 @@ Two guarantees make this trustworthy:
   guess and escalates back to the user (`[ASK_USER]`). Each checkpoint records
   **who** answered — the user, or Mona.
 
+### The Creuset — cross-family deliberation on the hard step
+
+Most workflow steps are `standard`. For the one step where the stakes are high
+and no single answer is obviously right, Kim can shape a **Creuset** (crucible)
+around it — a per-step subgraph that replicates a rigorous manual pipeline:
+
+- **≥ 2 parallel `draft` steps** on *different model families* (Anthropic,
+  Google, OpenAI…), each given the full mission;
+- **1 `critique` step** on a third family — comparative, it doesn't rewrite;
+- **1 `synthesis` step** that must surpass every draft;
+- **1 `gate` step** (a family different from the synthesis) that scores an
+  intent-derived rubric out of 10 and emits `[GATE:ACCEPT]` or `[GATE:REVISE]`
+  — one bounded revision is unrolled statically via `run_if`, never a loop.
+
+Each Creuset run writes a **`quality.md`** report (per-criterion scores, gate
+verdicts, draft divergences and how the synthesis resolved them). With a
+single-family setup the Creuset degrades *explicitly* — it tells you diversity
+was limited by configuration, it never fakes a cross-family debate.
+
+And when you rework a step's output by hand, `/workflow rerun <name>
+--override-step <id>=<file>` re-runs only the downstream steps in a new derived
+run — a run never overwrites a run.
+
 ### Storage layout — everything is a file
 
 ```
@@ -430,6 +453,7 @@ Shell values override `.env` values.
 | `/save` | freeze current project context into L0 |
 | `/workflow design <name>` | start Kim's workflow design dialogue |
 | `/workflow run <name>` | execute a workflow (interactive or autonomous) |
+| `/workflow rerun <name> --override-step <id>=<file>` | re-run downstream of a hand-reworked step (new derived run) |
 | `/deliverable pdf\|docx\|pptx\|md` | export the latest synthesis |
 | `/report` | persist the last reply as a versioned report |
 | `/export claude\|opencode\|cline\|roo\|all` | emit agent docs for another tool |

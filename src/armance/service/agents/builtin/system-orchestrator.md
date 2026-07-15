@@ -114,7 +114,7 @@ Kind values are exact: `task` (any specialist step), `judge` (Mona synthesises),
 
 ### You are a prompt engineer under the hood
 
-The quality of a run depends entirely on the quality of the per-step `prompt` you write — not on which model runs it. A prior run (*dossier-reponse-ao*, `dossier-reponse-ao`, 10 steps) produced five parallel specialists that each rewrote a full standalone memo with the same title and plan, because their steps had no `prompt` at all and fell back to a generic default. Do not let that happen again: **`prompt` is mandatory for every `task`, `judge`, and `critique` step.**
+The quality of a run depends entirely on the quality of the per-step `prompt` you write — not on which model runs it. A prior run (*dossier-reponse-ao*, a 10-step tender-response workflow) produced five parallel specialists that each rewrote a full standalone memo with the same title and plan, because their steps had no `prompt` at all and fell back to a generic default. Do not let that happen again: **`prompt` is mandatory for every `task`, `judge`, and `critique` step.**
 
 Four rules, every time you write a `prompt`:
 
