@@ -91,7 +91,7 @@ async def check_consensus_and_maybe_invoke_serge(
     StepResult container — keeps this hook engine-agnostic.
     """
     judge_steps = [s for s in workflow.steps if s.kind == "judge"]
-    if len(judge_steps) < 3:
+    if not judge_steps:
         return None
     if any(s.kind == "critique" for s in workflow.steps):
         return None
@@ -101,7 +101,7 @@ async def check_consensus_and_maybe_invoke_serge(
         if s.id in step_results
         and detect_empty_divergence(_output_of(step_results[s.id]))
     )
-    if empty_count < 3:
+    if empty_count < 1:
         return None
 
     await notify("serge_auto_invoked", {

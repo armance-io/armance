@@ -33,6 +33,9 @@ class Report(BaseModel):
     prompt_truncated: str
     content: str
     partial: bool = False
+    tokens_in: int | None = None
+    tokens_out: int | None = None
+    cost_usd: float | None = None
 
     @classmethod
     def from_completion(
@@ -43,6 +46,9 @@ class Report(BaseModel):
         prompt: str,
         content: str,
         finish_reason: str,
+        tokens_in: int | None = None,
+        tokens_out: int | None = None,
+        cost_usd: float | None = None,
     ) -> "Report":
         return cls(
             agent_name=agent_name,
@@ -50,6 +56,9 @@ class Report(BaseModel):
             prompt_truncated=truncate_prompt(prompt),
             content=content,
             partial=finish_reason == "length",
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
+            cost_usd=cost_usd,
         )
 
 
@@ -90,6 +99,12 @@ def write_report(report: Report, reports_root: Path) -> Path:
         "prompt_truncated": report.prompt_truncated,
         "partial": report.partial,
     }
+    if report.tokens_in is not None:
+        meta["tokens_in"] = report.tokens_in
+    if report.tokens_out is not None:
+        meta["tokens_out"] = report.tokens_out
+    if report.cost_usd is not None:
+        meta["cost_usd"] = report.cost_usd
     frontmatter = yaml.safe_dump(meta, sort_keys=False, allow_unicode=True).strip()
     path.write_text(f"---\n{frontmatter}\n---\n{body}\n", encoding="utf-8")
     return path
@@ -119,4 +134,7 @@ def read_report(path: Path) -> Report:
         prompt_truncated=meta["prompt_truncated"],
         content=body,
         partial=bool(meta.get("partial", False)),
+        tokens_in=meta.get("tokens_in"),
+        tokens_out=meta.get("tokens_out"),
+        cost_usd=meta.get("cost_usd"),
     )
