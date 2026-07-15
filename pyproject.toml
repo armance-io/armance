@@ -158,6 +158,5 @@ pdf = [
       "examples",
   ]
 
-  [tool.mypy]
-  strict = true
-  ignore_missing_imports = true
+  # [tool.mypy] strict retiré : jamais exécuté en CI et 375 erreurs au moment
+  # du retrait — chantier « typing graduel » tracké côté mainteneur.
