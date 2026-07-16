@@ -1014,6 +1014,22 @@ def _build_web_bundle() -> int:
     return 0
 
 
+def _print_log_tail(log_path, lines: int = 25) -> None:
+    """Print the last lines of the web-server log — a startup failure must
+    always leave a readable trace in the terminal, not just a file path."""
+    try:
+        content = log_path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return
+    tail = content.strip().splitlines()[-lines:]
+    if not tail:
+        print("  (log file is empty)", file=sys.stderr)
+        return
+    print("  ── last log lines ──", file=sys.stderr)
+    for line in tail:
+        print(f"  {line}", file=sys.stderr)
+
+
 def cmd_web(
     repo_root: Path | None = None,
     remaining: list[str] | None = None,
@@ -1174,7 +1190,7 @@ def cmd_web(
         ready_url = f"http://127.0.0.1:{port}/api/healthz"
 
         def _open_when_ready() -> None:
-            deadline = time.time() + 15.0
+            deadline = time.time() + 60.0
             while time.time() < deadline:
                 try:
                     with urllib.request.urlopen(ready_url, timeout=1) as resp:
@@ -1185,7 +1201,7 @@ def cmd_web(
                     pass
                 time.sleep(0.2)
             print(
-                f"web server did not become ready within 15s — open {url} manually.",
+                f"web server did not become ready within 60s — open {url} manually.",
                 file=sys.stderr,
             )
 
@@ -1210,7 +1226,11 @@ def cmd_web(
 
     env = {**os.environ, "ARMANCE_ROOT": str(root),
            "ARMANCE_DATA_DIR": str(data_dir),
-           "ARMANCE_WEB_PASSWORD": _web_secret}
+           "ARMANCE_WEB_PASSWORD": _web_secret,
+           # The child's stdout/stderr are redirected to a log file; without
+           # this, Python block-buffers them and a crash loses every line —
+           # the exact "timeout with an empty log" failure seen on Windows.
+           "PYTHONUNBUFFERED": "1"}
     cmd = [
         sys.executable, "-m", "uvicorn",
         "armance.web.backend.main:app",
@@ -1252,10 +1272,21 @@ def cmd_web(
     log_dir.mkdir(parents=True, exist_ok=True)
     log_path = log_dir / "web-server.log"
     log_file = open(log_path, "a", encoding="utf-8")  # noqa: SIM115 — handed to the child
+    # Detach the child from this console so it survives the CLI exiting.
+    # start_new_session (setsid) is POSIX-only; on Windows the equivalent is
+    # a new process group + no console window — otherwise closing the
+    # terminal kills the server.
+    spawn_kw: dict = {}
+    if os.name == "nt":
+        spawn_kw["creationflags"] = (
+            subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
+        )
+    else:
+        spawn_kw["start_new_session"] = True
     try:
         proc = subprocess.Popen(
             cmd, env=env, stdout=log_file, stderr=subprocess.STDOUT,
-            start_new_session=True,
+            **spawn_kw,
         )
     except Exception as exc:  # noqa: BLE001
         log_file.close()
@@ -1268,7 +1299,14 @@ def cmd_web(
     import urllib.request
 
     ready_url = f"http://127.0.0.1:{port}/api/healthz"
-    deadline = time.time() + 20.0
+    # Cold starts on Windows routinely exceed 20s (Defender scans every
+    # import of uvicorn/fastapi/armance on first launch) — default to 60s,
+    # overridable for slower machines.
+    try:
+        ready_timeout = float(os.environ.get("ARMANCE_WEB_READY_TIMEOUT", "60"))
+    except ValueError:
+        ready_timeout = 60.0
+    deadline = time.time() + ready_timeout
     ready = False
     while time.time() < deadline:
         if proc.poll() is not None:
@@ -1277,6 +1315,7 @@ def cmd_web(
                 f"web server exited early (code {proc.returncode}); see {log_path}",
                 file=sys.stderr,
             )
+            _print_log_tail(log_path)
             return proc.returncode or 1
         try:
             with urllib.request.urlopen(ready_url, timeout=1) as resp:
@@ -1288,7 +1327,22 @@ def cmd_web(
         time.sleep(0.2)
 
     if not ready:
-        print(f"web server did not become ready within 20s; see {log_path}", file=sys.stderr)
+        # Never leave a half-started orphan behind: kill it so the retry
+        # starts clean, and show the log tail so the failure is diagnosable
+        # right there in the terminal.
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+        log_file.close()
+        print(
+            f"web server did not become ready within {int(ready_timeout)}s; "
+            f"see {log_path}\n"
+            "  (slow machine? raise it: ARMANCE_WEB_READY_TIMEOUT=120)",
+            file=sys.stderr,
+        )
+        _print_log_tail(log_path)
         return 1
 
     # Server is up: record the single-instance lock for this folder.

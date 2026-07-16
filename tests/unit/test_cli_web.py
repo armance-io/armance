@@ -43,6 +43,54 @@ def test_cmd_web_background_returns_zero_and_writes_log(tmp_path: Path) -> None:
     assert kwargs.get("start_new_session") is True
 
 
+def test_cmd_web_child_env_is_unbuffered(tmp_path: Path) -> None:
+    """The child's stdout goes to a log file — without PYTHONUNBUFFERED a
+    crash loses every buffered line (the Windows 'timeout, empty log' bug)."""
+    proc = MagicMock()
+    proc.poll.return_value = None
+    proc.pid = 4323
+
+    with patch("subprocess.Popen", return_value=proc) as popen, \
+         patch("urllib.request.urlopen", return_value=_fake_ready_response()):
+        rc = cmd_web(tmp_path, ["--no-browser"])
+
+    assert rc == 0
+    uvicorn_calls = [
+        c for c in popen.call_args_list
+        if c.args and isinstance(c.args[0], list) and "uvicorn" in c.args[0]
+    ]
+    env = uvicorn_calls[0].kwargs["env"]
+    assert env.get("PYTHONUNBUFFERED") == "1"
+
+
+def test_cmd_web_timeout_kills_child_and_prints_log_tail(
+    tmp_path: Path, capsys, monkeypatch
+) -> None:
+    """Readiness timeout → the half-started child is terminated (no orphan)
+    and the log tail lands in the terminal for immediate diagnosis."""
+    monkeypatch.setenv("ARMANCE_WEB_READY_TIMEOUT", "0.3")
+    proc = MagicMock()
+    proc.poll.return_value = None  # never exits…
+    proc.pid = 4324
+
+    log_dir = tmp_path / ".armance" / "logs"
+    log_dir.mkdir(parents=True)
+    (log_dir / "web-server.log").write_text(
+        "Traceback (most recent call last):\nImportError: sse_starlette\n",
+        encoding="utf-8",
+    )
+
+    with patch("subprocess.Popen", return_value=proc), \
+         patch("urllib.request.urlopen", side_effect=OSError("never up")):
+        rc = cmd_web(tmp_path, ["--no-browser"])
+
+    assert rc == 1
+    proc.terminate.assert_called_once()
+    err = capsys.readouterr().err
+    assert "ImportError: sse_starlette" in err  # log tail surfaced
+    assert "ARMANCE_WEB_READY_TIMEOUT" in err  # remediation hint
+
+
 def test_cmd_web_background_reports_early_exit(tmp_path: Path) -> None:
     proc = MagicMock()
     proc.poll.return_value = 1  # exited immediately
