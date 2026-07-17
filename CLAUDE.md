@@ -82,6 +82,21 @@ Legacy aliases (`/ingest-docs`, `/load:X`, `/forget:X`, `/rag-status`)
 still resolve through the dispatcher. Never add an implicit code path;
 the tag must be present.
 
+## Domain presets & bench
+
+Preset packs (`src/armance/assets/presets/<name>/`) are **pure data** :
+`preset.yaml` + `workflows/` + `roles/` + `knowledge/` + `bench/`. The
+engine never branches on a domain — `armance preset apply` only drops
+files where existing mechanisms read them (workflows dir, library docs).
+Loader: `core/models/preset.py`; ops: `service/preset_ops.py`; user
+packs in `~/.armance/presets/` shadow builtins. Each pack ships a
+replayable bench (`bench/bench.yaml`, cases with `input.md` +
+`rubric.md` + frontier `reference.md`): offline logic in
+`service/preset_bench.py` (tested), live driver
+`scripts/bench_presets.py` (blind A/B cross-family judge, delta vs
+previous run). Spec: armance-strategie
+`source/issues/features/domain-presets-and-benchmarks.md`.
+
 ## Caveman protocols
 
 `scripts/protocols/{ultra,lite,full}.txt` prepend a compression directive

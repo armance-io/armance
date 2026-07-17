@@ -240,6 +240,26 @@ armance run         # opens the TUI
 
 Drop documents into `.armance/docs/` and run `armance run`. Armance greets you, frames the project, recruits a team, designs a workflow, runs it, and exports a deliverable.
 
+### Domain presets (turnkey packs)
+
+A preset is a pure-data pack — tuned workflows, suggested role sheets,
+domain knowledge, and a replayable benchmark — that turns a blank
+project into a domain-ready one:
+
+```bash
+armance preset list                    # bundled: esn-avant-vente, auteur-compagnon
+armance preset show esn-avant-vente
+armance preset apply esn-avant-vente   # non-destructive, idempotent
+```
+
+`apply` drops workflows into `.armance/workflows/` and knowledge into
+`.armance/docs/` (run `/library index` to make it searchable). Your own
+packs go in `~/.armance/presets/<name>/` (same layout; they shadow
+bundled ones). Each bundled pack ships a benchmark suite replayable with
+`scripts/bench_presets.py` — Armance's multi-agent output is blind-judged
+A/B against a versioned frontier reference, with a delta against the
+previous run as a non-regression guard.
+
 ---
 
 ## How it works
