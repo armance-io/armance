@@ -201,9 +201,16 @@
         "completed": "done",
         "failed": "failed",
         "cancelled": "cancelled",
-        "skipped": "skipped"
+        "skipped": "skipped",
+        "queued": "queued",
+        "working": "working",
+        "provided": "provided"
       },
-      "title": "Run details — {{runId}}"
+      "title": "Run details — {{runId}}",
+      "quality_title": "Quality report",
+      "derived_from": "Derived from run",
+      "total_tokens": "Total tokens",
+      "total_cost": "Total cost"
     }
   },
   "run": {
@@ -272,7 +279,9 @@
         "failed": "failed",
         "cancelled": "cancelled",
         "skipped": "skipped"
-      }
+      },
+      "provided": "provided",
+      "provided_hint": "Step output provided by hand"
     },
     "run": {
       "label": "Run",
@@ -353,6 +362,12 @@
     },
     "panel": {
       "resize": "Drag to resize"
+    },
+    "stage": {
+      "draft": "draft",
+      "critique": "critique",
+      "synthesis": "synthesis",
+      "gate": "gate"
     }
   },
   "hypotheses": {
