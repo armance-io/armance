@@ -56,6 +56,13 @@ Lower layers never import from upper layers. Lint: `grep -rn
 | `gemini` | `GEMINI_API_KEY` | no | |
 | `custom-openai` | `CUSTOM_OPENAI_API_KEY` + `CUSTOM_OPENAI_BASE_URL` | model-dependent | OpenAI-compatible |
 
+Named instances (0.4.1): `type:label` (e.g. `custom-openai:lab`) gives each
+endpoint its own config + key env var (`CUSTOM_OPENAI_LAB_API_KEY`) and an
+optional `models:` allowlist (unioned with discovery, surfaced to Malik as
+user-declared). `provider_type` drives the factory and `model_family` — two
+instances of one type are ONE Creuset family. Project-local config may add
+instances / extend allowlists.
+
 ## Side effects
 
 Armance agents trigger side effects via **`[EXECUTE:/<command>]`** tags
