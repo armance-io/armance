@@ -144,6 +144,16 @@
       "error": "No se pudo lanzar la ejecución.",
       "in_progress": "Lanzando…",
       "blocked_fallback": "Ejecución bloqueada: un agente requerido por este flujo no es accesible."
+    },
+    "stage": {
+      "draft": "borrador",
+      "critique": "crítica",
+      "synthesis": "síntesis",
+      "gate": "veredicto"
+    },
+    "step": {
+      "provided": "aportado",
+      "provided_hint": "Salida del paso aportada a mano"
     }
   },
   "chat": {
@@ -177,7 +187,21 @@
   },
   "runs": {
     "detail": {
-      "title": "Detalle de la ejecución — {{runId}}"
+      "title": "Detalle de la ejecución — {{runId}}",
+      "quality_title": "Informe de calidad",
+      "derived_from": "Derivado de la ejecución",
+      "total_tokens": "Tokens totales",
+      "total_cost": "Coste total",
+      "status": {
+        "queued": "en cola",
+        "working": "en curso",
+        "running": "en curso",
+        "completed": "terminado",
+        "failed": "fallido",
+        "cancelled": "cancelado",
+        "skipped": "omitido",
+        "provided": "aportado"
+      }
     }
   },
   "setup": {
