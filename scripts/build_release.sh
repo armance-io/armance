@@ -17,7 +17,6 @@ DEST="$ROOT/src/armance/web_dist"
 
 echo "==> Building static frontend bundle"
 cd "$FRONTEND"
-pnpm approve-builds
 pnpm install --frozen-lockfile
 ARMANCE_STATIC_EXPORT=1 pnpm build
 

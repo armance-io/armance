@@ -1,6 +1,6 @@
 [project]
   name = "armance"
-  version = "0.4.0"
+  version = "0.4.1"
   description = "Armance 👒 - a team of experts you recruit to help you decide. Coordinate a panel that debates, stress-tests and synthesises. You keep the call 💡. Not a copilot, a brain you consult when the choice matters."
   readme = "README.md"
   license = { text = "AGPL-3.0-or-later" }
