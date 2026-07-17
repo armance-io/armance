@@ -453,6 +453,74 @@ def list_runs(armance_root: Path, workflow_name: str) -> list[dict[str, Any]]:
         return []
 
 
+def run_detail(
+    armance_root: Path, workflow_name: str, run_id: str
+) -> dict[str, Any] | None:
+    """Shape a run's full detail from its on-disk manifest (D3 / ADR 0003).
+
+    Reads ``exports/<wf>/<run_id>/manifest.json`` and returns the fixed
+    detail contract the web UI consumes — instead of the raw file dump that
+    forced the frontend to re-parse the manifest and drop stage/family/
+    quality/derived_from. ``None`` when the run (or its manifest) is absent
+    so the caller can answer 404.
+
+    Tolerant of pre-Creuset manifests: any missing field degrades to
+    ``null`` rather than raising. ``quality.markdown`` is the content of
+    ``quality.md`` if present (else ``null``); a step's ``provided`` flag is
+    ``status == "provided"``.
+    """
+    safe_wf = re.sub(r"[^\w-]", "_", workflow_name)[:64]
+    run_dir = armance_root / "exports" / safe_wf / run_id
+    manifest_path = run_dir / "manifest.json"
+    if not manifest_path.exists():
+        return None
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    if not isinstance(manifest, dict):
+        return None
+
+    quality_md: str | None = None
+    quality_file = run_dir / "quality.md"
+    if quality_file.exists():
+        try:
+            quality_md = quality_file.read_text(encoding="utf-8")
+        except Exception:
+            quality_md = None
+    quality_present = bool(manifest.get("quality_present")) or quality_md is not None
+
+    steps: list[dict[str, Any]] = []
+    for raw in manifest.get("steps") or []:
+        if not isinstance(raw, dict):
+            continue
+        status = raw.get("status")
+        steps.append({
+            "id": raw.get("id"),
+            "status": status,
+            "stage": raw.get("stage"),
+            "family": raw.get("family"),
+            "agent": raw.get("agent"),
+            "duration_ms": raw.get("duration_ms"),
+            "tokens_in": raw.get("tokens_in"),
+            "tokens_out": raw.get("tokens_out"),
+            "cost_usd": raw.get("cost_usd"),
+            "provided": status == "provided",
+            "error": raw.get("error"),
+        })
+
+    return {
+        "run_id": manifest.get("run_id", run_id),
+        "workflow": manifest.get("workflow", workflow_name),
+        "status": manifest.get("status"),
+        "started_at": manifest.get("started_at"),
+        "ended_at": manifest.get("ended_at") or None,
+        "derived_from": list(manifest.get("derived_from") or []),
+        "quality": {"present": quality_present, "markdown": quality_md},
+        "steps": steps,
+    }
+
+
 def load_run(armance_root: Path, workflow_name: str, run_id: str) -> dict[str, str]:
     """Load every artefact of a past run into a dict {filename: content}."""
     safe_wf = re.sub(r"[^\w-]", "_", workflow_name)[:64]
