@@ -15,22 +15,70 @@ from typing import Any, Literal
 
 import yaml
 from dotenv import dotenv_values
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 logger = logging.getLogger(__name__)
 
-ProviderName = Literal["openrouter", "claude-code", "custom-openai", "gemini"]
+ProviderType = Literal["openrouter", "claude-code", "custom-openai", "gemini"]
+# Back-compat alias: `ProviderName` historically named the 4 base *types*. A
+# provider "name" is now an *instance* — `type` or `type:label` (see
+# `provider_type` / `provider_label`). The base 4 remain valid names verbatim.
+ProviderName = ProviderType
+BASE_PROVIDER_TYPES: frozenset[str] = frozenset(
+    ("openrouter", "claude-code", "custom-openai", "gemini")
+)
 LanguageCode = Literal["en", "fr", "es", "de", "zh", "ja"]
 
 DEFAULT_CHUNK_MAX_TOKENS = 4000
 DEFAULT_CAVEMAN_PROTOCOL = "src/armance/protocols/caveman_ultra.txt"
 
 
+def provider_type_of(name: str) -> str:
+    """Return the base provider *type* for an instance name.
+
+    `custom-openai` → `custom-openai`; `custom-openai:lab` → `custom-openai`.
+    Single helper used by the factory, discovery, `model_family` and the
+    capability matrix so type-vs-instance resolution lives in ONE place.
+    """
+    return (name or "").split(":", 1)[0]
+
+
+def provider_label_of(name: str) -> str:
+    """Return the instance *label* (part after `:`) or `""` for the default."""
+    parts = (name or "").split(":", 1)
+    return parts[1] if len(parts) == 2 else ""
+
+
 class ProviderConfig(BaseModel):
-    name: ProviderName
+    # `name` is an INSTANCE name: a base type (`custom-openai`) or a labelled
+    # instance (`custom-openai:lab`). The type part must be one of the 4 base
+    # providers; the label is free-form (env-key-safe chars recommended).
+    name: str
     api_key: str | None = None
     base_url: str | None = None
+    models: list[str] = Field(default_factory=list)  # declarative allowlist (§3.2)
     ssl_verify: bool = True  # set False to skip TLS cert check (corporate MITM proxies)
+
+    @field_validator("name")
+    @classmethod
+    def _validate_name(cls, v: str) -> str:
+        vtype = provider_type_of(v)
+        if vtype not in BASE_PROVIDER_TYPES:
+            raise ValueError(
+                f"provider type {vtype!r} (from name {v!r}) is not one of "
+                f"{sorted(BASE_PROVIDER_TYPES)}"
+            )
+        return v
+
+    @property
+    def provider_type(self) -> str:
+        """Base type — resolves the client factory, family, capability matrix."""
+        return provider_type_of(self.name)
+
+    @property
+    def provider_label(self) -> str:
+        """Instance label after `:` (empty for the default instance)."""
+        return provider_label_of(self.name)
 
 
 class FootprintConfig(BaseModel):
@@ -90,22 +138,81 @@ def rerank_active(cfg: Config) -> bool:
     return bool(cfg.rerank_provider) and bool(cfg.rerank_model)
 
 
+def _env_sanitize(provider: str) -> str:
+    """Uppercase, `-`/`:` → `_`. `custom-openai:lab` → `CUSTOM_OPENAI_LAB`."""
+    return provider.upper().replace("-", "_").replace(":", "_")
+
+
 def _env_key_for(provider: str) -> str:
-    sanitized = provider.upper().replace("-", "_")
-    return f"{sanitized}_API_KEY"
+    return f"{_env_sanitize(provider)}_API_KEY"
 
 
 def _env_base_url_for(provider: str) -> str:
-    sanitized = provider.upper().replace("-", "_")
-    return f"{sanitized}_BASE_URL"
+    return f"{_env_sanitize(provider)}_BASE_URL"
 
 
-def load_config() -> Config:
-    """Load the GLOBAL config (config.yaml) then overlay global .env values.
+def merge_provider_overlay(cfg: Config, overlay: list[dict[str, Any]]) -> None:
+    """Merge a project-local providers overlay into `cfg` in place (§3.3).
+
+    Per instance name: a NEW instance is appended; an EXISTING instance has
+    its allowlist UNIONED (order-preserving) and its base_url/ssl_verify
+    overridden when the overlay sets them. SECRETS are never taken from a
+    local overlay — any `api_key` in the overlay is ignored (keys live in
+    `.env` only). Malformed entries are skipped, not fatal.
+    """
+    by_name = {p.name: p for p in cfg.providers}
+    for raw in overlay or []:
+        if not isinstance(raw, dict) or not raw.get("name"):
+            continue
+        raw = {k: v for k, v in raw.items() if k != "api_key"}  # never local secrets
+        name = str(raw["name"])
+        try:
+            existing = by_name.get(name)
+            if existing is None:
+                pc = ProviderConfig(**raw)
+                cfg.providers.append(pc)
+                by_name[name] = pc
+                continue
+            # Union the allowlist (keep global order, append new local ids).
+            for mid in raw.get("models", []) or []:
+                if mid not in existing.models:
+                    existing.models.append(mid)
+            if raw.get("base_url"):
+                existing.base_url = raw["base_url"]
+            if "ssl_verify" in raw:
+                existing.ssl_verify = bool(raw["ssl_verify"])
+        except Exception:
+            logger.warning("skipping malformed local provider overlay: %r", raw, exc_info=True)
+
+
+def _local_provider_overlay(local_dir: Path | None) -> list[dict[str, Any]]:
+    """Read `<local_dir>/.armance/config.yaml`'s `providers` list, if any."""
+    from armance import paths
+
+    folder = local_dir if local_dir is not None else Path.cwd()
+    local_yaml = paths.local_data_dir(folder) / "config.yaml"
+    if not local_yaml.exists():
+        return []
+    try:
+        loaded = yaml.safe_load(local_yaml.read_text(encoding="utf-8")) or {}
+    except Exception:
+        logger.warning("failed to read local config %s", local_yaml, exc_info=True)
+        return []
+    if not isinstance(loaded, dict):
+        return []
+    prov = loaded.get("providers")
+    return prov if isinstance(prov, list) else []
+
+
+def load_config(local_dir: Path | None = None) -> Config:
+    """Load the GLOBAL config (config.yaml), overlay a project-local providers
+    overlay (§3.3), then overlay .env values.
 
     Clean break (grandma launcher): config and secrets are machine-wide,
-    resolved via :mod:`armance.paths`, not per project folder. Returns an
-    empty default Config if neither file exists.
+    resolved via :mod:`armance.paths`, not per project folder. A project MAY
+    still ship a `.armance/config.yaml` that *adds provider instances* or
+    *extends allowlists* (never secrets) — merged from `local_dir` (defaults
+    to CWD). Returns an empty default Config if neither file exists.
     """
     from armance import paths
 
@@ -133,6 +240,11 @@ def load_config() -> Config:
     # (e.g. claude-code). It still receives its env overlay below.
     if cfg.default_provider and all(p.name != cfg.default_provider for p in cfg.providers):
         cfg.providers.append(ProviderConfig(name=cfg.default_provider))
+
+    # Project-local overlay: add instances / extend allowlists (never secrets)
+    # BEFORE the env overlay so freshly-added instances still pick up their
+    # per-instance env keys below.
+    merge_provider_overlay(cfg, _local_provider_overlay(local_dir))
 
     env: dict[str, str | None] = dict(dotenv_values(env_path)) if env_path.exists() else {}
     env.update({k: v for k, v in os.environ.items() if v is not None})
