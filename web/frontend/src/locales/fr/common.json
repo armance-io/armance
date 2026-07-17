@@ -201,9 +201,16 @@
         "completed": "terminé",
         "failed": "échoué",
         "cancelled": "annulé",
-        "skipped": "passé"
+        "skipped": "passé",
+        "queued": "en attente",
+        "working": "en cours",
+        "provided": "fourni"
       },
-      "title": "Détail du run — {{runId}}"
+      "title": "Détail du run — {{runId}}",
+      "quality_title": "Rapport de qualité",
+      "derived_from": "Dérivé du run",
+      "total_tokens": "Tokens totaux",
+      "total_cost": "Coût total"
     }
   },
   "run": {
@@ -270,7 +277,9 @@
         "failed": "échoué",
         "cancelled": "annulé",
         "skipped": "passé"
-      }
+      },
+      "provided": "fourni",
+      "provided_hint": "Sortie d'étape fournie à la main"
     },
     "run": {
       "label": "Run",
@@ -351,6 +360,12 @@
     },
     "panel": {
       "resize": "Glisser pour redimensionner"
+    },
+    "stage": {
+      "draft": "ébauche",
+      "critique": "critique",
+      "synthesis": "synthèse",
+      "gate": "verdict"
     }
   },
   "hypotheses": {

@@ -144,6 +144,16 @@
       "error": "Lauf konnte nicht gestartet werden.",
       "in_progress": "Wird gestartet…",
       "blocked_fallback": "Lauf blockiert: Ein für diesen Workflow benötigter Agent ist nicht erreichbar."
+    },
+    "stage": {
+      "draft": "Entwurf",
+      "critique": "Kritik",
+      "synthesis": "Synthese",
+      "gate": "Urteil"
+    },
+    "step": {
+      "provided": "bereitgestellt",
+      "provided_hint": "Schrittausgabe von Hand bereitgestellt"
     }
   },
   "chat": {
@@ -177,7 +187,21 @@
   },
   "runs": {
     "detail": {
-      "title": "Lauf-Details — {{runId}}"
+      "title": "Lauf-Details — {{runId}}",
+      "quality_title": "Qualitätsbericht",
+      "derived_from": "Abgeleitet von Lauf",
+      "total_tokens": "Tokens gesamt",
+      "total_cost": "Gesamtkosten",
+      "status": {
+        "queued": "wartend",
+        "working": "läuft",
+        "running": "läuft",
+        "completed": "abgeschlossen",
+        "failed": "fehlgeschlagen",
+        "cancelled": "abgebrochen",
+        "skipped": "übersprungen",
+        "provided": "bereitgestellt"
+      }
     }
   },
   "setup": {

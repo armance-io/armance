@@ -1,15 +1,18 @@
 import { type CSSProperties, type FC } from "react";
 import { Handle, Position } from "@xyflow/react";
+import {
+  type CrucibleStage,
+  stageGem,
+  fmtDuration,
+  stepCostLabel,
+} from "@/components/workflow/stepNodeStage";
+import {
+  STATUS_BG,
+  STATUS_DOT_COLOR,
+  type StepStatus,
+} from "@/components/workflow/stepNodeStatus";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
-
-type StepStatus =
-  | "queued"
-  | "working"
-  | "completed"
-  | "failed"
-  | "cancelled"
-  | "skipped";
 
 export interface StepNodeData extends Record<string, unknown> {
   step_id: string;
@@ -18,6 +21,17 @@ export interface StepNodeData extends Record<string, unknown> {
   /** Who actually spoke (manifest `agent`, failover-aware). */
   agent?: string;
   duration_ms?: number;
+  /** Creuset stage — draft/critique/synthesis/gate/standard. */
+  stage?: CrucibleStage | null;
+  /** Model family that answered (runtime, from the manifest). */
+  family?: string | null;
+  cost_usd?: number | null;
+  tokens_in?: number | null;
+  tokens_out?: number | null;
+  /** Human-provided step (override / re-run injection). */
+  provided?: boolean;
+  /** Injected translator so the badge label is i18n'd. */
+  t?: (key: string) => string;
 }
 
 export interface StepNodeProps {
@@ -25,44 +39,34 @@ export interface StepNodeProps {
   selected?: boolean | undefined;
 }
 
-/* ─── Helpers ────────────────────────────────────────────────────────────── */
-
-function fmtDuration(ms?: number): string {
-  if (ms === undefined) return "";
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
-}
-
-const STATUS_DOT_COLOR: Record<StepStatus, string> = {
-  queued: "var(--ink-faint, #9c8e7e)",
-  working: "hsl(35, 30%, 60%)",
-  completed: "hsl(120, 15%, 55%)",
-  failed: "hsl(0, 30%, 65%)",
-  cancelled: "var(--ink-faint, #9c8e7e)",
-  skipped: "var(--ink-faint, #9c8e7e)",
-};
-
-// Soft, muted backgrounds per DESIGN.md gems — done steps tint sage,
-// working steps warm ochre, failed terracotta. Others keep the parchment.
-const STATUS_BG: Record<StepStatus, string> = {
-  queued: "var(--bg-paper, #f4ede0)",
-  working: "color-mix(in srgb, hsl(35, 30%, 60%) 12%, var(--bg-paper, #f4ede0))",
-  completed: "color-mix(in srgb, hsl(120, 15%, 55%) 14%, var(--bg-paper, #f4ede0))",
-  failed: "color-mix(in srgb, hsl(0, 30%, 65%) 12%, var(--bg-paper, #f4ede0))",
-  cancelled: "var(--bg-paper, #f4ede0)",
-  skipped: "var(--bg-paper, #f4ede0)",
-};
 
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
 export const StepNode: FC<StepNodeProps> = ({ data, selected = false }) => {
-  const { step_id, role, status, agent, duration_ms } = data;
+  const {
+    step_id,
+    role,
+    status,
+    agent,
+    duration_ms,
+    stage,
+    family,
+    cost_usd,
+    tokens_in,
+    tokens_out,
+    provided,
+    t,
+  } = data;
 
   const isCancelled = status === "cancelled";
   const isSkipped = status === "skipped";
   const isWorking = status === "working";
-
   const isCompleted = status === "completed";
+
+  const gem = stageGem(stage);
+  const cost = stepCostLabel(cost_usd, tokens_in, tokens_out);
+  const tr = t ?? ((k: string) => k);
+
   const borderColor = selected
     ? "var(--accent, #6b4f8a)"
     : isWorking
@@ -73,25 +77,30 @@ export const StepNode: FC<StepNodeProps> = ({ data, selected = false }) => {
 
   const boxStyle: CSSProperties = {
     width: "200px",
-    height: "72px",
+    minHeight: "72px",
     border: `1px solid ${borderColor}`,
     borderRadius: "2px",
     background: STATUS_BG[status],
     padding: "8px 12px",
     display: "flex",
     flexDirection: "column",
-    justifyContent: "space-between",
+    gap: "3px",
     boxSizing: "border-box",
     opacity: isSkipped ? 0.6 : 1,
     textDecoration: isCancelled ? "line-through" : "none",
-    color: isCancelled
-      ? "var(--ink-soft, #5b5145)"
-      : "var(--ink, #2a2520)",
+    color: isCancelled ? "var(--ink-soft, #5b5145)" : "var(--ink, #2a2520)",
     position: "relative",
     transition: "border-color 160ms ease, background 240ms ease",
     boxShadow: isWorking
       ? "0 0 0 3px color-mix(in srgb, var(--accent, #6b4f8a) 14%, transparent)"
       : "none",
+  };
+
+  const topRowStyle: CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: "6px",
+    justifyContent: "space-between",
   };
 
   const idStyle: CSSProperties = {
@@ -100,7 +109,27 @@ export const StepNode: FC<StepNodeProps> = ({ data, selected = false }) => {
     color: "var(--ink-soft, #5b5145)",
     letterSpacing: "0.04em",
     lineHeight: 1.2,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   };
+
+  const badgeStyle: CSSProperties = gem
+    ? {
+        fontFamily: "var(--ff-sans, 'Inter', sans-serif)",
+        fontSize: "9px",
+        fontWeight: 600,
+        letterSpacing: "0.06em",
+        textTransform: "uppercase",
+        padding: "1px 6px",
+        borderRadius: "2px",
+        color: gem.hue,
+        background: `color-mix(in srgb, ${gem.hue} 14%, var(--bg-paper-card, #faf6ef))`,
+        border: `1px solid color-mix(in srgb, ${gem.hue} 40%, transparent)`,
+        flexShrink: 0,
+        lineHeight: 1.4,
+      }
+    : {};
 
   const roleStyle: CSSProperties = {
     fontFamily: "var(--ff-serif, 'Instrument Serif', serif)",
@@ -119,23 +148,12 @@ export const StepNode: FC<StepNodeProps> = ({ data, selected = false }) => {
     gap: "6px",
   };
 
-  const dotStyle: CSSProperties = {
-    width: "6px",
-    height: "6px",
-    borderRadius: "999px",
-    background: STATUS_DOT_COLOR[status],
-    flexShrink: 0,
-    animation: isWorking ? "stepnode-pulse 1.2s ease-in-out infinite" : "none",
-  };
-
-  const durationStyle: CSSProperties = {
+  const mono: CSSProperties = {
     fontFamily: "var(--ff-mono, 'JetBrains Mono', monospace)",
     fontSize: "10px",
     color: "var(--ink-faint, #9c8e7e)",
   };
 
-  /* Real (but invisible) React Flow handles — edges cannot anchor to a
-     custom node without <Handle> components; plain divs draw no edges. */
   const handleStyle: CSSProperties = {
     width: 1,
     height: 1,
@@ -147,20 +165,34 @@ export const StepNode: FC<StepNodeProps> = ({ data, selected = false }) => {
   };
 
   return (
-    <div style={boxStyle} aria-label={`${step_id} — ${role} — ${status}`}>
+    <div
+      style={boxStyle}
+      aria-label={`${step_id} — ${role} — ${status}`}
+      data-testid={`step-node-${step_id}`}
+    >
       <style>{`
-        @keyframes stepnode-pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.35; }
-        }
+        @keyframes stepnode-pulse { 0%,100%{opacity:1;} 50%{opacity:0.35;} }
         @keyframes stepnode-spin { to { transform: rotate(360deg); } }
         @media (prefers-reduced-motion: reduce) {
           * { animation: none !important; transition: none !important; }
         }
       `}</style>
 
-      <div style={idStyle}>{step_id}</div>
+      <div style={topRowStyle}>
+        <span style={idStyle}>{step_id}</span>
+        {gem && (
+          <span
+            style={badgeStyle}
+            data-testid={`stage-badge-${step_id}`}
+            data-stage={stage}
+          >
+            {tr(`workflow:stage.${gem.key}`)}
+          </span>
+        )}
+      </div>
+
       <div style={roleStyle}>{agent ? `${agent} · ${role}` : role}</div>
+
       <div style={bottomRowStyle}>
         {isWorking ? (
           <span
@@ -180,25 +212,48 @@ export const StepNode: FC<StepNodeProps> = ({ data, selected = false }) => {
             <path d="M2.5 7.5l3 3 6-7" />
           </svg>
         ) : (
-          <span style={dotStyle} aria-hidden="true" />
+          <span
+            style={{
+              width: "6px", height: "6px", borderRadius: "999px",
+              background: STATUS_DOT_COLOR[status], flexShrink: 0,
+            }}
+            aria-hidden="true"
+          />
         )}
-        {duration_ms !== undefined && (
-          <span style={durationStyle}>{fmtDuration(duration_ms)}</span>
+        {duration_ms !== undefined && duration_ms !== null && (
+          <span style={mono}>{fmtDuration(duration_ms)}</span>
+        )}
+        {cost && (
+          <span style={mono} data-testid={`step-cost-${step_id}`}>{cost}</span>
+        )}
+        {family && (
+          <span
+            style={{ ...mono, marginLeft: "auto", opacity: 0.9 }}
+            data-testid={`step-family-${step_id}`}
+            title={family}
+          >
+            {family}
+          </span>
+        )}
+        {provided && (
+          <span
+            style={{
+              marginLeft: family ? "0" : "auto",
+              color: "var(--accent, #6b4f8a)",
+              fontStyle: "italic",
+              fontFamily: "var(--ff-serif, 'Instrument Serif', serif)",
+              fontSize: "11px",
+            }}
+            data-testid={`step-provided-${step_id}`}
+            title={tr("workflow:step.provided_hint")}
+          >
+            {tr("workflow:step.provided")}
+          </span>
         )}
       </div>
 
-      <Handle
-        type="target"
-        position={Position.Left}
-        isConnectable={false}
-        style={handleStyle}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        isConnectable={false}
-        style={handleStyle}
-      />
+      <Handle type="target" position={Position.Left} isConnectable={false} style={handleStyle} />
+      <Handle type="source" position={Position.Right} isConnectable={false} style={handleStyle} />
     </div>
   );
 };
