@@ -154,3 +154,37 @@ async def test_build_models_context_seeds_default_model_when_provider_undiscover
     out = await _build_models_context(_Ctx())
     assert "Qwen/Qwen2.5-7B-Instruct" in out
     assert "no models discovered" not in out
+
+
+async def test_build_models_context_surfaces_declared_allowlist(
+    monkeypatch,
+) -> None:
+    """Lot D (§3.4) — an allowlisted model absent from /models must reach
+    Malik's context marked as user-declared, so he never rejects it and the
+    user never has to re-teach it in NL."""
+    from armance.service.chat_handlers.malik import _build_models_context
+
+    class _Prov:
+        def __init__(self, name, models=None):
+            self.name = name
+            self.models = models or []
+
+    class _Cfg:
+        providers = [_Prov("custom-openai:lab", models=["secret-72b"])]
+        default_provider = "custom-openai:lab"
+        default_model = ""
+        budget_effort = "free-first"
+
+    class _Ctx:
+        cfg = _Cfg()
+
+    async def _fake_discover_all(cfg):
+        return {"custom-openai:lab": []}  # endpoint lists nothing
+
+    monkeypatch.setattr(
+        "armance.providers.discovery.discover_all", _fake_discover_all,
+    )
+    out = await _build_models_context(_Ctx())
+    assert "secret-72b" in out
+    assert "custom-openai:lab" in out
+    assert "no models discovered" not in out

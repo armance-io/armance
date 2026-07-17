@@ -283,8 +283,9 @@ async def _build_models_context(ctx: LoopContext) -> str:
         f"CONFIGURED PROVIDERS (the user has access to ONLY these): {only}.",
         "Do NOT pretend other providers are available. Do NOT prefix the model "
         "id with the provider name — the YAML's `provider:` field already "
-        "carries that. `provider:` must be exactly one of the names above "
-        "(`openrouter`, `gemini`, `claude-code`, `custom-openai`).",
+        "carries that. `provider:` must be copied VERBATIM from the names "
+        "above, including any `:label` instance suffix (e.g. "
+        "`custom-openai:lab`).",
     ]
     if budget == "optimised":
         lines.extend([
@@ -304,10 +305,24 @@ async def _build_models_context(ctx: LoopContext) -> str:
             "4. Within a capability class, prefer the greenest (the lists "
             "below are sorted greenest-first inside each class).",
         ])
+    from armance.providers.discovery import allowlist_for
+
     for prov in configured:
+        discovered_ids = {m.id for m in catalogues.get(prov, [])}
+        # §3.2/§3.4 — models the user DECLARED on this instance but that the
+        # endpoint's /models does not list. Malik must trust them: they end
+        # the "please tell Malik again that this model exists" loop.
+        declared_only = sorted(allowlist_for(prov, ctx.cfg) - discovered_ids)
         models = filter_for_budget(catalogues.get(prov, []), budget)
-        if not models:
+        if not models and not declared_only:
             lines.append(f"\nProvider `{prov}`: (no models discovered)")
+            continue
+        if not models:
+            lines.append(
+                f"\nProvider `{prov}`: (nothing discovered via /models) — "
+                f"user-declared models, USE them with full confidence: "
+                f"{', '.join(declared_only)}"
+            )
             continue
         # `optimised` budget: order the whole provider list greenest-first by
         # estimated carbon, crossing tier boundaries. Other budgets keep the
@@ -363,6 +378,11 @@ async def _build_models_context(ctx: LoopContext) -> str:
             for m in search_models[:12]:
                 marker = "🎁 effectively free" if m.effectively_free else m.tier
                 lines.append(f"      - {m.id} ({marker})")
+        if declared_only:
+            lines.append(
+                "  - Declared by the user (absent from /models but "
+                f"GUARANTEED usable — never reject them): {', '.join(declared_only)}"
+            )
         else:
             lines.append("  - 🔍 Web-search capable: none")
 
