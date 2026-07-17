@@ -1,0 +1,8 @@
+name: auteur-compagnon
+title: Compagnon d'écriture romanesque
+description: >
+  Équipe et workflows pour accompagner un auteur : critique complète de
+  roman, cohérence stylistique par personnage, brainstorm de chapitre.
+language: fr
+version: 0.1.0
+tags: [ecriture, roman, relecture]
