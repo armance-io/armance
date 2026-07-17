@@ -32,7 +32,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from armance.config import ensure_armance_tree, load_config  # noqa: E402
-from armance.core.models.preset import load_preset  # noqa: E402
 from armance.core.models.workflow import load_workflow  # noqa: E402
 from armance.service import preset_bench, preset_ops  # noqa: E402
 from armance.service.checkpoint import CheckpointResponse  # noqa: E402

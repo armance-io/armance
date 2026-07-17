@@ -22,7 +22,7 @@ from importlib import resources
 from pathlib import Path
 
 from armance import paths
-from armance.core.models.preset import Preset, discover_presets, load_preset
+from armance.core.models.preset import Preset, discover_presets
 from armance.storage import paths as storage_paths
 
 logger = logging.getLogger(__name__)
