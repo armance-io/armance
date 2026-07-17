@@ -394,6 +394,28 @@ Each layer imports only from layers below. Enforced by [`import-linter`](https:/
 | `gemini`       | `GEMINI_API_KEY` | Live discovery via `/v1beta/models`. Native Google Search grounding. |
 | `custom-openai`| `CUSTOM_OPENAI_API_KEY` + `CUSTOM_OPENAI_BASE_URL` | Any OpenAI-compatible endpoint. |
 
+**Named instances & model allowlists (0.4.1).** A provider entry can be a
+*named instance* — `custom-openai:lab`, `custom-openai:prod` — each with its
+own `base_url` and its own key env var (`CUSTOM_OPENAI_LAB_API_KEY`; the
+label is upper-cased into the name). An instance can also declare a
+`models:` allowlist: ids you *know* the endpoint serves even when its
+`/models` route omits them. Declared models are merged into discovery
+(never replacing it) and Malik treats them as first-class — no more
+re-telling him that a model exists:
+
+```yaml
+providers:
+  - name: custom-openai            # the classic single instance, unchanged
+    base_url: https://gw.internal/v1
+  - name: custom-openai:lab
+    base_url: https://lab.internal/v1
+    models: [qwen3-72b, mistral-large-lab]
+```
+
+A project-local `.armance/config.yaml` may add instances or extend an
+allowlist on top of the global config. Instances of the same type count as
+**one** model family for the Creuset's cross-family rule.
+
 > **Direction — local inference.** Today your *data* is local but *inference*
 > still travels to a cloud API. Making on-device inference (Ollama /
 > llama.cpp) a first-class provider — so a full run needs no token to leave
