@@ -1,0 +1,152 @@
+name: reponse-ao
+scope: Construire un mémoire technique de réponse AO depuis un cahier des charges.
+description: >
+  Cadrage par le pilote AO, contributions architecture et chiffrage en
+  parallèle, assemblage, critique croisée Creuset, révision conditionnelle,
+  gate final sur rubric avant-vente.
+steps:
+  - id: cadrage
+    kind: task
+    role: pilote-ao
+    mode: full
+    stage: draft
+    prompt_template: |
+      Cahier des charges et contexte client :
+
+      {{user_prompt}}
+
+      Produis la note de cadrage de la réponse : (1) reformulation du
+      besoin avec les enjeux implicites que tu détectes ; (2) classe de
+      client (public / défense / grand compte privé / ETI) et contraintes
+      qui en découlent ; (3) matrice de conformité — chaque exigence du
+      cahier des charges, numérotée, avec la section de réponse qui la
+      couvrira ; (4) stratégie de réponse : 3 axes différenciants maximum,
+      appuyés sur le contexte fourni, jamais génériques ; (5) points de
+      vigilance et trous (exigences qu'on ne sait pas couvrir — les
+      signaler, pas les masquer).
+
+  - id: architecture
+    kind: task
+    role: archi-cloud
+    mode: full
+    stage: draft
+    depends_on: [cadrage]
+    prompt_template: |
+      Note de cadrage :
+
+      {{cadrage.output}}
+
+      Conçois le volet architecture technique de la réponse : cible,
+      au moins une alternative étudiée avec critères de choix explicites,
+      justification de chaque choix contre les contraintes de la classe
+      de client identifiée (souveraineté, qualification d'hébergement,
+      existant), schéma en bloc mermaid, ordres de grandeur de coût
+      d'infrastructure mensuel par environnement. Toute conformité
+      revendiquée (SecNumCloud, HDS…) doit être formulée comme vérifiable
+      ou comme trajectoire — jamais comme acquis douteux.
+
+  - id: chiffrage
+    kind: task
+    role: chiffreur
+    mode: full
+    stage: draft
+    depends_on: [cadrage]
+    prompt_template: |
+      Note de cadrage :
+
+      {{cadrage.output}}
+
+      Produis le chiffrage : décomposition WBS en lots et tâches
+      (chaque tâche entre 1 et 15 JH), charges par profil
+      (famille × niveau, cf. grille métiers), pilotage en pourcentage du
+      build affiché séparément, hypothèses écrites ligne à ligne,
+      exclusions, provisions pour risques avec niveau de confiance par
+      lot. Termine par un tableau de synthèse : lot, JH, profils, niveau
+      de confiance.
+
+  - id: assemblage
+    kind: task
+    role: pilote-ao
+    mode: full
+    stage: draft
+    depends_on: [architecture, chiffrage]
+    prompt_template: |
+      Cadrage :
+      {{cadrage.output}}
+
+      Volet architecture :
+      {{architecture.output}}
+
+      Chiffrage :
+      {{chiffrage.output}}
+
+      Assemble le mémoire technique complet selon la structure type
+      (compréhension du besoin, solution, organisation et équipe,
+      méthodologie et qualité, planning, synthèse prix). Vérifie la
+      cohérence architecture ↔ chiffrage (même périmètre, même WBS) et
+      signale toute incohérence au lieu de la lisser. Chaque exigence de
+      la matrice de conformité doit être traçable vers une section.
+
+  - id: critique
+    kind: task
+    role: pilote-ao
+    mode: full
+    stage: critique
+    depends_on: [assemblage]
+    prompt_template: |
+      Mémoire assemblé :
+
+      {{assemblage.output}}
+
+      Tu es l'évaluateur du client, pas l'auteur. Note ce mémoire comme
+      le ferait la commission : exigences sans réponse, engagements
+      invérifiables, incohérences mémoire ↔ chiffrage, passages
+      génériques qu'un concurrent pourrait signer, trous face à la classe
+      de client. Sois dur : chaque faiblesse citée avec la section
+      concernée et pourquoi elle coûte des points. Aucun compliment.
+
+  - id: revision
+    kind: task
+    role: pilote-ao
+    mode: full
+    stage: synthesis
+    depends_on: [assemblage, critique]
+    prompt_template: |
+      Mémoire :
+      {{assemblage.output}}
+
+      Critique de l'évaluateur :
+      {{critique.output}}
+
+      Produis la version révisée du mémoire en traitant chaque point de
+      la critique : corrige, ou justifie explicitement pourquoi tu
+      maintiens. Liste en fin de document les points traités et les
+      points maintenus avec justification.
+
+  - id: gate
+    kind: judge
+    role: pilote-ao
+    mode: light
+    stage: gate
+    depends_on: [revision]
+    gate_threshold: 7.0
+    rubric:
+      - name: conformite
+        description: Chaque exigence du cahier des charges a une réponse traçable ; les trous sont signalés, pas masqués.
+        weight: 2.0
+      - name: specificite
+        description: La réponse est ancrée dans le contexte client fourni ; rien de générique signable par un concurrent.
+        weight: 1.5
+      - name: coherence
+        description: Architecture, chiffrage et planning racontent le même périmètre (même WBS, mêmes profils).
+        weight: 1.5
+      - name: honnetete
+        description: Aucun engagement invérifiable ; hypothèses et exclusions explicites ; conformités formulées prudemment.
+        weight: 1.5
+      - name: actionnabilite
+        description: Le document est exploitable tel quel par une équipe avant-vente (structure, tableaux, schémas).
+        weight: 1.0
+    prompt_template: |
+      Évalue le mémoire révisé ci-dessous selon la rubric fournie.
+
+      {{revision.output}}

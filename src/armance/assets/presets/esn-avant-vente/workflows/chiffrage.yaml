@@ -1,0 +1,75 @@
+name: chiffrage
+scope: Produire un chiffrage défendable depuis un périmètre ou des CR de réunion.
+description: >
+  Extraction du périmètre, chiffrage bottom-up par le chiffreur, contre-vue
+  analogique par l'architecte, réconciliation des écarts.
+steps:
+  - id: perimetre
+    kind: task
+    role: pilote-ao
+    mode: full
+    prompt_template: |
+      Matériau d'entrée (CR de réunions, notes, extraits de cahier des
+      charges) :
+
+      {{user_prompt}}
+
+      Extrais le périmètre à chiffrer : liste numérotée des éléments de
+      périmètre (fonctionnels et techniques), ce qui est explicitement
+      hors périmètre, les zones grises avec la question à poser au client
+      pour chacune, et les contraintes de contexte (classe de client,
+      calendrier, existant). Ne chiffre rien à ce stade.
+
+  - id: bottom_up
+    kind: task
+    role: chiffreur
+    mode: full
+    depends_on: [perimetre]
+    prompt_template: |
+      Périmètre extrait :
+
+      {{perimetre.output}}
+
+      Chiffre en bottom-up : WBS par lots, tâches de 1 à 15 JH, profils
+      (famille × niveau), hypothèse écrite par ligne, pilotage en
+      pourcentage affiché, provisions par niveau de confiance. Les zones
+      grises se chiffrent en fourchette avec l'hypothèse basse et haute.
+      Synthèse finale en tableau : lot, JH min, JH max, profils dominants,
+      confiance.
+
+  - id: contre_vue
+    kind: task
+    role: archi-cloud
+    mode: full
+    depends_on: [perimetre, bottom_up]
+    prompt_template: |
+      Périmètre :
+      {{perimetre.output}}
+
+      Chiffrage bottom-up :
+      {{bottom_up.output}}
+
+      Donne une contre-vue analogique : par comparaison à des projets de
+      même nature et taille, quels lots te semblent sous-estimés ou
+      surestimés, et pourquoi (complexité d'intégration, dette probable,
+      charges récurrentes oubliées, environnements manquants). Signale
+      tout écart supérieur à 25 % avec ton estimation d'ordre de grandeur.
+
+  - id: reconciliation
+    kind: task
+    role: chiffreur
+    mode: full
+    depends_on: [bottom_up, contre_vue]
+    prompt_template: |
+      Ton chiffrage :
+      {{bottom_up.output}}
+
+      Contre-vue de l'architecte :
+      {{contre_vue.output}}
+
+      Réconcilie : pour chaque écart soulevé, tranche (ajuste ou maintiens)
+      avec justification écrite. Produis le chiffrage final consolidé :
+      tableau WBS complet, total JH par profil, hypothèses, exclusions,
+      provisions, et la liste des questions à poser au client avant
+      engagement. Les désaccords non tranchés restent visibles en
+      « points ouverts » — ne jamais moyenner silencieusement.

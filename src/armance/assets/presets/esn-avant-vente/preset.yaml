@@ -1,0 +1,11 @@
+name: esn-avant-vente
+title: Avant-vente ESN (appels d'offres, chiffrage, ateliers)
+description: >
+  Équipe et workflows pour un département d'ESN : réponse à appel d'offres
+  depuis un cahier des charges, chiffrage depuis des CR de réunion,
+  préparation d'atelier client. Knowledge : catégorisation des métiers,
+  typologie de clients (public, défense, privé), structure type d'une
+  réponse AO.
+language: fr
+version: 0.1.0
+tags: [esn, avant-vente, appel-offres, chiffrage]
