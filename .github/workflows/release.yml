@@ -93,7 +93,7 @@ jobs:
     name: Build sdist + wheel
     # Tag-push path runs directly; dispatch path waits for the tag job.
     needs: [tag]
-    if: always() && (github.event_name == 'push' || needs.tag.result == 'success')
+    if: ${{ !cancelled() && (github.event_name == 'push' || needs.tag.result == 'success') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -149,7 +149,7 @@ jobs:
   publish:
     name: Publish to PyPI
     needs: build
-    if: always() && needs.build.result == 'success'
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write  # required for OIDC trusted publishing
@@ -166,7 +166,7 @@ jobs:
   github_release:
     name: Draft GitHub Release
     needs: [publish, tag]
-    if: always() && needs.publish.result == 'success'
+    if: ${{ !cancelled() && needs.publish.result == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
