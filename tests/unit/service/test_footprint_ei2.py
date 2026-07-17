@@ -174,6 +174,43 @@ class TestTier4Similar:
         assert result.estimate is True
         assert result.proxy_model is not None
 
+    def test_similar_is_size_class_aware_for_opus_class(self) -> None:
+        """An unknown Opus/Fable-class model borrows an Opus-class proxy, not
+        the tiny family default — flattening onto haiku under-estimated by
+        an order of magnitude (doctrine: never fabricate a flattering number)."""
+        opus = estimate_footprint(
+            provider="claude-code", model="claude-opus-4-8",
+            tokens_out=600, latency_s=4.0, zone="WOR",
+        )
+        fable = estimate_footprint(
+            provider="claude-code", model="claude-fable-5",
+            tokens_out=600, latency_s=4.0, zone="WOR",
+        )
+        haiku_class = estimate_footprint(
+            provider="claude-code", model="claude-haiku-99-future",
+            tokens_out=600, latency_s=4.0, zone="WOR",
+        )
+        for r in (opus, fable, haiku_class):
+            assert r is not None
+            assert r.tier == "similar"
+            assert r.estimate is True
+        assert opus.proxy_model == "anthropic/claude-opus-4-6"
+        assert fable.proxy_model == "anthropic/claude-opus-4-6"
+        assert haiku_class.proxy_model == "anthropic/claude-haiku-4-5"
+        # The size class must actually change the number.
+        assert opus.gco2e > haiku_class.gco2e * 5
+
+    def test_claude_code_provider_maps_to_anthropic_family(self) -> None:
+        """claude-code is the anthropic family — an unknown model there must
+        NOT fall through to the generic-dense-8b provider-default bucket."""
+        result = estimate_footprint(
+            provider="claude-code", model="claude-sonnet-5",
+            tokens_out=600, latency_s=4.0, zone="WOR",
+        )
+        assert result is not None
+        assert result.tier == "similar"
+        assert result.proxy_model == "anthropic/claude-sonnet-4-6"
+
     def test_similar_positive_energy(self) -> None:
         result = estimate_footprint(
             provider="anthropic",
