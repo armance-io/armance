@@ -119,7 +119,11 @@ def get_client(provider_name: str, config: Config) -> LLMClient:
         # localised: nothing in core imports a provider symbol directly.
         import importlib
         importlib.import_module("armance.providers")
-    factory = _CLIENT_REGISTRY.get(provider_cfg.name)
+    # Resolve the factory by TYPE (custom-openai:lab → custom-openai) but hand
+    # the factory the INSTANCE config, so labelled instances get their own
+    # base_url / api_key. `provider_type` is derived from the instance name.
+    from armance.config import provider_type_of
+    factory = _CLIENT_REGISTRY.get(provider_type_of(provider_cfg.name))
     if factory is None:
         raise ValueError(f"unknown provider: {provider_cfg.name}")
     return factory(provider_cfg)

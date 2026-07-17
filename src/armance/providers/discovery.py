@@ -2,8 +2,10 @@
 and Kim to enumerate available models.
 
 Session-cached: results live for the lifetime of the armance process, refreshed
-on next `armance run`. The cache key is the provider name; configured providers
-that don't appear in cfg are simply not queried.
+on next `armance run`. The cache key is the provider INSTANCE name (e.g.
+`custom-openai:lab`), so two instances of the same type never collide; the
+provider *class* is resolved from the type part. Configured providers that
+don't appear in cfg are simply not queried.
 """
 from __future__ import annotations
 
@@ -44,7 +46,9 @@ def _api_key_for(provider_name: str, cfg) -> str | None:
 
 
 def _provider_for(name: str, cfg) -> BaseProvider | None:
-    cls = _PROVIDER_CLASSES.get(name)
+    from armance.config import provider_type_of
+
+    cls = _PROVIDER_CLASSES.get(provider_type_of(name))
     if cls is None:
         return None
     # Providers that take an API key for discovery (OpenRouter for the
@@ -88,14 +92,35 @@ def reset_cache() -> None:
     _CACHE.clear()
 
 
-def known_model_ids(provider_name: str) -> set[str]:
-    """Ids already discovered for `provider_name` (session cache, sync).
+def allowlist_for(provider_name: str, cfg) -> set[str]:
+    """Declarative model allowlist for an instance (§3.2), or empty.
 
-    Empty set means "no catalogue" — either the provider was never queried
-    this session or it exposes no model list. Callers must treat empty as
-    "validation impossible", NOT as "everything invalid".
+    The user is sovereign of their endpoint: an id listed here is a genuine
+    declaration, not an invention. It COMPLETES discovery, never masks it.
     """
-    return {m.id for m in _CACHE.get(provider_name, [])}
+    p = _provider_cfg(provider_name, cfg)
+    return set(getattr(p, "models", None) or []) if p is not None else set()
+
+
+def known_model_ids(provider_name: str, cfg=None) -> set[str]:
+    """Ids known for `provider_name` = discovered ∪ declared allowlist.
+
+    Session-cached discovery is the primary source. When `cfg` is given, the
+    instance's declarative allowlist (`ProviderConfig.models`) is UNIONED in:
+    an allowlisted id absent from `/models` is accepted (ends the "Malik
+    rejects what the endpoint doesn't list" pain), and when discovery failed
+    entirely the allowlist becomes the effective catalogue instead of an
+    empty set. The allowlist never removes a discovered id (union, not mask).
+
+    Empty set means "no catalogue AND no allowlist" — either the provider was
+    never queried this session or it lists nothing and declares nothing.
+    Callers must treat empty as "validation impossible", NOT "everything
+    invalid".
+    """
+    ids = {m.id for m in _CACHE.get(provider_name, [])}
+    if cfg is not None:
+        ids |= allowlist_for(provider_name, cfg)
+    return ids
 
 
 def filter_for_budget(models: list[ModelSpec], budget: str) -> list[ModelSpec]:
