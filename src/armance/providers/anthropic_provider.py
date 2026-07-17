@@ -31,7 +31,9 @@ _FALLBACK_CONTEXT_WINDOW = 200_000
 # semantics).
 def _tier_from_family(model_id: str) -> str:
     low = model_id.lower()
-    if "opus" in low:
+    # Mythos-class (Fable/Mythos 5) sits above Opus — still "high" on this
+    # 3-level scale, listed first so the intent is explicit.
+    if "fable" in low or "mythos" in low or "opus" in low:
         return "high"
     if "sonnet" in low:
         return "medium"
@@ -83,6 +85,34 @@ _FALLBACK_SPECS: tuple[ModelSpec, ...] = (
         effectively_free=True,
         tier="high",
         display_name="Claude Opus 4.8",
+    ),
+    ModelSpec(
+        id="claude-sonnet-5",
+        provider="claude-code",
+        pricing_in_per_mtok=0.0,
+        pricing_out_per_mtok=0.0,
+        # Conservative floor — bump when the official window is confirmed.
+        context_window=200_000,
+        supports_vision=True,
+        supports_search=True,
+        search_mode="tool",
+        effectively_free=True,
+        tier="medium",
+        display_name="Claude Sonnet 5",
+    ),
+    ModelSpec(
+        id="claude-fable-5",
+        provider="claude-code",
+        pricing_in_per_mtok=0.0,
+        pricing_out_per_mtok=0.0,
+        # Conservative floor — bump when the official window is confirmed.
+        context_window=200_000,
+        supports_vision=True,
+        supports_search=True,
+        search_mode="tool",
+        effectively_free=True,
+        tier="high",
+        display_name="Claude Fable 5",
     ),
 )
 

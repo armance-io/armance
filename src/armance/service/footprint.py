@@ -29,7 +29,7 @@ import logging
 
 from armance.core.models.footprint import Footprint
 from armance.service.footprint_resolve import (
-    FAMILY_DEFAULT,
+    similar_proxy_for,
     PROVIDER_DEFAULT_ACTIVE_PARAMS,
     PROVIDER_DEFAULT_PROXY,
     PROVIDER_DEFAULT_TOTAL_PARAMS,
@@ -136,8 +136,9 @@ def estimate_footprint(
     # Tier 4 — similar (known provider family, borrow family default)
     # ------------------------------------------------------------------
     eco_family = _infer_eco_provider(provider, model)
-    if eco_family is not None and eco_family in FAMILY_DEFAULT:
-        default_eco_prov, default_eco_model = FAMILY_DEFAULT[eco_family]
+    similar = similar_proxy_for(eco_family, model) if eco_family is not None else None
+    if similar is not None:
+        default_eco_prov, default_eco_model = similar
         logger.warning(
             "footprint: tier=similar for %s/%s — borrowing %s/%s",
             provider, model, default_eco_prov, default_eco_model,
