@@ -43,6 +43,32 @@ FAMILY_DEFAULT: dict[str, tuple[str, str]] = {
     "huggingface_hub":("huggingface_hub", "databricks/dolly-v2-7b"),
 }
 
+# Tier-4 refinement: size-class proxies. A flat family default flattens an
+# Opus-class model onto a Haiku-class proxy — an order-of-magnitude
+# UNDER-estimate, which violates the "never fabricate a flattering number"
+# doctrine. When the unknown model's name betrays its size class, borrow the
+# largest registry-known cousin of that class instead. First substring match
+# wins; entries verified against the EcoLogits 0.10.1 registry.
+SIZE_CLASS_SIMILAR: dict[str, list[tuple[str, tuple[str, str]]]] = {
+    "anthropic": [
+        ("fable",  ("anthropic", "claude-opus-4-6")),
+        ("mythos", ("anthropic", "claude-opus-4-6")),
+        ("opus",   ("anthropic", "claude-opus-4-6")),
+        ("sonnet", ("anthropic", "claude-sonnet-4-6")),
+        ("haiku",  ("anthropic", "claude-haiku-4-5")),
+    ],
+}
+
+
+def similar_proxy_for(eco_family: str, armance_model: str) -> tuple[str, str] | None:
+    """Best tier-4 proxy for an unknown model: size-class cousin if the name
+    reveals one, else the family default. None if the family is unknown."""
+    low = armance_model.lower()
+    for marker, proxy in SIZE_CLASS_SIMILAR.get(eco_family, []):
+        if marker in low:
+            return proxy
+    return FAMILY_DEFAULT.get(eco_family)
+
 # Tier-5: conservative bucket — generic dense 8B, WOR zone, generic PUE/WUE.
 PROVIDER_DEFAULT_ACTIVE_PARAMS: float = 8.0
 PROVIDER_DEFAULT_TOTAL_PARAMS: float = 8.0
@@ -169,6 +195,8 @@ def _infer_eco_provider(armance_provider: str, armance_model: str) -> str | None
     """
     if armance_provider in KNOWN_ECO_PROVIDERS:
         return armance_provider
+    if armance_provider == "claude-code":
+        return "anthropic"
     if armance_provider in ("gemini",):
         return "google_genai"
     if armance_provider == "openrouter":
