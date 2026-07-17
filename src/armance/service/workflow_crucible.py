@@ -51,7 +51,13 @@ def model_family(provider: str, model: str) -> str:
       ``openai/gpt-…`` → openai, …).
     - Fallback: the provider name itself (never crash; honest "unknown-ish").
     """
-    prov = (provider or "").lower().strip()
+    from armance.config import provider_type_of
+
+    # Resolve by TYPE, never by instance name: `custom-openai:lab` and
+    # `custom-openai:prod` are the SAME family (both OpenAI-compatible), and
+    # `claude-code:x` is still anthropic. Two instances of one type must not
+    # count as two families in the Creuset.
+    prov = provider_type_of((provider or "").lower().strip())
     mdl = (model or "").lower().strip()
     if prov == "claude-code":
         return "anthropic"

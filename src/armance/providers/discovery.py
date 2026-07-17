@@ -2,8 +2,10 @@
 and Kim to enumerate available models.
 
 Session-cached: results live for the lifetime of the armance process, refreshed
-on next `armance run`. The cache key is the provider name; configured providers
-that don't appear in cfg are simply not queried.
+on next `armance run`. The cache key is the provider INSTANCE name (e.g.
+`custom-openai:lab`), so two instances of the same type never collide; the
+provider *class* is resolved from the type part. Configured providers that
+don't appear in cfg are simply not queried.
 """
 from __future__ import annotations
 
@@ -44,7 +46,9 @@ def _api_key_for(provider_name: str, cfg) -> str | None:
 
 
 def _provider_for(name: str, cfg) -> BaseProvider | None:
-    cls = _PROVIDER_CLASSES.get(name)
+    from armance.config import provider_type_of
+
+    cls = _PROVIDER_CLASSES.get(provider_type_of(name))
     if cls is None:
         return None
     # Providers that take an API key for discovery (OpenRouter for the
