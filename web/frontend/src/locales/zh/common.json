@@ -144,6 +144,16 @@
       "error": "无法启动运行。",
       "in_progress": "启动中…",
       "blocked_fallback": "运行被阻止：此工作流所需的某个智能体无法访问。"
+    },
+    "stage": {
+      "draft": "草稿",
+      "critique": "评审",
+      "synthesis": "综合",
+      "gate": "裁定"
+    },
+    "step": {
+      "provided": "人工提供",
+      "provided_hint": "该步骤输出由人工提供"
     }
   },
   "chat": {
@@ -177,7 +187,21 @@
   },
   "runs": {
     "detail": {
-      "title": "运行详情 — {{runId}}"
+      "title": "运行详情 — {{runId}}",
+      "quality_title": "质量报告",
+      "derived_from": "派生自运行",
+      "total_tokens": "Token 总数",
+      "total_cost": "总成本",
+      "status": {
+        "queued": "排队中",
+        "working": "进行中",
+        "running": "运行中",
+        "completed": "已完成",
+        "failed": "失败",
+        "cancelled": "已取消",
+        "skipped": "已跳过",
+        "provided": "人工提供"
+      }
     }
   },
   "setup": {

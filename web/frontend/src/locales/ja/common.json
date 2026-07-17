@@ -144,6 +144,16 @@
       "error": "実行を開始できませんでした。",
       "in_progress": "開始中…",
       "blocked_fallback": "実行がブロックされました：このワークフローに必要なエージェントに接続できません。"
+    },
+    "stage": {
+      "draft": "草稿",
+      "critique": "批評",
+      "synthesis": "統合",
+      "gate": "判定"
+    },
+    "step": {
+      "provided": "手動提供",
+      "provided_hint": "手動で提供されたステップ出力"
     }
   },
   "chat": {
@@ -177,7 +187,21 @@
   },
   "runs": {
     "detail": {
-      "title": "実行の詳細 — {{runId}}"
+      "title": "実行の詳細 — {{runId}}",
+      "quality_title": "品質レポート",
+      "derived_from": "派生元の実行",
+      "total_tokens": "トークン合計",
+      "total_cost": "合計コスト",
+      "status": {
+        "queued": "待機中",
+        "working": "実行中",
+        "running": "実行中",
+        "completed": "完了",
+        "failed": "失敗",
+        "cancelled": "キャンセル済み",
+        "skipped": "スキップ",
+        "provided": "手動提供"
+      }
     }
   },
   "setup": {

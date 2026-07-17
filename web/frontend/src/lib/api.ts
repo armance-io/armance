@@ -410,6 +410,89 @@ export async function loadRun(
   );
 }
 
+/* ─── Creuset — structured run detail (Lot H/UX) ─────────────────────────── */
+
+export type CrucibleStage =
+  | "draft"
+  | "critique"
+  | "synthesis"
+  | "gate"
+  | "standard";
+
+export interface RunDetailStep {
+  id: string;
+  status:
+    | "queued"
+    | "working"
+    | "completed"
+    | "failed"
+    | "skipped"
+    | "provided";
+  stage: CrucibleStage | null;
+  family: string | null;
+  agent: string | null;
+  duration_ms: number | null;
+  tokens_in: number | null;
+  tokens_out: number | null;
+  cost_usd: number | null;
+  provided: boolean;
+  error: string | null;
+}
+
+export interface RunOverride {
+  step: string;
+  source: string;
+}
+
+export interface RunDerivation {
+  run_id: string;
+  overrides: RunOverride[];
+}
+
+export interface RunQuality {
+  present: boolean;
+  markdown: string | null;
+}
+
+export interface RunDetailResponse {
+  run_id: string;
+  workflow: string;
+  status: string;
+  started_at: string | null;
+  ended_at: string | null;
+  derived_from: RunDerivation[];
+  quality: RunQuality;
+  steps: RunDetailStep[];
+}
+
+/**
+ * Structured run detail (Creuset-aware). The `/detail` suffix distinguishes
+ * this from the legacy bare-path route that serves the raw file map. Returns
+ * `null` on a 404 (older backend that lacks the route) so the caller can
+ * fall back to {@link loadRun} + `manifest.json`. Any other error propagates.
+ */
+export async function loadRunDetail(
+  pid: string,
+  sid: string,
+  workflowName: string,
+  runId: string,
+): Promise<RunDetailResponse | null> {
+  const path =
+    `/projects/${pid}/sessions/${sid}/workflows/${encodeURIComponent(workflowName)}` +
+    `/runs/${encodeURIComponent(runId)}/detail`;
+  const res = await api.raw(path, { method: "GET", credentials: "include" });
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({ detail: res.statusText }));
+    const code =
+      typeof detail.detail === "string"
+        ? detail.detail
+        : detail.detail?.error ?? "unknown";
+    throw new ApiError(res.status, String(code), String(code));
+  }
+  return (await res.json()) as RunDetailResponse;
+}
+
 export async function loadStep(
   pid: string,
   sid: string,

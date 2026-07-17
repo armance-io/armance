@@ -7,14 +7,28 @@ import { WorkflowGraph } from "./WorkflowGraph";
 import { getWorkflow } from "@/lib/api";
 import { useLiveManifest } from "@/lib/useLiveManifest";
 import type { RawNode } from "@/lib/graphLayout";
+import type { CrucibleStage } from "@/components/workflow/stepNodeStage";
 
 interface StepRecord {
   id: string;
-  status: "queued" | "working" | "completed" | "failed" | "cancelled" | "skipped";
+  status:
+    | "queued"
+    | "working"
+    | "completed"
+    | "failed"
+    | "cancelled"
+    | "skipped"
+    | "provided";
   agent?: string;
   duration_ms?: number;
   started_at?: string;
   ended_at?: string;
+  /** Creuset fields written by the runner into manifest.json. */
+  stage?: string;
+  family?: string;
+  tokens_in?: number;
+  tokens_out?: number;
+  cost_usd?: number;
 }
 
 export interface WorkflowGraphContainerProps {
@@ -73,6 +87,14 @@ export const WorkflowGraphContainer: FC<WorkflowGraphContainerProps> = ({
         duration_ms: stepDuration,
         started_at: startedAt,
         ended_at: endedAt,
+        // Creuset: prefer the definition's stage (graph data), fall back to
+        // the manifest record. Family/cost only exist once a run speaks.
+        stage: ((n.data.stage ?? stepRecord?.stage) ?? null) as CrucibleStage | null,
+        family: stepRecord?.family ?? null,
+        tokens_in: stepRecord?.tokens_in ?? null,
+        tokens_out: stepRecord?.tokens_out ?? null,
+        cost_usd: stepRecord?.cost_usd ?? null,
+        provided: stepRecord?.status === "provided",
       },
     };
   });
