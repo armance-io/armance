@@ -1497,7 +1497,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if argv[0] in ("-h", "--help", "help"):
         print(
-            "usage: armance {init,run,index,doctor,workflow,web,install-shortcut} "
+            "usage: armance {init,run,index,doctor,workflow,preset,web,install-shortcut} "
             "[--version]\n"
             "  armance            open the launcher (no arguments)\n"
             "  armance stop       stop the launcher server",
@@ -1606,5 +1606,8 @@ def main(argv: list[str] | None = None) -> int:
                 )
         print(f"unknown workflow command: {remaining[0] if remaining else 'none'}", file=sys.stderr)
         return 2
+    if cmd == "preset":
+        from armance.cli_preset import cmd_preset
+        return cmd_preset(remaining, root)
     print(f"unknown command: {cmd}", file=sys.stderr)
     return 2
