@@ -105,6 +105,8 @@ def _normalise_provider_model(
         wrong → strip provider prefix, keep the rest.
     Returns the (provider, model) pair to use.
     """
+    from armance.config import provider_type_of
+
     p = (provider or "").strip().lower()
     m = (model or "").strip()
     if not p:
@@ -118,8 +120,9 @@ def _normalise_provider_model(
             p = head
             if tail and not m.startswith(f"{tail}/") and "/" not in m:
                 m = f"{tail}/{m}"
-    elif p not in _KNOWN_PROVIDERS:
-        # Unknown bare provider — fallback to default.
+    elif provider_type_of(p) not in _KNOWN_PROVIDERS:
+        # Unknown bare provider — fallback to default. A labelled instance
+        # (`custom-openai:lab`) is preserved because its *type* is known.
         p = default_provider or "openrouter"
 
     return p, m
@@ -845,7 +848,7 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
         dropped_boosts: list[str] = []
         validated: list[Agent] = []
         for agent in new_agents:
-            ids = known_model_ids(agent.provider)
+            ids = known_model_ids(agent.provider, self.config)
             if ids and agent.model and agent.model not in ids:
                 logger.warning(
                     "recruit: rejected %r — model %s/%s not in the discovered catalogue",
@@ -854,7 +857,7 @@ You are {name}, a {persona} {role}. Your role is to challenge assumptions about 
                 rejected_models.append(f"`{agent.name}` ({agent.provider}/{agent.model})")
                 continue
             if agent.boost_model:
-                boost_ids = known_model_ids(agent.boost_provider or agent.provider)
+                boost_ids = known_model_ids(agent.boost_provider or agent.provider, self.config)
                 if boost_ids and agent.boost_model not in boost_ids:
                     logger.warning(
                         "recruit: dropped boost of %r — %s/%s not in catalogue",

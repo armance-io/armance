@@ -83,7 +83,7 @@ async def swap_agent_model(
     # recruit validator): a provider WITH a catalogue rejects unknown ids;
     # a provider without one passes (validation impossible).
     from armance.providers.discovery import known_model_ids
-    ids = known_model_ids(provider or agent.provider)
+    ids = known_model_ids(provider or agent.provider, cfg)
     if model and ids and model not in ids:
         logger.warning(
             "agent-swap: rejected %s — model %s/%s not in the discovered catalogue",
@@ -98,7 +98,7 @@ async def swap_agent_model(
 
     if boost:
         b_provider, b_model = _split_provider_model(boost)
-        boost_ids = known_model_ids(b_provider or agent.provider)
+        boost_ids = known_model_ids(b_provider or agent.provider, cfg)
         if b_model and boost_ids and b_model not in boost_ids:
             logger.warning(
                 "agent-swap: dropped boost of %s — %s/%s not in catalogue",
