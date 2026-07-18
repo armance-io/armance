@@ -1,0 +1,12 @@
+preset: auteur-compagnon
+cases:
+  - id: critique-chapitre
+    workflow: critique-roman
+    title: Critique complète d'un chapitre d'ouverture
+    smoke: true
+  - id: derive-de-voix
+    workflow: coherence-style
+    title: Détection d'une incohérence de voix injectée
+  - id: brainstorm-impasse
+    workflow: brainstorm-chapitre
+    title: Sortir d'une impasse narrative
