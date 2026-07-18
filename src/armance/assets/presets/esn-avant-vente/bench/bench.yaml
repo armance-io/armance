@@ -1,0 +1,12 @@
+preset: esn-avant-vente
+cases:
+  - id: chiffrage-cr
+    workflow: chiffrage
+    title: Chiffrage depuis deux CR de réunion
+    smoke: true
+  - id: ao-collectivite
+    workflow: reponse-ao
+    title: Réponse AO portail citoyen d'une agglomération
+  - id: atelier-cadrage-ia
+    workflow: atelier-client
+    title: Atelier de cadrage IA générative chez un industriel

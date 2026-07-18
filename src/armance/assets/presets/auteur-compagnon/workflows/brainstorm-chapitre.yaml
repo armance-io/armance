@@ -1,0 +1,110 @@
+name: brainstorm-chapitre
+scope: Explorer des pistes pour un chapitre à écrire, puis en développer trois compatibles avec le monde établi.
+description: >
+  Brainstorm de chapitre : réunion divergente éditeur + lecteur bêta
+  (10 pistes contrastées), crible de continuité (quelles pistes cassent le
+  monde établi), puis convergence sur 3 pistes développées avec leurs
+  conséquences narratives.
+steps:
+  - id: divergence
+    kind: meeting
+    role: editeur
+    mode: full
+    prompt_template: |
+      Réunion de brainstorm entre l'ÉDITEUR LITTÉRAIRE (structure, arcs,
+      rythme, enjeux) et le LECTEUR BÊTA (ressenti brut, envie de tourner
+      la page). Voici la situation : le contexte du roman, les chapitres
+      déjà écrits ou résumés, et le chapitre à inventer :
+
+      {{user_prompt}}
+
+      Fais dialoguer réellement les deux voix — répliques attribuées,
+      objections frontales, pas un monologue déguisé — pour produire
+      10 PISTES pour ce chapitre. Contraintes de divergence :
+      - les pistes doivent être réellement contrastées : ton, événement
+        déclencheur, personnage moteur, coût pour le héros ; interdiction
+        de décliner dix fois la même idée ;
+      - au moins 3 pistes doivent contredire la solution « attendue » qui
+        découle naturellement du chapitre précédent ;
+      - pour chaque piste : 3-4 lignes (événement, ce que ça change, ce que
+        ça coûte), l'avis de l'éditeur (que fait-elle à la structure et aux
+        arcs ?) et l'avis du lecteur bêta (aurait-il envie de lire la
+        suite ? sincèrement) ;
+      - les deux voix DOIVENT être en désaccord sur plusieurs pistes, et le
+        désaccord reste consigné tel quel — on ne vote pas, on ne lisse
+        pas, on n'élimine rien à ce stade.
+
+      Numérote les pistes de 1 à 10. Pas de flatterie envers le matériau
+      fourni : si le chapitre précédent pose un problème qui contamine
+      toutes les pistes, dis-le en préambule.
+  - id: crible_continuite
+    kind: critique
+    role: continuite
+    mode: full
+    depends_on: [divergence]
+    prompt_template: |
+      Tu es le gardien de continuité du panel. Voici le contexte du roman
+      et le chapitre à inventer :
+
+      {{user_prompt}}
+
+      Et voici les 10 pistes issues du brainstorm :
+
+      {{divergence.output}}
+
+      Passe chaque piste au CRIBLE du monde établi. Pour chacune, rends un
+      verdict motivé :
+      - COMPATIBLE : rien dans le texte existant ne s'y oppose ;
+      - COMPATIBLE SOUS CONDITION : nomme précisément ce qu'il faudrait
+        amender en amont, et à quel prix ;
+      - CASSE LE MONDE : chronologie, géographie, règles internes, savoirs
+        ou traits établis d'un personnage violés — cite le passage du
+        contexte qui pose le fait contredit (référence + extrait), jamais
+        de veto sans citation.
+
+      Vérifie en particulier : ce que chaque personnage SAIT à ce stade du
+      récit (une piste où il exploite un secret jamais reçu casse le
+      monde), les délais et distances, les objets et blessures, les règles
+      posées puis violées.
+
+      Ne juge NI l'intérêt dramatique NI l'originalité des pistes : une
+      piste plate mais cohérente est, pour toi, en règle ; une piste
+      brillante qui contredit le chapitre 2 est à signaler sans égard pour
+      sa beauté. Termine par un tableau récapitulatif piste → verdict.
+  - id: convergence
+    kind: task
+    role: editeur
+    mode: full
+    depends_on: [divergence, crible_continuite]
+    prompt_template: |
+      Tu es l'éditeur littéraire. Il faut maintenant CONVERGER : choisir et
+      développer 3 pistes pour le chapitre.
+
+      Les 10 pistes et les désaccords du brainstorm :
+      {{divergence.output}}
+
+      Le crible de continuité :
+      {{crible_continuite.output}}
+
+      Règles de sélection :
+      - aucune piste au verdict « casse le monde » sauf si tu assumes
+        explicitement le coût des amendements listés par le gardien de
+        continuité — dans ce cas, dis lesquels et pourquoi ils valent la
+        peine ;
+      - les 3 pistes retenues doivent rester contrastées entre elles ;
+      - si le lecteur bêta et l'éditeur étaient en désaccord sur une piste
+        retenue, rappelle ce désaccord au lieu de l'effacer.
+
+      Pour chacune des 3 pistes, développe :
+      1. Le déroulé du chapitre en 8-12 lignes (scènes, bascule, chute).
+      2. Les conséquences narratives : arcs des personnages touchés,
+         enjeux relancés ou refermés, ce que cela impose aux chapitres
+         suivants et ce que cela interdit désormais.
+      3. Le risque principal (ce qui peut rater à l'écriture) et le signal
+         qui montrerait que ça rate.
+      4. Le verdict de continuité hérité du crible, avec les conditions à
+         respecter.
+
+      Termine par un avis d'éditeur assumé : laquelle des trois tu
+      écrirais, et pourquoi — au conditionnel, le choix final appartient à
+      l'auteur.

@@ -1,0 +1,78 @@
+name: atelier-client
+scope: Préparer un atelier client — déroulé, support de présentation, guide animateur.
+description: >
+  Conception du déroulé par le conseil, support slide par slide, regard
+  critique du lecteur cible, version finale annotée pour l'animateur.
+steps:
+  - id: deroule
+    kind: task
+    role: pilote-ao
+    mode: full
+    prompt_template: |
+      Contexte de l'atelier (client, objectif, participants, durée,
+      matériaux disponibles) :
+
+      {{user_prompt}}
+
+      Conçois le déroulé : objectif de sortie formulé en livrable concret
+      (« à la fin, nous avons décidé/produit X »), séquencement minuté,
+      pour chaque séquence : format d'animation (présentation, tour de
+      table, travail en sous-groupes, vote…), matériel nécessaire, et
+      question de relance si le groupe est passif. Prévois le dérapage :
+      quelle séquence sauter si le temps manque, laquelle est
+      incompressible.
+
+  - id: support
+    kind: task
+    role: archi-cloud
+    mode: full
+    depends_on: [deroule]
+    prompt_template: |
+      Déroulé de l'atelier :
+
+      {{deroule.output}}
+
+      Produis le support slide par slide au format markdown structuré :
+      pour chaque slide « ## Slide N — titre », puis le contenu visuel
+      (points clés, schéma mermaid quand un dessin vaut mieux que du
+      texte, tableau si comparaison), puis « Notes animateur : » avec ce
+      que le présentateur dit mais ne montre pas. Une idée par slide.
+      Les slides de travail en sous-groupes contiennent la consigne
+      exacte et le timing affiché.
+
+  - id: regard_client
+    kind: task
+    role: expert-ia
+    mode: full
+    depends_on: [support]
+    prompt_template: |
+      Support d'atelier :
+
+      {{support.output}}
+
+      Tu es un participant client occupé et sceptique. Où décroches-tu ?
+      Quelles slides sont du remplissage ? Où manque-t-il la donnée qui
+      rendrait le propos crédible ? Quelles questions embarrassantes
+      poseras-tu à l'animateur ? Liste tes objections slide par slide,
+      sans complaisance.
+
+  - id: version_finale
+    kind: task
+    role: pilote-ao
+    mode: full
+    depends_on: [deroule, support, regard_client]
+    prompt_template: |
+      Déroulé :
+      {{deroule.output}}
+
+      Support :
+      {{support.output}}
+
+      Objections du participant sceptique :
+      {{regard_client.output}}
+
+      Produis la version finale : support corrigé des objections
+      recevables, et pour chaque question embarrassante identifiée, la
+      réponse préparée dans les notes animateur. Termine par la checklist
+      logistique de l'animateur (matériel, envois préalables, plan B si
+      un participant clé manque).

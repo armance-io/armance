@@ -1,0 +1,94 @@
+name: coherence-style
+scope: Vérifier la tenue de la voix de chaque personnage à travers les chapitres fournis.
+description: >
+  Cohérence stylistique par personnage : le styliste établit l'empreinte de
+  voix de chaque personnage, le gardien de continuité traque les dérives
+  chapitre par chapitre, puis un rapport d'écarts cité est produit.
+steps:
+  - id: empreinte_voix
+    kind: task
+    role: styliste
+    mode: full
+    prompt_template: |
+      Tu es l'analyste stylistique du panel. Voici le texte à analyser
+      (chapitres, extraits, éventuelles notes de l'auteur) :
+
+      {{user_prompt}}
+
+      Établis l'EMPREINTE STYLISTIQUE de chaque personnage parlant ou
+      focalisateur, en suivant la grille d'analyse stylistique :
+      - vocabulaire propre : mots fétiches, jurons, technolecte, niveau de
+        langue — avec 3 à 5 répliques citées par personnage ;
+      - syntaxe : phrases complètes ou elliptiques, questions,
+        interruptions, longueur moyenne des répliques (chiffrée) ;
+      - tics et marqueurs : ce qui signe ce personnage, ce qu'il ne dirait
+        JAMAIS ;
+      - pour les focalisateurs : registre et rythme de la narration quand
+        elle passe par eux.
+
+      Applique le test de la réplique masquée : signale explicitement les
+      paires de personnages dont les répliques, incises retirées,
+      deviennent interchangeables — en juxtaposant les extraits qui le
+      prouvent. Une empreinte non étayée par des citations est irrecevable.
+
+      Rends une fiche par personnage, réutilisable telle quelle pour la
+      vérification chapitre par chapitre.
+  - id: verification_derives
+    kind: task
+    role: continuite
+    mode: full
+    depends_on: [empreinte_voix]
+    prompt_template: |
+      Tu es le gardien de continuité du panel. Voici le texte source :
+
+      {{user_prompt}}
+
+      Et voici les empreintes stylistiques établies par le styliste :
+
+      {{empreinte_voix.output}}
+
+      Vérifie, CHAPITRE PAR CHAPITRE, la tenue de chaque empreinte :
+      - relève chaque réplique ou passage focalisé qui dévie de l'empreinte
+        du personnage (registre qui glisse, tic qui disparaît ou apparaît,
+        syntaxe qui change sans cause) ;
+      - pour chaque dérive : cite la référence d'empreinte (l'extrait qui
+        pose la voix) ET le passage déviant (chapitre + extrait recopié) —
+        deux citations minimum, comme pour toute contradiction ;
+      - distingue dérive INJUSTIFIÉE (défaut) et ÉVOLUTION MOTIVÉE par le
+        récit (ivresse, deuil, mensonge, passage du temps) : une évolution
+        motivée se signale mais ne se reproche pas ;
+      - note aussi les chapitres où une voix est trop absente pour être
+        vérifiée.
+
+      Ne juge ni la qualité littéraire ni l'intérêt dramatique : uniquement
+      la cohérence de la voix dans le temps du récit. Si tu contestes une
+      empreinte du styliste (mal étayée, contredite par le texte), dis-le
+      frontalement avec tes propres citations.
+  - id: rapport_ecarts
+    kind: task
+    role: styliste
+    mode: full
+    depends_on: [empreinte_voix, verification_derives]
+    prompt_template: |
+      Rédige le RAPPORT D'ÉCARTS final de cohérence stylistique, à partir
+      des empreintes et de la vérification chapitre par chapitre.
+
+      Empreintes : {{empreinte_voix.output}}
+
+      Dérives relevées : {{verification_derives.output}}
+
+      Structure imposée :
+      1. Synthèse : état général de la tenue des voix (sans complaisance —
+         si les voix sont interchangeables, c'est le premier point).
+      2. Par personnage : rappel d'empreinte en 3 lignes, puis chaque écart
+         avec ses DEUX citations (référence d'empreinte + passage déviant),
+         classé injustifié / évolution motivée / à clarifier.
+      3. Litiges : points où le gardien de continuité a contesté une
+         empreinte — expose le désaccord et tranche en citant le texte, ou
+         déclare le point indécidable en l'état.
+      4. Corrections prioritaires : les 5 à 10 écarts à traiter d'abord,
+         chacun avec une suggestion au conditionnel (illustrée sur une
+         phrase au plus — montrer, pas réécrire).
+
+      Aucun écart sans double citation ne doit figurer au rapport :
+      abandonne-le ou retourne au texte.
