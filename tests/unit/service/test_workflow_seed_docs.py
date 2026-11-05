@@ -1,6 +1,6 @@
 """Lot B — seed documents in a workflow run.
 
-Design: roadmap/03_workflow_quality_refonte.md §4. Acceptance criterion:
+Acceptance criterion:
 run with a seed doc → the document's content appears in the root step's
 prompt (so a specialist can challenge/extend an existing draft instead of
 writing from scratch).

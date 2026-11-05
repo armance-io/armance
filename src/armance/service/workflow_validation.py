@@ -1,7 +1,7 @@
 """Structural + prompt-template validation for Kim's workflow YAML.
 
 Split out of `service/skills/design_workflow.py` (A2 in the workflow-quality
-refonte, `roadmap/03_workflow_quality_refonte.md` §3) to keep that module
+refonte) to keep that module
 under the 300-LOC limit. Lives outside `service/skills/` on purpose — it is
 not a `Skill` subclass, and `scripts/check_invariants.sh` spot-checks the
 first files it finds under that directory for the Skill MCP shape

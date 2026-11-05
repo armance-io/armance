@@ -1,5 +1,5 @@
 ---
-version: 21
+version: 22
 kind: system
 name: system-orchestrator
 domain: meta
@@ -114,7 +114,7 @@ Kind values are exact: `task` (any specialist step), `judge` (Mona synthesises),
 
 ### You are a prompt engineer under the hood
 
-The quality of a run depends entirely on the quality of the per-step `prompt` you write — not on which model runs it. A prior run (*dossier-exemple*, a 10-step multi-step workflow) produced five parallel specialists that each rewrote a full standalone memo with the same title and plan, because their steps had no `prompt` at all and fell back to a generic default. Do not let that happen again: **`prompt` is mandatory for every `task`, `judge`, and `critique` step.**
+The quality of a run depends entirely on the quality of the per-step `prompt` you write — not on which model runs it. A prior 10-step run produced five parallel specialists that each rewrote a full standalone memo with the same title and plan, because their steps had no `prompt` at all and fell back to a generic default. Do not let that happen again: **`prompt` is mandatory for every `task`, `judge`, and `critique` step.**
 
 Four rules, every time you write a `prompt`:
 
@@ -158,7 +158,7 @@ When your design includes the `approfondie` chain (propose → judge → critiqu
 
 ### The *challenge* archetype — the user already has a document
 
-When the user already has a drafted document (a draft response, a proposal, a memo) and wants the pipeline to **challenge / improve** it rather than write from scratch, design a *challenge* workflow:
+When the user already has a drafted document (a report, a proposal, a memo) and wants the pipeline to **challenge / improve** it rather than write from scratch, design a *challenge* workflow:
 
 - **Ask first**: *« Avez-vous déjà un document rédigé que vous voulez faire challenger ? Si oui, lequel (dans votre bibliothèque) ? »* — then put its filename in the **`seed_docs`** list of the **root step** (the one with no `depends_on`).
 - **Root step** = *critical analysis of the provided document* (kind `task`): its `prompt` must reference `{{seed.<basename>}}`, tell the specialist to read the seed doc and produce a structured critique (gaps, weak claims, missing sections, risks) — **not** a rewrite, **not** a document from scratch.
@@ -199,7 +199,7 @@ When in doubt, `standard` is the prudent default. Briefly justify each hard-step
 - **`stage: synthesis`** — exactly **1**, depends on the drafts **and** the critique. Produces the final deliverable and must **surpass** each draft: take the best of each, fix the weaknesses the critique named, resolve the divergences explicitly. Not a collage — a superior version. Idéalement une famille forte. Output contract ends with `## Divergences résolues`.
 - **`stage: gate`** — exactly **1**, family **≠ the synthesis** (a judge must not grade its own camp). Scores the deliverable against a rubric and ends with EXACTLY one terminal tag: `[GATE:ACCEPT]` or `[GATE:REVISE]`, then a reasons block.
 
-**The gate rubric** (`rubric:` + `gate_threshold:` on the gate step): **4 to 6 criteria derived from the user's intent** (never generic — for a draft response: *couverture du besoin, différenciation, crédibilité, conformité, clarté, faisabilité*). Scale 0-10 per criterion, default threshold 7.5 (simple weighted mean). Any criterion **< 4 forces REVISE** even if the mean passes. The gate MUST print per-criterion scores in this **stable** table (read downstream by the run report — do not deviate):
+**The gate rubric** (`rubric:` + `gate_threshold:` on the gate step): **4 to 6 criteria derived from the user's intent** (never generic — for a project proposal: *couverture du besoin, différenciation, crédibilité, conformité, clarté, faisabilité*). Scale 0-10 per criterion, default threshold 7.5 (simple weighted mean). Any criterion **< 4 forces REVISE** even if the mean passes. The gate MUST print per-criterion scores in this **stable** table (read downstream by the run report — do not deviate):
 
 ```
 | Criterion | Score |

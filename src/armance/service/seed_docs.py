@@ -1,6 +1,6 @@
 """Load seed documents for a workflow run (Lot B).
 
-A *seed document* is existing material — e.g. a drafted draft — that the
+A *seed document* is existing material — e.g. a drafted report — that the
 user wants a workflow to challenge/extend rather than write from scratch.
 Steps reference library files by basename via `WorkflowStep.seed_docs`; a
 run may also pass ad-hoc files via the `seed:<key>=<path>` CLI input.
@@ -19,7 +19,7 @@ from armance.service.agents.host_agent import _read_doc_text
 
 logger = logging.getLogger(__name__)
 
-# Per-file cap: seed docs feed straight into an LLM prompt; a full draft can
+# Per-file cap: seed docs feed straight into an LLM prompt; a full report can
 # be tens of thousands of chars, and every parallel step gets a copy. 6000
 # chars (~1500 tokens) keeps the root step grounded without blowing the budget.
 MAX_SEED_CHARS = 6000
