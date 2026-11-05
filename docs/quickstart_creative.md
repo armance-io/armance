@@ -5,7 +5,7 @@ Use Armance to run a structured critique panel on your manuscript or outline.
 ## Install
 
 ```bash
-uv tool install armance-ai
+uv tool install armance
 armance --version
 ```
 

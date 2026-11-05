@@ -156,23 +156,8 @@ uv run python scripts/qa_live.py
 
 ## Coding conventions
 
-Read [`CLAUDE.md`](CLAUDE.md) — it documents the project's architectural
-invariants. The short version:
-
-- **Layering** `client → transport → service → core`. Lower layers never
-  import from upper layers. Enforced by `import-linter`.
-- Python ≥ 3.11. `from __future__ import annotations` at the top of
-  every module. Type hints everywhere. `asyncio` for parallelism.
-- Files ≤ 300 LOC where reasonable. Big monoliths get split.
-- `logging` only — no `print` for diagnostics.
-- **No hardcoded user-facing strings**. Everything goes through
-  `armance.nls.t("key")` and lives in `src/armance/nls_catalogues/{en,fr,es,de,zh,ja}.yaml`.
-- **No hardcoded model lists or pricing**. Models are discovered from
-  each provider's live catalogue.
-- Tests: `pytest` + `pytest-asyncio` + `respx` + `monkeypatch`. **No
-  real network calls** in `tests/`.
-- Conventional commits (`feat:`, `fix:`, `refactor:`, `docs:`, `test:`,
-  `chore:`). Imperative mood.
+The project rules (layers, tags, i18n, file size, tests without network) live in one place for humans and
+agents: [`AGENTS.md`](AGENTS.md). Intent, decisions and the roadmap are in [`sdd/`](sdd/).
 
 ---
 
@@ -182,7 +167,7 @@ Before opening a PR:
 
 - [ ] All commits have a DCO `Signed-off-by:` trailer (`git commit -s`).
 - [ ] `uv run pytest tests/` passes.
-- [ ] `uv run ruff check src/ tests/` passes.
+- [ ] `uv run ruff check src/ tests/ scripts/` passes.
 - [ ] New user-facing strings go through `armance.nls.t()` and have
       entries in all translation files (en, fr, es, de, zh, ja).
 - [ ] No new hardcoded model ids, pricing, or provider-specific magic.
@@ -190,7 +175,6 @@ Before opening a PR:
       test if it's a feature).
 - [ ] If you touched the architecture, `scripts/check_invariants.sh`
       still passes.
-- [ ] CHANGELOG entry under the `Unreleased` section.
 
 The PR description should explain **why**, not just **what** — link the
 issue, summarise the trade-off you considered.

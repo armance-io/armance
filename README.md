@@ -11,7 +11,7 @@ Not a copilot. Not an autonomous agent. A panel of LLM experts that **debates, s
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![DCO](https://img.shields.io/badge/DCO-required-orange.svg)](CONTRIBUTING.md#developer-certificate-of-origin-dco)
 
-[Install](#install) · [Quickstart](#quickstart) · [How it works](#how-it-works) · [Contributing](CONTRIBUTING.md) · [Vision](roadmap/01_vision.md) · [Architecture](roadmap/02_architecture.md)
+[Install](#install) | [Quickstart](#quickstart) | [How it works](#how-it-works) | [Contributing](CONTRIBUTING.md) | [Vision](sdd/product.md) | [Architecture](sdd/architecture.md) | [Roadmap](sdd/roadmap.md)
 
 </div>
 
@@ -25,9 +25,7 @@ And **sovereign by doctrine**: single-user, local-first, no SaaS, no cloud dashb
 
 ---
 
-> **For AI agents reading this file:** start here, then read
-> [`roadmap/02_architecture.md`](roadmap/02_architecture.md) for the module map
-> and [`CLAUDE.md`](CLAUDE.md) for project conventions.
+> **For AI agents reading this file:** start here, then read [`AGENTS.md`](AGENTS.md).
 
 ---
 
@@ -240,6 +238,27 @@ armance run         # opens the TUI
 
 Drop documents into `.armance/docs/` and run `armance run`. Armance greets you, frames the project, recruits a team, designs a workflow, runs it, and exports a deliverable.
 
+### Domain presets (turnkey packs)
+
+A preset is a pure-data pack — tuned workflows, suggested role sheets,
+domain knowledge, and a replayable benchmark — that turns a blank
+project into a domain-ready one:
+
+```bash
+armance preset list                     # bundled: auteur-compagnon
+armance preset show auteur-compagnon
+armance preset apply auteur-compagnon   # non-destructive, idempotent
+```
+
+`apply` drops workflows into `.armance/workflows/` and knowledge into
+`.armance/docs/` (run `/library index` to make it searchable). Your own
+packs go in the global config directory, `presets/<name>/` (same
+layout; they shadow bundled ones). Each bundled pack ships a benchmark
+suite replayable with
+`scripts/bench_presets.py` — Armance's multi-agent output is blind-judged
+A/B against a versioned frontier reference, with a delta against the
+previous run as a non-regression guard.
+
 ---
 
 ## How it works
@@ -383,7 +402,7 @@ Markdown is the source of truth. SQLite is used **only** for vector retrieval.
 └────────────────────────────────────────────────────┘
 ```
 
-Each layer imports only from layers below. Enforced by [`import-linter`](https://github.com/seddonym/import-linter). See [`roadmap/02_architecture.md`](roadmap/02_architecture.md) for the module map.
+Each layer imports only from layers below. Enforced by [`import-linter`](https://github.com/seddonym/import-linter). See [`sdd/architecture.md`](sdd/architecture.md).
 
 ### Providers
 
@@ -513,13 +532,13 @@ cd web/frontend && pnpm typecheck && pnpm lint && pnpm test && pnpm e2e
 
 ## Roadmap & vision
 
-See [`roadmap/`](roadmap/):
+Intent lives in [`sdd/`](sdd/), next to the code:
 
-- [`01_vision.md`](roadmap/01_vision.md) — the brain-vs-hands manifesto.
-- [`02_architecture.md`](roadmap/02_architecture.md) — module map & dependency rules.
-
-Phased planning and per-issue specs are tracked privately by the
-maintainer.
+- [`product.md`](sdd/product.md): why, for whom, invariants, non-goals.
+- [`architecture.md`](sdd/architecture.md): layers, a turn, where state lives.
+- [`decisions.md`](sdd/decisions.md): what was decided, and what was rejected.
+- [`roadmap.md`](sdd/roadmap.md): the order of the work, linked to [`issues/`](sdd/issues/).
+- [`modules/`](sdd/modules/): one contract per module, linked to the tests that prove it.
 
 ---
 

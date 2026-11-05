@@ -5,7 +5,7 @@ This guide walks you through the Phase 1 end-to-end use case (P1-UC).
 ## Prerequisites
 
 - Python 3.11+
-- `armance` installed (see [Installation](install.md))
+- `armance` installed (see [Installation](../INSTALL.md))
 
 ## Step 1: Initialize
 
@@ -73,6 +73,5 @@ By completing this walkthrough, you've:
 
 ## Next Steps
 
-- Try the end-to-end [scenarios](../SCENARIOS.md) for more detail
-- Launch the web UI with `armance web` (see [install guide](install.md#web-ui))
+- Launch the web UI with `armance web` (see [install guide](../INSTALL.md#5-the-web-ui))
 - Add more documents to `.armance/docs/` for RAG context

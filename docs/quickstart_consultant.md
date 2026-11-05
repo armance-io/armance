@@ -5,7 +5,7 @@ Get from install to a PPTX deliverable in under 10 minutes.
 ## Install
 
 ```bash
-uv tool install armance-ai          # or: pipx install armance-ai
+uv tool install armance          # or: pipx install armance
 armance --version                   # verify install
 ```
 

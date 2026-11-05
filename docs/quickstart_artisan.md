@@ -13,9 +13,9 @@ curl -sSL https://raw.githubusercontent.com/armance-io/armance/main/install.sh |
 Or manually with `pipx` or `uv`:
 
 ```bash
-pipx install armance-ai          # recommended: isolated env, auto PATH
+pipx install armance          # recommended: isolated env, auto PATH
 # or
-uv tool install armance-ai
+uv tool install armance
 armance --version                # verify
 ```
 

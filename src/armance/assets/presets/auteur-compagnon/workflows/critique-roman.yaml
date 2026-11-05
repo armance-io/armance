@@ -1,0 +1,162 @@
+name: critique-roman
+scope: Produire une critique complète, citée et actionnable du manuscrit fourni.
+description: >
+  Creuset de critique romanesque : deux lectures indépendantes (macro par
+  l'éditeur, micro par le styliste), critique croisée par un œil naïf,
+  synthèse structurée, puis gate qualité sur rubrique (exhaustivité,
+  citations, actionnabilité, honnêteté).
+steps:
+  - id: analyse_macro
+    kind: task
+    role: editeur
+    mode: full
+    stage: draft
+    prompt_template: |
+      Tu es l'éditeur littéraire du panel. Voici le manuscrit (ou l'extrait)
+      à critiquer :
+
+      {{user_prompt}}
+
+      Produis une analyse MACRO du texte : structure d'ensemble (actes,
+      points de bascule, proportion des parties), arcs narratifs de chaque
+      personnage principal (désir, obstacle, transformation — où l'arc
+      stagne, où il se résout trop facilement), rythme (scènes qui
+      piétinent, scènes précipitées), clarté et progression des enjeux.
+
+      Exigences non négociables :
+      - chaque constat s'appuie sur une citation ou une référence précise
+        du texte (chapitre, scène, phrase recopiée) ;
+      - sépare systématiquement constat / interprétation / suggestion ;
+      - classe les faiblesses par gravité décroissante ; aucune flatterie
+        d'ouverture, aucun euphémisme — la bienveillance est dans la
+        précision ;
+      - si une force est réelle, démontre-la avec la même rigueur qu'une
+        faiblesse.
+      Ne traite PAS le style phrase à phrase : un autre agent s'en charge.
+  - id: analyse_micro
+    kind: task
+    role: styliste
+    mode: full
+    stage: draft
+    prompt_template: |
+      Tu es l'analyste stylistique du panel. Voici le manuscrit (ou
+      l'extrait) à critiquer :
+
+      {{user_prompt}}
+
+      Produis une analyse MICRO de la prose en suivant la grille d'analyse
+      stylistique : registre lexical (ruptures, anachronismes), longueur et
+      rythme de phrase (cellules répétitives, chutes), focalisation
+      (glissements de point de vue non maîtrisés), temps verbaux, équilibre
+      dialogues/narration (incises-tics avec leur compte exact), et
+      empreinte de voix par personnage (test de la réplique masquée).
+
+      Exigences non négociables :
+      - toute observation est adossée à un extrait recopié du texte ; une
+        impression sans citation n'entre pas dans le rapport ;
+      - chiffre ce qui peut l'être (fréquence des tics, mots par phrase
+        sur un paragraphe témoin) ;
+      - sépare constat / interprétation / suggestion ; corrige par
+        l'exemple sur une ou deux phrases au plus, jamais davantage.
+      Ne juge PAS la structure ni les arcs : un autre agent s'en charge.
+  - id: critique_croisee
+    kind: critique
+    role: lecteur-beta
+    mode: full
+    stage: critique
+    depends_on: [analyse_macro, analyse_micro]
+    prompt_template: |
+      Tu es le lecteur bêta du panel : un œil naïf, sans indulgence. Deux
+      analyses du même manuscrit te sont soumises.
+
+      Analyse macro (éditeur) :
+      {{analyse_macro.output}}
+
+      Analyse micro (styliste) :
+      {{analyse_micro.output}}
+
+      Confronte-les sans ménagement, du point de vue de l'expérience de
+      lecture réelle :
+      - où les deux analyses se CONTREDISENT-elles (explicitement ou en
+        creux) ? Nomme chaque contradiction et prends position ;
+      - quels constats sont mal étayés (citation absente, extrait qui ne
+        prouve pas ce qu'on lui fait dire) ? Signale-les un par un ;
+      - qu'ont-elles manqué toutes les deux — confusions, décrochages,
+        promesses non tenues qu'un simple lecteur remarquerait ?
+      - quels diagnostics te semblent justes et importants ? Dis pourquoi.
+
+      Le désaccord est ta fonction : si tu n'as rien à contester, c'est que
+      tu n'as pas assez lu. Aucune flatterie ; chaque objection cite
+      l'analyse visée ou le manuscrit.
+  - id: synthese
+    kind: task
+    role: editeur
+    mode: full
+    stage: synthesis
+    depends_on: [analyse_macro, analyse_micro, critique_croisee]
+    prompt_template: |
+      Tu rédiges la critique complète et définitive du manuscrit, en
+      intégrant les deux analyses et la critique croisée — y compris les
+      objections que celle-ci a rendues irréfutables.
+
+      Analyse macro : {{analyse_macro.output}}
+
+      Analyse micro : {{analyse_micro.output}}
+
+      Critique croisée : {{critique_croisee.output}}
+
+      Structure imposée de la critique finale :
+      1. Diagnostic d'ensemble (5-10 lignes, sans complaisance).
+      2. Forces réelles, chacune démontrée par une citation.
+      3. Faiblesses par gravité décroissante — pour chacune : constat cité,
+         interprétation, suggestion au conditionnel.
+      4. Points de désaccord subsistant entre les analyses : expose-les
+         honnêtement au lieu de les lisser, et donne ton arbitrage motivé.
+      5. Plan de révision priorisé : par quoi commencer, dans quel ordre,
+         et pourquoi (du macro vers le micro).
+
+      Ne recycle aucun constat resté sans citation ; abandonne-le ou
+      retourne au texte.
+  - id: gate_qualite
+    kind: judge
+    role: mona
+    mode: light
+    stage: gate
+    depends_on: [synthese]
+    gate_threshold: 7.5
+    rubric:
+      - name: exhaustivite
+        description: >
+          La critique couvre macro (structure, arcs, rythme), micro (style,
+          voix) et l'expérience de lecture ; aucun pan majeur du manuscrit
+          n'est ignoré.
+        weight: 1.5
+      - name: citations
+        description: >
+          Chaque constat est adossé à une citation ou une référence précise
+          du texte ; aucun jugement global sans extrait.
+        weight: 2.0
+      - name: actionnabilite
+        description: >
+          Les suggestions sont concrètes, priorisées (du macro vers le
+          micro) et laissent les choix à l'auteur ; le plan de révision est
+          exécutable.
+        weight: 1.5
+      - name: honnetete
+        description: >
+          Constat, interprétation et suggestion sont séparés ; les
+          désaccords du panel sont exposés, pas lissés ; aucune flatterie.
+        weight: 1.0
+    prompt_template: |
+      Évalue la critique de roman suivante contre la rubrique fournie
+      (exhaustivité, citations, actionnabilité, honnêteté) :
+
+      {{synthese.output}}
+
+      Note chaque critère sur 10 en justifiant par des exemples tirés de la
+      critique elle-même (cite les passages qui prouvent ou infirment).
+      Sois intransigeant sur les citations : un seul reproche global sans
+      extrait du manuscrit plafonne le critère « citations » à 5.
+      Termine impérativement par [GATE:ACCEPT] si la moyenne pondérée
+      atteint le seuil, sinon [GATE:REVISE] avec la liste précise de ce qui
+      doit être repris.
