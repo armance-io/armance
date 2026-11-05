@@ -24,20 +24,16 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import sys
-import textwrap
 import time
 from pathlib import Path
-
-# Add src to path
-ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT / "src"))
 
 from armance.config import load_config, ensure_armance_tree
 from armance.service.llm_service import TokenLedger, set_ledger
 from armance.service.session import start_or_resume, Session
 from armance.service.tui_bridge import make_loop_context, dispatch_input
 from armance.service.checkpoint import CheckpointResponse
+
+ROOT = Path(__file__).parent.parent
 
 class AutoApproveCheckpointHandler:
     """Non-interactive checkpoint handler for QA.
@@ -251,13 +247,13 @@ async def run_qa() -> None:
     if "[EXECUTE:/recruit]" in r or "recruté" in r.lower() or "recruited" in r.lower() or "créé" in r.lower():
         ok("B4 Malik executes recruitment on confirmation")
     else:
-        warn("B4 recruitment execution", f"expected [EXECUTE:/recruit] or confirmation message")
+        warn("B4 recruitment execution", "expected [EXECUTE:/recruit] or confirmation message")
 
     # Check files created
     agents_dir = armance_root / ".armance" / "agents"
     user_agents = [p for p in agents_dir.glob("*.md") if not p.stem.startswith("system-")]
     if user_agents:
-        ok(f"B5 agent files created on disk", f"{len(user_agents)} files: {[p.stem for p in user_agents]}")
+        ok("B5 agent files created on disk", f"{len(user_agents)} files: {[p.stem for p in user_agents]}")
         # Reload agents
         from armance.service.tui_bridge import load_user_agents
         ctx.agents = load_user_agents(armance_root / ".armance")
@@ -453,7 +449,7 @@ async def run_qa() -> None:
         reports_dir = armance_root / ".armance" / "reports"
         report_files = list(reports_dir.glob("**/*.md")) if reports_dir.exists() else []
         if report_files:
-            ok(f"G3 reports generated", f"{len(report_files)} file(s)")
+            ok("G3 reports generated", f"{len(report_files)} file(s)")
         else:
             warn("G3 no report files found in .armance/reports/")
 
@@ -480,11 +476,14 @@ async def run_qa() -> None:
     section("I — Cost estimation")
     # =========================================================================
 
-    from armance.service.cost import estimate_workflow, PRICES
+    from armance.service.cost import estimate_workflow
     # Build fake workflow with known agents
     class _S:
         def __init__(self, id, kind):
-            self.id = id; self.kind = kind; self.agents = []; self.mode = "full"
+            self.id = id
+            self.kind = kind
+            self.agents = []
+            self.mode = "full"
     class _W:
         def __init__(self): self.steps = [_S("s1","task"), _S("j1","judge")]
 
