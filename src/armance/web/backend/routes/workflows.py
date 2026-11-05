@@ -181,7 +181,7 @@ class RunIn(BaseModel):
     mode: str = "interactive"
     depth: str = "quick"
     # Library document basenames (under `.armance/docs/`) to inject as seed
-    # material for the run — e.g. an existing tender to challenge (Lot B).
+    # material for the run — e.g. an existing draft to challenge (Lot B).
     seed_docs: list[str] = []
 
 

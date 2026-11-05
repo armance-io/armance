@@ -25,7 +25,7 @@ def compose_default_prompt(
 
     Without this, Kim's free-text workflows (no templates) pass an empty string
     to the runner and specialists answer with their persona seed only. A3
-    filet-de-sécurité (roadmap/03_workflow_quality_refonte.md §3), never the
+    filet-de-sécurité, never the
     nominal path (Kim should write a differentiated `prompt` per step): emits
     scope + request, kind/role-tailored instructions with an anti-redundancy
     guardrail + output contract, and upstream outputs framed as to *extend*.

@@ -76,7 +76,7 @@ class WorkflowStep(BaseModel):
     depends_on: list[str] = Field(default_factory=list)
     prompt_template: str = ""
     # Library document names (basename, under `.armance/docs/`) to inject as
-    # seed material for this step — e.g. an existing tender to challenge. The
+    # seed material for this step — e.g. an existing draft to challenge. The
     # actual file read happens in the `service` layer (layering: `core` does
     # no disk I/O); the loaded text is passed to `execute_workflow` via the
     # `inputs` dict under `seed.<basename>` and surfaced in the default prompt.

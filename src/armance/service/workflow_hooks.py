@@ -79,8 +79,8 @@ async def check_consensus_and_maybe_invoke_serge(
     critique_runner: Callable[[_StepLike, str], Awaitable[str]],
     notify: NotifyFn = _noop_notify,
 ) -> tuple[str, str] | None:
-    """If 3+ judge steps all show empty Divergence, synthesise their outputs
-    and call critique_runner once to get Serge's pushback.
+    """If at least one judge step shows an empty Divergence, synthesise the
+    judge outputs and call critique_runner once to get Serge's pushback.
 
     Workflows that already schedule a `critique` step get nothing: Serge
     already spoke there — auto-invoking him again duplicates the pushback.

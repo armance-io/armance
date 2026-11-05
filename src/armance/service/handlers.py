@@ -375,7 +375,7 @@ async def _cmd_workflow_run(
     wf = load_workflow(wf_path)
 
     # ── Seed documents (Lot B) ─────────────────────────────────────────────
-    # Load existing material (e.g. a drafted tender) the steps want to
+    # Load existing material (e.g. a drafted report) the steps want to
     # challenge/extend. Sources: every step's `seed_docs` (library files),
     # the extra `seed_docs` arg (web RunIn), and `--input` specs (ad-hoc
     # files). File I/O lives here in the service layer; the loaded text is

@@ -1,8 +1,6 @@
 """Lot E — reliability of contradictory pairs, run-error transparency, and
 the broken-workflow validation gate.
 
-Design: roadmap/03_workflow_quality_refonte.md §7.
-
 1. A contradictory second-regard candidate that fails must surface a VISIBLE
    warning in the conversation AND the manifest — not vanish silently.
 2. A step that ends up absent carries the REAL upstream error into its note

@@ -1,6 +1,6 @@
 """Lot B — seed documents in a workflow run.
 
-Design: roadmap/03_workflow_quality_refonte.md §4. Acceptance criterion:
+Acceptance criterion:
 run with a seed doc → the document's content appears in the root step's
 prompt (so a specialist can challenge/extend an existing draft instead of
 writing from scratch).
@@ -26,15 +26,15 @@ from armance.service.seed_docs import (
 # --- core: default prompt surfaces seed docs -------------------------------
 
 def test_default_prompt_injects_seed_document() -> None:
-    step = WorkflowStep(id="analyse", kind="task", role="ml", seed_docs=["ao.md"])
-    wf = Workflow(name="challenge", scope="challenge the tender", steps=[step])
+    step = WorkflowStep(id="analyse", kind="task", role="ml", seed_docs=["draft.md"])
+    wf = Workflow(name="challenge", scope="challenge the draft", steps=[step])
     prompt = _compose_default_prompt(
         wf, step, user_prompt="challenge it", results={},
-        inputs={"seed.ao.md": "TENDER BODY — section requirements..."},
+        inputs={"seed.draft.md": "DRAFT BODY — section requirements..."},
     )
     assert "## Seed documents" in prompt
-    assert "`ao.md`" in prompt
-    assert "TENDER BODY — section requirements" in prompt
+    assert "`draft.md`" in prompt
+    assert "DRAFT BODY — section requirements" in prompt
 
 
 def test_default_prompt_no_seed_section_when_absent() -> None:
@@ -47,7 +47,7 @@ def test_default_prompt_no_seed_section_when_absent() -> None:
 # --- core: execute_workflow threads inputs into the root prompt ------------
 
 def test_execute_workflow_seed_reaches_root_step_prompt() -> None:
-    step = WorkflowStep(id="root", kind="task", role="ml", seed_docs=["ao.md"])
+    step = WorkflowStep(id="root", kind="task", role="ml", seed_docs=["draft.md"])
     wf = Workflow(name="challenge", scope="s", steps=[step])
     seen: dict[str, str] = {}
 
@@ -58,16 +58,16 @@ def test_execute_workflow_seed_reaches_root_step_prompt() -> None:
     asyncio.run(
         execute_workflow(
             wf, user_prompt="challenge", runner=runner,
-            inputs={"seed.ao.md": "SECRET TENDER TEXT"},
+            inputs={"seed.draft.md": "SECRET DRAFT TEXT"},
         )
     )
-    assert "SECRET TENDER TEXT" in seen["root"]
+    assert "SECRET DRAFT TEXT" in seen["root"]
 
 
 def test_execute_workflow_seed_via_template_ref() -> None:
     step = WorkflowStep(
         id="root", kind="task", role="ml",
-        prompt_template="Challenge this: {{seed.ao.md}}",
+        prompt_template="Challenge this: {{seed.draft.md}}",
     )
     wf = Workflow(name="challenge", steps=[step])
     seen: dict[str, str] = {}
@@ -79,10 +79,10 @@ def test_execute_workflow_seed_via_template_ref() -> None:
     asyncio.run(
         execute_workflow(
             wf, user_prompt="x", runner=runner,
-            inputs={"seed.ao.md": "TENDER-123"},
+            inputs={"seed.draft.md": "DRAFT-123"},
         )
     )
-    assert "Challenge this: TENDER-123" in seen["root"]
+    assert "Challenge this: DRAFT-123" in seen["root"]
 
 
 # --- service: library + ad-hoc loaders -------------------------------------
@@ -90,10 +90,10 @@ def test_execute_workflow_seed_via_template_ref() -> None:
 def test_load_library_seed_docs_reads_and_caps(tmp_path: Path) -> None:
     docs = tmp_path / "docs"
     docs.mkdir()
-    (docs / "ao.md").write_text("A" * (MAX_SEED_CHARS + 500), encoding="utf-8")
-    out = load_library_seed_docs(tmp_path, ["ao.md"])
-    assert "seed.ao.md" in out
-    assert len(out["seed.ao.md"]) == MAX_SEED_CHARS
+    (docs / "draft.md").write_text("A" * (MAX_SEED_CHARS + 500), encoding="utf-8")
+    out = load_library_seed_docs(tmp_path, ["draft.md"])
+    assert "seed.draft.md" in out
+    assert len(out["seed.draft.md"]) == MAX_SEED_CHARS
 
 
 def test_load_library_seed_docs_missing_is_skipped(tmp_path: Path) -> None:
@@ -105,8 +105,8 @@ def test_load_library_seed_docs_missing_is_skipped(tmp_path: Path) -> None:
 def test_load_adhoc_seed_docs_key_equals_path(tmp_path: Path) -> None:
     f = tmp_path / "draft.txt"
     f.write_text("DRAFT CONTENT", encoding="utf-8")
-    out = load_adhoc_seed_docs([f"tender={f}"])
-    assert out == {"seed.tender": "DRAFT CONTENT"}
+    out = load_adhoc_seed_docs([f"draft={f}"])
+    assert out == {"seed.draft": "DRAFT CONTENT"}
 
 
 def test_load_adhoc_seed_docs_bare_path_uses_stem(tmp_path: Path) -> None:

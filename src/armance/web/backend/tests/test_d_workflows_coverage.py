@@ -134,8 +134,8 @@ async def test_run_dispatch_forwards_seed_docs(
     ws = app_state.get(sid)
     mock = AsyncMock(return_value="ok")
     with patch("armance.service.handlers._cmd_workflow_run", new=mock):
-        await _dispatch_run(ws, "wf", "interactive", "quick", ["ao.md"])
-    assert mock.await_args.kwargs["seed_docs"] == ["ao.md"]
+        await _dispatch_run(ws, "wf", "interactive", "quick", ["draft.md"])
+    assert mock.await_args.kwargs["seed_docs"] == ["draft.md"]
 
 
 @pytest.mark.asyncio
